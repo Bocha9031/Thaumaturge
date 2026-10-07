@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.entity.boss;
 
 import com.leclowndu93150.thaumaturge.content.entity.AbstractTaintacle;
 import com.leclowndu93150.thaumaturge.content.entity.champion.ChampionHelper;
+import com.leclowndu93150.thaumaturge.server.command.admin.ShowcaseEntities;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -85,7 +86,9 @@ public class EntityTaintacleGiant extends AbstractTaintacle {
     @Override
     public void startSeenByPlayer(ServerPlayer player) {
         super.startSeenByPlayer(player);
-        this.bossBar.show(player);
+        if (!ShowcaseEntities.isDisplay(this)) {
+            this.bossBar.show(player);
+        }
     }
 
     @Override
@@ -102,6 +105,9 @@ public class EntityTaintacleGiant extends AbstractTaintacle {
 
     @Override
     public boolean hurt(DamageSource source, float damage) {
+        if (ShowcaseEntities.isDisplay(this)) {
+            return false;
+        }
         if (!(level() instanceof ServerLevel level)) return false;
         damage = this.rage.absorb(source, damage);
         return super.hurt(source, damage);

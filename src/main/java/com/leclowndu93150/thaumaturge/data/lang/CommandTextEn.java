@@ -59,7 +59,9 @@ public final class CommandTextEn {
         add.accept(
                 "commands.thaumaturge.build.infusion_altar.success", "Built an infusion altar centered at %s, %s, %s");
 
-        add.accept("commands.thaumaturge.showcase.built", "Built a showcase of %s blocks and %s items from %s, %s, %s");
+        add.accept(
+                "commands.thaumaturge.showcase.built",
+                "Built a showcase of %s blocks, %s items and %s entities from %s, %s, %s");
         add.accept("commands.thaumaturge.showcase.too_tall", "The showcase does not fit inside the build height here");
         add.accept("commands.thaumaturge.showcase.unloaded", "Part of the showcase area is not loaded");
 

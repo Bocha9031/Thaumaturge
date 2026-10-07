@@ -1201,6 +1201,9 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("entity.thaumaturge.focus_cloud", "Focus Cloud");
         add("entity.thaumaturge.focus_mine", "Focus Mine");
         add("entity.thaumaturge.spell_bat", "Spellbat");
+        add("entity.thaumaturge.special_item", "Special Item");
+        add("entity.thaumaturge.following_item", "Following Item");
+        add("entity.thaumaturge.thrown_alumentum", "Thrown Alumentum");
 
         add("block.thaumaturge.node", "Aura Node");
         add("block.thaumaturge.jar_node", "Node in a Jar");

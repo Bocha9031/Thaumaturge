@@ -14,6 +14,7 @@ import com.leclowndu93150.thaumaturge.content.entity.eldritch.LeadingAim;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitNames;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
+import com.leclowndu93150.thaumaturge.server.command.admin.ShowcaseEntities;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -161,7 +162,9 @@ public class EntityEldritchWarden extends EntityThaumaturgeBoss implements Range
     @Override
     public void startSeenByPlayer(ServerPlayer player) {
         super.startSeenByPlayer(player);
-        shield.show(player);
+        if (!ShowcaseEntities.isDisplay(this)) {
+            shield.show(player);
+        }
     }
 
     @Override

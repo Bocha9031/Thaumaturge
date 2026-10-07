@@ -1,25 +1,41 @@
 package com.leclowndu93150.thaumaturge.server.command.admin;
 
+import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.api.recipe.Blueprint;
+import com.leclowndu93150.thaumaturge.api.recipe.BlueprintTarget;
+import com.leclowndu93150.thaumaturge.content.entity.EntityFluxRift;
+import com.leclowndu93150.thaumaturge.content.recipe.dust.MultiblockMatcher;
+import com.leclowndu93150.thaumaturge.content.recipe.dust.RotatedBlueprint;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.DirectionalPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 
 final class ShowcaseBuilder {
     private static final int FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
     private static final int BLOCK_COLUMNS = 16;
-    private static final int BLOCK_SPACING = 3;
+    private static final int BLOCK_SPACING = 4;
+    private static final int ENTITY_SPACING = 6;
     private static final int SIDE_MARGIN = 2;
     private static final int FRONT_MARGIN = 2;
     private static final int WALL_GAP = 3;
@@ -38,32 +54,50 @@ final class ShowcaseBuilder {
     private final Direction right;
     private final List<Block> blocks;
     private final List<Item> items;
+    private final List<EntityType<?>> entities;
     private final List<BlockState> supports;
     private final int width;
     private final int wallRow;
+    private final int entityColumns;
+    private final int entityStartRow;
     private final int frameColumns;
     private final int frameRows;
     private final int clearHeight;
 
-    ShowcaseBuilder(ServerLevel level, BlockPos origin, Direction forward, List<Block> blocks, List<Item> items) {
+    ShowcaseBuilder(
+            ServerLevel level,
+            BlockPos origin,
+            Direction forward,
+            List<Block> blocks,
+            List<Item> items,
+            List<EntityType<?>> entities) {
         this.level = level;
         this.origin = origin;
         this.forward = forward;
         this.right = forward.getClockWise();
         this.blocks = blocks;
         this.items = items;
+        this.entities = entities;
         this.supports = List.of(
                 Blocks.SMOOTH_STONE.defaultBlockState(),
                 Blocks.DIRT.defaultBlockState(),
                 Blocks.GRASS_BLOCK.defaultBlockState(),
                 Blocks.SAND.defaultBlockState(),
-                TTBlocks.LOG_GREATWOOD.get().defaultBlockState());
+                TTBlocks.LOG_GREATWOOD.get().defaultBlockState(),
+                TTBlocks.SMELTER_BASIC.get().defaultBlockState());
         int blockRows = Mth.positiveCeilDiv(blocks.size(), BLOCK_COLUMNS);
         this.width = SIDE_MARGIN * 2 + (BLOCK_COLUMNS - 1) * BLOCK_SPACING + 1;
-        this.wallRow = FRONT_MARGIN + Math.max(0, blockRows - 1) * BLOCK_SPACING + WALL_GAP + 1;
+        this.entityStartRow = FRONT_MARGIN + Math.max(0, blockRows - 1) * BLOCK_SPACING + ENTITY_SPACING;
+        this.entityColumns = (width - SIDE_MARGIN * 2 - 1) / ENTITY_SPACING + 1;
+        int entityRows = Mth.positiveCeilDiv(entities.size(), entityColumns);
+        this.wallRow = entityStartRow + Math.max(0, entityRows - 1) * ENTITY_SPACING + WALL_GAP + 1;
         this.frameColumns = width - WALL_BORDER * 2;
         this.frameRows = Mth.positiveCeilDiv(items.size(), frameColumns);
-        this.clearHeight = Math.max(MIN_CLEAR_HEIGHT, frameRows + WALL_BORDER * 2);
+        int entityHeight = entities.stream()
+                .mapToInt(type -> Mth.ceil(type.getHeight()) + 2)
+                .max()
+                .orElse(0);
+        this.clearHeight = Math.max(Math.max(MIN_CLEAR_HEIGHT, entityHeight), frameRows + WALL_BORDER * 2);
     }
 
     boolean fitsHeight() {
@@ -89,17 +123,28 @@ final class ShowcaseBuilder {
     }
 
     void build() {
-        removeHangingEntities();
+        removeDisplayEntities();
+        AABB area = AABB.encapsulatingFullBlocks(at(0, 0, -1), at(width - 1, wallRow, clearHeight));
+        Set<UUID> existing = level.getEntities((Entity) null, area, entity -> true).stream()
+                .map(Entity::getUUID)
+                .collect(Collectors.toSet());
         clearArea();
+        // Taint removal can spawn crawlers that would obstruct the new block placements.
+        for (LivingEntity entity :
+                level.getEntitiesOfClass(LivingEntity.class, area, entity -> !existing.contains(entity.getUUID()))) {
+            entity.discard();
+        }
         placeLights();
         placeBlocks();
+        placeEntities();
         buildWall();
         hangFrames();
     }
 
-    private void removeHangingEntities() {
+    private void removeDisplayEntities() {
         AABB area = AABB.encapsulatingFullBlocks(at(0, 0, -1), at(width - 1, wallRow, clearHeight));
-        for (HangingEntity entity : level.getEntitiesOfClass(HangingEntity.class, area)) {
+        for (Entity entity : level.getEntities(
+                (Entity) null, area, entity -> entity instanceof HangingEntity || ShowcaseEntities.isDisplay(entity))) {
             entity.discard();
         }
     }
@@ -107,11 +152,16 @@ final class ShowcaseBuilder {
     private void clearArea() {
         BlockState floor = Blocks.SMOOTH_STONE.defaultBlockState();
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int column = 0; column < width; column++) {
-            for (int row = 0; row <= wallRow; row++) {
-                set(at(column, row, -1), floor);
-                for (int up = 0; up < clearHeight; up++) {
-                    set(at(column, row, up), air);
+        // Removing formed controllers can restore source blocks into cells already visited.
+        for (int pass = 0; pass < 2; pass++) {
+            for (int column = 0; column < width; column++) {
+                for (int row = 0; row <= wallRow; row++) {
+                    if (pass == 0) {
+                        set(at(column, row, -1), floor);
+                    }
+                    for (int up = 0; up < clearHeight; up++) {
+                        set(at(column, row, up), air);
+                    }
                 }
             }
         }
@@ -135,15 +185,77 @@ final class ShowcaseBuilder {
                     FRONT_MARGIN + i / BLOCK_COLUMNS * BLOCK_SPACING,
                     0);
             BlockState state = blocks.get(i).defaultBlockState();
+            // The symmetric altar's explicit pillar states use the authored south-facing layout.
+            if (state.is(TTBlocks.INFUSION_MATRIX) && placeBlueprint("infusion_altar", pos, Direction.SOUTH)) {
+                continue;
+            }
+            if (state.is(TTBlocks.THAUMATORIUM) && placeBlueprint("thaumatorium", pos, forward.getOpposite())) {
+                continue;
+            }
+            if (state.is(TTBlocks.ARCANE_WORKBENCH_CHARGER)) {
+                set(pos, TTBlocks.ARCANE_WORKBENCH.get().defaultBlockState());
+                pos = pos.above();
+            }
             if (!state.getFluidState().isEmpty()) {
                 set(pos.below(), state);
                 continue;
             }
-            set(pos, state);
-            if (!state.canSurvive(level, pos)) {
-                support(pos, state);
+            ItemStack stack = new ItemStack(state.getBlock());
+            if (stack.getItem() instanceof BlockItem item) {
+                for (Direction face : new Direction[] {
+                    Direction.UP, forward.getOpposite(), forward, right, right.getOpposite(), Direction.DOWN
+                }) {
+                    DirectionalPlaceContext context = new DirectionalPlaceContext(level, pos, forward, stack, face);
+                    BlockState placement = state.getBlock().getStateForPlacement(context);
+                    if (placement == null) {
+                        support(pos, state);
+                        placement = state.getBlock().getStateForPlacement(context);
+                    }
+                    if (placement != null && !placement.canSurvive(level, pos)) {
+                        support(pos, placement);
+                    }
+                    if (item.place(context).consumesAction()) {
+                        break;
+                    }
+                }
+                BlockState placed = level.getBlockState(pos);
+                if (placed.hasProperty(BlockStateProperties.PERSISTENT)) {
+                    set(pos, placed.setValue(BlockStateProperties.PERSISTENT, true));
+                }
             }
         }
+    }
+
+    private boolean placeBlueprint(String name, BlockPos center, Direction facing) {
+        Blueprint blueprint =
+                level.registryAccess().registryOrThrow(Blueprint.REGISTRY_KEY).get(TTIds.rl(name));
+        if (blueprint == null) {
+            return false;
+        }
+        RotatedBlueprint rotated = new RotatedBlueprint(blueprint, MultiblockMatcher.rotationsFor(facing));
+        for (var cell : rotated.cells()) {
+            BlueprintTarget target = cell.part().target();
+            if (target instanceof BlueprintTarget.Air) {
+                continue;
+            }
+            BlockState state = cell.part().source().getState();
+            if (target instanceof BlueprintTarget.BlockTarget blockTarget) {
+                state = blockTarget.block().defaultBlockState();
+                Direction targetFacing = blockTarget.opposite() ? facing.getOpposite() : facing;
+                if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+                    state = state.setValue(BlockStateProperties.HORIZONTAL_FACING, targetFacing);
+                }
+            } else if (target instanceof BlueprintTarget.StateTarget stateTarget) {
+                state = stateTarget.state();
+            }
+            BlockPos offset = cell.offset();
+            set(center.offset(
+                    offset.getX() - rotated.width() / 2,
+                    offset.getY(),
+                    offset.getZ() - rotated.depth() / 2),
+                    state);
+        }
+        return true;
     }
 
     private void support(BlockPos pos, BlockState state) {
@@ -151,6 +263,9 @@ final class ShowcaseBuilder {
             BlockPos supportPos = pos.relative(side);
             BlockState previous = level.getBlockState(supportPos);
             for (BlockState candidate : supports) {
+                if (side.getAxis().isHorizontal() && candidate.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+                    candidate = candidate.setValue(BlockStateProperties.HORIZONTAL_FACING, side);
+                }
                 set(supportPos, candidate);
                 if (state.canSurvive(level, pos)) {
                     return;
@@ -177,6 +292,36 @@ final class ShowcaseBuilder {
             frame.setItem(new ItemStack(items.get(i)), false);
             frame.setInvulnerable(true);
             level.addFreshEntity(frame);
+        }
+    }
+
+    private void placeEntities() {
+        for (int i = 0; i < entities.size(); i++) {
+            EntityType<?> type = entities.get(i);
+            Entity entity = type.create(level);
+            if (entity == null) {
+                throw new IllegalStateException("Cannot create showcase entity " + EntityType.getKey(type));
+            }
+            BlockPos pos = at(
+                    SIDE_MARGIN + i % entityColumns * ENTITY_SPACING,
+                    entityStartRow + i / entityColumns * ENTITY_SPACING,
+                    0);
+            entity.moveTo(
+                    pos.getX() + 0.5,
+                    pos.getY(),
+                    pos.getZ() + 0.5,
+                    forward.getOpposite().toYRot(),
+                    0.0F);
+            ShowcaseEntities.freeze(entity);
+            if (entity instanceof EntityFluxRift rift) {
+                rift.reseed(2319160);
+                rift.resize(15);
+                double rise = Math.max(0.0, pos.getY() + 0.25 - rift.getBoundingBox().minY);
+                rift.setPos(rift.getX(), rift.getY() + rise, rift.getZ());
+            }
+            if (!level.addFreshEntity(entity)) {
+                throw new IllegalStateException("Cannot add showcase entity " + EntityType.getKey(type));
+            }
         }
     }
 

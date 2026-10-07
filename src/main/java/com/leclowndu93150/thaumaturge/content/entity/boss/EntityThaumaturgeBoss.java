@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.entity.boss;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.entity.ThaumaturgeEntityTypeTags;
 import com.leclowndu93150.thaumaturge.api.labyrinth.LabyrinthHelper;
+import com.leclowndu93150.thaumaturge.server.command.admin.ShowcaseEntities;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -96,7 +97,9 @@ public class EntityThaumaturgeBoss extends Monster {
     @Override
     public void startSeenByPlayer(ServerPlayer player) {
         super.startSeenByPlayer(player);
-        this.bossBar.show(player);
+        if (!ShowcaseEntities.isDisplay(this)) {
+            this.bossBar.show(player);
+        }
     }
 
     @Override
@@ -197,6 +200,9 @@ public class EntityThaumaturgeBoss extends Monster {
 
     @Override
     public boolean hurt(DamageSource source, float damage) {
+        if (ShowcaseEntities.isDisplay(this)) {
+            return false;
+        }
         if (source.getEntity() instanceof LivingEntity attacker) {
             this.aggro.merge(attacker.getId(), (int) damage, Integer::sum);
         }

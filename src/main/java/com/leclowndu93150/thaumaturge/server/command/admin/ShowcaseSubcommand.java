@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.server.command.admin;
 
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
+import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -13,6 +14,8 @@ import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -36,12 +39,16 @@ final class ShowcaseSubcommand implements AdminSubcommand {
     private static int build(CommandSourceStack source, BlockPos origin) throws CommandSyntaxException {
         List<Block> blocks = TTBlocks.BLOCKS.getEntries().stream()
                 .<Block>map(DeferredHolder::value)
+                .filter(block -> block.asItem() instanceof BlockItem item && item.getBlock() == block)
                 .toList();
         List<Item> items = TTItems.ITEMS.getEntries().stream()
                 .<Item>map(DeferredHolder::value)
                 .toList();
+        List<EntityType<?>> entities = TTEntities.ENTITIES.getEntries().stream()
+                .<EntityType<?>>map(DeferredHolder::value)
+                .toList();
         ShowcaseBuilder builder = new ShowcaseBuilder(
-                source.getLevel(), origin, Direction.fromYRot(source.getRotation().y), blocks, items);
+                source.getLevel(), origin, Direction.fromYRot(source.getRotation().y), blocks, items, entities);
         if (!builder.fitsHeight()) {
             throw TOO_TALL.create();
         }
@@ -54,10 +61,11 @@ final class ShowcaseSubcommand implements AdminSubcommand {
                         "commands.thaumaturge.showcase.built",
                         blocks.size(),
                         items.size(),
+                        entities.size(),
                         origin.getX(),
                         origin.getY(),
                         origin.getZ()),
                 true);
-        return blocks.size() + items.size();
+        return blocks.size() + items.size() + entities.size();
     }
 }
