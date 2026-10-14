@@ -71,6 +71,11 @@ public final class InvHelper {
      */
     public record FilterMatch(ItemStack stack, int sizeLimit) {}
 
+    /** Returns the item handler exposed at a block face. */
+    public static @Nullable IItemHandler handlerAt(Level level, BlockPos pos, @Nullable Direction side) {
+        return getItemHandlerAt(level, pos, side);
+    }
+
     /**
      * @param level the level
      * @param pos   the block to query
@@ -104,6 +109,11 @@ public final class InvHelper {
         return inventory != null ? insertStack(inventory, stack, simulate) : stack;
     }
 
+    /** Inserts a stack at a block face and returns its uninserted remainder. */
+    public static ItemStack insertAt(Level level, BlockPos pos, Direction side, ItemStack stack, boolean simulate) {
+        return insertStackAt(level, pos, side, stack, simulate);
+    }
+
     /**
      * @return a copy of the portion of the stack the inventory can accept
      */
@@ -117,6 +127,11 @@ public final class InvHelper {
         return accepted;
     }
 
+    /** Returns a copy containing the portion that could be accepted at a block face. */
+    public static ItemStack acceptedPortion(Level level, BlockPos pos, Direction side, ItemStack stack) {
+        return hasRoomFor(level, pos, side, stack);
+    }
+
     /**
      * @return whether the inventory can accept at least one item of the stack
      */
@@ -125,11 +140,204 @@ public final class InvHelper {
         return stack.getCount() == 0 || rejected.getCount() != stack.getCount();
     }
 
+    /** Returns whether at least one item (or an empty stack) could be accepted at a block face. */
+    public static boolean acceptsAny(Level level, BlockPos pos, Direction side, ItemStack stack) {
+        return hasRoomForSome(level, pos, side, stack);
+    }
+
     /**
      * @return whether the inventory can accept the whole stack
      */
     public static boolean hasRoomForAll(Level level, BlockPos pos, Direction side, ItemStack stack) {
         return insertStackAt(level, pos, side, stack.copy(), true).isEmpty();
+    }
+
+    /** Returns whether the complete stack could be accepted at a block face. */
+    public static boolean acceptsAll(Level level, BlockPos pos, Direction side, ItemStack stack) {
+        return hasRoomForAll(level, pos, side, stack);
+    }
+
+    /** Counts matching items in a handler. */
+    public static int count(@Nullable IItemHandler inventory, ItemStack wanted, ItemMatch match) {
+        if (inventory == null || wanted.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+            ItemStack held = inventory.getStackInSlot(slot);
+            if (!held.isEmpty() && match.test(wanted, held)) {
+                count += held.getCount();
+            }
+        }
+        return count;
+    }
+
+    /** Counts matching items at a block face. */
+    public static int countAt(Level level, BlockPos pos, Direction side, ItemStack wanted, ItemMatch match) {
+        return count(handlerAt(level, pos, side), wanted, match);
+    }
+
+    /** Counts matching dropped items around a position. */
+    public static int countDropped(Level level, BlockPos pos, ItemStack wanted, double range, ItemMatch match) {
+        if (wanted.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        AABB area = new AABB(pos).inflate(range);
+        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, area)) {
+            if (!item.getItem().isEmpty() && match.test(wanted, item.getItem())) {
+                count += item.getItem().getCount();
+            }
+        }
+        return count;
+    }
+
+    /** Extracts matching items from a handler, returning the amount actually removed. */
+    public static ItemStack extract(
+            @Nullable IItemHandler inventory, ItemStack wanted, ItemMatch match, boolean simulate) {
+        if (inventory == null || wanted.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        int remaining = wanted.getCount();
+        int removed = 0;
+        for (int slot = 0; slot < inventory.getSlots() && remaining > 0; slot++) {
+            ItemStack held = inventory.getStackInSlot(slot);
+            if (held.isEmpty() || !match.test(wanted, held)) {
+                continue;
+            }
+            ItemStack extracted = inventory.extractItem(slot, remaining, simulate);
+            int amount = !extracted.isEmpty() && match.test(wanted, extracted)
+                    ? Math.min(remaining, extracted.getCount())
+                    : 0;
+            removed += amount;
+            remaining -= amount;
+        }
+        return removed == 0 ? ItemStack.EMPTY : wanted.copyWithCount(removed);
+    }
+
+    /** Extracts matching items from the handler exposed at a block face. */
+    public static ItemStack extractAt(
+            Level level, BlockPos pos, Direction side, ItemStack wanted, ItemMatch match, boolean simulate) {
+        return extract(handlerAt(level, pos, side), wanted, match, simulate);
+    }
+
+    /** Inserts into the adjacent inventory, dropping any remainder into the world. */
+    public static void eject(Level level, BlockPos pos, Direction side, ItemStack stack) {
+        ejectStackAt(level, pos, side, stack);
+    }
+
+    /** Inserts into the adjacent inventory and returns the remainder when one is present. */
+    public static ItemStack ejectOrReturn(Level level, BlockPos pos, Direction side, ItemStack stack) {
+        return ejectStackAt(level, pos, side, stack, true);
+    }
+
+    /** Drops an item at an entity's chest height on the logical server. */
+    public static void dropAt(Level level, ItemStack stack, Entity entity) {
+        dropItemAtEntity(level, stack, entity);
+    }
+
+    /** Returns a copy capped to the requested count. */
+    public static ItemStack capped(ItemStack stack, int limit) {
+        return copyLimitedStack(stack, limit);
+    }
+
+    /** Returns whether adjacent inventories, excluding the top, hold the requested amount. */
+    public static boolean neighboursHold(Level level, BlockPos pos, ItemStack wanted) {
+        return checkAdjacentChests(level, pos, wanted);
+    }
+
+    /** Returns whether the player's main inventory holds the requested amount. */
+    public static boolean playerHolds(Player player, ItemStack wanted, boolean byTag) {
+        if (wanted.isEmpty()) {
+            return false;
+        }
+        ItemMatch match = ItemMatch.ITEM_OR_TAG
+                .byTag(byTag)
+                .ignoringComponents(wanted.isComponentsPatchEmpty())
+                .withComponentSubset(true);
+        int count = 0;
+        for (ItemStack held : player.getInventory().items) {
+            if (!held.isEmpty() && match.test(wanted, held)) {
+                count += held.getCount();
+                if (count >= wanted.getCount()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Removes the requested amount from the player's main inventory, or makes no change. */
+    public static boolean takeFromPlayer(Player player, ItemStack wanted, boolean byTag) {
+        if (wanted.isEmpty() || !playerHolds(player, wanted, byTag)) {
+            return false;
+        }
+        ItemMatch match = ItemMatch.ITEM_OR_TAG
+                .byTag(byTag)
+                .ignoringComponents(wanted.isComponentsPatchEmpty())
+                .withComponentSubset(true);
+        List<ItemStack> items = player.getInventory().items;
+        int remaining = wanted.getCount();
+        for (int slot = 0; slot < items.size() && remaining > 0; slot++) {
+            ItemStack held = items.get(slot);
+            if (!held.isEmpty() && match.test(wanted, held)) {
+                remaining -= Math.min(remaining, held.getCount());
+            }
+        }
+        if (remaining > 0) {
+            return false;
+        }
+        remaining = wanted.getCount();
+        for (int slot = 0; slot < items.size() && remaining > 0; slot++) {
+            ItemStack held = items.get(slot);
+            if (held.isEmpty() || !match.test(wanted, held)) {
+                continue;
+            }
+            int amount = Math.min(remaining, held.getCount());
+            if (amount == held.getCount()) {
+                items.set(slot, ItemStack.EMPTY);
+            } else {
+                held.shrink(amount);
+            }
+            remaining -= amount;
+        }
+        player.getInventory().setChanged();
+        return true;
+    }
+
+    /** Finds the first accepted candidate using modern immutable match rules. */
+    public static ItemStack findFirstMatchFromFilter(
+            List<ItemStack> ghosts,
+            boolean blacklist,
+            @Nullable IItemHandler inventory,
+            ItemMatch match,
+            boolean leaveOne) {
+        return StackFilter.of(ghosts, blacklist, match).firstAccepted(inventory, leaveOne);
+    }
+
+    /** Tests a candidate against a ghost-stack filter. */
+    public static boolean matchesFilters(List<ItemStack> ghosts, boolean blacklist, ItemStack stack, ItemMatch match) {
+        return StackFilter.of(ghosts, blacklist, match).accepts(stack);
+    }
+
+    /** Finds the first candidate that passes the filter. */
+    public static ItemStack findFirstMatchFromFilter(
+            List<ItemStack> ghosts,
+            List<Integer> sizes,
+            boolean blacklist,
+            List<ItemStack> candidates,
+            ItemMatch match) {
+        return new StackFilter(ghosts, sizes, blacklist, match).firstAccepted(candidates);
+    }
+
+    /** Finds the first candidate that passes the filter, including its applicable size limit. */
+    public static FilterMatch findFirstMatchFromFilterWithSize(
+            List<ItemStack> ghosts,
+            List<Integer> sizes,
+            boolean blacklist,
+            List<ItemStack> candidates,
+            ItemMatch match) {
+        return new StackFilter(ghosts, sizes, blacklist, match).firstAcceptedWithLimit(candidates);
     }
 
     /**

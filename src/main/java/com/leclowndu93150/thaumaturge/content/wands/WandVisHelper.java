@@ -173,7 +173,7 @@ public final class WandVisHelper {
 
     public static Map<ResourceKey<IAspect>, Integer> primalSplit(int centivis, AspectList aspects) {
         Map<ResourceKey<IAspect>, Integer> weights = WandChargingEvents.reduceToPrimals(aspects);
-        int totalWeight = 0;
+        long totalWeight = 0L;
         for (ResourceKey<IAspect> primal : TTAspects.PRIMALS) {
             totalWeight += weights.getOrDefault(primal, 0);
         }
@@ -181,11 +181,11 @@ public final class WandVisHelper {
             return evenSplit(centivis);
         }
         Map<ResourceKey<IAspect>, Integer> split = new LinkedHashMap<>();
-        int remainder = centivis;
+        long remainder = centivis;
         for (ResourceKey<IAspect> primal : TTAspects.PRIMALS) {
             int weight = weights.getOrDefault(primal, 0);
             if (weight > 0) {
-                int share = centivis * weight / totalWeight;
+                int share = (int) ((long) centivis * weight / totalWeight);
                 split.put(primal, share);
                 remainder -= share;
             }

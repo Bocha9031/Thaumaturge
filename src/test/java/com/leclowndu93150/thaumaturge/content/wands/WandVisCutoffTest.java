@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.wands;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.wands.IWandVisStorage;
@@ -141,5 +142,10 @@ class WandVisCutoffTest {
         assertTrue(WandVisHelper.drainOne(stack, null, TTAspects.AER, -7, true));
         assertEquals(103, storage.charge.amount(TTAspects.AER));
         assertEquals(1, storage.writes.size());
+    }
+
+    @Test
+    void emptyAspectWeightsUseTheCanonicalEvenSplit() {
+        assertEquals(WandVisHelper.evenSplit(17), WandVisHelper.primalSplit(17, AspectList.EMPTY));
     }
 }
