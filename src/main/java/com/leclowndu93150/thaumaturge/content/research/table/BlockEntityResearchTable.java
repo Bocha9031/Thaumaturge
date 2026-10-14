@@ -5,7 +5,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.api.research.IResearchTableAid;
 import com.leclowndu93150.thaumaturge.content.aspect.AspectCombinations;
@@ -232,7 +232,7 @@ public final class BlockEntityResearchTable extends AbstractSyncedBlockEntity im
             if (cell.type() != ResearchNoteData.TYPE_BLANK || !AspectPools.isDiscovered(player, aspect)) {
                 return;
             }
-            boolean mastery = KnowledgeAccess.of(player).isResearchComplete(RESEARCH_MASTERY);
+            boolean mastery = PlayerResearchAccess.of(player).hasCompleted(RESEARCH_MASTERY);
             if (mastery && random.nextFloat() < MASTERY_FREE_CHANCE) {
                 playOrb(level, random);
             } else if (AspectPools.amount(player, aspect) <= 0) {
@@ -253,8 +253,8 @@ public final class BlockEntityResearchTable extends AbstractSyncedBlockEntity im
                 return;
             }
             Holder<IAspect> erased = cell.aspectOrNull();
-            boolean expertise = KnowledgeAccess.of(player).isResearchComplete(RESEARCH_EXPERTISE);
-            boolean mastery = KnowledgeAccess.of(player).isResearchComplete(RESEARCH_MASTERY);
+            boolean expertise = PlayerResearchAccess.of(player).hasCompleted(RESEARCH_EXPERTISE);
+            boolean mastery = PlayerResearchAccess.of(player).hasCompleted(RESEARCH_MASTERY);
             float refundChance = mastery ? MASTERY_REFUND_CHANCE : expertise ? EXPERTISE_REFUND_CHANCE : 0.0F;
             if (erased != null && random.nextFloat() < refundChance) {
                 AspectPools.refund(player, erased, 1);
@@ -351,7 +351,7 @@ public final class BlockEntityResearchTable extends AbstractSyncedBlockEntity im
     }
 
     public void duplicateNote(ServerPlayer player) {
-        if (!KnowledgeAccess.of(player).isResearchComplete(RESEARCH_DUPLICATION) || getLevel() == null) {
+        if (!PlayerResearchAccess.of(player).hasCompleted(RESEARCH_DUPLICATION) || getLevel() == null) {
             return;
         }
         ResearchNoteData data = noteData();

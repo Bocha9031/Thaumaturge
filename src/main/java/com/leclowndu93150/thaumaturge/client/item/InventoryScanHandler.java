@@ -4,7 +4,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectIndexAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanKeys;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanTarget;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanningManager;
@@ -113,7 +113,7 @@ public final class InventoryScanHandler {
 
     private static void renderKnownAspects(
             GuiGraphics graphics, Minecraft minecraft, LocalPlayer player, ItemStack stack, int centreX, int y) {
-        if (!KnowledgeAccess.of(player).isResearchKnown(ScanKeys.item(stack.getItem()))) {
+        if (!PlayerResearchAccess.of(player).knows(ScanKeys.item(stack.getItem()))) {
             return;
         }
         AspectList aspects = AspectIndexAccess.index().of(stack);

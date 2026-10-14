@@ -1,8 +1,7 @@
 package com.leclowndu93150.thaumaturge.network;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchFlag;
 import java.util.List;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -28,15 +27,15 @@ public record ServerboundClearResearchFlagsPayload(ResourceLocation research, Li
     public static void handle(ServerboundClearResearchFlagsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
-            IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
-            if (!knowledge.isResearchKnown(payload.research())) return;
+            var knowledge = PlayerResearchAccess.of(player);
+            if (!knowledge.knows(payload.research())) return;
             boolean changed = false;
             for (ResearchFlag flag : payload.flags()) {
-                if (knowledge.clearResearchFlag(payload.research(), flag)) {
+                if (knowledge.removeFlag(payload.research(), flag)) {
                     changed = true;
                 }
             }
-            if (changed) knowledge.sync(player);
+            if (changed) knowledge.queueSync(player);
         });
     }
 

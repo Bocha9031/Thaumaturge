@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.server.command.admin;
 
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.CategoryComponents;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
@@ -172,7 +172,7 @@ final class ResearchSubcommand implements AdminSubcommand {
                 .toList();
         List<Holder.Reference<IResearchCategory>> categories = CommandSupport.categories(source.registryAccess());
         for (ServerPlayer player : targets) {
-            IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+            var knowledge = PlayerResearchAccess.of(player);
             int total = countComplete(knowledge, entries, null);
             source.sendSuccess(
                     () -> Component.translatable(
@@ -196,13 +196,13 @@ final class ResearchSubcommand implements AdminSubcommand {
     }
 
     private static int countComplete(
-            IPlayerKnowledge knowledge,
+            PlayerResearch knowledge,
             List<Holder.Reference<IResearchEntry>> entries,
             Holder.@Nullable Reference<IResearchCategory> category) {
         int count = 0;
         for (Holder.Reference<IResearchEntry> entry : entries) {
             if ((category == null || entry.value().category().is(category.key()))
-                    && knowledge.isResearchComplete(entry.key().location())) {
+                    && knowledge.hasCompleted(entry.key().location())) {
                 count++;
             }
         }

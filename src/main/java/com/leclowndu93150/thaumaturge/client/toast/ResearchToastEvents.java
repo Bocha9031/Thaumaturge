@@ -1,8 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.toast;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchFlag;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.client.render.research.EntryIconRenderer;
@@ -33,10 +32,10 @@ public final class ResearchToastEvents {
             return;
         }
         tickCounter = 0;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(mc.player);
+        var knowledge = PlayerResearchAccess.of(mc.player);
         List<ResourceLocation> shown = new ArrayList<>();
-        for (ResourceLocation research : knowledge.researchList()) {
-            if (!knowledge.hasResearchFlag(research, ResearchFlag.POPUP)) {
+        for (ResourceLocation research : knowledge.knownEntries()) {
+            if (!knowledge.hasFlag(research, ResearchFlag.POPUP)) {
                 continue;
             }
             mc.player
@@ -49,7 +48,7 @@ public final class ResearchToastEvents {
                                     Component.translatable("gui.thaumaturge.research.complete"),
                                     Component.translatable(holder.value().nameKey()),
                                     EntryIconRenderer.resolveIcon(holder.value(), mc.player.tickCount))));
-            knowledge.clearResearchFlag(research, ResearchFlag.POPUP);
+            knowledge.removeFlag(research, ResearchFlag.POPUP);
             shown.add(research);
         }
         for (ResourceLocation research : shown) {

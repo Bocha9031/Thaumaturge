@@ -1,8 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.misc;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.TTResearchCategories;
 import com.leclowndu93150.thaumaturge.api.warp.WarpHelper;
@@ -89,7 +89,7 @@ public final class ItemCurio extends Item {
                         .withStyle(ChatFormatting.DARK_PURPLE));
                 return InteractionResultHolder.success(player.getItemInHand(hand));
             }
-            if (variant.rites && !KnowledgeAccess.of(player).isResearchKnown(CRIMSON_RITES_RESEARCH)) {
+            if (variant.rites && !PlayerResearchAccess.of(player).knows(CRIMSON_RITES_RESEARCH)) {
                 ResearchManager.complete(serverPlayer, CRIMSON_RITES_RESEARCH);
             }
             INSIGHTS.forEach(insight -> insight.award(serverPlayer));

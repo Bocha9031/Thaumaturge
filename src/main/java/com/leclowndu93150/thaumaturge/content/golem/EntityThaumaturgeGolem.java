@@ -2,7 +2,7 @@ package com.leclowndu93150.thaumaturge.content.golem;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.Thaumaturge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemHands;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemProperties;
@@ -675,7 +675,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
             return InteractionResult.CONSUME;
         }
         if (player.getItemInHand(hand).is(TTItems.GOLEM_BELL.get())) {
-            if (KnowledgeAccess.of(player).isResearchComplete(GOLEM_MASTERY_RESEARCH)) {
+            if (PlayerResearchAccess.of(player).hasCompleted(GOLEM_MASTERY_RESEARCH)) {
                 toggleFollow(player, hand);
             }
             return InteractionResult.CONSUME;

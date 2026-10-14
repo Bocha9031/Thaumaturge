@@ -8,9 +8,9 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectKnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.api.research.IResearchStage;
@@ -100,7 +100,7 @@ class StageIngredientHoverTest {
                 "renderResearchPrereqs",
                 GuiGraphics.class,
                 List.class,
-                IPlayerKnowledge.class,
+                PlayerResearch.class,
                 int.class,
                 int.class,
                 int.class,
@@ -117,7 +117,7 @@ class StageIngredientHoverTest {
                     screen,
                     mock(GuiGraphics.class),
                     List.of(prerequisite),
-                    mock(IPlayerKnowledge.class),
+                    mock(PlayerResearch.class),
                     100,
                     120,
                     Integer.MIN_VALUE,
@@ -150,12 +150,12 @@ class StageIngredientHoverTest {
         AspectList cost = AspectList.ofEntries(List.of(required, new AspectInstance(unknown, 8)));
         KnowledgeReward reward =
                 new KnowledgeReward(KnowledgeType.OBSERVATION, Holder.direct(mock(IResearchCategory.class)), 1);
-        IPlayerKnowledge knowledge = mock(IPlayerKnowledge.class);
+        PlayerResearch knowledge = mock(PlayerResearch.class);
         Method render = EntryDetailScreen.class.getDeclaredMethod(
                 "renderKnowledgeRow",
                 GuiGraphics.class,
                 List.class,
-                IPlayerKnowledge.class,
+                PlayerResearch.class,
                 int.class,
                 int.class,
                 int.class,
@@ -165,13 +165,13 @@ class StageIngredientHoverTest {
         render.setAccessible(true);
 
         try (var notes = mockStatic(ResearchNotes.class);
-                var access = mockStatic(KnowledgeAccess.class);
+                var access = mockStatic(PlayerResearchAccess.class);
                 var pools = mockStatic(AspectPools.class);
                 var tags = mockStatic(AspectTagRenderer.class);
                 var blend = mockStatic(GuiBlend.class);
                 var discovery = mockStatic(AspectKnowledgeAccess.class)) {
             notes.when(() -> ResearchNotes.stageObservationCost(chapter, stage)).thenReturn(cost);
-            access.when(() -> KnowledgeAccess.of(minecraft.player)).thenReturn(knowledge);
+            access.when(() -> PlayerResearchAccess.of(minecraft.player)).thenReturn(knowledge);
             pools.when(() -> AspectPools.isDiscovered(minecraft.player, known)).thenReturn(true);
             discovery.when(() -> AspectKnowledgeAccess.isKnown(known)).thenReturn(true);
 

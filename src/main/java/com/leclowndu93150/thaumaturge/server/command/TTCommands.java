@@ -6,7 +6,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTrait;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
@@ -29,7 +29,6 @@ import com.leclowndu93150.thaumaturge.content.effect.StreamPathfinder;
 import com.leclowndu93150.thaumaturge.content.entity.EntityFluxRift;
 import com.leclowndu93150.thaumaturge.content.entity.ThaumicSlime;
 import com.leclowndu93150.thaumaturge.content.entity.champion.ChampionHelper;
-import com.leclowndu93150.thaumaturge.content.research.PlayerKnowledge;
 import com.leclowndu93150.thaumaturge.content.research.ResearchGrants;
 import com.leclowndu93150.thaumaturge.content.research.ResearchManager;
 import com.leclowndu93150.thaumaturge.content.research.link.ResearchLinkData;
@@ -419,11 +418,11 @@ public final class TTCommands {
 
     private static int resetResearch(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        int cleared = knowledge.researchList().size();
-        knowledge.clear();
+        var knowledge = PlayerResearchAccess.of(player);
+        int cleared = knowledge.knownEntries().size();
+        knowledge.wipe();
         ResearchManager.applyAutoUnlock(player);
-        knowledge.sync(player);
+        knowledge.queueSync(player);
         success(source, "research.reset", cleared);
         return Command.SINGLE_SUCCESS;
     }
@@ -453,16 +452,16 @@ public final class TTCommands {
     private static int revokeGate(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ResourceKey<IResearchEntry> key = registryKey(ctx, "entry", IResearchEntry.REGISTRY_KEY, ERROR_INVALID_GATE);
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
+        var knowledge = PlayerResearchAccess.of(player);
         String id = key.location().toString();
-        if (!knowledge.isResearchKnown(key.location())) {
+        if (!knowledge.knows(key.location())) {
             success(ctx.getSource(), "research.not_known", id);
             return Command.SINGLE_SUCCESS;
         }
-        if (!knowledge.removeResearch(key.location())) {
+        if (!knowledge.forget(key.location())) {
             return failure(ctx.getSource(), "research.revoke_failed", id);
         }
-        knowledge.sync(player);
+        knowledge.queueSync(player);
         success(ctx.getSource(), "research.revoked", id);
         return Command.SINGLE_SUCCESS;
     }
@@ -474,7 +473,7 @@ public final class TTCommands {
                 .lookupOrThrow(IResearchEntry.REGISTRY_KEY)
                 .getOrThrow(key);
         String id = key.location().toString();
-        if (KnowledgeAccess.of(player).isResearchComplete(key.location())) {
+        if (PlayerResearchAccess.of(player).hasCompleted(key.location())) {
             success(ctx.getSource(), "research.already_complete", id);
             return Command.SINGLE_SUCCESS;
         }

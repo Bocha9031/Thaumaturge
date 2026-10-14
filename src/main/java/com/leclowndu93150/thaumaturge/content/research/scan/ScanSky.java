@@ -1,8 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.research.scan;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.scan.IScannable;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanKeys;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanTarget;
@@ -68,7 +67,7 @@ public final class ScanSky implements IScannable {
 
     private static void observe(ServerPlayer player, int worldDay, String body, CelestialBody note) {
         ResourceLocation key = ScanKeys.celestial(worldDay, body);
-        if (KnowledgeAccess.of(player).isResearchKnown(key)) {
+        if (PlayerResearchAccess.of(player).knows(key)) {
             player.displayClientMessage(Component.translatable("message.thaumaturge.celestial.already_studied"), true);
             return;
         }
@@ -85,19 +84,19 @@ public final class ScanSky implements IScannable {
     }
 
     private static void cleanResearch(ServerPlayer player, int worldDay) {
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+        var knowledge = PlayerResearchAccess.of(player);
         String dayPrefix = ScanKeys.celestialDayPrefix(worldDay);
         List<ResourceLocation> stale = new ArrayList<>();
-        for (ResourceLocation key : knowledge.researchList()) {
+        for (ResourceLocation key : knowledge.knownEntries()) {
             if (ScanKeys.isCelestial(key) && !key.getPath().startsWith(dayPrefix)) {
                 stale.add(key);
             }
         }
         for (ResourceLocation key : stale) {
-            knowledge.removeResearch(key);
+            knowledge.forget(key);
         }
         if (!stale.isEmpty() && knowledge instanceof PlayerKnowledge concrete) {
-            concrete.sync(player);
+            concrete.queueSync(player);
         }
     }
 
@@ -105,7 +104,7 @@ public final class ScanSky implements IScannable {
         return !(player.getXRot() > 0.0F)
                 && player.level().canSeeSky(player.blockPosition().above())
                 && player.level().dimension() == Level.OVERWORLD
-                && KnowledgeAccess.of(player).isResearchComplete(NODES_RESEARCH);
+                && PlayerResearchAccess.of(player).hasCompleted(NODES_RESEARCH);
     }
 
     private static boolean isCarrying(Player player, Item item) {

@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.google.gson.JsonObject;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.content.aura.pressure.FluxPressureEvents;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFluxAuraFloor;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFluxOutbreaks;
@@ -214,12 +214,11 @@ class AuraCompatibilityTest {
         attach(new ChunkPos(0, 0), data);
         assertTrue(AuraManager.isPreservationDue(level, null, BlockPos.ZERO));
         Player player = mock(Player.class);
-        IPlayerKnowledge knowledge = mock(IPlayerKnowledge.class);
-        try (var access = mockStatic(KnowledgeAccess.class)) {
-            access.when(() -> KnowledgeAccess.of(player)).thenReturn(knowledge);
+        PlayerResearch knowledge = mock(PlayerResearch.class);
+        try (var access = mockStatic(PlayerResearchAccess.class)) {
+            access.when(() -> PlayerResearchAccess.of(player)).thenReturn(knowledge);
             assertFalse(AuraManager.isPreservationDue(level, player, BlockPos.ZERO));
-            when(knowledge.isResearchComplete(AuraManager.AURA_PRESERVE_RESEARCH))
-                    .thenReturn(true);
+            when(knowledge.hasCompleted(AuraManager.AURA_PRESERVE_RESEARCH)).thenReturn(true);
             assertTrue(AuraManager.isPreservationDue(level, player, BlockPos.ZERO));
             data.setVis(10);
             assertFalse(AuraManager.isPreservationDue(level, player, BlockPos.ZERO));

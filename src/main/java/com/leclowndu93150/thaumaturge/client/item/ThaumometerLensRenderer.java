@@ -3,7 +3,7 @@ package com.leclowndu93150.thaumaturge.client.item;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectIndexAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanKeys;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanTarget;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanningManager;
@@ -65,7 +65,7 @@ public final class ThaumometerLensRenderer {
                         node.isEnergized()
                                 ? "gui.thaumaturge.thaumometer.node_energized"
                                 : "gui.thaumaturge.thaumometer.node");
-                if (KnowledgeAccess.of(player).isResearchKnown(ScanNode.researchKey(mc.level, pos))) {
+                if (PlayerResearchAccess.of(player).knows(ScanNode.researchKey(mc.level, pos))) {
                     Component type = Component.translatable(
                             "nodetype.thaumaturge." + node.getNodeType().getSerializedName());
                     nodeLine = node.getNodeModifier() == null
@@ -83,19 +83,19 @@ public final class ThaumometerLensRenderer {
                 name = state.getFluidState().isEmpty() && !pick.isEmpty()
                         ? pick.getHoverName()
                         : state.getBlock().getName();
-                if (!pick.isEmpty() && KnowledgeAccess.of(player).isResearchKnown(ScanKeys.item(pick.getItem()))) {
+                if (!pick.isEmpty() && PlayerResearchAccess.of(player).knows(ScanKeys.item(pick.getItem()))) {
                     aspects = AspectIndexAccess.index().of(pick);
                 }
             }
         } else if (target instanceof ItemEntity itemEntity) {
             ItemStack stack = itemEntity.getItem();
             name = stack.getHoverName();
-            if (KnowledgeAccess.of(player).isResearchKnown(ScanKeys.item(stack.getItem()))) {
+            if (PlayerResearchAccess.of(player).knows(ScanKeys.item(stack.getItem()))) {
                 aspects = AspectIndexAccess.index().of(stack);
             }
         } else if (target instanceof Entity entity) {
             name = entity.getName();
-            if (KnowledgeAccess.of(player).isResearchKnown(ScanKeys.entity(entity.getType()))) {
+            if (PlayerResearchAccess.of(player).knows(ScanKeys.entity(entity.getType()))) {
                 aspects = EntityAspects.of(entity);
             }
         }

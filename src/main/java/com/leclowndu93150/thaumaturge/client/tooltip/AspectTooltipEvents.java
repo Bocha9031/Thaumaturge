@@ -4,7 +4,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectChipsTooltip;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectIndexAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanKeys;
 import com.mojang.datafixers.util.Either;
 import net.minecraft.client.Minecraft;
@@ -24,8 +24,8 @@ public final class AspectTooltipEvents {
         }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null
-                || !KnowledgeAccess.of(mc.player)
-                        .isResearchKnown(ScanKeys.item(event.getItemStack().getItem()))) {
+                || !PlayerResearchAccess.of(mc.player)
+                        .knows(ScanKeys.item(event.getItemStack().getItem()))) {
             return;
         }
         AspectList aspects = AspectIndexAccess.index().of(event.getItemStack());

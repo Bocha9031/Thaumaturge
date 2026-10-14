@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.api.research;
 
 import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import net.minecraft.resources.ResourceLocation;
@@ -41,11 +42,17 @@ public record ResearchParent(ResourceLocation id, int stage, boolean inherit) {
      * @param knowledge the player knowledge to test
      * @return {@code true} when satisfied
      */
-    public boolean isSatisfiedBy(IPlayerKnowledge knowledge) {
-        if (knowledge.isResearchComplete(id)) {
+    public boolean isSatisfiedBy(PlayerResearch knowledge) {
+        if (knowledge.hasCompleted(id)) {
             return true;
         }
-        return stage > 0 && knowledge.isResearchKnown(id, stage - 1);
+        return stage > 0 && knowledge.hasReachedStage(id, stage - 1);
+    }
+
+    /** @deprecated use {@link #isSatisfiedBy(PlayerResearch)}. */
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    public boolean isSatisfiedBy(IPlayerKnowledge knowledge) {
+        return isSatisfiedBy((PlayerResearch) knowledge);
     }
 
     private static DataResult<ResearchParent> parse(String value) {

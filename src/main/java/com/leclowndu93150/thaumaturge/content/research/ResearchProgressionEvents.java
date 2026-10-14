@@ -1,8 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.research;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.crucible.CrucibleEvent;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
@@ -81,12 +81,12 @@ public final class ResearchProgressionEvents {
                 .map(ResourceKey::location)
                 .orElse(null);
         if (itemId == null) return;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
         ResourceLocation craftedKey = ResearchManager.craftedKey(itemId);
-        if (knowledge.isResearchKnown(craftedKey)) return;
+        if (knowledge.knows(craftedKey)) return;
         if (!isCraftReference(player, crafted)) return;
-        knowledge.addResearch(craftedKey);
-        knowledge.sync(player);
+        knowledge.learn(craftedKey);
+        knowledge.queueSync(player);
     }
 
     private static boolean isCraftReference(ServerPlayer player, ItemStack crafted) {
@@ -98,37 +98,37 @@ public final class ResearchProgressionEvents {
         if (!(event.getPlayer() instanceof ServerPlayer player)) return;
         ItemStack stack = event.getOriginalStack();
         recordCrafted(player, stack);
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        if (stack.is(TTItems.ESSENTIA_CRYSTAL.get()) && !knowledge.isResearchKnown(GOT_CRYSTALS)) {
-            knowledge.addResearch(GOT_CRYSTALS);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        if (stack.is(TTItems.ESSENTIA_CRYSTAL.get()) && !knowledge.knows(GOT_CRYSTALS)) {
+            knowledge.learn(GOT_CRYSTALS);
             knowledge.markComplete(GOT_CRYSTALS);
-            knowledge.sync(player);
+            knowledge.queueSync(player);
             player.sendSystemMessage(Component.translatable("message.thaumaturge.discovery.crystals")
                     .withStyle(ChatFormatting.DARK_PURPLE));
-            if (ThaumaturgeCommonConfig.NO_SLEEP.get() && !knowledge.isResearchKnown(GOT_DREAM)) {
+            if (ThaumaturgeCommonConfig.NO_SLEEP.get() && !knowledge.knows(GOT_DREAM)) {
                 giveDreamJournal(player, knowledge);
             }
         }
-        if (stack.is(TTItems.THAUMONOMICON.get()) && !knowledge.isResearchKnown(GOT_THAUMONOMICON)) {
-            knowledge.addResearch(GOT_THAUMONOMICON);
+        if (stack.is(TTItems.THAUMONOMICON.get()) && !knowledge.knows(GOT_THAUMONOMICON)) {
+            knowledge.learn(GOT_THAUMONOMICON);
             knowledge.markComplete(GOT_THAUMONOMICON);
-            knowledge.sync(player);
+            knowledge.queueSync(player);
         }
     }
 
     @SubscribeEvent
     public static void onWakeUp(PlayerWakeUpEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        if (knowledge.isResearchKnown(GOT_CRYSTALS) && !knowledge.isResearchKnown(GOT_DREAM)) {
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        if (knowledge.knows(GOT_CRYSTALS) && !knowledge.knows(GOT_DREAM)) {
             giveDreamJournal(player, knowledge);
         }
     }
 
     private static void giveDreamJournal(ServerPlayer player, PlayerKnowledge knowledge) {
-        knowledge.addResearch(GOT_DREAM);
+        knowledge.learn(GOT_DREAM);
         knowledge.markComplete(GOT_DREAM);
-        knowledge.sync(player);
+        knowledge.queueSync(player);
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
         book.set(
                 DataComponents.WRITTEN_BOOK_CONTENT,
@@ -153,13 +153,13 @@ public final class ResearchProgressionEvents {
     public static void onFireDamage(LivingDamageEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (!event.getSource().is(DamageTypeTags.IS_FIRE)) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
-        if (!knowledge.isResearchKnown(BASE_AUROMANCY, 1) && !knowledge.isResearchComplete(BASE_AUROMANCY)) return;
-        if (knowledge.isResearchKnown(F_ONFIRE)) return;
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
+        if (!knowledge.hasReachedStage(BASE_AUROMANCY, 1) && !knowledge.hasCompleted(BASE_AUROMANCY)) return;
+        if (knowledge.knows(F_ONFIRE)) return;
         PlayerKnowledge pk = (PlayerKnowledge) knowledge;
-        pk.addResearch(F_ONFIRE);
+        pk.learn(F_ONFIRE);
         pk.markComplete(F_ONFIRE);
-        pk.sync(player);
+        pk.queueSync(player);
         sendActionBar(player, "message.thaumaturge.discovery.on_fire");
     }
 
@@ -168,13 +168,13 @@ public final class ResearchProgressionEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         ResourceLocation research = projectileResearch(event.getSource().getDirectEntity());
         if (research == null) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
-        if (!knowledge.isResearchKnown(FOCUS_PROJECTILE, 1) && !knowledge.isResearchComplete(FOCUS_PROJECTILE)) return;
-        if (knowledge.isResearchKnown(research)) return;
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
+        if (!knowledge.hasReachedStage(FOCUS_PROJECTILE, 1) && !knowledge.hasCompleted(FOCUS_PROJECTILE)) return;
+        if (knowledge.knows(research)) return;
         PlayerKnowledge pk = (PlayerKnowledge) knowledge;
-        pk.addResearch(research);
+        pk.learn(research);
         pk.markComplete(research);
-        pk.sync(player);
+        pk.queueSync(player);
         sendActionBar(player, "message.thaumaturge.discovery.projectile");
     }
 
@@ -189,10 +189,10 @@ public final class ResearchProgressionEvents {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.tickCount == 0) return;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        boolean auromancyInProgress = knowledge.isResearchKnown(UNLOCK_AUROMANCY)
-                && !knowledge.isResearchKnown(UNLOCK_AUROMANCY, 1)
-                && !knowledge.isResearchComplete(UNLOCK_AUROMANCY);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        boolean auromancyInProgress = knowledge.knows(UNLOCK_AUROMANCY)
+                && !knowledge.hasReachedStage(UNLOCK_AUROMANCY, 1)
+                && !knowledge.hasCompleted(UNLOCK_AUROMANCY);
         if (auromancyInProgress) {
             milestone(
                     player,
@@ -251,10 +251,10 @@ public final class ResearchProgressionEvents {
 
     private static void milestone(
             ServerPlayer player, PlayerKnowledge knowledge, ResourceLocation id, String messageKey, boolean condition) {
-        if (!condition || knowledge.isResearchKnown(id)) return;
-        knowledge.addResearch(id);
+        if (!condition || knowledge.knows(id)) return;
+        knowledge.learn(id);
         knowledge.markComplete(id);
-        knowledge.sync(player);
+        knowledge.queueSync(player);
         if (messageKey != null) {
             sendActionBar(player, messageKey);
         }

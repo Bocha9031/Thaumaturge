@@ -4,7 +4,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectCapabilities;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaCapabilities;
 import com.leclowndu93150.thaumaturge.api.essentia.IAspectQuery;
 import com.leclowndu93150.thaumaturge.api.items.GogglesAccess;
@@ -64,7 +64,7 @@ public final class GogglesWorldOverlay {
         BlockPos pos = hit.getBlockPos();
         BlockEntity be = mc.level.getBlockEntity(pos);
         if (be instanceof BlockEntityNode node
-                && !KnowledgeAccess.of(mc.player).isResearchKnown(ScanNode.researchKey(mc.level, pos))) {
+                && !PlayerResearchAccess.of(mc.player).knows(ScanNode.researchKey(mc.level, pos))) {
             resetAnimation();
             return;
         }

@@ -1,8 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.pech;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.content.research.KnowledgeGrant;
 import com.leclowndu93150.thaumaturge.content.research.ResearchManager;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
@@ -43,7 +43,7 @@ public final class PechWandItem extends Item {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        if (!KnowledgeAccess.of(player).isResearchKnown(PREREQUISITE)) {
+        if (!PlayerResearchAccess.of(player).knows(PREREQUISITE)) {
             if (player instanceof ServerPlayer) {
                 player.sendSystemMessage(Component.translatable("message.thaumaturge.pech_wand.unfathomable")
                         .withStyle(ChatFormatting.RED));
@@ -70,7 +70,7 @@ public final class PechWandItem extends Item {
                         (float) (STUDY_PITCH + scholar.getRandom().triangle(0.0F, STUDY_PITCH_SPREAD)));
         scholar.sendSystemMessage(Component.translatable("message.thaumaturge.discovery.pech_wand")
                 .withStyle(ChatFormatting.DARK_PURPLE));
-        if (!KnowledgeAccess.of(scholar).isResearchKnown(REVEALED_RESEARCH)) {
+        if (!PlayerResearchAccess.of(scholar).knows(REVEALED_RESEARCH)) {
             ResearchManager.complete(scholar, REVEALED_RESEARCH);
         }
         INSIGHTS.forEach(insight -> insight.award(scholar));

@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.api.research;
 
 import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,27 +61,37 @@ public final class ResearchUnlockConditions {
                 .add(new Registered(condition, lockedMessage));
     }
 
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean passes(Player player, IPlayerKnowledge knowledge, ResourceLocation entry) {
+        return passes(player, (PlayerResearch) knowledge, entry);
+    }
+
+    public static boolean passes(Player player, PlayerResearch knowledge, ResourceLocation entry) {
         List<Registered> conditions = CONDITIONS.get(entry);
         if (conditions == null) {
             return true;
         }
         for (Registered r : conditions) {
-            if (!r.condition().test(player, knowledge)) {
+            if (!r.condition().test(player, IPlayerKnowledge.viewOf(knowledge))) {
                 return false;
             }
         }
         return true;
     }
 
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static List<Component> lockedMessages(Player player, IPlayerKnowledge knowledge, ResourceLocation entry) {
+        return lockedMessages(player, (PlayerResearch) knowledge, entry);
+    }
+
+    public static List<Component> lockedMessages(Player player, PlayerResearch knowledge, ResourceLocation entry) {
         List<Registered> conditions = CONDITIONS.get(entry);
         if (conditions == null) {
             return List.of();
         }
         List<Component> messages = new ArrayList<>();
         for (Registered r : conditions) {
-            if (r.lockedMessage() != null && !r.condition().test(player, knowledge)) {
+            if (r.lockedMessage() != null && !r.condition().test(player, IPlayerKnowledge.viewOf(knowledge))) {
                 messages.add(r.lockedMessage());
             }
         }

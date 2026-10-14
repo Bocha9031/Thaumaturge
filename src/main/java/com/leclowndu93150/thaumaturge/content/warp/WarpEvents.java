@@ -1,8 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.warp;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.warp.WarpType;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.entity.EntityMindSpider;
@@ -191,17 +190,17 @@ public final class WarpEvents {
     }
 
     private static void checkWarpMilestones(ServerPlayer player, int actualWarp) {
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+        var knowledge = PlayerResearchAccess.of(player);
         if (actualWarp > BATH_SALTS_WARP_THRESHOLD
-                && !knowledge.isResearchKnown(BATH_SALTS_ENTRY)
-                && !knowledge.isResearchKnown(BATHSALTS_FLAG)) {
+                && !knowledge.knows(BATH_SALTS_ENTRY)
+                && !knowledge.knows(BATHSALTS_FLAG)) {
             WarpManager.sendActionBar(player, "warp.thaumaturge.text.8");
             ResearchManager.complete(player, BATHSALTS_FLAG);
         }
-        if (actualWarp > ELDRITCH_MINOR_WARP_THRESHOLD && !knowledge.isResearchKnown(ELDRITCH_MINOR_FLAG)) {
+        if (actualWarp > ELDRITCH_MINOR_WARP_THRESHOLD && !knowledge.knows(ELDRITCH_MINOR_FLAG)) {
             ResearchManager.complete(player, ELDRITCH_MINOR_FLAG);
         }
-        if (actualWarp > ELDRITCH_MAJOR_WARP_THRESHOLD && !knowledge.isResearchKnown(ELDRITCH_MAJOR_FLAG)) {
+        if (actualWarp > ELDRITCH_MAJOR_WARP_THRESHOLD && !knowledge.knows(ELDRITCH_MAJOR_FLAG)) {
             ResearchManager.complete(player, ELDRITCH_MAJOR_FLAG);
         }
     }

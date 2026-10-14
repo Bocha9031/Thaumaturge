@@ -11,7 +11,7 @@ import net.neoforged.bus.api.ICancellableEvent;
  * Base class for research-related events fired on the {@link net.neoforged.neoforge.common.NeoForge#EVENT_BUS NeoForge event bus}.
  *
  * <p>Concrete events are cancellable. Cancelling a research event prevents the corresponding
- * mutation from being applied to the player's {@link com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge knowledge record}.
+ * mutation from being applied to the player's {@link com.leclowndu93150.thaumaturge.api.capability.PlayerResearch research progress}.
  *
  * @since 1.0.0
  */

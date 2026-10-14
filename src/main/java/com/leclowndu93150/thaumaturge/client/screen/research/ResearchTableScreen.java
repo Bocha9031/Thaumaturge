@@ -5,7 +5,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectComponents;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.client.render.GuiBlend;
 import com.leclowndu93150.thaumaturge.client.render.aspect.AspectTagRenderer;
 import com.leclowndu93150.thaumaturge.client.screen.AbstractTTContainerScreen;
@@ -390,8 +390,8 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
         ResearchNoteData data = noteData();
         if (data == null
                 || !data.complete()
-                || !KnowledgeAccess.of(minecraft.player)
-                        .isResearchComplete(BlockEntityResearchTable.RESEARCH_DUPLICATION)) {
+                || !PlayerResearchAccess.of(minecraft.player)
+                        .hasCompleted(BlockEntityResearchTable.RESEARCH_DUPLICATION)) {
             return;
         }
         graphics.blit(
@@ -435,8 +435,8 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
         ResearchNoteData data = noteData();
         return data != null
                 && data.complete()
-                && KnowledgeAccess.of(minecraft.player)
-                        .isResearchComplete(BlockEntityResearchTable.RESEARCH_DUPLICATION);
+                && PlayerResearchAccess.of(minecraft.player)
+                        .hasCompleted(BlockEntityResearchTable.RESEARCH_DUPLICATION);
     }
 
     private List<Holder<IAspect>> discoveredCompounds() {
@@ -763,8 +763,8 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
                 if (Minecraft.getInstance().player != null)
                     if (Minecraft.getInstance().player.isShiftKeyDown()
                             && !palette.value().isPrimal()
-                            && KnowledgeAccess.of(minecraft.player)
-                                    .isResearchComplete(BlockEntityResearchTable.RESEARCH_MASTERY)) {
+                            && PlayerResearchAccess.of(minecraft.player)
+                                    .hasCompleted(BlockEntityResearchTable.RESEARCH_MASTERY)) {
                         List<Holder<IAspect>> components = palette.value().components();
                         if (components.size() == 2) {
                             select1 = components.get(0);
@@ -939,8 +939,8 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
         ResearchNoteData data = noteData();
         if (data == null
                 || !data.complete()
-                || !KnowledgeAccess.of(minecraft.player)
-                        .isResearchComplete(BlockEntityResearchTable.RESEARCH_DUPLICATION)) {
+                || !PlayerResearchAccess.of(minecraft.player)
+                        .hasCompleted(BlockEntityResearchTable.RESEARCH_DUPLICATION)) {
             return false;
         }
         PacketDistributor.sendToServer(new ServerboundTableDuplicatePayload(menu.pos()));

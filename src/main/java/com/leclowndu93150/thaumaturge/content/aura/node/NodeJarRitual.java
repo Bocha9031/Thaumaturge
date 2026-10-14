@@ -3,7 +3,7 @@ package com.leclowndu93150.thaumaturge.content.aura.node;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.misc.TTActionBar;
@@ -51,7 +51,7 @@ public final class NodeJarRitual {
         if (node.isJarring()) {
             return true;
         }
-        if (!KnowledgeAccess.of(player).isResearchKnown(RESEARCH_NODE_JAR)) {
+        if (!PlayerResearchAccess.of(player).knows(RESEARCH_NODE_JAR)) {
             TTActionBar.sendPurple(player, "message.thaumaturge.node_jar.no_research");
             return true;
         }

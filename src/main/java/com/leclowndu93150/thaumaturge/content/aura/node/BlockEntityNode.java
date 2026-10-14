@@ -8,7 +8,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.aura.IVisRelaySource;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
 import com.leclowndu93150.thaumaturge.api.taint.TaintApi;
@@ -1183,17 +1183,17 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             return false;
         }
         int tap = 1;
-        if (KnowledgeAccess.of(player).isResearchKnown(RESEARCH_NODE_TAPPER_1)) {
+        if (PlayerResearchAccess.of(player).knows(RESEARCH_NODE_TAPPER_1)) {
             tap++;
         }
-        if (KnowledgeAccess.of(player).isResearchKnown(RESEARCH_NODE_TAPPER_2)) {
+        if (PlayerResearchAccess.of(player).knows(RESEARCH_NODE_TAPPER_2)) {
             tap++;
         }
         WandParts parts = WandVisHelper.getParts(wandStack);
         boolean starterWand = parts.rod() == TTWandParts.ROD_WOOD.get() && parts.cap() == TTWandParts.CAP_IRON.get();
         boolean preserve = !player.isShiftKeyDown()
                 && !starterWand
-                && KnowledgeAccess.of(player).isResearchKnown(RESEARCH_NODE_PRESERVE);
+                && PlayerResearchAccess.of(player).knows(RESEARCH_NODE_PRESERVE);
         RandomSource random = serverLevel.getRandom();
         List<Holder<IAspect>> candidates = new ArrayList<>();
         int min = preserve ? 1 : 0;

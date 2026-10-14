@@ -7,9 +7,9 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectKnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchFlag;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
@@ -414,12 +414,12 @@ public final class EntryDetailScreen extends AbstractTTScreen {
 
     private List<ResearchAddendum> unlockedAddenda() {
         if (!isComplete || minecraft == null || minecraft.player == null) return List.of();
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         List<ResearchAddendum> unlocked = new ArrayList<>();
         for (ResearchAddendum addendum : entry.value().addenda()) {
             boolean met = true;
             for (ResourceLocation required : addendum.requiredResearch()) {
-                if (!knowledge.isResearchComplete(required)) {
+                if (!knowledge.hasCompleted(required)) {
                     met = false;
                     break;
                 }
@@ -454,7 +454,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
 
     private int activeKnowledgeRowCount() {
         if (minecraft == null || minecraft.player == null) return 0;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         HolderLookup.Provider registries = minecraft.player.registryAccess();
         Optional<? extends HolderLookup.RegistryLookup<IResearchCategory>> lookupOpt =
                 registries.lookup(IResearchCategory.REGISTRY_KEY);
@@ -466,7 +466,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
             for (Holder.Reference<IResearchCategory> ref : lookup.listElements().toList()) {
                 Optional<ResourceKey<IResearchCategory>> keyOpt = ref.unwrapKey();
                 if (keyOpt.isEmpty()) continue;
-                int raw = knowledge.rawKnowledge(type, keyOpt.get());
+                int raw = knowledge.knowledgePoints(type, keyOpt.get());
                 if (raw > 0) {
                     row = true;
                     break;
@@ -479,10 +479,10 @@ public final class EntryDetailScreen extends AbstractTTScreen {
 
     private int currentStageIndex() {
         if (minecraft == null || minecraft.player == null) return 0;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
-        isComplete = knowledge.isResearchComplete(entryId);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
+        isComplete = knowledge.hasCompleted(entryId);
         int total = entry.value().stages().size();
-        int rawStage = knowledge.researchStage(entryId);
+        int rawStage = knowledge.stageOf(entryId);
         if (rawStage < 0) rawStage = 0;
         if (isComplete) {
             rawStage = total - 1;
@@ -491,7 +491,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
         }
         if (hold
                 && (isComplete
-                        || knowledge.researchStage(entryId) > lastStage
+                        || knowledge.stageOf(entryId) > lastStage
                         || minecraft.player.level().getGameTime() - holdSince > HOLD_TIMEOUT_TICKS)) {
             hold = false;
         }
@@ -718,7 +718,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
         if (currentPage > 0) return;
         boolean completedStage = completedStageView();
         Player player = minecraft.player;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
         int reqY = sh + REQ_TOP_Y_OFFSET;
         boolean hasAny = false;
         long gameTime = player.level().getGameTime();
@@ -822,7 +822,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
                 }
             }
         } else if (!completedStage) {
-            int stageNow = KnowledgeAccess.of(minecraft.player).researchStage(entryId);
+            int stageNow = PlayerResearchAccess.of(minecraft.player).stageOf(entryId);
             if (autoAdvanceRequestedStage != stageNow) {
                 autoAdvanceRequestedStage = stageNow;
                 PacketDistributor.sendToServer(new ServerboundAdvanceStagePayload(entryId));
@@ -837,7 +837,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
 
     private boolean knowsResearch(ResourceLocation id) {
         if (minecraft == null || minecraft.player == null) return false;
-        return KnowledgeAccess.of(minecraft.player).isResearchComplete(id);
+        return PlayerResearchAccess.of(minecraft.player).hasCompleted(id);
     }
 
     private void renderWarpIndicator(GuiGraphics graphics, IResearchStage stage, int x, int y, int mouseX, int mouseY) {
@@ -948,7 +948,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
             boolean met = completedStage
                     || (obtain
                             ? countMatching(player, req) >= req.amount()
-                            : ResearchManager.isCraftSatisfied(player, KnowledgeAccess.of(player), req));
+                            : ResearchManager.isCraftSatisfied(player, PlayerResearchAccess.of(player), req));
             satisfied[i] = met;
             if (met) {
                 renderCheckmark(graphics, slotX, y);
@@ -967,7 +967,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
     private void renderResearchPrereqs(
             GuiGraphics graphics,
             List<ResourceLocation> prereqs,
-            IPlayerKnowledge knowledge,
+            PlayerResearch knowledge,
             int x,
             int y,
             int mouseX,
@@ -987,7 +987,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
             } else {
                 drawPrereqIcon(graphics, slotX, y, prereq);
             }
-            boolean met = completedStage || knowledge.isResearchComplete(prereq);
+            boolean met = completedStage || knowledge.hasCompleted(prereq);
             satisfied[i] = met;
             if (met) {
                 renderCheckmark(graphics, slotX, y);
@@ -1115,7 +1115,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
     private void renderKnowledgeRow(
             GuiGraphics graphics,
             List<KnowledgeReward> rewards,
-            IPlayerKnowledge knowledge,
+            PlayerResearch knowledge,
             int x,
             int y,
             int mouseX,
@@ -1138,7 +1138,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
             if (reward.type() == KnowledgeType.THEORY) {
                 ResourceLocation learnKey = ResearchNoteData.learnKey(entryId, theoryOrdinal);
                 theoryOrdinal++;
-                met = completedStage || knowledge.isResearchKnown(learnKey);
+                met = completedStage || knowledge.knows(learnKey);
                 ItemStack note = new ItemStack(TTItems.RESEARCH_NOTE.get());
                 renderedItemHits.add(new ItemHit(note, slotX, y));
                 graphics.renderItem(note, slotX, y);
@@ -1825,7 +1825,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
 
     private boolean hasAnyKnowledge() {
         if (minecraft == null || minecraft.player == null) return false;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         Optional<? extends HolderLookup.RegistryLookup<IResearchCategory>> lookupOpt =
                 minecraft.player.registryAccess().lookup(IResearchCategory.REGISTRY_KEY);
         if (lookupOpt.isEmpty()) return false;
@@ -1834,7 +1834,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
             Optional<ResourceKey<IResearchCategory>> keyOpt = ref.unwrapKey();
             if (keyOpt.isEmpty()) continue;
             for (KnowledgeType type : KnowledgeType.values()) {
-                if (knowledge.rawKnowledge(type, keyOpt.get()) > 0) return true;
+                if (knowledge.knowledgePoints(type, keyOpt.get()) > 0) return true;
             }
         }
         return false;
@@ -1842,7 +1842,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
 
     private void drawKnowledges(GuiGraphics graphics, int x, int y, int mouseX, int mouseY, boolean inpage) {
         if (minecraft == null || minecraft.player == null) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         HolderLookup.Provider registries = minecraft.player.registryAccess();
         Optional<? extends HolderLookup.RegistryLookup<IResearchCategory>> lookupOpt =
                 registries.lookup(IResearchCategory.REGISTRY_KEY);
@@ -1861,8 +1861,8 @@ public final class EntryDetailScreen extends AbstractTTScreen {
                 Optional<ResourceKey<IResearchCategory>> keyOpt = ref.unwrapKey();
                 if (keyOpt.isEmpty()) continue;
                 ResourceKey<IResearchCategory> categoryKey = keyOpt.get();
-                int amt = knowledge.knowledge(type, categoryKey);
-                int raw = knowledge.rawKnowledge(type, categoryKey);
+                int amt = knowledge.knowledgeLevel(type, categoryKey);
+                int raw = knowledge.knowledgePoints(type, categoryKey);
                 int par = type.progression() > 0 ? raw % type.progression() : 0;
                 if (amt > 0 || par > 0) {
                     drewSomething = true;
@@ -2364,7 +2364,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
                 if (hitStageComplete(mx, my, stage)) {
                     PacketDistributor.sendToServer(new ServerboundAdvanceStagePayload(entryId));
                     playSound(TTSounds.WRITE.get(), 0.66F, 1.0F);
-                    lastStage = KnowledgeAccess.of(minecraft.player).researchStage(entryId);
+                    lastStage = PlayerResearchAccess.of(minecraft.player).stageOf(entryId);
                     holdSince = minecraft.player.level().getGameTime();
                     hold = true;
                     return true;
@@ -2542,7 +2542,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
         int spacing = knowledgeSpacing(rewards.size());
         int innerX = sw + SLOT_INNER_OFFSET_X;
         int[] slotXs = knowledgeSlotXs(rewards, innerX, spacing);
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         int theoryOrdinal = ResearchNotes.theoryRowsBefore(entry.value(), displayedStageIndex());
         for (int i = 0; i < rewards.size(); i++) {
             if (rewards.get(i).type() != KnowledgeType.THEORY) {
@@ -2554,7 +2554,7 @@ public final class EntryDetailScreen extends AbstractTTScreen {
                 continue;
             }
             ResourceLocation learnKey = ResearchNoteData.learnKey(entryId, ordinal);
-            if (knowledge.isResearchKnown(learnKey) || ResearchNotes.hasNoteFor(minecraft.player, learnKey)) {
+            if (knowledge.knows(learnKey) || ResearchNotes.hasNoteFor(minecraft.player, learnKey)) {
                 return false;
             }
             PacketDistributor.sendToServer(new ServerboundObtainNotePayload(entryId, ordinal));
@@ -2566,14 +2566,14 @@ public final class EntryDetailScreen extends AbstractTTScreen {
     private boolean hitStageComplete(double mx, double my, IResearchStage stage) {
         if (minecraft == null || minecraft.player == null) return false;
         Player player = minecraft.player;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
         boolean[] researchSatisfied = new boolean[stage.requiredResearch().size()];
         boolean[] obtainSatisfied = new boolean[stage.obtain().size()];
         boolean[] craftSatisfied = new boolean[stage.craft().size()];
         boolean[] knowSatisfied = new boolean[stage.requiredKnowledge().size()];
         for (int i = 0; i < stage.requiredResearch().size(); i++) {
             researchSatisfied[i] =
-                    knowledge.isResearchComplete(stage.requiredResearch().get(i));
+                    knowledge.hasCompleted(stage.requiredResearch().get(i));
         }
         for (int i = 0; i < stage.obtain().size(); i++) {
             obtainSatisfied[i] = countMatching(player, stage.obtain().get(i))
@@ -2581,13 +2581,13 @@ public final class EntryDetailScreen extends AbstractTTScreen {
         }
         for (int i = 0; i < stage.craft().size(); i++) {
             craftSatisfied[i] = ResearchManager.isCraftSatisfied(
-                    player, knowledge, stage.craft().get(i));
+                    player, PlayerResearchAccess.of(player), stage.craft().get(i));
         }
         int theoryOrdinal = ResearchNotes.theoryRowsBefore(entry.value(), displayedStageIndex());
         for (int i = 0; i < stage.requiredKnowledge().size(); i++) {
             KnowledgeReward reward = stage.requiredKnowledge().get(i);
             if (reward.type() == KnowledgeType.THEORY) {
-                knowSatisfied[i] = knowledge.isResearchKnown(ResearchNoteData.learnKey(entryId, theoryOrdinal));
+                knowSatisfied[i] = knowledge.knows(ResearchNoteData.learnKey(entryId, theoryOrdinal));
                 theoryOrdinal++;
             } else {
                 knowSatisfied[i] =

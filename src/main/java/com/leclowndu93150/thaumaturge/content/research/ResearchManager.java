@@ -2,9 +2,9 @@ package com.leclowndu93150.thaumaturge.content.research;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchFlag;
 import com.leclowndu93150.thaumaturge.api.recipe.ResearchGate;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
@@ -51,28 +51,28 @@ public final class ResearchManager {
 
     public static boolean unlockRequested(ServerPlayer player, ResourceLocation research) {
         IResearchEntry entry = entry(player, research).orElse(null);
-        if (entry == null || !isCategoryOpen(KnowledgeAccess.of(player), entry)) return false;
+        if (entry == null || !isCategoryOpen(PlayerResearchAccess.of(player), entry)) return false;
         if (entry.hasMeta(ResearchEntryMeta.HIDDEN) && entry.parents().isEmpty()) return false;
         return unlock(player, research);
     }
 
-    private static boolean isCategoryOpen(IPlayerKnowledge knowledge, IResearchEntry entry) {
+    private static boolean isCategoryOpen(PlayerResearch knowledge, IResearchEntry entry) {
         Optional<ResourceLocation> gate = entry.category().value().requiredResearch();
-        return gate.isEmpty() || knowledge.isResearchComplete(gate.get());
+        return gate.isEmpty() || knowledge.hasCompleted(gate.get());
     }
 
     public static boolean unlock(ServerPlayer player, ResourceLocation research) {
         if (research == null) return false;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        if (knowledge.isResearchKnown(research)) return false;
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        if (knowledge.knows(research)) return false;
         IResearchEntry entry = entry(player, research).orElse(null);
         if (entry != null && !parentsSatisfied(knowledge, entry)) return false;
-        if (!ResearchUnlockConditions.passes(player, knowledge, research)) return false;
+        if (!ResearchUnlockConditions.passes(player, (PlayerResearch) knowledge, research)) return false;
         ResearchEvent.Unlocked event = new ResearchEvent.Unlocked(player, research);
         if (NeoForge.EVENT_BUS.post(event).isCanceled()) return false;
-        boolean changed = knowledge.addResearch(research);
+        boolean changed = knowledge.learn(research);
         if (changed) {
-            knowledge.sync(player);
+            knowledge.queueSync(player);
         }
         return changed;
     }
@@ -85,10 +85,10 @@ public final class ResearchManager {
         if (research == null) return false;
         IResearchEntry entry = entry(player, research).orElse(null);
         if (entry == null) return false;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        if (!knowledge.isResearchKnown(research)) return false;
-        if (knowledge.isResearchComplete(research)) return false;
-        int currentStage = knowledge.researchStage(research);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        if (!knowledge.knows(research)) return false;
+        if (knowledge.hasCompleted(research)) return false;
+        int currentStage = knowledge.stageOf(research);
         int totalStages = entry.stages().size();
         if (currentStage >= totalStages) return false;
         IResearchStage finished = entry.stages().get(Math.max(0, currentStage));
@@ -107,37 +107,37 @@ public final class ResearchManager {
             next = totalStages;
         }
         if (next < totalStages) {
-            knowledge.setResearchStage(research, next);
+            knowledge.setStage(research, next);
         } else {
             markCompleteInternal(player, knowledge, research);
         }
         player.giveExperiencePoints(STAGE_XP_REWARD);
-        knowledge.sync(player);
+        knowledge.queueSync(player);
         return true;
     }
 
     public static boolean setStage(ServerPlayer player, ResourceLocation research, int stage) {
         if (research == null || stage <= 0) return false;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        if (!knowledge.isResearchKnown(research)) return false;
-        int previous = knowledge.researchStage(research);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        if (!knowledge.knows(research)) return false;
+        int previous = knowledge.stageOf(research);
         if (previous == stage) return false;
         ResearchEvent.StageAdvanced event = new ResearchEvent.StageAdvanced(player, research, previous, stage);
         if (NeoForge.EVENT_BUS.post(event).isCanceled()) return false;
-        knowledge.setResearchStage(research, stage);
-        knowledge.sync(player);
+        knowledge.setStage(research, stage);
+        knowledge.queueSync(player);
         return true;
     }
 
     public static boolean complete(ServerPlayer player, ResourceLocation research) {
         if (research == null) return false;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
-        if (!knowledge.isResearchKnown(research)) {
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
+        if (!knowledge.knows(research)) {
             if (!unlockSilent(knowledge, research)) return false;
         }
-        if (knowledge.isResearchComplete(research)) return false;
+        if (knowledge.hasCompleted(research)) return false;
         boolean changed = markCompleteInternal(player, knowledge, research);
-        if (changed) knowledge.sync(player);
+        if (changed) knowledge.queueSync(player);
         return changed;
     }
 
@@ -146,13 +146,13 @@ public final class ResearchManager {
         if (type == null || amount == 0) return false;
         ResearchEvent.KnowledgeGained event = new ResearchEvent.KnowledgeGained(player, type, category, amount);
         if (NeoForge.EVENT_BUS.post(event).isCanceled()) return false;
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
         ResourceKey<IResearchCategory> key =
                 category == null ? null : category.unwrapKey().orElse(null);
-        int pointsBefore = knowledge.knowledge(type, key);
-        boolean changed = knowledge.addKnowledge(type, key, amount);
-        if (changed) knowledge.sync(player);
-        int pointsGained = knowledge.knowledge(type, key) - pointsBefore;
+        int pointsBefore = knowledge.knowledgeLevel(type, key);
+        boolean changed = knowledge.addKnowledgePoints(type, key, amount);
+        if (changed) knowledge.queueSync(player);
+        int pointsGained = knowledge.knowledgeLevel(type, key) - pointsBefore;
         if (pointsGained > 0) {
             PacketDistributor.sendToPlayer(
                     player, new ClientboundKnowledgeGainPayload(type, Optional.ofNullable(key), pointsGained));
@@ -161,25 +161,25 @@ public final class ResearchManager {
     }
 
     public static void applyAutoUnlock(ServerPlayer player) {
-        PlayerKnowledge knowledge = (PlayerKnowledge) KnowledgeAccess.of(player);
+        PlayerKnowledge knowledge = (PlayerKnowledge) PlayerResearchAccess.of(player);
         knowledge.applyAutoUnlock(player);
-        knowledge.sync(player);
+        knowledge.queueSync(player);
     }
 
     public static boolean doesPassGate(Player player, @Nullable ResearchGate gate) {
         if (gate == null) return true;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+        var knowledge = PlayerResearchAccess.of(player);
         boolean known = gate.stage().isPresent()
-                ? knowledge.isResearchKnown(gate.entry(), gate.stage().get())
-                : knowledge.isResearchComplete(gate.entry());
+                ? knowledge.hasReachedStage(gate.entry(), gate.stage().get())
+                : knowledge.hasCompleted(gate.entry());
         return gate.negate() != known;
     }
 
-    public static IPlayerKnowledge of(ServerPlayer player) {
-        return KnowledgeAccess.of(player);
+    public static PlayerResearch of(ServerPlayer player) {
+        return PlayerResearchAccess.of(player);
     }
 
-    public static boolean parentsSatisfied(IPlayerKnowledge knowledge, IResearchEntry entry) {
+    public static boolean parentsSatisfied(PlayerResearch knowledge, IResearchEntry entry) {
         for (ResearchParent parent : entry.parents()) {
             if (!parent.isSatisfiedBy(knowledge)) return false;
         }
@@ -187,10 +187,10 @@ public final class ResearchManager {
     }
 
     public static boolean stageRequirementsMet(
-            Player player, IPlayerKnowledge knowledge, IResearchEntry entry, ResourceLocation entryId, int stageIndex) {
+            Player player, PlayerResearch knowledge, IResearchEntry entry, ResourceLocation entryId, int stageIndex) {
         IResearchStage stage = entry.stages().get(stageIndex);
         for (ResourceLocation required : stage.requiredResearch()) {
-            if (!knowledge.isResearchComplete(required)) return false;
+            if (!knowledge.hasCompleted(required)) return false;
         }
         for (ResearchRequirement req : stage.obtain()) {
             if (countMatching(player, req) < req.amount()) return false;
@@ -201,7 +201,7 @@ public final class ResearchManager {
         int theoryOrdinal = ResearchNotes.theoryRowsBefore(entry, stageIndex);
         for (KnowledgeReward cost : stage.requiredKnowledge()) {
             if (cost.type() == KnowledgeType.THEORY) {
-                if (!knowledge.isResearchKnown(ResearchNoteData.learnKey(entryId, theoryOrdinal))) return false;
+                if (!knowledge.knows(ResearchNoteData.learnKey(entryId, theoryOrdinal))) return false;
                 theoryOrdinal++;
             }
         }
@@ -210,11 +210,11 @@ public final class ResearchManager {
         return true;
     }
 
-    public static boolean isCraftSatisfied(Player player, IPlayerKnowledge knowledge, ResearchRequirement req) {
+    public static boolean isCraftSatisfied(Player player, PlayerResearch knowledge, ResearchRequirement req) {
         for (Holder<Item> holder : req.items()) {
             ResourceLocation itemId =
                     holder.unwrapKey().map(ResourceKey::location).orElse(null);
-            if (itemId != null && knowledge.isResearchKnown(craftedKey(itemId))) return true;
+            if (itemId != null && knowledge.knows(craftedKey(itemId))) return true;
         }
         return countMatching(player, req) > 0;
     }
@@ -268,17 +268,17 @@ public final class ResearchManager {
         if (!changed) return false;
         IResearchEntry entry = entry(player, research).orElse(null);
         if (entry != null) {
-            knowledge.setResearchStage(research, entry.stages().size());
-            knowledge.setResearchFlag(research, ResearchFlag.POPUP);
-            knowledge.setResearchFlag(research, ResearchFlag.RESEARCH);
+            knowledge.setStage(research, entry.stages().size());
+            knowledge.addFlag(research, ResearchFlag.POPUP);
+            knowledge.addFlag(research, ResearchFlag.RESEARCH);
             notifyAddenda(player, knowledge, research);
             for (ResourceLocation sibling : entry.siblings()) {
-                if (knowledge.isResearchComplete(sibling)) continue;
+                if (knowledge.hasCompleted(sibling)) continue;
                 IResearchEntry siblingEntry = entry(player, sibling).orElse(null);
                 if (siblingEntry != null && !parentsSatisfied(knowledge, siblingEntry)) continue;
-                if (!ResearchUnlockConditions.passes(player, knowledge, sibling)) continue;
-                if (!knowledge.isResearchKnown(sibling)) {
-                    knowledge.addResearch(sibling);
+                if (!ResearchUnlockConditions.passes(player, (PlayerResearch) knowledge, sibling)) continue;
+                if (!knowledge.knows(sibling)) {
+                    knowledge.learn(sibling);
                 }
                 markCompleteInternal(player, knowledge, sibling);
             }
@@ -293,14 +293,14 @@ public final class ResearchManager {
                     IResearchEntry other = holder.value();
                     if (other.addenda().isEmpty()) return;
                     ResourceLocation otherId = holder.key().location();
-                    if (!knowledge.isResearchComplete(otherId)) return;
+                    if (!knowledge.hasCompleted(otherId)) return;
                     for (ResearchAddendum addendum : other.addenda()) {
                         if (addendum.requiredResearch().contains(completed)) {
                             player.sendSystemMessage(Component.translatable(
                                             "message.thaumaturge.research.addendum_added",
                                             Component.translatable(other.nameKey()))
                                     .withStyle(ChatFormatting.DARK_PURPLE));
-                            knowledge.setResearchFlag(otherId, ResearchFlag.PAGE);
+                            knowledge.addFlag(otherId, ResearchFlag.PAGE);
                             break;
                         }
                     }
@@ -308,13 +308,13 @@ public final class ResearchManager {
     }
 
     private static boolean unlockSilent(PlayerKnowledge knowledge, ResourceLocation research) {
-        return knowledge.addResearch(research);
+        return knowledge.learn(research);
     }
 
     private static void applyStageEffects(ServerPlayer player, PlayerKnowledge knowledge, IResearchStage stage) {
         for (KnowledgeReward reward : stage.knowledge()) {
             ResourceKey<IResearchCategory> key = reward.category().unwrapKey().orElse(null);
-            knowledge.addKnowledge(reward.type(), key, reward.amount());
+            knowledge.addKnowledgePoints(reward.type(), key, reward.amount());
         }
         if (stage.warp() > 0) {
             applyWarp(player, stage.warp());

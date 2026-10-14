@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.research;
 
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.api.research.IResearchStage;
@@ -27,7 +27,7 @@ public final class ResearchProgression {
     private ResearchProgression() {}
 
     public static void reset(ServerPlayer player) {
-        KnowledgeAccess.of(player).clear();
+        PlayerResearchAccess.of(player).wipe();
         ResearchManager.applyAutoUnlock(player);
     }
 
@@ -42,9 +42,9 @@ public final class ResearchProgression {
         collect(entries(player), research, new HashSet<>(), ordered);
         ordered.remove(research);
         int completed = completeAll(player, ordered);
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
-        if (knowledge.removeResearch(research)) {
-            knowledge.sync(player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
+        if (knowledge.forget(research)) {
+            knowledge.queueSync(player);
         }
         ResearchManager.unlock(player, research);
         return completed;
@@ -68,14 +68,14 @@ public final class ResearchProgression {
                 queue.addAll(dependents.getOrDefault(next, List.of()));
             }
         }
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
         int removed = 0;
         for (ResourceLocation id : affected) {
-            if (knowledge.removeResearch(id) && !id.equals(research)) {
+            if (knowledge.forget(id) && !id.equals(research)) {
                 removed++;
             }
         }
-        knowledge.sync(player);
+        knowledge.queueSync(player);
         return removed;
     }
 

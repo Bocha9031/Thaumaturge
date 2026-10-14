@@ -33,10 +33,10 @@ public final class ResearchLifecycleEvents {
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             if (event.getTo().equals(OuterLands.DIMENSION)
-                    && !ResearchManager.of(player).isResearchComplete(ENTER_OUTER_LANDS)) {
+                    && !ResearchManager.of(player).hasCompleted(ENTER_OUTER_LANDS)) {
                 ResearchManager.complete(player, ENTER_OUTER_LANDS);
             }
-            ResearchManager.of(player).sync(player);
+            ResearchManager.of(player).queueSync(player);
         }
     }
 

@@ -4,8 +4,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectComponents;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.golems.GolemTrait;
 import com.leclowndu93150.thaumaturge.api.golems.parts.GolemAddon;
 import com.leclowndu93150.thaumaturge.api.golems.parts.GolemArm;
@@ -163,9 +162,9 @@ public final class GolemBuilderScreen extends AbstractTTContainerScreen<MenuGole
         if (minecraft == null || minecraft.player == null) {
             return false;
         }
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        var knowledge = PlayerResearchAccess.of(minecraft.player);
         for (ResourceLocation id : research) {
-            if (!knowledge.isResearchComplete(id)) {
+            if (!knowledge.hasCompleted(id)) {
                 return false;
             }
         }

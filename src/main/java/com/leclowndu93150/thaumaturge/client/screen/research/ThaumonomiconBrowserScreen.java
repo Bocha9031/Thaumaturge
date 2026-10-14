@@ -1,8 +1,8 @@
 package com.leclowndu93150.thaumaturge.client.screen.research;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchFlag;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
@@ -336,7 +336,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         if (minecraft == null || minecraft.player == null) return;
         screenX = width - 32;
         screenY = height - 32;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         categoriesOtherVisible.clear();
         addonShift = 0;
         int limit = (int) Math.floor((screenY - CATEGORY_AVAILABLE_HEIGHT_PADDING) / (double) CATEGORY_BUTTON_STRIDE_Y);
@@ -383,13 +383,13 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         if (guiBoundsBottom == -99999) guiBoundsBottom = 0;
     }
 
-    private boolean isCategoryUnlocked(IPlayerKnowledge knowledge, Holder.Reference<IResearchCategory> ref) {
+    private boolean isCategoryUnlocked(PlayerResearch knowledge, Holder.Reference<IResearchCategory> ref) {
         Optional<ResourceLocation> gate = ref.value().requiredResearch();
-        return gate.isEmpty() || knowledge.isResearchComplete(gate.get());
+        return gate.isEmpty() || knowledge.hasCompleted(gate.get());
     }
 
-    private boolean isVisible(IPlayerKnowledge knowledge, EntryNode node) {
-        if (knowledge.isResearchKnown(node.id)) return true;
+    private boolean isVisible(PlayerResearch knowledge, EntryNode node) {
+        if (knowledge.knows(node.id)) return true;
         if (invisibleEntries.contains(node.id)) return false;
         boolean hidden = node.entry.hasMeta(ResearchEntryMeta.HIDDEN);
         if (hidden && !canUnlockResearch(knowledge, node)) return false;
@@ -404,12 +404,12 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         return true;
     }
 
-    private boolean conditionsPass(IPlayerKnowledge knowledge, EntryNode node) {
-        if (minecraft.player == null || knowledge.isResearchKnown(node.id)) return true;
+    private boolean conditionsPass(PlayerResearch knowledge, EntryNode node) {
+        if (minecraft.player == null || knowledge.knows(node.id)) return true;
         return ResearchUnlockConditions.passes(minecraft.player, knowledge, node.id);
     }
 
-    private boolean canUnlockResearch(IPlayerKnowledge knowledge, EntryNode node) {
+    private boolean canUnlockResearch(PlayerResearch knowledge, EntryNode node) {
         for (ResearchParent parent : node.entry.parents()) {
             if (!parent.isSatisfiedBy(knowledge)) return false;
         }
@@ -421,7 +421,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         invisibleEntries.clear();
         if (query == null) return;
         if (minecraft == null || minecraft.player == null) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         String needle = query.toLowerCase(Locale.ROOT);
         for (Holder.Reference<IResearchCategory> ref : categoriesTT) {
             if (!isCategoryUnlocked(knowledge, ref)) continue;
@@ -437,14 +437,14 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
                 searchResults.add(SearchResult.category(name, ref));
             }
         }
-        for (ResourceLocation known : knowledge.researchList()) {
+        for (ResourceLocation known : knowledge.knownEntries()) {
             EntryNode node = findGlobalNode(known);
             if (node == null) continue;
             String entryName = Component.translatable(node.entry.nameKey()).getString();
             if (entryName.toLowerCase(Locale.ROOT).contains(needle)) {
                 searchResults.add(SearchResult.entry(entryName, node));
             }
-            int stage = knowledge.researchStage(known);
+            int stage = knowledge.stageOf(known);
             int sIdx = node.entry.stages().size() - 1 < stage + 2
                     ? node.entry.stages().size() - 1
                     : stage + 2;
@@ -515,7 +515,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         renderSearchButton(graphics, mouseX, mouseY);
         renderScrollButtons(graphics, mouseX, mouseY);
         if (currentHighlight != null && minecraft != null && minecraft.player != null) {
-            IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+            PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
             renderEntryTooltip(
                     graphics, knowledge, currentHighlight, mouseX + TOOLTIP_OFFSET_X, mouseY + TOOLTIP_OFFSET_Y);
         }
@@ -646,7 +646,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
 
     private void renderConnectors(GuiGraphics graphics, int locX, int locY) {
         if (minecraft == null || minecraft.player == null || activeCategory == null) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         List<EntryNode> nodes = nodesByCategory.getOrDefault(activeCategory, List.of());
         for (EntryNode source : nodes) {
             for (ResearchParent parent : source.entry.parents()) {
@@ -656,7 +656,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
                 if (parentNode.entry.siblings().contains(source.id)) continue;
                 boolean b = isVisible(knowledge, source) && !parent.inherit();
                 if (!b) continue;
-                boolean knowsParent = knowledge.isResearchComplete(parent.id());
+                boolean knowsParent = knowledge.hasCompleted(parent.id());
                 int originX = START_X - locX;
                 int originY = START_Y - locY;
                 if (knowsParent) {
@@ -692,7 +692,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
                 if (siblingNode == null) continue;
                 if (!activeCategory.equals(siblingNode.category)) continue;
                 if (!isVisible(knowledge, source)) continue;
-                boolean knowsSibling = knowledge.isResearchComplete(siblingRaw);
+                boolean knowsSibling = knowledge.hasCompleted(siblingRaw);
                 int originX = START_X - locX;
                 int originY = START_Y - locY;
                 if (knowsSibling) {
@@ -729,7 +729,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
 
     private void renderEntries(GuiGraphics graphics, int mouseX, int mouseY, int locX, int locY) {
         if (minecraft == null || minecraft.player == null || activeCategory == null) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         List<EntryNode> nodes = nodesByCategory.getOrDefault(activeCategory, List.of());
         for (EntryNode node : nodes) {
             int relCol = node.entry.column() * CELL_SIZE - locX;
@@ -743,7 +743,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
             int iconY = START_Y + relRow;
             boolean canUnlock = canUnlockResearch(knowledge, node);
             EntryIconRenderer.Status iconStatus;
-            if (knowledge.isResearchComplete(node.id)) {
+            if (knowledge.hasCompleted(node.id)) {
                 iconStatus = EntryIconRenderer.Status.COMPLETE;
             } else if (canUnlock) {
                 iconStatus = EntryIconRenderer.Status.IN_PROGRESS;
@@ -751,8 +751,8 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
                 iconStatus = EntryIconRenderer.Status.UNKNOWN;
             }
             boolean hasWarp = entryHasWarp(node.entry);
-            boolean newResearch = knowledge.hasResearchFlag(node.id, ResearchFlag.RESEARCH);
-            boolean newPage = knowledge.hasResearchFlag(node.id, ResearchFlag.PAGE);
+            boolean newResearch = knowledge.hasFlag(node.id, ResearchFlag.RESEARCH);
+            boolean newPage = knowledge.hasFlag(node.id, ResearchFlag.PAGE);
             Object icon = resolveDisplayIcon(node);
             EntryIconRenderer.render(
                     graphics, iconX, iconY, node.entry, iconStatus, icon, hasWarp, newResearch, newPage);
@@ -942,7 +942,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
 
     private void renderCategoryButtons(GuiGraphics graphics, int mouseX, int mouseY) {
         if (minecraft == null || minecraft.player == null) return;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         int categoryYIndex = 0;
         for (Holder.Reference<IResearchCategory> ref : categoriesTT) {
             if (!isCategoryUnlocked(knowledge, ref)) continue;
@@ -961,7 +961,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
 
     private void drawCategoryButton(
             GuiGraphics graphics,
-            IPlayerKnowledge knowledge,
+            PlayerResearch knowledge,
             Holder.Reference<IResearchCategory> ref,
             int x,
             int y,
@@ -1003,9 +1003,9 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         boolean newResearch = false;
         boolean newPage = false;
         for (EntryNode node : nodesByCategory.getOrDefault(ref, List.of())) {
-            if (!knowledge.isResearchKnown(node.id)) continue;
-            if (!newResearch && knowledge.hasResearchFlag(node.id, ResearchFlag.RESEARCH)) newResearch = true;
-            if (!newPage && knowledge.hasResearchFlag(node.id, ResearchFlag.PAGE)) newPage = true;
+            if (!knowledge.knows(node.id)) continue;
+            if (!newResearch && knowledge.hasFlag(node.id, ResearchFlag.RESEARCH)) newResearch = true;
+            if (!newPage && knowledge.hasFlag(node.id, ResearchFlag.PAGE)) newPage = true;
             if (newResearch && newPage) break;
         }
         if (newResearch) {
@@ -1068,14 +1068,14 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         graphics.pose().popPose();
     }
 
-    private int categoryCompletionPercent(IPlayerKnowledge knowledge, Holder.Reference<IResearchCategory> ref) {
+    private int categoryCompletionPercent(PlayerResearch knowledge, Holder.Reference<IResearchCategory> ref) {
         List<EntryNode> nodes = nodesByCategory.getOrDefault(ref, List.of());
         int rt = 0;
         int rco = 0;
         for (EntryNode node : nodes) {
             if (node.entry.hasMeta(ResearchEntryMeta.AUTOUNLOCK)) continue;
             rt++;
-            if (knowledge.isResearchKnown(node.id)) rco++;
+            if (knowledge.knows(node.id)) rco++;
         }
         if (rt == 0) return 0;
         return (int) ((float) rco / rt * 100.0F);
@@ -1152,14 +1152,14 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
     }
 
     private void renderEntryTooltip(
-            GuiGraphics graphics, IPlayerKnowledge knowledge, EntryNode node, int mouseX, int mouseY) {
+            GuiGraphics graphics, PlayerResearch knowledge, EntryNode node, int mouseX, int mouseY) {
         List<Component> lines = new ArrayList<>();
         Component name = Component.translatable(node.entry.nameKey()).withStyle(ChatFormatting.GOLD);
         lines.add(name);
         boolean canUnlock = canUnlockResearch(knowledge, node);
         if (canUnlock) {
-            if (!knowledge.isResearchComplete(node.id) && !node.entry.stages().isEmpty()) {
-                int stage = knowledge.researchStage(node.id);
+            if (!knowledge.hasCompleted(node.id) && !node.entry.stages().isEmpty()) {
+                int stage = knowledge.stageOf(node.id);
                 if (stage >= 0) {
                     MutableComponent stageLine = Component.literal("@@")
                             .append(Component.literal(ChatFormatting.AQUA
@@ -1194,11 +1194,11 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
                         Component.literal("@@" + ChatFormatting.YELLOW + " - ").append(message));
             }
         }
-        if (knowledge.hasResearchFlag(node.id, ResearchFlag.RESEARCH)) {
+        if (knowledge.hasFlag(node.id, ResearchFlag.RESEARCH)) {
             lines.add(Component.literal("@@")
                     .append(Component.translatable("tooltip.thaumaturge.research.new_research")));
         }
-        if (knowledge.hasResearchFlag(node.id, ResearchFlag.PAGE)) {
+        if (knowledge.hasFlag(node.id, ResearchFlag.PAGE)) {
             lines.add(Component.literal("@@").append(Component.translatable("tooltip.thaumaturge.research.new_page")));
         }
         if (minecraft.options.advancedItemTooltips) {
@@ -1237,7 +1237,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         int mx = (int) mouseX;
         int my = (int) mouseY;
         if (minecraft == null || minecraft.player == null) return super.mouseClicked(mouseX, mouseY, button);
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         if (hitSearchButton(mx, my)) {
             playButtonClack();
             toggleSearch();
@@ -1275,7 +1275,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         }
         if (!searching
                 && currentHighlight != null
-                && !knowledge.isResearchKnown(currentHighlight.id)
+                && !knowledge.knows(currentHighlight.id)
                 && canUnlockResearch(knowledge, currentHighlight)) {
             EntryNode hl = currentHighlight;
             updateResearch();
@@ -1284,13 +1284,13 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
             playPageOpen();
             minecraft.setScreen(new EntryDetailScreen(hl.holder, hl.id, this));
             return true;
-        } else if (currentHighlight != null && knowledge.isResearchKnown(currentHighlight.id)) {
+        } else if (currentHighlight != null && knowledge.knows(currentHighlight.id)) {
             EntryNode hl = currentHighlight;
-            knowledge.clearResearchFlag(hl.id, ResearchFlag.RESEARCH);
-            knowledge.clearResearchFlag(hl.id, ResearchFlag.PAGE);
+            knowledge.removeFlag(hl.id, ResearchFlag.RESEARCH);
+            knowledge.removeFlag(hl.id, ResearchFlag.PAGE);
             PacketDistributor.sendToServer(
                     new ServerboundClearResearchFlagsPayload(hl.id, List.of(ResearchFlag.RESEARCH, ResearchFlag.PAGE)));
-            int stage = knowledge.researchStage(hl.id);
+            int stage = knowledge.stageOf(hl.id);
             if (stage > 0 && stage >= hl.entry.stages().size() - 1) {
                 PacketDistributor.sendToServer(new ServerboundUnlockResearchPayload(hl.id));
             }
@@ -1362,7 +1362,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
 
     private Holder.@Nullable Reference<IResearchCategory> hitCategoryButton(int mx, int my) {
         if (minecraft == null || minecraft.player == null) return null;
-        IPlayerKnowledge knowledge = KnowledgeAccess.of(minecraft.player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         int categoryYIndex = 0;
         for (Holder.Reference<IResearchCategory> ref : categoriesTT) {
             if (!isCategoryUnlocked(knowledge, ref)) continue;

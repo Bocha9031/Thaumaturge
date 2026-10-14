@@ -1,8 +1,7 @@
 package com.leclowndu93150.thaumaturge.server.command.admin;
 
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.CategoryComponents;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -67,14 +66,14 @@ final class KnowledgeSubcommand implements AdminSubcommand {
                         ctx, CATEGORY, IResearchCategory.REGISTRY_KEY, CommandSupport.UNKNOWN_CATEGORY));
         int raw = points * type.progression();
         for (ServerPlayer player : targets) {
-            IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+            var knowledge = PlayerResearchAccess.of(player);
             for (Holder.Reference<IResearchCategory> category : categories) {
-                knowledge.addKnowledge(
+                knowledge.addKnowledgePoints(
                         type,
                         category.key(),
-                        operation.delta.applyAsInt(knowledge.rawKnowledge(type, category.key()), raw));
+                        operation.delta.applyAsInt(knowledge.knowledgePoints(type, category.key()), raw));
             }
-            knowledge.sync(player);
+            knowledge.queueSync(player);
         }
         Component where = all
                 ? Component.translatable("commands.thaumaturge.knowledge.all_categories")
@@ -96,7 +95,7 @@ final class KnowledgeSubcommand implements AdminSubcommand {
         CommandSourceStack source = ctx.getSource();
         List<Holder.Reference<IResearchCategory>> categories = CommandSupport.categories(source.registryAccess());
         for (ServerPlayer player : targets) {
-            IPlayerKnowledge knowledge = KnowledgeAccess.of(player);
+            var knowledge = PlayerResearchAccess.of(player);
             source.sendSuccess(
                     () -> Component.translatable("commands.thaumaturge.knowledge.query", player.getDisplayName()),
                     false);
@@ -105,7 +104,7 @@ final class KnowledgeSubcommand implements AdminSubcommand {
                 for (KnowledgeType type : KnowledgeType.values()) {
                     parts.add(Component.translatable(
                             "commands.thaumaturge.knowledge.query.entry",
-                            knowledge.knowledge(type, category.key()),
+                            knowledge.knowledgeLevel(type, category.key()),
                             Component.translatable(type.translationKey())));
                 }
                 Component line = Component.translatable(

@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.client;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
 import com.leclowndu93150.thaumaturge.api.items.ChargeProfile;
 import com.leclowndu93150.thaumaturge.api.items.InfusionEnchantment;
@@ -69,7 +69,7 @@ public final class TTTooltipEvents {
         }
         if (event.getItemStack().getItem() instanceof BlockItem blockItem
                 && isStabiliser(blockItem.getBlock())
-                && KnowledgeAccess.of(event.getEntity()).isResearchComplete(INFUSION_RESEARCH)) {
+                && PlayerResearchAccess.of(event.getEntity()).hasCompleted(INFUSION_RESEARCH)) {
             event.getToolTip()
                     .add(Component.translatable("tooltip.thaumaturge.infusion_stabiliser")
                             .withStyle(ChatFormatting.DARK_PURPLE));
