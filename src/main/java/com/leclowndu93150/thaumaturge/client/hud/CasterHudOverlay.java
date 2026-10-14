@@ -3,7 +3,7 @@ package com.leclowndu93150.thaumaturge.client.hud;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.spell.SpellSummary;
 import com.leclowndu93150.thaumaturge.client.render.GuiBlend;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeClientConfig;
@@ -81,8 +81,8 @@ public final class CasterHudOverlay implements LayeredDraw.Layer {
         if (player == null || mc.options.hideGui || !mc.mouseHandler.isMouseGrabbed()) {
             return false;
         }
-        return player.getMainHandItem().getItem() instanceof ICaster
-                || player.getOffhandItem().getItem() instanceof ICaster;
+        return player.getMainHandItem().getItem() instanceof FocusCaster
+                || player.getOffhandItem().getItem() instanceof FocusCaster;
     }
 
     public static LeftHudStack.Gauge dialGauge() {
@@ -122,16 +122,16 @@ public final class CasterHudOverlay implements LayeredDraw.Layer {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         ItemStack casterStack = player.getMainHandItem();
-        if (!(casterStack.getItem() instanceof ICaster)) {
+        if (!(casterStack.getItem() instanceof FocusCaster)) {
             casterStack = player.getOffhandItem();
         }
-        ICaster wand = (ICaster) casterStack.getItem();
+        FocusCaster wand = (FocusCaster) casterStack.getItem();
 
         graphics.blit(
                 HUD_WAND, 0, dialY, DIAL_SIZE, DIAL_SIZE, 0.0F, 0.0F, DIAL_SRC_SIZE, DIAL_SRC_SIZE, TEX_SIZE, TEX_SIZE);
 
         int max = WandVisHelper.getMaxVis(casterStack);
-        ItemStack focusStack = wand.getFocusStack(casterStack);
+        ItemStack focusStack = wand.socketedFocus(casterStack);
         boolean hasFocus = FocusItems.isFocus(focusStack);
         Map<ResourceKey<IAspect>, Integer> costSplit = null;
         Optional<SpellSummary> summary =
@@ -139,7 +139,7 @@ public final class CasterHudOverlay implements LayeredDraw.Layer {
         if (summary.isPresent() && summary.get().vis() > 0.0F) {
             costSplit = FocusItems.visSplit(summary.get(), 1.0F, player.registryAccess());
         }
-        float costModifier = wand.getConsumptionModifier(casterStack, player, false);
+        float costModifier = wand.visCostFactor(casterStack, player, false);
         boolean sneak = player.isShiftKeyDown();
         long now = Util.getMillis();
         boolean snapshot = now >= changeSyncTime;
@@ -257,7 +257,7 @@ public final class CasterHudOverlay implements LayeredDraw.Layer {
         graphics.pose().popPose();
 
         if (hasFocus) {
-            BlockState picked = wand.getPickedBlock(player.getMainHandItem());
+            BlockState picked = wand.rememberedBlock(player.getMainHandItem());
             ItemStack pickedStack = picked == null
                     ? ItemStack.EMPTY
                     : new ItemStack(picked.getBlock().asItem());

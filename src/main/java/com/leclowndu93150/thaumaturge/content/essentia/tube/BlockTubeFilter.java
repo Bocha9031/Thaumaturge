@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.essentia.tube;
 
-import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaCapabilities;
 import com.leclowndu93150.thaumaturge.api.essentia.IItemEssentia;
@@ -27,6 +27,9 @@ import org.jspecify.annotations.Nullable;
 public final class BlockTubeFilter extends BlockTube {
     public static final MapCodec<BlockTubeFilter> CODEC = simpleCodec(BlockTubeFilter::new);
 
+    private static final float KEY_VOLUME = 1.0F;
+    private static final float KEY_PITCH = 1.0F;
+
     public BlockTubeFilter(BlockBehaviour.Properties properties) {
         super(properties, TubeGeometry.FILTER);
     }
@@ -44,23 +47,22 @@ public final class BlockTubeFilter extends BlockTube {
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(
             Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide()) return null;
-        return createTickerHelper(
-                type, TTBlockEntities.TUBE_FILTER.get(), (lvl, pos, st, tube) -> tube.tickServer(lvl, pos, st));
+        return tubeTicker(level, type, TTBlockEntities.TUBE_FILTER.get());
     }
 
     @Override
     protected InteractionResult useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        if (!(level.getBlockEntity(pos) instanceof BlockEntityTubeFilter filter)) return InteractionResult.PASS;
-        if (player.isSecondaryUseActive() && filter.aspectFilter() != null) {
-            if (!level.isClientSide()) {
-                filter.setAspectFilter(null);
-                level.playSound(null, pos, TTSounds.KEY.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
-            }
-            return InteractionResult.SUCCESS;
+        if (!player.isSecondaryUseActive()
+                || !(level.getBlockEntity(pos) instanceof BlockEntityTubeFilter filter)
+                || filter.aspectFilter() == null) {
+            return InteractionResult.PASS;
         }
-        return InteractionResult.PASS;
+        if (!level.isClientSide()) {
+            filter.setAspectFilter(null);
+            playKey(level, pos);
+        }
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -72,19 +74,30 @@ public final class BlockTubeFilter extends BlockTube {
             Player player,
             InteractionHand hand,
             BlockHitResult hit) {
-        if (!(level.getBlockEntity(pos) instanceof BlockEntityTubeFilter filter))
+        if (!(level.getBlockEntity(pos) instanceof BlockEntityTubeFilter filter) || filter.aspectFilter() != null) {
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        if (filter.aspectFilter() != null) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        IItemEssentia essentia = stack.getCapability(EssentiaCapabilities.CONTAINER);
-        if (essentia == null) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        if (essentia.getAspects().isEmpty()) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        AspectInstance first = essentia.getAspects().entries().get(0);
-        ResourceKey<IAspect> key = first.aspect().unwrapKey().orElse(null);
-        if (key == null) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        IItemEssentia contents = stack.getCapability(EssentiaCapabilities.CONTAINER);
+        if (contents == null) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        AspectList aspects = contents.getAspects();
+        if (aspects.isEmpty()) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        ResourceKey<IAspect> key =
+                aspects.entries().getFirst().aspect().unwrapKey().orElse(null);
+        if (key == null) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
         if (!level.isClientSide()) {
             filter.setAspectFilter(key);
-            level.playSound(null, pos, TTSounds.KEY.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
+            playKey(level, pos);
         }
         return ItemInteractionResult.SUCCESS;
+    }
+
+    private static void playKey(Level level, BlockPos pos) {
+        level.playSound(null, pos, TTSounds.KEY.get(), SoundSource.BLOCKS, KEY_VOLUME, KEY_PITCH);
     }
 }

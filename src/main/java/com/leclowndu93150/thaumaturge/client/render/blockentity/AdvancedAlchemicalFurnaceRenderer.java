@@ -47,9 +47,50 @@ public final class AdvancedAlchemicalFurnaceRenderer
     private static final int SIDES = 4;
     private static final float SIDE_ANGLE = 90.0F;
 
-    private static final int VENT_FIRE_LIGHT = LightTexture.pack(14, 0);
-    private static final int VENT_BACKING_LIGHT = LightTexture.pack(9, 0);
-    private static final int TANK_GOO_LIGHT = LightTexture.pack(12, 0);
+    private static final ResourceLocation GOO_SPRITE = TTIds.rl("block/flux_goo");
+    private static final ResourceLocation BACKING_SPRITE = TTIds.rl("block/base_metal");
+    private static final ResourceLocation FLAME_SPRITE = ResourceLocation.withDefaultNamespace("block/fire_0");
+    private static final float CENTER = 0.5F;
+    private static final float NORMAL_OFFSET = 0.01F;
+    private static final int GOO_BLOCK_LIGHT = 12;
+    private static final int BACKING_BLOCK_LIGHT = 9;
+    private static final int FLAME_BLOCK_LIGHT = 15;
+    private static final float BACKING_LIFT = 0.003F;
+    private static final float FRONT_LIFT = 0.006F;
+    private static final float GOO_SURFACE_Y = 1.9375F;
+    private static final float GOO_SURFACE_HALF = 0.375F;
+    private static final float WINDOW_FACE_X = 1.875F;
+    private static final float WINDOW_BOTTOM = 1.1875F;
+    private static final float WINDOW_HEIGHT = 0.5F;
+    private static final float WINDOW_SPAN = 0.25F;
+    private static final float WINDOW_A_Z = -0.375F;
+    private static final float WINDOW_B_Z = 1.625F;
+    private static final float VENT_FACE_X = 1.9375F;
+    private static final float VENT_BOTTOM = 0.4375F;
+    private static final float VENT_HEIGHT = 0.25F;
+    private static final float VENT_SPAN = 0.25F;
+    private static final float VENT_LEFT_Z = 0.625F;
+    private static final float FULL_SHARE = 1.0F;
+    private static final int GOO_LIGHT = LightTexture.pack(GOO_BLOCK_LIGHT, 0);
+    private static final int BACKING_LIGHT = LightTexture.pack(BACKING_BLOCK_LIGHT, 0);
+    private static final int FLAME_LIGHT = LightTexture.pack(FLAME_BLOCK_LIGHT, 0);
+    private static final float PANEL_FULL = 0.0F;
+    private static final float BOUNDS_MARGIN_LOW = 1.0F;
+    private static final float BOUNDS_MARGIN_HIGH = 2.0F;
+    private static final float BOUNDS_HEIGHT = 2.0F;
+    private static final PanelPlane GOO_SURFACE = new PanelPlane(
+            CENTER - GOO_SURFACE_HALF,
+            GOO_SURFACE_Y,
+            CENTER - GOO_SURFACE_HALF,
+            GOO_SURFACE_HALF * 2.0F,
+            0.0F,
+            0.0F,
+            0.0F,
+            0.0F,
+            GOO_SURFACE_HALF * 2.0F);
+    private static final PanelPlane WINDOW_A_BACKING = windowPlane(WINDOW_A_Z, BACKING_LIFT, FULL_SHARE);
+    private static final PanelPlane WINDOW_B_BACKING = windowPlane(WINDOW_B_Z, BACKING_LIFT, FULL_SHARE);
+    private static final PanelPlane FLAME_BACKING = ventPlane(BACKING_LIFT, FULL_SHARE);
 
     public AdvancedAlchemicalFurnaceRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -71,125 +112,149 @@ public final class AdvancedAlchemicalFurnaceRenderer
             return;
         }
 
-        boolean hot = furnace.heat() > 100;
+        boolean hot = furnace.heat() > BlockEntityAdvancedAlchemicalFurnace.HOT_HEAT;
         boolean charged = !furnace.aspects().isEmpty();
         poseStack.pushPose();
         poseStack.translate(0.5F, 0.0F, 0.5F);
         poseStack.mulPose(Axis.XN.rotationDegrees(90.0F));
         renderMesh(hot, charged, poseStack, buffers, light, furnace);
+        poseStack.popPose();
         if (charged) {
             renderStoredEssentia(furnace.aspects().totalAmount(), poseStack, buffers);
         }
         if (hot) {
             renderHeatVents(furnace.heat(), poseStack, buffers);
         }
-        poseStack.popPose();
     }
 
-    /** Fills the mesh's four sloped vent openings with animated fire. */
-    private static void renderHeatVents(int heat, PoseStack poseStack, MultiBufferSource buffers) {
-        TextureAtlasSprite fire = Minecraft.getInstance()
-                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                .apply(ResourceLocation.withDefaultNamespace("block/fire_0"));
-        TextureAtlasSprite backing = Minecraft.getInstance()
-                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                .apply(TTIds.rl("block/base_metal"));
-        VertexConsumer fireBuffer = buffers.getBuffer(Sheets.translucentCullBlockSheet());
-        VertexConsumer backingBuffer = buffers.getBuffer(Sheets.cutoutBlockSheet());
-        float base = 1.0F - Math.min(1.0F, heat / (float) BlockEntityAdvancedAlchemicalFurnace.MAX_POWER);
-        for (int rotation = 0; rotation < 4; rotation++) {
-            poseStack.pushPose();
-            poseStack.translate(0.0F, 0.0F, 1.0F);
-            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F * rotation));
-            poseStack.mulPose(Axis.XP.rotationDegrees(135.0F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(180.0F));
-            poseStack.translate(-0.5F, 0.0F, -1.0F);
-            spriteQuad(fireBuffer, poseStack.last(), fire, base, VENT_FIRE_LIGHT);
-            spriteQuadBackface(fireBuffer, poseStack.last(), fire, base, VENT_FIRE_LIGHT);
-            poseStack.translate(0.0F, 0.0F, 0.05F);
-            spriteQuad(backingBuffer, poseStack.last(), backing, 0.0F, VENT_BACKING_LIGHT);
-            spriteQuadBackface(backingBuffer, poseStack.last(), backing, 0.0F, VENT_BACKING_LIGHT);
-            poseStack.popPose();
-        }
-    }
-
-    /** Renders stored essentia behind the tank windows. */
     private static void renderStoredEssentia(int stored, PoseStack poseStack, MultiBufferSource buffers) {
-        TextureAtlasSprite goo = Minecraft.getInstance()
-                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                .apply(TTIds.rl("block/flux_goo"));
-        TextureAtlasSprite backing = Minecraft.getInstance()
-                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                .apply(TTIds.rl("block/base_metal"));
-        VertexConsumer gooBuffer = buffers.getBuffer(Sheets.translucentCullBlockSheet());
-        VertexConsumer backingBuffer = buffers.getBuffer(Sheets.cutoutBlockSheet());
-        float fillBase = 1.0F - Math.min(1.0F, stored / (float) BlockEntityAdvancedAlchemicalFurnace.MAX_ESSENTIA);
-
-        // Liquid surface visible in the central opening.
-        poseStack.pushPose();
-        poseStack.translate(0.5F, -0.5F, 1.1F);
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        spriteQuad(gooBuffer, poseStack.last(), goo, 0.0F, TANK_GOO_LIGHT);
-        spriteQuadBackface(gooBuffer, poseStack.last(), goo, 0.0F, TANK_GOO_LIGHT);
-        poseStack.popPose();
-
-        // Each corner tank has two window faces. The on-texture intentionally leaves
-        // these slits transparent so this backing + animated fill can be seen through them.
-        for (int rotation = 0; rotation < 4; rotation++) {
+        float share = Mth.clamp((float) stored / BlockEntityAdvancedAlchemicalFurnace.MAX_ESSENTIA, 0.0F, FULL_SHARE);
+        RenderType goo = Sheets.translucentItemSheet();
+        RenderType backing = Sheets.cutoutBlockSheet();
+        renderPanel(poseStack, buffers, goo, GOO_SPRITE, GOO_LIGHT, GOO_SURFACE, PANEL_FULL);
+        PanelPlane gooA = windowPlane(WINDOW_A_Z, FRONT_LIFT, share);
+        PanelPlane gooB = windowPlane(WINDOW_B_Z, FRONT_LIFT, share);
+        for (int side = 0; side < SIDES; side++) {
             poseStack.pushPose();
-
-            poseStack.pushPose();
-            poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F * rotation));
-            poseStack.mulPose(Axis.XN.rotationDegrees(90.0F));
-            poseStack.translate(0.85F, -1.8F, -1.4F);
-            poseStack.scale(0.3F, 0.6F, 1.0F);
-            spriteQuad(backingBuffer, poseStack.last(), backing, 0.0F, VENT_BACKING_LIGHT);
-            spriteQuadBackface(backingBuffer, poseStack.last(), backing, 0.0F, VENT_BACKING_LIGHT);
-            poseStack.translate(0.0F, 0.0F, -0.01F);
-            spriteQuad(gooBuffer, poseStack.last(), goo, fillBase, TANK_GOO_LIGHT);
-            spriteQuadBackface(gooBuffer, poseStack.last(), goo, fillBase, TANK_GOO_LIGHT);
-            poseStack.popPose();
-
-            poseStack.pushPose();
-            poseStack.mulPose(Axis.ZN.rotationDegrees(90.0F * rotation));
-            poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
-            poseStack.translate(1.15F, 1.8F, -1.4F);
-            poseStack.scale(-0.3F, -0.6F, -1.0F);
-            spriteQuad(backingBuffer, poseStack.last(), backing, 0.0F, VENT_BACKING_LIGHT);
-            spriteQuadBackface(backingBuffer, poseStack.last(), backing, 0.0F, VENT_BACKING_LIGHT);
-            poseStack.translate(0.0F, 0.0F, 0.01F);
-            spriteQuad(gooBuffer, poseStack.last(), goo, fillBase, TANK_GOO_LIGHT);
-            spriteQuadBackface(gooBuffer, poseStack.last(), goo, fillBase, TANK_GOO_LIGHT);
-            poseStack.popPose();
-
+            turnAboutCenter(poseStack, side);
+            renderPanel(poseStack, buffers, backing, BACKING_SPRITE, BACKING_LIGHT, WINDOW_A_BACKING, PANEL_FULL);
+            renderPanel(poseStack, buffers, backing, BACKING_SPRITE, BACKING_LIGHT, WINDOW_B_BACKING, PANEL_FULL);
+            if (share > 0.0F) {
+                renderPanel(poseStack, buffers, goo, GOO_SPRITE, GOO_LIGHT, gooA, PANEL_FULL);
+                renderPanel(poseStack, buffers, goo, GOO_SPRITE, GOO_LIGHT, gooB, PANEL_FULL);
+            }
             poseStack.popPose();
         }
     }
 
-    private static void spriteQuad(
-            VertexConsumer buffer, PoseStack.Pose pose, TextureAtlasSprite sprite, float base, int light) {
-        vertex(buffer, pose, 0.0F, 1.0F, sprite.getU0(), sprite.getV0(), light, 1.0F);
-        vertex(buffer, pose, 1.0F, 1.0F, sprite.getU1(), sprite.getV0(), light, 1.0F);
-        vertex(buffer, pose, 1.0F, base, sprite.getU1(), sprite.getV1(), light, 1.0F);
-        vertex(buffer, pose, 0.0F, base, sprite.getU0(), sprite.getV1(), light, 1.0F);
+    private static void renderHeatVents(int heat, PoseStack poseStack, MultiBufferSource buffers) {
+        float share = Mth.clamp((float) heat / BlockEntityAdvancedAlchemicalFurnace.MAX_POWER, 0.0F, FULL_SHARE);
+        RenderType cutout = Sheets.cutoutBlockSheet();
+        PanelPlane flame = ventPlane(FRONT_LIFT, share);
+        for (int side = 0; side < SIDES; side++) {
+            poseStack.pushPose();
+            turnAboutCenter(poseStack, side);
+            renderPanel(poseStack, buffers, cutout, BACKING_SPRITE, BACKING_LIGHT, FLAME_BACKING, PANEL_FULL);
+            if (share > 0.0F) {
+                renderPanel(poseStack, buffers, cutout, FLAME_SPRITE, FLAME_LIGHT, flame, PANEL_FULL);
+            }
+            poseStack.popPose();
+        }
     }
 
-    private static void spriteQuadBackface(
-            VertexConsumer buffer, PoseStack.Pose pose, TextureAtlasSprite sprite, float base, int light) {
-        vertex(buffer, pose, 0.0F, 1.0F, sprite.getU0(), sprite.getV0(), light, -1.0F);
-        vertex(buffer, pose, 0.0F, base, sprite.getU0(), sprite.getV1(), light, -1.0F);
-        vertex(buffer, pose, 1.0F, base, sprite.getU1(), sprite.getV1(), light, -1.0F);
-        vertex(buffer, pose, 1.0F, 1.0F, sprite.getU1(), sprite.getV0(), light, -1.0F);
+    static PanelPlane windowPlane(float leftZ, float lift, float share) {
+        return risingPlane(WINDOW_FACE_X + lift, WINDOW_BOTTOM, leftZ, WINDOW_SPAN, WINDOW_HEIGHT * share);
     }
 
-    private static void vertex(
-            VertexConsumer buffer, PoseStack.Pose pose, float x, float y, float u, float v, int light, float normalZ) {
-        buffer.addVertex(pose, x, y, 0.0F)
-                .setColor(0xFFFFFFFF)
+    static PanelPlane ventPlane(float lift, float share) {
+        return risingPlane(VENT_FACE_X + lift, VENT_BOTTOM, VENT_LEFT_Z, VENT_SPAN, VENT_HEIGHT * share);
+    }
+
+    private static PanelPlane risingPlane(float faceX, float bottomY, float leftZ, float span, float height) {
+        return new PanelPlane(faceX, bottomY, leftZ, 0.0F, 0.0F, -span, 0.0F, height, 0.0F);
+    }
+
+    static void turnAboutCenter(PoseStack poseStack, int side) {
+        poseStack.translate(CENTER, 0.0F, CENTER);
+        poseStack.mulPose(Axis.YP.rotationDegrees(side * SIDE_ANGLE));
+        poseStack.translate(-CENTER, 0.0F, -CENTER);
+    }
+
+    private static void renderPanel(
+            PoseStack poseStack,
+            MultiBufferSource buffers,
+            RenderType sheet,
+            ResourceLocation spriteId,
+            int light,
+            PanelPlane plane,
+            float bottom) {
+        TextureAtlasSprite sprite = Minecraft.getInstance()
+                .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                .apply(spriteId);
+        writePanel(sprite.wrap(buffers.getBuffer(sheet)), poseStack.last(), plane, bottom, light);
+    }
+
+    static void writePanel(VertexConsumer buffer, PoseStack.Pose pose, PanelPlane plane, float bottom, int light) {
+        Vector3f normal = plane.normal();
+        float nx = normal.x;
+        float ny = normal.y;
+        float nz = normal.z;
+        panelVertex(buffer, pose, plane, 0.0F, bottom, 0.0F, 1.0F, light, nx, ny, nz);
+        panelVertex(buffer, pose, plane, 1.0F, bottom, 1.0F, 1.0F, light, nx, ny, nz);
+        panelVertex(buffer, pose, plane, 1.0F, 1.0F, 1.0F, 0.0F, light, nx, ny, nz);
+        panelVertex(buffer, pose, plane, 0.0F, 1.0F, 0.0F, 0.0F, light, nx, ny, nz);
+        panelVertex(buffer, pose, plane, 0.0F, 1.0F, 0.0F, 0.0F, light, -nx, -ny, -nz);
+        panelVertex(buffer, pose, plane, 1.0F, 1.0F, 1.0F, 0.0F, light, -nx, -ny, -nz);
+        panelVertex(buffer, pose, plane, 1.0F, bottom, 1.0F, 1.0F, light, -nx, -ny, -nz);
+        panelVertex(buffer, pose, plane, 0.0F, bottom, 0.0F, 1.0F, light, -nx, -ny, -nz);
+    }
+
+    private static void panelVertex(
+            VertexConsumer buffer,
+            PoseStack.Pose pose,
+            PanelPlane plane,
+            float px,
+            float py,
+            float u,
+            float v,
+            int light,
+            float nx,
+            float ny,
+            float nz) {
+        buffer.addVertex(pose, plane.x(px, py), plane.y(px, py), plane.z(px, py))
                 .setUv(u, v)
+                .setColor(WHITE)
                 .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(light)
-                .setNormal(pose, 0.0F, 0.0F, normalZ);
+                .setNormal(pose, nx, ny, nz);
+    }
+
+    record PanelPlane(
+            float originX,
+            float originY,
+            float originZ,
+            float rightX,
+            float rightY,
+            float rightZ,
+            float downX,
+            float downY,
+            float downZ) {
+        float x(float px, float py) {
+            return originX + px * rightX + py * downX;
+        }
+
+        float y(float px, float py) {
+            return originY + px * rightY + py * downY;
+        }
+
+        float z(float px, float py) {
+            return originZ + px * rightZ + py * downZ;
+        }
+
+        Vector3f normal() {
+            Vector3f normal = new Vector3f(rightX, rightY, rightZ).cross(downX, downY, downZ);
+            return normal.lengthSquared() > 0.0F ? normal.normalize() : normal.set(0.0F, 1.0F, 0.0F);
+        }
     }
 
     private static void renderMesh(
@@ -255,9 +320,12 @@ public final class AdvancedAlchemicalFurnaceRenderer
                 normal.add(normals[index], normals[index + 1], normals[index + 2]);
             }
             center.mul(0.25F).mulPosition(worldTransform);
-            normal.mulDirection(worldTransform).normalize();
+            normal.mulDirection(worldTransform);
+            if (normal.lengthSquared() > 0.0F) {
+                normal.normalize();
+            }
             // Sample just outside each surface, rather than inside the enclosed controller cell.
-            center.fma(0.01F, normal);
+            center.fma(NORMAL_OFFSET, normal);
             int light =
                     LevelRenderer.getLightColor(furnace.getLevel(), BlockPos.containing(center.x, center.y, center.z));
             for (int corner = 0; corner < 4; corner++) {
@@ -276,7 +344,13 @@ public final class AdvancedAlchemicalFurnaceRenderer
     @Override
     public AABB getRenderBoundingBox(BlockEntityAdvancedAlchemicalFurnace furnace) {
         var pos = furnace.getBlockPos();
-        return new AABB(pos.getX() - 1, pos.getY(), pos.getZ() - 1, pos.getX() + 2, pos.getY() + 2, pos.getZ() + 2);
+        return new AABB(
+                pos.getX() - BOUNDS_MARGIN_LOW,
+                pos.getY(),
+                pos.getZ() - BOUNDS_MARGIN_LOW,
+                pos.getX() + BOUNDS_MARGIN_HIGH,
+                pos.getY() + BOUNDS_HEIGHT,
+                pos.getZ() + BOUNDS_MARGIN_HIGH);
     }
 
     @Override

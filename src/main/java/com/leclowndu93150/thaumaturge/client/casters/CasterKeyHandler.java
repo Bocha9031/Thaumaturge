@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.client.input.TTKeybinds;
 import com.leclowndu93150.thaumaturge.content.casters.CasterManager;
 import com.leclowndu93150.thaumaturge.network.ServerboundCasterKeyPayload;
@@ -40,8 +40,8 @@ public final class CasterKeyHandler {
         if (player == null) {
             return;
         }
-        boolean holdingCaster = player.getMainHandItem().getItem() instanceof ICaster
-                || player.getOffhandItem().getItem() instanceof ICaster;
+        boolean holdingCaster = player.getMainHandItem().getItem() instanceof FocusCaster
+                || player.getOffhandItem().getItem() instanceof FocusCaster;
         if (mc.screen == null && holdingCaster && TTKeybinds.CHANGE_FOCUS.same(mc.options.keySwapOffhand)) {
             boolean drained = mc.options.keySwapOffhand.consumeClick();
             while (drained) {
@@ -56,8 +56,8 @@ public final class CasterKeyHandler {
                     radialLock = false;
                 }
                 if (!radialLock
-                        && (player.getMainHandItem().getItem() instanceof ICaster
-                                || player.getOffhandItem().getItem() instanceof ICaster)) {
+                        && (player.getMainHandItem().getItem() instanceof FocusCaster
+                                || player.getOffhandItem().getItem() instanceof FocusCaster)) {
                     if (player.isShiftKeyDown()) {
                         PacketDistributor.sendToServer(new ServerboundFocusChangePayload(CasterManager.REMOVE_FOCUS));
                     } else {

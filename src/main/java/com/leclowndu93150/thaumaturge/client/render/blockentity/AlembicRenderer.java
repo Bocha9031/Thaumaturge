@@ -41,7 +41,7 @@ public class AlembicRenderer implements BlockEntityRenderer<BlockEntityAlembic> 
         }
         ResourceLocation filterTexture = filter.value().texture();
         int filterColor = 0xFF000000 | (filter.value().color() & 0x00FFFFFF);
-        submitFilterLabel(alembic.facing(), filterTexture, filterColor, poseStack, buffers, light);
+        submitFilterLabel(alembic.spoutSide(), filterTexture, filterColor, poseStack, buffers, light);
     }
 
     public static void addVertex(

@@ -132,7 +132,7 @@ public final class SpellCasting {
         Map<ResourceKey<IAspect>, Integer> split = WandVisHelper.primalSplit(
                 Math.round(pre.visCost() * WandEconomy.CENTIVIS_PER_VIS),
                 FocusItems.aspects(summary, player.registryAccess()));
-        if (!player.getAbilities().instabuild && !WandVisHelper.consumeAllVis(wand, player, split, true, false)) {
+        if (!player.getAbilities().instabuild && !WandVisHelper.payCosts(wand, player, split, true, false)) {
             if (player instanceof ServerPlayer serverPlayer) {
                 TTActionBar.send(
                         serverPlayer,
@@ -149,7 +149,7 @@ public final class SpellCasting {
             return true;
         }
         Map<ResourceKey<IAspect>, Integer> split = FocusItems.visSplit(summary, visShare, player.registryAccess());
-        return WandVisHelper.consumeAllVis(wand, player, split, false, false);
+        return WandVisHelper.payCosts(wand, player, split, false, false);
     }
 
     private static void startCooldown(Player player, ItemStack wand, int ticks) {

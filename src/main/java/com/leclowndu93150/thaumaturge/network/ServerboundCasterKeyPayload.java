@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.network;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.content.casters.CasterManager;
 import com.leclowndu93150.thaumaturge.content.equipment.ElementalShovelItem;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -29,12 +29,12 @@ public record ServerboundCasterKeyPayload(int mod) implements CustomPacketPayloa
                 ElementalShovelItem.cycleOrientation(main);
                 return;
             }
-            if (main.getItem() instanceof ICaster) {
+            if (main.getItem() instanceof FocusCaster) {
                 CasterManager.toggleMisc(main, player.level(), player, payload.mod());
                 return;
             }
             ItemStack off = player.getOffhandItem();
-            if (off.getItem() instanceof ICaster) {
+            if (off.getItem() instanceof FocusCaster) {
                 CasterManager.toggleMisc(off, player.level(), player, payload.mod());
             }
         });

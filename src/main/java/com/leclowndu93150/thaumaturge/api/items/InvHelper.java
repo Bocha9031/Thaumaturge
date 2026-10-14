@@ -569,8 +569,17 @@ public final class InvHelper {
         }
         if (!simulate) {
             for (ItemStack stack : items) {
-                if (!consumeFromAdjacentChests(level, pos, stack.copy())) {
-                    consumePlayerItem(player, stack, true, true);
+                ItemStack remaining = stack.copy();
+                for (Direction face : Direction.values()) {
+                    if (face == Direction.UP || remaining.isEmpty()) {
+                        continue;
+                    }
+                    ItemStack removed =
+                            removeStackFrom(level, pos.relative(face), face.getOpposite(), remaining, BASE_TAGS, false);
+                    remaining.shrink(removed.getCount());
+                }
+                if (!remaining.isEmpty() && !consumePlayerItem(player, remaining, true, true)) {
+                    return false;
                 }
             }
         }

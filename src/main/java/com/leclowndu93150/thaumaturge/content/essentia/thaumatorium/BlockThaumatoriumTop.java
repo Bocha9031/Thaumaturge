@@ -6,6 +6,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -92,7 +93,7 @@ public final class BlockThaumatoriumTop extends BaseEntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
+        if (!state.is(newState.getBlock()) && level instanceof ServerLevel) {
 
             if (level.getBlockState(pos.below()).is(TTBlocks.THAUMATORIUM.get())) {
                 level.destroyBlock(pos.below(), true);

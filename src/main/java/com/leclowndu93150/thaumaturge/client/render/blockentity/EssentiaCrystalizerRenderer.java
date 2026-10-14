@@ -53,10 +53,10 @@ public final class EssentiaCrystalizerRenderer implements BlockEntityRenderer<Bl
         if (crystalizer.getLevel() == null || crystalizer.aspectKey() == null) {
             return;
         }
-        float red = crystalizer.crystalRed;
-        float green = crystalizer.crystalGreen;
-        float blue = crystalizer.crystalBlue;
-        float spin = crystalizer.rotation + crystalizer.rotationSpeed * partialTick;
+        float red = crystalizer.crystalRed();
+        float green = crystalizer.crystalGreen();
+        float blue = crystalizer.crystalBlue();
+        float spin = crystalizer.rotation() + crystalizer.rotationSpeed() * partialTick;
 
         poseStack.pushPose();
         poseStack.translate(0.5F, 0.5F, 0.5F);

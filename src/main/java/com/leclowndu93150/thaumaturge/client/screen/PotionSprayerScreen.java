@@ -67,7 +67,7 @@ public final class PotionSprayerScreen extends AbstractTTContainerScreen<MenuPot
         if (sprayer == null || minecraft == null || minecraft.player == null) {
             return;
         }
-        int charges = sprayer.charges();
+        int charges = sprayer.sprayShots();
         if (charges > 0) {
             int scroll = minecraft.player.tickCount % CHARGE_SCROLL_PERIOD;
             int tint = 0xFF000000 | (sprayer.color() & 0x00FFFFFF);
@@ -99,8 +99,8 @@ public final class PotionSprayerScreen extends AbstractTTContainerScreen<MenuPot
     }
 
     private void drawAspects(GuiGraphics graphics, BlockEntityPotionSprayer sprayer) {
-        AspectList recipe = sprayer.recipe();
-        AspectList progress = sprayer.progress();
+        AspectList recipe = sprayer.essentiaNeeded();
+        AspectList progress = sprayer.essentiaStored();
         int pos = 0;
         for (AspectInstance entry : recipe.entries()) {
             int barX = leftPos + BAR_BASE_X + TAG_COLUMN_STRIDE * (pos % 2);

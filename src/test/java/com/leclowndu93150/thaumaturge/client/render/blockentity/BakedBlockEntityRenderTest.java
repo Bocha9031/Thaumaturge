@@ -163,9 +163,9 @@ class BakedBlockEntityRenderTest {
                     when(entity.getBlockState()).thenReturn(state);
                     when(entity.getLevel()).thenReturn(mock(Level.class));
                     when(entity.aspectKey()).thenReturn(TTAspects.AER);
-                    entity.crystalRed = 0.2F;
-                    entity.crystalGreen = 0.4F;
-                    entity.crystalBlue = 0.6F;
+                    when(entity.crystalRed()).thenReturn(0.2F);
+                    when(entity.crystalGreen()).thenReturn(0.4F);
+                    when(entity.crystalBlue()).thenReturn(0.6F);
                     new EssentiaCrystalizerRenderer(null)
                             .render(entity, 0.5F, pose, buffers, 0, OverlayTexture.NO_OVERLAY);
                 }
@@ -177,7 +177,7 @@ class BakedBlockEntityRenderTest {
                 case VALVE -> {
                     BlockEntityTubeValve entity = mock(BlockEntityTubeValve.class);
                     when(entity.getBlockState()).thenReturn(state);
-                    when(entity.facing()).thenReturn(Direction.UP);
+                    when(entity.flowSide()).thenReturn(Direction.UP);
                     new TubeValveRenderer(null).render(entity, 0.5F, pose, buffers, 0, OverlayTexture.NO_OVERLAY);
                 }
             }

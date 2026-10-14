@@ -46,7 +46,7 @@ class ItemWandTest {
                 wand.use(level, player, InteractionHand.MAIN_HAND).getResult());
 
         verify(player).startUsingItem(InteractionHand.MAIN_HAND);
-        verify(wand, never()).getFocusStack(stack);
+        verify(wand, never()).socketedFocus(stack);
     }
 
     @Test
@@ -63,11 +63,11 @@ class ItemWandTest {
     void aMissDoesNotTreatTheEndPositionAsANode() {
         aimAtNode();
         when(player.pick(6.0, 1.0F, false)).thenReturn(BlockHitResult.miss(Vec3.atCenterOf(pos), Direction.NORTH, pos));
-        doReturn(ItemStack.EMPTY).when(wand).getFocusStack(stack);
+        doReturn(ItemStack.EMPTY).when(wand).socketedFocus(stack);
 
         wand.use(level, player, InteractionHand.MAIN_HAND);
 
         verify(level, never()).getBlockEntity(pos);
-        verify(wand).getFocusStack(stack);
+        verify(wand).socketedFocus(stack);
     }
 }

@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.client.render.GuiBlend;
 import com.leclowndu93150.thaumaturge.compat.curio.ThaumaturgeCuriosCompat;
 import com.leclowndu93150.thaumaturge.content.casters.CasterManager;
@@ -151,10 +151,10 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
 
     private static boolean holdingSocketedCaster(Minecraft mc) {
         ItemStack stack = mc.player.getMainHandItem();
-        if (!(stack.getItem() instanceof ICaster)) {
+        if (!(stack.getItem() instanceof FocusCaster)) {
             stack = mc.player.getOffhandItem();
         }
-        return stack.getItem() instanceof ICaster caster && FocusItems.isFocus(caster.getFocusStack(stack));
+        return stack.getItem() instanceof FocusCaster caster && FocusItems.isFocus(caster.socketedFocus(stack));
     }
 
     private static float radialChange(long time, long lastTime, long total) {
@@ -213,13 +213,13 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
 
     private void renderRadialHud(GuiGraphics graphics, Minecraft mc, float partialTicks, long time) {
         ItemStack casterStack = mc.player.getMainHandItem();
-        if (!(casterStack.getItem() instanceof ICaster)) {
+        if (!(casterStack.getItem() instanceof FocusCaster)) {
             casterStack = mc.player.getOffhandItem();
         }
-        if (!(casterStack.getItem() instanceof ICaster wand)) {
+        if (!(casterStack.getItem() instanceof FocusCaster wand)) {
             return;
         }
-        if (fociItem.isEmpty() && !FocusItems.isFocus(wand.getFocusStack(casterStack))) {
+        if (fociItem.isEmpty() && !FocusItems.isFocus(wand.socketedFocus(casterStack))) {
             return;
         }
         int mouseX = (int) (mc.mouseHandler.xpos()
@@ -237,7 +237,7 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
         drawRing(graphics, RADIAL_1, cx, cy, ringAngle, width * RING_1_SIZE * radialHudScale);
         drawRing(graphics, RADIAL_2, cx, cy, -ringAngle, width * RING_2_SIZE * radialHudScale);
 
-        ItemStack socketed = wand.getFocusStack(casterStack);
+        ItemStack socketed = wand.socketedFocus(casterStack);
         if (FocusItems.isFocus(socketed)) {
             graphics.renderItem(socketed.copy(), cx - ITEM_HALF, cy - ITEM_HALF);
             int mx = mouseX - cx;

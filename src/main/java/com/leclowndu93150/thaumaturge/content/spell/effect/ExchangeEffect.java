@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.spell.effect;
 
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.casters.IFocusBlockPicker;
 import com.leclowndu93150.thaumaturge.api.spell.behavior.AbstractEffectBehavior;
 import com.leclowndu93150.thaumaturge.api.spell.behavior.SpellBehaviorType;
@@ -67,10 +67,10 @@ public final class ExchangeEffect extends AbstractEffectBehavior implements IFoc
             return;
         }
         ItemStack casterStack = CasterHands.held(player);
-        if (!(casterStack.getItem() instanceof ICaster caster)) {
+        if (!(casterStack.getItem() instanceof FocusCaster caster)) {
             return;
         }
-        BlockState picked = caster.getPickedBlock(casterStack);
+        BlockState picked = caster.rememberedBlock(casterStack);
         if (picked == null || picked.isAir()) {
             return;
         }

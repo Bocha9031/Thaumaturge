@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.content.essentia.smeltery;
 
-import com.leclowndu93150.thaumaturge.content.device.DeviceShapes;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -20,22 +19,18 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jspecify.annotations.Nullable;
 
 public class BlockSmelterVent extends Block {
-
     public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
-    private static final Map<Direction, VoxelShape> SHAPES = DeviceShapes.facingShapesFromNorth(Shapes.or(
-            box(4.0, 4.0, 0.0, 12.0, 12.0, 1.0),
-            box(6.0, 6.0, 1.0, 10.0, 10.0, 4.0),
-            box(6.0, 6.0, 4.0, 10.0, 15.0, 8.0),
-            Shapes.join(
-                    box(5.0, 15.0, 3.0, 11.0, 16.0, 9.0), box(6.0, 15.0, 4.0, 10.0, 16.0, 8.0), BooleanOp.ONLY_FIRST)));
+    private static final VoxelShape CAP =
+            Shapes.join(Block.box(5, 15, 3, 11, 16, 9), Block.box(6, 15, 4, 10, 16, 8), BooleanOp.ONLY_FIRST);
+    private static final Map<Direction, VoxelShape> SHAPES = SmelterPartShapes.fromNorth(Shapes.or(
+            Block.box(4, 4, 0, 12, 12, 1), Block.box(6, 6, 1, 10, 10, 4), Block.box(6, 6, 4, 10, 15, 8), CAP));
 
     public BlockSmelterVent(Properties properties) {
         super(properties);
-        registerDefaultState(defaultBlockState().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
     }
 
     @Override
@@ -45,7 +40,7 @@ public class BlockSmelterVent extends Block {
 
     @Override
     protected BlockState mirror(BlockState state, Mirror mirror) {
-        return state.setValue(FACING, mirror.mirror(state.getValue(FACING)));
+        return state.rotate(mirror.getRotation(state.getValue(FACING)));
     }
 
     @Override
@@ -54,29 +49,24 @@ public class BlockSmelterVent extends Block {
     }
 
     @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState().setValue(FACING, context.getHorizontalDirection());
     }
 
     @Override
     protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
-        return level.getBlockState(pos.relative(state.getValue(FACING))).getBlock() instanceof BlockSmelter
-                && level.getBlockState(pos.relative(state.getValue(FACING))).getValue(FACING)
-                        != state.getValue(FACING).getOpposite();
+        return SmelterPartShapes.attachedToSmelter(level, pos, state.getValue(FACING));
     }
 
     @Override
     protected BlockState updateShape(
             BlockState state,
-            Direction directionToNeighbour,
-            BlockState neighbourState,
+            Direction direction,
+            BlockState neighborState,
             LevelAccessor level,
             BlockPos pos,
-            BlockPos neighbourPos) {
-        if (!canSurvive(state, level, pos)) {
-            return Blocks.AIR.defaultBlockState();
-        }
-        return super.updateShape(state, directionToNeighbour, neighbourState, level, pos, neighbourPos);
+            BlockPos neighborPos) {
+        return canSurvive(state, level, pos) ? state : Blocks.AIR.defaultBlockState();
     }
 
     @Override

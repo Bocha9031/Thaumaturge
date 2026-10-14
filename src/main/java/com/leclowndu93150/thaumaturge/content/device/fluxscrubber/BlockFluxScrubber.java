@@ -26,7 +26,6 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
-/** Flux scrubber: consumes aura vis to remove nearby physical Flux and yields Praecantatio. */
 public final class BlockFluxScrubber extends BaseEntityBlock {
     public static final MapCodec<BlockFluxScrubber> CODEC = simpleCodec(BlockFluxScrubber::new);
 
@@ -54,7 +53,7 @@ public final class BlockFluxScrubber extends BaseEntityBlock {
     }
 
     @Override
-    public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState()
                 .setValue(BlockStateProperties.FACING, context.getClickedFace().getOpposite());
     }
@@ -76,31 +75,20 @@ public final class BlockFluxScrubber extends BaseEntityBlock {
     }
 
     @Override
-    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return Shapes.empty();
-    }
-
-    @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-        return true;
-    }
-
-    @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPES.get(state.getValue(BlockStateProperties.FACING));
     }
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new BlockEntityFluxScrubber(pos, state);
     }
 
     @Override
-    public @Nullable <T extends BlockEntity> BlockEntityTicker<T> getTicker(
+    public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(
             Level level, BlockState state, BlockEntityType<T> type) {
-        return createTickerHelper(
-                type,
-                TTBlockEntities.FLUX_SCRUBBER.get(),
-                level.isClientSide() ? BlockEntityFluxScrubber::clientTick : BlockEntityFluxScrubber::serverTick);
+        return level.isClientSide()
+                ? null
+                : createTickerHelper(type, TTBlockEntities.FLUX_SCRUBBER.get(), BlockEntityFluxScrubber::serverTick);
     }
 }

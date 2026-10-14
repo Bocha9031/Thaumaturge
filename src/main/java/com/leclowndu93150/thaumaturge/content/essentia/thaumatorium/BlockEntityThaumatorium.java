@@ -1,62 +1,72 @@
 package com.leclowndu93150.thaumaturge.content.essentia.thaumatorium;
 
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaTransport;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaPull;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
-import com.leclowndu93150.thaumaturge.content.essentia.flow.EssentiaFlowHandler;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.work.AdjacentEssentiaDraw;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.work.BrainBoxScanner;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.work.CraftSelection;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.work.RecipeQueue;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.work.RequirementTracker;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.work.ThaumatoriumScheduler;
 import com.leclowndu93150.thaumaturge.content.legacy.LegacyIds;
 import com.leclowndu93150.thaumaturge.content.recipe.crucible.CrucibleRecipe;
 import com.leclowndu93150.thaumaturge.content.recipe.crucible.CrucibleRecipeInput;
+import com.leclowndu93150.thaumaturge.content.research.ResearchProgressionEvents;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
-import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTRecipeTypes;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.stats.Stats;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jspecify.annotations.Nullable;
 
-public final class BlockEntityThaumatorium extends AbstractSyncedBlockEntity implements IEssentiaTransport {
-    private static final int CHECK_INTERVAL = 40;
-    private static final int WORK_INTERVAL = 5;
-    private static final int SUCTION = 128;
-    private static final int BASE_RECIPES = 1;
-    private static final int BRAIN_BOX_BONUS = 2;
+public final class BlockEntityThaumatorium extends AbstractSyncedBlockEntity implements SinkOnlyEssentiaFace {
+    private static final String ESSENTIA_KEY = "Essentia";
+    private static final String MAX_RECIPES_KEY = "MaxRecipes";
+    private static final String QUEUE_KEY = "Queue";
+    private static final String CATALYST_KEY = "Catalyst";
+    private static final int CATALYST_SLOTS = 1;
+    private static final int CATALYST_SLOT = 0;
+    private static final int HEAT_DEPTH = 2;
+    private static final int CATALYST_COST = 1;
+    private static final float HISS_VOLUME = 0.3F;
+    private static final float HISS_PITCH_LOW = 1.7F;
+    private static final float HISS_PITCH_RANGE = 0.25F;
 
-    private final ItemStackHandler catalyst = new ItemStackHandler(1) {
-        @Override
-        protected void onContentsChanged(int index) {
-            super.onContentsChanged(index);
-            setChanged();
-        }
-    };
-
-    private AspectList essentia = AspectList.EMPTY;
-    private final List<ResourceLocation> queue = new ArrayList<>();
-    private int maxRecipes = BASE_RECIPES;
-    private int currentCraft = -1;
-    private @Nullable Holder<IAspect> currentSuction;
-    private @Nullable CrucibleRecipe currentRecipe;
-    private int counter;
+    private final CatalystHandler catalyst = new CatalystHandler();
+    private final RecipeQueue queue = new RecipeQueue();
+    private final RequirementTracker requirements = new RequirementTracker();
+    private final CraftSelection selection = new CraftSelection();
+    private final AdjacentEssentiaDraw draw = new AdjacentEssentiaDraw();
+    private final Map<ResourceLocation, UUID> crafters = new HashMap<>();
+    private final BrainBoxScanner brainBoxes = new BrainBoxScanner();
+    private final ThaumatoriumScheduler scheduler = new ThaumatoriumScheduler();
     private boolean heated;
 
     public BlockEntityThaumatorium(BlockPos pos, BlockState state) {
@@ -68,301 +78,293 @@ public final class BlockEntityThaumatorium extends AbstractSyncedBlockEntity imp
     }
 
     public AspectList essentia() {
-        return essentia;
+        return requirements.received();
     }
 
     public List<ResourceLocation> queue() {
-        return queue;
+        return queue.ids();
     }
 
     public int maxRecipes() {
-        return maxRecipes;
+        return queue.capacity();
     }
 
     public ItemStack catalystStack() {
-        return catalyst.getStackInSlot(0).copy();
+        return catalyst.getStackInSlot(CATALYST_SLOT).copy();
     }
 
-    private Direction facing() {
-        BlockState state = getBlockState();
-        return state.hasProperty(HorizontalDirectionalBlock.FACING)
-                ? state.getValue(HorizontalDirectionalBlock.FACING)
-                : Direction.NORTH;
-    }
-
-    public void toggleRecipe(ServerLevel server, Player player, ResourceLocation recipeId) {
+    public void toggleRecipe(ServerLevel level, Player player, ResourceLocation recipeId) {
         if (queue.remove(recipeId)) {
-            afterQueueChange();
+            crafters.remove(recipeId);
+            resetSelection();
+            setChangedAndSync();
             return;
         }
-        RecipeHolder<?> holder = findRecipe(server, recipeId);
-        if (holder == null || !(holder.value() instanceof CrucibleRecipe recipe)) {
-            return;
-        }
-        if (!recipe.doesPassGate(player) || queue.size() >= maxRecipes) {
+        CrucibleRecipe recipe = recipe(level, recipeId);
+        if (recipe == null || !recipe.doesPassGate(player) || queue.isFull()) {
             return;
         }
         queue.add(recipeId);
-        afterQueueChange();
+        crafters.put(recipeId, player.getUUID());
+        resetSelection();
+        setChangedAndSync();
     }
 
-    private void afterQueueChange() {
-        currentCraft = -1;
-        currentRecipe = null;
-        currentSuction = null;
-        setChanged();
-        syncToClient();
-    }
-
-    private @Nullable RecipeHolder<?> findRecipe(ServerLevel server, ResourceLocation recipeId) {
-        return server.getRecipeManager().byKey(recipeId).orElse(null);
-    }
-
-    public List<CrucibleRecipe> candidateRecipes(ServerLevel server, Player player, List<ResourceLocation> idsOut) {
+    public List<CrucibleRecipe> candidateRecipes(ServerLevel level, Player player, List<ResourceLocation> idsOut) {
         List<CrucibleRecipe> found = new ArrayList<>();
-        ItemStack stack = catalystStack();
-        for (RecipeHolder<CrucibleRecipe> holder :
-                server.getRecipeManager().getAllRecipesFor(TTRecipeTypes.CRUCIBLE.get())) {
-            CrucibleRecipe recipe = holder.value();
-
-            ResourceLocation id = holder.id();
-            boolean queued = queue.contains(id);
-            boolean matches = !stack.isEmpty() && recipe.catalyst().test(stack) && recipe.doesPassGate(player);
-            if (queued || matches) {
-                found.add(recipe);
-                idsOut.add(id);
+        ItemStack inSlot = catalystStack();
+        for (RecipeHolder<CrucibleRecipe> entry :
+                level.getRecipeManager().getAllRecipesFor(TTRecipeTypes.CRUCIBLE.get())) {
+            ResourceLocation recipeId = entry.id();
+            if (isOffered(entry.value(), recipeId, inSlot, player)) {
+                found.add(entry.value());
+                idsOut.add(recipeId);
             }
         }
         return found;
     }
 
+    private boolean isOffered(CrucibleRecipe recipe, ResourceLocation recipeId, ItemStack inSlot, Player player) {
+        if (queue.ids().contains(recipeId)) {
+            return true;
+        }
+        if (inSlot.isEmpty()) {
+            return false;
+        }
+        return recipe.catalyst().test(inSlot) && recipe.doesPassGate(player);
+    }
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityThaumatorium machine) {
-        if (!(level instanceof ServerLevel server)) {
+        if (level instanceof ServerLevel server) {
+            machine.tick(server, pos);
+        }
+    }
+
+    private void tick(ServerLevel level, BlockPos pos) {
+        scheduler.advance();
+        if (scheduler.refreshDue()) {
+            refresh(level, pos);
+        }
+        if (!scheduler.workDue()) {
             return;
         }
-        if (machine.counter == 0 || machine.counter % CHECK_INTERVAL == 0) {
-            machine.heated = server.getBlockState(pos.below(2)).is(TTBlockTags.CRUCIBLE_HEAT_SOURCES);
-            machine.updateUpgrades(server);
+        if (canWork(level, pos)) {
+            work(level, pos);
+        } else {
+            selection.request(null);
         }
-        machine.counter++;
-        if (!machine.heated
-                || machine.gettingPower(server)
-                || machine.counter % WORK_INTERVAL != 0
-                || machine.queue.isEmpty()) {
+    }
+
+    private void refresh(ServerLevel level, BlockPos pos) {
+        heated = level.getBlockState(pos.below(HEAT_DEPTH)).is(TTBlockTags.CRUCIBLE_HEAT_SOURCES);
+        int capacity = RecipeQueue.capacityFor(brainBoxes.count(level, pos, front()));
+        if (capacity == queue.capacity()) {
             return;
         }
-        ItemStack stack = machine.catalystStack();
-        if (stack.isEmpty()) {
-            machine.currentSuction = null;
+        if (queue.resize(capacity)) {
+            crafters.keySet().retainAll(queue.ids());
+            resetSelection();
+        }
+        setChangedAndSync();
+    }
+
+    private void work(ServerLevel level, BlockPos pos) {
+        ItemStack inSlot = catalystStack();
+        if (inSlot.isEmpty()) {
+            selection.request(null);
             return;
         }
-        if (machine.currentCraft < 0
-                || machine.currentCraft >= machine.queue.size()
-                || machine.currentRecipe == null
-                || !machine.currentRecipe.catalyst().test(stack)) {
-            machine.currentCraft = -1;
-            machine.currentRecipe = null;
-            for (int a = 0; a < machine.queue.size(); a++) {
-                RecipeHolder<?> holder = machine.findRecipe(server, machine.queue.get(a));
-                if (holder != null
-                        && holder.value() instanceof CrucibleRecipe recipe
-                        && recipe.catalyst().test(stack)) {
-                    machine.currentCraft = a;
-                    machine.currentRecipe = recipe;
-                    break;
-                }
+        CrucibleRecipe recipe = selectRecipe(level, inSlot);
+        if (recipe == null) {
+            return;
+        }
+        Holder<IAspect> missing = requirements.firstUnmet();
+        if (missing == null) {
+            selection.request(null);
+            complete(level, pos, recipe, inSlot);
+            return;
+        }
+        selection.request(missing.unwrapKey().orElse(null));
+        pullUnit(level, pos, missing);
+    }
+
+    private @Nullable CrucibleRecipe selectRecipe(ServerLevel level, ItemStack inSlot) {
+        CrucibleRecipe kept = keptSelection(level, inSlot);
+        return kept != null ? kept : adoptFirstFit(level, inSlot);
+    }
+
+    private @Nullable CrucibleRecipe keptSelection(ServerLevel level, ItemStack inSlot) {
+        ResourceLocation current = selection.recipe();
+        if (current == null || !queue.ids().contains(current)) {
+            return null;
+        }
+        CrucibleRecipe recipe = recipe(level, current);
+        return recipe != null && recipe.catalyst().test(inSlot) ? recipe : null;
+    }
+
+    private @Nullable CrucibleRecipe adoptFirstFit(ServerLevel level, ItemStack inSlot) {
+        for (ResourceLocation candidate : queue.ids()) {
+            CrucibleRecipe recipe = recipe(level, candidate);
+            if (recipe != null && recipe.catalyst().test(inSlot)) {
+                selection.choose(candidate);
+                requirements.planFor(recipe);
+                return recipe;
             }
         }
-        if (machine.currentCraft < 0 || machine.currentRecipe == null) {
-            return;
-        }
-        boolean done = true;
-        machine.currentSuction = null;
-        for (var entry : machine.currentRecipe.aspects().sortedByTag()) {
-            if (machine.essentia.amountOf(entry.aspect()) < entry.amount()) {
-                machine.currentSuction = entry.aspect();
-                done = false;
-                break;
-            }
-        }
-        if (done) {
-            machine.completeRecipe(server);
-        } else if (machine.currentSuction != null) {
-            machine.fill(server);
-        }
-    }
-
-    private boolean gettingPower(ServerLevel server) {
-        return server.hasNeighborSignal(getBlockPos())
-                || server.hasNeighborSignal(getBlockPos().above())
-                || server.hasNeighborSignal(getBlockPos().below());
-    }
-
-    private void updateUpgrades(ServerLevel server) {
-        Direction facing = facing();
-        int max = BASE_RECIPES;
-        for (int yy = 0; yy <= 1; yy++) {
-            for (Direction dir : Direction.values()) {
-                if (dir == Direction.DOWN || dir == facing) {
-                    continue;
-                }
-                BlockPos bp = getBlockPos().above(yy).relative(dir);
-                BlockState bs = server.getBlockState(bp);
-                if (bs.is(TTBlocks.BRAIN_BOX.get()) && bs.getValue(BlockStateProperties.FACING) == dir.getOpposite()) {
-                    max += BRAIN_BOX_BONUS;
-                }
-            }
-        }
-        if (max != maxRecipes) {
-            maxRecipes = max;
-            while (queue.size() > maxRecipes) {
-                queue.removeLast();
-            }
-            setChanged();
-            syncToClient();
-        }
-    }
-
-    private void completeRecipe(ServerLevel server) {
-        ItemStack stack = catalystStack();
-        if (currentRecipe == null || !currentRecipe.matches(new CrucibleRecipeInput(stack, essentia), server)) {
-            return;
-        }
-        if (catalyst.extractItem(0, 1, false).isEmpty()) {
-            return;
-        }
-        ItemStack result = currentRecipe.assemble(new CrucibleRecipeInput(stack, essentia), server.registryAccess());
-        essentia = AspectList.EMPTY;
-        InvHelper.ejectStackAt(server, getBlockPos(), facing(), result);
-        server.playSound(
-                null,
-                getBlockPos(),
-                SoundEvents.LAVA_EXTINGUISH,
-                SoundSource.BLOCKS,
-                0.25F,
-                2.6F + (server.getRandom().nextFloat() - server.getRandom().nextFloat()) * 0.8F);
-        currentCraft = -1;
-        currentRecipe = null;
-        setChanged();
-        syncToClient();
-    }
-
-    private void fill(ServerLevel server) {
-        Direction facing = facing();
-        for (int y = 0; y <= 1; y++) {
-            for (Direction dir : Direction.values()) {
-                if (dir == facing || dir == Direction.DOWN || y == 0 && dir == Direction.UP) {
-                    continue;
-                }
-                BlockPos from = getBlockPos().above(y);
-                IEssentiaTransport ic = EssentiaFlowHandler.transport(server, from.relative(dir), dir.getOpposite());
-                if (ic == null) {
-                    continue;
-                }
-                if (ic.getEssentiaAmount(dir.getOpposite()) > 0
-                        && ic.getSuctionAmount(dir.getOpposite()) < getSuctionAmount(dir)
-                        && getSuctionAmount(dir) >= ic.getMinimumSuction()) {
-                    int taken = ic.takeEssentia(currentSuction, 1, dir.getOpposite());
-                    if (taken > 0) {
-                        acceptEssentia(currentSuction, taken);
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    private int acceptEssentia(Holder<IAspect> aspect, int amount) {
-        if (currentRecipe == null) {
-            return 0;
-        }
-        int needed = currentRecipe.aspects().amountOf(aspect) - essentia.amountOf(aspect);
-        if (needed <= 0) {
-            return 0;
-        }
-        int added = Math.min(needed, amount);
-        essentia = essentia.add(aspect, added);
-        setChanged();
-        syncToClient();
-        return added;
-    }
-
-    @Override
-    public boolean isConnectable(Direction face) {
-        return face != facing();
-    }
-
-    @Override
-    public boolean canInputFrom(Direction face) {
-        return face != facing();
-    }
-
-    @Override
-    public boolean canOutputTo(Direction face) {
-        return false;
-    }
-
-    @Override
-    public void setSuction(Holder<IAspect> aspect, int amount) {
-        this.currentSuction = aspect;
-    }
-
-    @Override
-    public @Nullable Holder<IAspect> getSuctionType(Direction face) {
-        return currentSuction;
-    }
-
-    @Override
-    public int getSuctionAmount(Direction face) {
-        return currentSuction != null ? SUCTION : 0;
-    }
-
-    @Override
-    public @Nullable Holder<IAspect> getEssentiaType(Direction face) {
+        resetSelection();
         return null;
     }
 
-    @Override
-    public int getEssentiaAmount(Direction face) {
-        return 0;
-    }
-
-    @Override
-    public int takeEssentia(Holder<IAspect> aspect, int amount, Direction face) {
-        return 0;
-    }
-
-    @Override
-    public int addEssentia(Holder<IAspect> aspect, int amount, Direction face) {
-        return canInputFrom(face) ? acceptEssentia(aspect, amount) : 0;
-    }
-
-    @Override
-    public int getMinimumSuction() {
-        return 0;
-    }
-
-    @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
-        essentia = TTNbt.read(input, "Essentia", AspectList.CODEC, registries).orElse(AspectList.EMPTY);
-        maxRecipes = (input.contains("MaxRecipes") ? input.getInt("MaxRecipes") : BASE_RECIPES);
-        queue.clear();
-        TTNbt.read(input, "Queue", LegacyIds.IDENTIFIER_CODEC.listOf(), registries)
-                .ifPresent(queue::addAll);
-        if (input.contains("Catalyst")) {
-            catalyst.deserializeNBT(registries, input.getCompound("Catalyst"));
+    private void complete(ServerLevel level, BlockPos pos, CrucibleRecipe recipe, ItemStack inSlot) {
+        CrucibleRecipeInput check = new CrucibleRecipeInput(inSlot, requirements.received());
+        if (!recipe.matches(check, level)) {
+            return;
         }
+        ItemStack result = recipe.assemble(check, level.registryAccess());
+        useCatalyst(inSlot);
+        requirements.clearReceived();
+        credit(level, result);
+        InvHelper.ejectStackAt(level, pos, front(), result);
+        float pitch = HISS_PITCH_LOW + level.getRandom().nextFloat() * HISS_PITCH_RANGE;
+        level.playSound(null, pos, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, HISS_VOLUME, pitch);
+        setChangedAndSync();
+    }
+
+    private void useCatalyst(ItemStack inSlot) {
+        int left = inSlot.getCount() - CATALYST_COST;
+        catalyst.setStackInSlot(CATALYST_SLOT, left <= NOTHING ? ItemStack.EMPTY : inSlot.copyWithCount(left));
+    }
+
+    private void credit(ServerLevel level, ItemStack result) {
+        ResourceLocation current = selection.recipe();
+        UUID crafterId = current == null ? null : crafters.get(current);
+        ServerPlayer crafter =
+                crafterId == null ? null : level.getServer().getPlayerList().getPlayer(crafterId);
+        if (crafter == null || result.isEmpty()) {
+            return;
+        }
+        crafter.awardStat(Stats.ITEM_CRAFTED.get(result.getItem()), result.getCount());
+        ResearchProgressionEvents.recordCrafted(crafter, result);
+    }
+
+    private boolean canWork(ServerLevel level, BlockPos pos) {
+        return heated && !queue.isEmpty() && !isPowered(level, pos);
+    }
+
+    private static boolean isPowered(ServerLevel level, BlockPos pos) {
+        return level.hasNeighborSignal(pos)
+                || level.hasNeighborSignal(pos.above())
+                || level.hasNeighborSignal(pos.below());
+    }
+
+    private void pullUnit(ServerLevel level, BlockPos pos, Holder<IAspect> aspect) {
+        int drawn = draw.drawOne(level, pos, front(), aspect);
+        if (drawn <= NOTHING) {
+            return;
+        }
+        if (requirements.accept(aspect, drawn) > NOTHING) {
+            setChangedAndSync();
+        }
+    }
+
+    private void resetSelection() {
+        selection.reset();
+        requirements.clearPlan();
+    }
+
+    private @Nullable CrucibleRecipe recipe(ServerLevel level, ResourceLocation id) {
+        RecipeHolder<?> holder = level.getRecipeManager().byKey(id).orElse(null);
+        return holder != null && holder.value() instanceof CrucibleRecipe recipe ? recipe : null;
+    }
+
+    private Direction front() {
+        return getBlockState()
+                .getOptionalValue(HorizontalDirectionalBlock.FACING)
+                .orElse(Direction.NORTH);
+    }
+
+    private boolean isSideAllowed(@Nullable Direction face) {
+        if (face == null) {
+            return false;
+        }
+        return face != front();
+    }
+
+    @Override
+    public boolean connectsOn(Direction face) {
+        return isSideAllowed(face);
+    }
+
+    @Override
+    public boolean receivesOn(Direction face) {
+        return isSideAllowed(face);
+    }
+
+    @Override
+    public EssentiaPull pull(@Nullable Direction face) {
+        ResourceKey<IAspect> requested = selection.requested();
+        if (requested == null) {
+            return EssentiaPull.NONE;
+        }
+        return EssentiaPull.of(Aspects.resolve(level, requested), AdjacentEssentiaDraw.DRAW_SUCTION);
+    }
+
+    @Override
+    public int roomFor(Holder<IAspect> aspect, Direction face) {
+        if (selection.recipe() == null || !isSideAllowed(face)) {
+            return NOTHING;
+        }
+        return requirements.shortfall(aspect);
+    }
+
+    @Override
+    public int insert(Holder<IAspect> aspect, int amount, Direction face, boolean simulate) {
+        if (selection.recipe() == null || !isSideAllowed(face)) {
+            return NOTHING;
+        }
+        if (simulate) {
+            return Math.max(NOTHING, Math.min(amount, requirements.shortfall(aspect)));
+        }
+        int stored = requirements.accept(aspect, amount);
+        if (stored <= NOTHING) {
+            return NOTHING;
+        }
+        setChangedAndSync();
+        return stored;
     }
 
     @Override
     protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
         super.saveAdditional(output, registries);
-        if (!essentia.isEmpty()) {
-            TTNbt.store(output, "Essentia", AspectList.CODEC, registries, essentia);
+        output.put(CATALYST_KEY, catalyst.serializeNBT(registries));
+        TTNbt.store(output, QUEUE_KEY, LegacyIds.IDENTIFIER_CODEC.listOf(), registries, queue.ids());
+        output.putInt(MAX_RECIPES_KEY, queue.capacity());
+        AspectList stored = requirements.received();
+        if (!stored.isEmpty()) {
+            TTNbt.store(output, ESSENTIA_KEY, AspectList.CODEC, registries, stored);
         }
-        output.putInt("MaxRecipes", maxRecipes);
-        TTNbt.store(output, "Queue", ResourceLocation.CODEC.listOf(), registries, List.copyOf(queue));
-        output.put("Catalyst", catalyst.serializeNBT(registries));
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
+        super.loadAdditional(input, registries);
+        if (input.contains(CATALYST_KEY)) catalyst.deserializeNBT(registries, input.getCompound(CATALYST_KEY));
+        List<ResourceLocation> savedIds = TTNbt.read(input, QUEUE_KEY, LegacyIds.IDENTIFIER_CODEC.listOf(), registries)
+                .orElse(List.of());
+        queue.restore(
+                input.contains(MAX_RECIPES_KEY) ? input.getInt(MAX_RECIPES_KEY) : RecipeQueue.BASE_CAPACITY, savedIds);
+        requirements.restoreReceived(
+                TTNbt.read(input, ESSENTIA_KEY, AspectList.CODEC, registries).orElse(AspectList.EMPTY));
+    }
+
+    private final class CatalystHandler extends ItemStackHandler {
+        CatalystHandler() {
+            super(CATALYST_SLOTS);
+        }
+
+        @Override
+        protected void onContentsChanged(int index) {
+            setChanged();
+        }
     }
 }

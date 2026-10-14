@@ -1,19 +1,21 @@
 package com.leclowndu93150.thaumaturge.content.essentia.smeltery;
 
-import com.leclowndu93150.thaumaturge.api.aspect.*;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
+import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaList;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaPull;
+import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaConduit;
 import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaStorage;
-import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaTransport;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
-import com.leclowndu93150.thaumaturge.content.essentia.EssentiaTransportHelper;
 import com.leclowndu93150.thaumaturge.content.essentia.storage.SingleAspectEssentiaHost;
 import com.leclowndu93150.thaumaturge.content.essentia.storage.SingleAspectStorage;
 import com.leclowndu93150.thaumaturge.content.legacy.LegacyIds;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
-import com.mojang.serialization.Codec;
-import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -22,316 +24,158 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 public class BlockEntityAlembic extends AbstractSyncedBlockEntity
-        implements IEssentiaTransport, IAspectContainer, SingleAspectEssentiaHost {
+        implements IEssentiaConduit, IAspectContainer, SingleAspectEssentiaHost {
     public static final int CAPACITY = 128;
-    private static final Codec<ResourceKey<IAspect>> ASPECT_KEY_CODEC = LegacyIds.ASPECT_KEY_CODEC;
+    private static final int NO_SUCTION = 0;
 
-    private @Nullable ResourceKey<IAspect> aspect;
-    private @Nullable ResourceKey<IAspect> aspectFilter;
-    private int amount;
-    private int tickCount;
+    private static final String ASPECT_KEY = "Aspect";
+    private static final String FILTER_KEY = "AspectFilter";
+    private static final String AMOUNT_KEY = "Amount";
+    private static final String FACING_KEY = "Facing";
+
     private final SingleAspectStorage storage = new SingleAspectStorage(this);
-    private Direction facing = Direction.DOWN;
+    private @Nullable ResourceKey<IAspect> aspect;
+    private @Nullable ResourceKey<IAspect> filter;
+    private int amount;
+    private Direction spout = Direction.DOWN;
 
     public BlockEntityAlembic(BlockPos pos, BlockState state) {
         super(TTBlockEntities.ALEMBIC.get(), pos, state);
     }
 
+    @Override
     public @Nullable ResourceKey<IAspect> aspectKey() {
         return aspect;
     }
 
+    @Override
     public @Nullable ResourceKey<IAspect> aspectFilterKey() {
-        return aspectFilter;
+        return filter;
     }
 
+    @Override
     public int amount() {
         return amount;
     }
 
-    public void setAspectFilter(@Nullable ResourceKey<IAspect> filter) {
-        this.aspectFilter = filter;
-        setChanged();
-        syncToClient();
+    public void setAspectFilter(@Nullable ResourceKey<IAspect> newFilter) {
+        filter = newFilter;
+        setChangedAndSync();
     }
 
-    public void setAspectFromLabel(@Nullable ResourceKey<IAspect> aspect) {
-        if (this.amount > 0) return;
-        this.aspect = aspect;
-        setChanged();
-        syncToClient();
-    }
-
-    public void setFacing(Direction facing) {
-        if (this.facing == facing) {
+    public void setAspectFromLabel(@Nullable ResourceKey<IAspect> labelled) {
+        if (amount > 0) {
             return;
         }
-        this.facing = facing;
-        setChanged();
+        aspect = labelled;
+        setChangedAndSync();
+    }
+
+    public void aimSpout(Direction newFacing) {
+        if (spout == newFacing) {
+            return;
+        }
+        spout = newFacing;
         if (level != null) {
             level.invalidateCapabilities(worldPosition);
         }
-        syncToClient();
+        setChangedAndSync();
     }
 
-    public Direction facing() {
-        return facing;
+    public Direction spoutSide() {
+        return spout;
+    }
+
+    @Override
+    public boolean connectsOn(Direction face) {
+        if (face == Direction.UP) {
+            return spout != Direction.UP;
+        }
+        return face != Direction.DOWN && face != spout;
     }
 
     protected void clearAspect() {
-        boolean changed = amount > 0;
-        this.aspect = null;
-        this.amount = 0;
-        if (changed) {
-            contentsChanged();
-        } else {
-            setChanged();
-            syncToClient();
+        if (amount > 0) {
+            storage.markChanged();
         }
+        aspect = null;
+        amount = 0;
+        setChangedAndSync();
     }
 
-    protected static boolean processAlembics(Level level, BlockPos pos, Holder<IAspect> aspectHolder) {
-        int deep = 1;
-        while (true) {
-            BlockEntity be = level.getBlockEntity(pos.above(deep));
-            if (be == null || !(be instanceof BlockEntityAlembic)) {
-                deep = 1;
-                while (true) {
-                    be = level.getBlockEntity(pos.above(deep));
-                    if (be == null || !(be instanceof BlockEntityAlembic)) {
-                        return false;
-                    }
-                    BlockEntityAlembic alembic = (BlockEntityAlembic) be;
-                    if ((alembic.aspectFilter == null || Objects.equals(alembic.aspectFilter, aspectHolder.getKey()))
-                            && alembic.doAddToContainer(aspectHolder.getKey(), 1) == 0) {
-                        return true;
-                    }
-                    deep++;
+    protected static boolean feedColumn(Level level, BlockPos start, Holder<IAspect> aspect) {
+        ResourceKey<IAspect> key = aspect.unwrapKey().orElse(null);
+        if (key == null) {
+            return false;
+        }
+        BlockEntityAlembic firstFree = null;
+        BlockPos.MutableBlockPos cursor = start.mutable().move(Direction.UP);
+        while (level.hasChunkAt(cursor) && level.getBlockEntity(cursor) instanceof BlockEntityAlembic candidate) {
+            if (candidate.canStart(key)) {
+                if (candidate.amount > 0) {
+                    return candidate.doAddToContainer(key, 1) == 0;
+                }
+                if (firstFree == null) {
+                    firstFree = candidate;
                 }
             }
+            cursor.move(Direction.UP);
+        }
+        return firstFree != null && firstFree.doAddToContainer(key, 1) == 0;
+    }
 
-            BlockEntityAlembic alembic = (BlockEntityAlembic) be;
-            if (alembic.amount > 0
-                    && Objects.equals(alembic.aspect, aspectHolder.getKey())
-                    && alembic.doAddToContainer(aspectHolder.getKey(), 1) == 0) {
-                return true;
+    private boolean canStart(ResourceKey<IAspect> key) {
+        return amount < CAPACITY && (filter == null || filter.equals(key)) && (amount == 0 || key.equals(aspect));
+    }
+
+    protected int doAddToContainer(ResourceKey<IAspect> key, int requested) {
+        if (requested <= 0) {
+            return 0;
+        }
+        if (!canStart(key)) {
+            return requested;
+        }
+        int stored = Math.min(requested, CAPACITY - amount);
+        aspect = key;
+        amount += stored;
+        storage.markChanged();
+        setChangedAndSync();
+        return requested - stored;
+    }
+
+    protected boolean doTakeFromContainer(ResourceKey<IAspect> key, int requested) {
+        if (amount < requested || !key.equals(aspect)) {
+            return false;
+        }
+        amount -= requested;
+        if (amount <= 0) {
+            amount = 0;
+            if (filter == null) {
+                aspect = null;
             }
-
-            deep++;
         }
-    }
-
-    protected int doAddToContainer(ResourceKey<IAspect> incoming, int requested) {
-        if (requested == 0) return 0;
-        if (aspectFilter != null && !aspectFilter.equals(incoming)) return requested;
-        if (amount < CAPACITY && incoming.equals(aspect) || amount == 0) {
-            aspect = incoming;
-            int added = Math.min(requested, CAPACITY - amount);
-            amount += added;
-            requested -= added;
-            if (added > 0) contentsChanged();
+        if (requested > 0) {
+            storage.markChanged();
+            setChangedAndSync();
         }
-        return requested;
-    }
-
-    protected boolean doTakeFromContainer(ResourceKey<IAspect> requested, int amt) {
-        if (amt > 0 && amount >= amt && requested.equals(aspect)) {
-            amount -= amt;
-            if (amount <= 0) {
-                if (aspectFilter == null) {
-                    aspect = null;
-                }
-                amount = 0;
-            }
-            contentsChanged();
-            return true;
-        }
-        return false;
-    }
-
-    public AspectList getContents(HolderLookup.Provider registries) {
-        if (aspect == null || amount <= 0) return AspectList.EMPTY;
-        Holder<IAspect> holder = EssentiaTransportHelper.resolve(registries, aspect);
-        if (holder == null) return AspectList.EMPTY;
-        return AspectList.EMPTY.add(new AspectInstance(holder, amount));
+        return true;
     }
 
     public EssentiaList getEssentiaContents(HolderLookup.Provider registries) {
-        AspectList contents = getContents(registries);
-        return contents.isEmpty() ? EssentiaList.EMPTY : new EssentiaList(contents);
+        return new EssentiaList(heldAspects(registries));
     }
 
     public IEssentiaStorage storage(Direction side) {
         return storage.view(side);
     }
 
-    private void contentsChanged() {
-        storage.markChanged();
-        setChanged();
-        syncToClient();
-    }
-
     @Override
-    public boolean isConnectable(Direction face) {
-        return face != facing && face != Direction.DOWN;
-    }
-
-    @Override
-    public boolean canInputFrom(Direction face) {
-        return false;
-    }
-
-    @Override
-    public boolean canOutputTo(Direction face) {
-        return face != facing && face != Direction.DOWN;
-    }
-
-    @Override
-    public void setSuction(Holder<IAspect> aspect, int amount) {}
-
-    @Override
-    public Holder<IAspect> getSuctionType(Direction face) {
-        return null;
-    }
-
-    @Override
-    public int getSuctionAmount(Direction face) {
-        return 0;
-    }
-
-    @Override
-    public int getMinimumSuction() {
-        return 0;
-    }
-
-    @Override
-    public int takeEssentia(Holder<IAspect> aspect, int amount, Direction face) {
-        if (!canOutputTo(face)) return 0;
-        ResourceKey<IAspect> key = aspect == null ? null : aspect.unwrapKey().orElse(null);
-        if (key == null) return 0;
-        return doTakeFromContainer(key, amount) ? amount : 0;
-    }
-
-    @Override
-    public int addEssentia(Holder<IAspect> aspect, int amount, Direction face) {
-        return 0;
-    }
-
-    @Override
-    public Holder<IAspect> getEssentiaType(Direction face) {
-        return aspect == null ? null : EssentiaTransportHelper.resolve(level, aspect);
-    }
-
-    @Override
-    public int getEssentiaAmount(Direction face) {
-        return amount;
-    }
-
-    @Override
-    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
-        super.loadAdditional(input, registries);
-        aspect = TTNbt.read(input, "Aspect", ASPECT_KEY_CODEC, registries).orElse(null);
-        aspectFilter =
-                TTNbt.read(input, "AspectFilter", ASPECT_KEY_CODEC, registries).orElse(null);
-        amount = input.getInt("Amount");
-        facing = TTNbt.read(input, "Facing", Direction.CODEC, registries).orElse(Direction.DOWN);
-    }
-
-    @Override
-    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
-        super.saveAdditional(output, registries);
-        if (aspect != null) TTNbt.store(output, "Aspect", ASPECT_KEY_CODEC, registries, aspect);
-        if (aspectFilter != null) TTNbt.store(output, "AspectFilter", ASPECT_KEY_CODEC, registries, aspectFilter);
-        output.putInt("Amount", amount);
-        TTNbt.store(output, "Facing", Direction.CODEC, registries, facing);
-    }
-
-    @Override
-    public void collectImplicitComponents(DataComponentMap.Builder builder) {
-        super.collectImplicitComponents(builder);
-        if (level != null && aspect != null && amount > 0) {
-            EssentiaList contents = getEssentiaContents(level.registryAccess());
-            if (!contents.isEmpty()) {
-                builder.set(TTDataComponents.ESSENTIA_CONTENTS.get(), contents);
-            }
-        }
-        if (aspectFilter != null) {
-            builder.set(TTDataComponents.ASPECT_FILTER.get(), aspectFilter);
-        }
-    }
-
-    @Override
-    protected void applyImplicitComponents(DataComponentInput input) {
-        super.applyImplicitComponents(input);
-        EssentiaList contents = input.get(TTDataComponents.ESSENTIA_CONTENTS.get());
-        if (contents != null && !contents.isEmpty()) {
-            AspectInstance first = contents.contents().entries().get(0);
-            ResourceKey<IAspect> key = first.aspect().unwrapKey().orElse(null);
-            if (key != null) {
-                aspect = key;
-                amount = Math.min(first.amount(), CAPACITY);
-            }
-        }
-        ResourceKey<IAspect> filter = input.get(TTDataComponents.ASPECT_FILTER.get());
-        if (filter != null) {
-            aspectFilter = filter;
-            if (aspect == null) aspect = filter;
-        }
-    }
-
-    @Override
-    public AspectList getAspects() {
-        if (amount() == 0) return AspectList.EMPTY;
-        return AspectList.of(new AspectInstance(EssentiaTransportHelper.resolve(getLevel(), aspectKey()), amount()));
-    }
-
-    @Override
-    public void setAspects(AspectList aspects) {
-        if (aspects.isEmpty()) return;
-        AspectInstance first = aspects.entries().getFirst();
-        ResourceKey<IAspect> key = first.aspect().unwrapKey().orElse(null);
-        if (key != null) {
-            int previousAmount = amount;
-            ResourceKey<IAspect> previousAspect = aspect;
-            aspect = key;
-            amount = Math.min(first.amount(), CAPACITY);
-            if (amount != previousAmount || !Objects.equals(aspect, previousAspect)) {
-                contentsChanged();
-                return;
-            }
-        }
-        setChanged();
-        syncToClient();
-    }
-
-    @Override
-    public boolean accepts(Holder<IAspect> aspect) {
-        return aspectFilter == null || aspectFilter.equals(aspect.getKey());
-    }
-
-    @Override
-    public int fill(Holder<IAspect> aspect, int amount) {
-        return doAddToContainer(aspect.getKey(), amount);
-    }
-
-    @Override
-    public boolean drain(Holder<IAspect> aspect, int amount) {
-        return doTakeFromContainer(aspect.getKey(), amount);
-    }
-
-    @Override
-    public boolean holds(Holder<IAspect> aspect, int amount) {
-        return this.amount >= amount && Objects.equals(this.aspect, aspect.getKey());
-    }
-
-    @Override
-    public int amountOf(Holder<IAspect> aspect) {
-        return Objects.equals(this.aspect, aspect.getKey()) ? this.amount : 0;
+    public int capacity() {
+        return CAPACITY;
     }
 
     @Override
@@ -340,19 +184,181 @@ public class BlockEntityAlembic extends AbstractSyncedBlockEntity
     }
 
     @Override
-    public void setStorageContents(@Nullable ResourceKey<IAspect> aspect, int amount) {
-        this.aspect = aspect;
-        this.amount = amount;
+    public void setStorageContents(@Nullable ResourceKey<IAspect> newAspect, int newAmount) {
+        aspect = newAspect;
+        amount = newAmount;
+    }
+
+    @Override
+    public int pullThreshold() {
+        return NO_SUCTION;
+    }
+
+    @Override
+    public EssentiaPull pull(@Nullable Direction face) {
+        return EssentiaPull.NONE;
+    }
+
+    @Override
+    public int insert(Holder<IAspect> added, int requested, Direction face, boolean simulate) {
+        return 0;
+    }
+
+    @Override
+    public int roomFor(Holder<IAspect> added, Direction face) {
+        return 0;
     }
 
     @Override
     public void onStorageCommitted() {
-        setChanged();
-        syncToClient();
+        setChangedAndSync();
+    }
+
+    public AspectList heldAspects(HolderLookup.Provider registries) {
+        if (aspect != null && amount > 0) {
+            Holder<IAspect> holder = Aspects.resolve(registries, aspect);
+            if (holder != null) {
+                return AspectList.of(new AspectInstance(holder, amount));
+            }
+        }
+        return AspectList.EMPTY;
     }
 
     @Override
-    public int capacity() {
-        return CAPACITY;
+    public boolean releasesOn(Direction face) {
+        return connectsOn(face);
+    }
+
+    @Override
+    public int extract(Holder<IAspect> taken, int requested, Direction face, boolean simulate) {
+        ResourceKey<IAspect> key = taken.unwrapKey().orElse(null);
+        if (requested <= 0 || key == null || !releasesOn(face)) {
+            return 0;
+        }
+        if (simulate) {
+            return amount >= requested && key.equals(aspect) ? requested : 0;
+        }
+        return doTakeFromContainer(key, requested) ? requested : 0;
+    }
+
+    @Override
+    public boolean receivesOn(Direction face) {
+        return false;
+    }
+
+    @Override
+    public @Nullable Holder<IAspect> heldAspect(@Nullable Direction face) {
+        return aspect == null ? null : Aspects.resolve(level, aspect);
+    }
+
+    @Override
+    public int heldAmount(@Nullable Direction face) {
+        return amount;
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
+        super.loadAdditional(input, registries);
+        aspect = TTNbt.read(input, ASPECT_KEY, LegacyIds.ASPECT_KEY_CODEC, registries)
+                .orElse(null);
+        filter = TTNbt.read(input, FILTER_KEY, LegacyIds.ASPECT_KEY_CODEC, registries)
+                .orElse(null);
+        amount = Math.clamp(input.getInt(AMOUNT_KEY), 0, CAPACITY);
+        spout = TTNbt.read(input, FACING_KEY, Direction.CODEC, registries).orElse(Direction.DOWN);
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
+        super.saveAdditional(output, registries);
+        if (aspect != null) TTNbt.store(output, ASPECT_KEY, LegacyIds.ASPECT_KEY_CODEC, registries, aspect);
+        if (filter != null) TTNbt.store(output, FILTER_KEY, LegacyIds.ASPECT_KEY_CODEC, registries, filter);
+        output.putInt(AMOUNT_KEY, amount);
+        TTNbt.store(output, FACING_KEY, Direction.CODEC, registries, spout);
+    }
+
+    @Override
+    public void collectImplicitComponents(DataComponentMap.Builder components) {
+        super.collectImplicitComponents(components);
+        AspectList held = level == null || amount <= 0 ? AspectList.EMPTY : heldAspects(level.registryAccess());
+        if (!held.isEmpty()) {
+            components.set(TTDataComponents.ESSENTIA_CONTENTS.get(), new EssentiaList(held));
+        }
+        if (filter != null) {
+            components.set(TTDataComponents.ASPECT_FILTER.get(), filter);
+        }
+    }
+
+    @Override
+    protected void applyImplicitComponents(DataComponentInput components) {
+        super.applyImplicitComponents(components);
+        EssentiaList stored = components.get(TTDataComponents.ESSENTIA_CONTENTS.get());
+        if (stored != null && !stored.isEmpty()) {
+            AspectInstance first = stored.contents().entries().getFirst();
+            aspect = first.aspect().unwrapKey().orElse(null);
+            amount = Math.min(first.amount(), CAPACITY);
+        }
+        ResourceKey<IAspect> labelled = components.get(TTDataComponents.ASPECT_FILTER.get());
+        if (labelled != null) {
+            filter = labelled;
+            if (aspect == null) {
+                aspect = labelled;
+            }
+        }
+    }
+
+    @Override
+    public AspectList getAspects() {
+        if (level == null) {
+            return AspectList.EMPTY;
+        }
+        return heldAspects(level.registryAccess());
+    }
+
+    @Override
+    public void setAspects(AspectList aspects) {
+        if (aspects.isEmpty()) {
+            return;
+        }
+        AspectInstance first = aspects.entries().getFirst();
+        aspect = first.aspect().unwrapKey().orElse(null);
+        amount = Math.min(first.amount(), CAPACITY);
+        storage.markChanged();
+        setChangedAndSync();
+    }
+
+    @Override
+    public boolean accepts(Holder<IAspect> candidate) {
+        return filter == null || filter.equals(candidate.unwrapKey().orElse(null));
+    }
+
+    @Override
+    public int fill(Holder<IAspect> filled, int requested) {
+        ResourceKey<IAspect> key = filled.unwrapKey().orElse(null);
+        return key == null ? requested : doAddToContainer(key, requested);
+    }
+
+    @Override
+    public boolean drain(Holder<IAspect> drained, int requested) {
+        ResourceKey<IAspect> key = drained.unwrapKey().orElse(null);
+        return key != null && doTakeFromContainer(key, requested);
+    }
+
+    @Override
+    public boolean holds(Holder<IAspect> held, int requested) {
+        return isHeld(held) && amount >= requested;
+    }
+
+    @Override
+    public int amountOf(Holder<IAspect> queried) {
+        if (!isHeld(queried)) {
+            return 0;
+        }
+        return amount;
+    }
+
+    private boolean isHeld(Holder<IAspect> candidate) {
+        return aspect != null
+                && amount > 0
+                && candidate.unwrapKey().filter(aspect::equals).isPresent();
     }
 }

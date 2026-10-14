@@ -1,11 +1,16 @@
 package com.leclowndu93150.thaumaturge.content.essentia.thaumatorium;
 
+import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.content.menu.AbstractTTMenu;
 import com.leclowndu93150.thaumaturge.content.menu.BlockMenu;
+import com.leclowndu93150.thaumaturge.content.recipe.crucible.CrucibleRecipe;
+import com.leclowndu93150.thaumaturge.content.recipe.crucible.CrucibleRecipeInput;
 import com.leclowndu93150.thaumaturge.network.ClientboundThaumatoriumRecipesPayload;
+import com.leclowndu93150.thaumaturge.network.ClientboundThaumatoriumRecipesPayload.Entry;
 import com.leclowndu93150.thaumaturge.registry.TTMenus;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -19,33 +24,30 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.jspecify.annotations.Nullable;
 
 public final class MenuThaumatorium extends AbstractTTMenu implements BlockMenu<BlockEntityThaumatorium> {
-    private static final int MACHINE_SLOTS = 1;
-    private static final double REACH_BUFFER = 4.0;
-
     public static final int CATALYST_X = 56;
     public static final int CATALYST_Y = 24;
+
+    private static final int PLAYER_GRID_X = 8;
     private static final int PLAYER_GRID_Y = 135;
     private static final int HOTBAR_Y = 193;
+    private static final int CATALYST_SLOTS = 1;
+    private static final int CATALYST_SLOT = 0;
+    private static final double REACH_BUFFER = 4.0;
+    private static final int QUEUE_UNSENT = -1;
 
     public final @Nullable BlockEntityThaumatorium blockEntity;
-    private final Player player;
-    public List<ClientboundThaumatoriumRecipesPayload.Entry> clientRecipes = List.of();
-    private ItemStack lastCatalyst = ItemStack.EMPTY;
-    private int lastQueueSize = -1;
+    public List<Entry> clientRecipes = List.of();
+
+    private final Player viewer;
+    private @Nullable ItemStack lastCatalyst;
+    private int lastQueueSize = QUEUE_UNSENT;
 
     public MenuThaumatorium(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf buf) {
-        this(containerId, playerInventory, clientBlockEntity(playerInventory, buf));
+        this(containerId, playerInventory, clientBlockEntity(playerInventory, buf.readBlockPos()));
     }
 
-    @Override
-    public @Nullable BlockEntityThaumatorium blockEntity() {
-        return blockEntity;
-    }
-
-    private static @Nullable BlockEntityThaumatorium clientBlockEntity(
-            Inventory playerInventory, RegistryFriendlyByteBuf buf) {
-        return playerInventory.player.level().getBlockEntity(buf.readBlockPos())
-                        instanceof BlockEntityThaumatorium machine
+    private static @Nullable BlockEntityThaumatorium clientBlockEntity(Inventory playerInventory, BlockPos pos) {
+        return playerInventory.player.level().getBlockEntity(pos) instanceof BlockEntityThaumatorium machine
                 ? machine
                 : null;
     }
@@ -53,45 +55,57 @@ public final class MenuThaumatorium extends AbstractTTMenu implements BlockMenu<
     public MenuThaumatorium(int containerId, Inventory playerInventory, @Nullable BlockEntityThaumatorium blockEntity) {
         super(TTMenus.THAUMATORIUM.get(), containerId);
         this.blockEntity = blockEntity;
-        this.player = playerInventory.player;
-        ItemStackHandler items = blockEntity != null ? blockEntity.catalyst() : new ItemStackHandler(1);
+        this.viewer = playerInventory.player;
+        ItemStackHandler catalyst = blockEntity != null ? blockEntity.catalyst() : new ItemStackHandler(CATALYST_SLOTS);
+        addSlot(new SlotItemHandler(catalyst, CATALYST_SLOT, CATALYST_X, CATALYST_Y));
+        addInventoryExtendedSlots(playerInventory, PLAYER_GRID_X, PLAYER_GRID_Y);
+        addInventoryHotbarSlots(playerInventory, PLAYER_GRID_X, HOTBAR_Y);
+    }
 
-        addSlot(new SlotItemHandler(items, 0, CATALYST_X, CATALYST_Y));
-
-        addInventoryExtendedSlots(playerInventory, 8, PLAYER_GRID_Y);
-        addInventoryHotbarSlots(playerInventory, 8, HOTBAR_Y);
+    @Override
+    public @Nullable BlockEntityThaumatorium blockEntity() {
+        return blockEntity;
     }
 
     @Override
     public void broadcastChanges() {
         super.broadcastChanges();
         if (blockEntity == null
-                || !(player instanceof ServerPlayer serverPlayer)
-                || !(serverPlayer.level() instanceof ServerLevel server)) {
+                || !(viewer instanceof ServerPlayer player)
+                || !(player.level() instanceof ServerLevel level)) {
             return;
         }
         ItemStack catalyst = blockEntity.catalystStack();
-        if (ItemStack.matches(catalyst, lastCatalyst) && blockEntity.queue().size() == lastQueueSize) {
+        int queueSize = blockEntity.queue().size();
+        if (lastCatalyst != null && queueSize == lastQueueSize && ItemStack.matches(catalyst, lastCatalyst)) {
             return;
         }
+        PacketDistributor.sendToPlayer(
+                player, new ClientboundThaumatoriumRecipesPayload(containerId, buildEntries(level, player, catalyst)));
         lastCatalyst = catalyst.copy();
-        lastQueueSize = blockEntity.queue().size();
+        lastQueueSize = queueSize;
+    }
+
+    private List<Entry> buildEntries(ServerLevel level, ServerPlayer player, ItemStack catalyst) {
         List<ResourceLocation> ids = new ArrayList<>();
-        var recipes = blockEntity.candidateRecipes(server, serverPlayer, ids);
-        List<ClientboundThaumatoriumRecipesPayload.Entry> entries = new ArrayList<>();
+        List<CrucibleRecipe> recipes = blockEntity.candidateRecipes(level, player, ids);
+        List<Entry> entries = new ArrayList<>(recipes.size());
+        CrucibleRecipeInput input = new CrucibleRecipeInput(catalyst, AspectList.EMPTY);
         for (int i = 0; i < recipes.size(); i++) {
-            entries.add(new ClientboundThaumatoriumRecipesPayload.Entry(
-                    ids.get(i),
-                    recipes.get(i).rawResult().copy(),
-                    blockEntity.queue().contains(ids.get(i)),
-                    recipes.get(i).aspects()));
+            CrucibleRecipe recipe = recipes.get(i);
+            ResourceLocation id = ids.get(i);
+            entries.add(new Entry(
+                    id,
+                    recipe.assemble(input, level.registryAccess()),
+                    blockEntity.queue().contains(id),
+                    recipe.aspects()));
         }
-        PacketDistributor.sendToPlayer(serverPlayer, new ClientboundThaumatoriumRecipesPayload(containerId, entries));
+        return entries;
     }
 
     @Override
-    public ItemStack quickMoveStack(Player player, int index) {
-        return quickMoveBetween(index, MACHINE_SLOTS, stack -> true);
+    public ItemStack quickMoveStack(Player player, int slotIndex) {
+        return quickMoveBetween(slotIndex, CATALYST_SLOTS, stack -> true);
     }
 
     @Override

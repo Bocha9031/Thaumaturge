@@ -1,7 +1,9 @@
 package com.leclowndu93150.thaumaturge.content.essentia;
 
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaTransport;
+import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaPull;
+import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaConduit;
 import com.leclowndu93150.thaumaturge.content.essentia.flow.EssentiaFlowHandler;
 import com.leclowndu93150.thaumaturge.content.infusion.EssentiaSources;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
@@ -16,14 +18,20 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public final class BlockEntityEssentiaPort extends BlockEntity implements IEssentiaTransport {
+public final class BlockEntityEssentiaPort extends BlockEntity implements IEssentiaConduit {
+    private static final int SOURCE_RANGE = 16;
     private static final int WORK_INTERVAL = 5;
-    private static final int SEARCH_RANGE = 16;
-    private static final int SUCTION = 128;
+    private static final int INTAKE_SUCTION = 128;
+    private static final EssentiaPull INTAKE_PULL = EssentiaPull.any(INTAKE_SUCTION);
+    private static final int SINGLE_POINT = 1;
+    private static final int VISUAL_EXTENSION = 10;
+    private static final long SEARCH_BACKOFF_TICKS = 200L;
 
     private final boolean input;
     private final EssentiaSources sources;
-    private int count;
+    private int ticks;
+    private long resumeAt;
+    private boolean searchFailed;
 
     public BlockEntityEssentiaPort(BlockPos pos, BlockState state) {
         this(pos, state, state.getBlock() instanceof BlockEssentiaPort port && port.isInput());
@@ -32,129 +40,142 @@ public final class BlockEntityEssentiaPort extends BlockEntity implements IEssen
     public BlockEntityEssentiaPort(BlockPos pos, BlockState state, boolean input) {
         super(TTBlockEntities.ESSENTIA_PORT.get(), pos, state);
         this.input = input;
-        this.sources = new EssentiaSources(pos, SEARCH_RANGE)
-                .sourceFilter(this::isInTargetHalfSpace)
+        this.sources = new EssentiaSources(pos, SOURCE_RANGE)
+                .facing(state.getValue(BlockStateProperties.FACING))
                 .drainEffectTarget(Vec3.atCenterOf(pos));
     }
 
-    private Direction facing() {
-        return getBlockState().getValue(BlockStateProperties.FACING);
-    }
-
-    private Direction tubeSide() {
-        return facing().getOpposite();
-    }
-
-    private boolean isInTargetHalfSpace(BlockPos target) {
-        BlockPos offset = target.subtract(getBlockPos());
-        Direction direction = facing();
-        return offset.getX() * direction.getStepX()
-                        + offset.getY() * direction.getStepY()
-                        + offset.getZ() * direction.getStepZ()
-                > 0;
-    }
-
     public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityEssentiaPort port) {
-        if (++port.count % WORK_INTERVAL != 0 || !(level instanceof ServerLevel server)) {
+        if (++port.ticks % WORK_INTERVAL != 0
+                || !(level instanceof ServerLevel server)
+                || server.getGameTime() < port.resumeAt) {
+            return;
+        }
+        Direction toTube = port.tubeSide();
+        Direction tubeFace = toTube.getOpposite();
+        IEssentiaConduit tube = EssentiaFlowHandler.conduit(server, pos.relative(toTube), tubeFace);
+        if (tube == null || !tube.connectsOn(tubeFace)) {
             return;
         }
         if (port.input) {
-            port.pullFromTube(server);
+            port.pushIntoSources(server, tube, tubeFace);
         } else {
-            port.pushToTube(server);
+            port.pullFromSources(server, pos, tube, tubeFace);
         }
+        if (port.searchFailed) {
+            port.resumeAt = server.getGameTime() + SEARCH_BACKOFF_TICKS;
+        }
+        port.searchFailed = false;
     }
 
-    private void pullFromTube(ServerLevel server) {
-        Direction tubeSide = tubeSide();
-        IEssentiaTransport ic =
-                EssentiaFlowHandler.transport(server, getBlockPos().relative(tubeSide), facing());
-        if (ic == null || !ic.canOutputTo(facing())) {
-            return;
+    private boolean pushIntoSources(ServerLevel server, IEssentiaConduit tube, Direction tubeFace) {
+        if (!tube.releasesOn(tubeFace)
+                || tube.heldAmount(tubeFace) < SINGLE_POINT
+                || tube.pull(tubeFace).strength() >= INTAKE_SUCTION
+                || tube.pullThreshold() > INTAKE_SUCTION) {
+            return false;
         }
-        if (ic.getEssentiaAmount(facing()) > 0
-                && ic.getSuctionAmount(facing()) < getSuctionAmount(tubeSide)
-                && getSuctionAmount(tubeSide) >= ic.getMinimumSuction()) {
-            Holder<IAspect> aspect = ic.getEssentiaType(facing());
-            if (aspect != null && sources.insert(server, aspect, WORK_INTERVAL)) {
-                ic.takeEssentia(aspect, 1, facing());
-            }
+        Holder<IAspect> aspect = tube.heldAspect(tubeFace);
+        if (aspect == null || tube.extract(aspect, SINGLE_POINT, tubeFace, false) != SINGLE_POINT) {
+            return false;
         }
+        if (sources.insert(server, aspect, VISUAL_EXTENSION)) {
+            return true;
+        }
+        searchFailed = true;
+        if (tube.insert(aspect, SINGLE_POINT, tubeFace, false) != SINGLE_POINT) {
+            AuraHelper.addFlux(server, worldPosition, SINGLE_POINT);
+        }
+        return false;
     }
 
-    private void pushToTube(ServerLevel server) {
-        Direction tubeSide = tubeSide();
-        IEssentiaTransport ic =
-                EssentiaFlowHandler.transport(server, getBlockPos().relative(tubeSide), facing());
-        if (ic == null || !ic.canInputFrom(facing())) {
-            return;
+    private boolean pullFromSources(ServerLevel server, BlockPos pos, IEssentiaConduit tube, Direction tubeFace) {
+        EssentiaPull tubePull = tube.pull(tubeFace);
+        Holder<IAspect> wanted = tubePull.aspect();
+        if (wanted == null
+                || !tube.receivesOn(tubeFace)
+                || !tubePull.isActive()
+                || tube.insert(wanted, SINGLE_POINT, tubeFace, true) < SINGLE_POINT) {
+            return false;
         }
-        if (ic.getSuctionAmount(facing()) > 0) {
-            Holder<IAspect> aspect = ic.getSuctionType(facing());
-            if (aspect != null
-                    && sources.drain(server, aspect, WORK_INTERVAL)
-                    && ic.addEssentia(aspect, 1, facing()) == 0) {
-                sources.insert(server, aspect, WORK_INTERVAL);
-            }
+        if (!sources.drain(server, wanted, VISUAL_EXTENSION)) {
+            searchFailed = true;
+            return false;
         }
+        if (tube.insert(wanted, SINGLE_POINT, tubeFace, false) == SINGLE_POINT) {
+            return true;
+        }
+        if (!sources.insert(server, wanted, VISUAL_EXTENSION)) {
+            AuraHelper.addFlux(server, pos, SINGLE_POINT);
+        }
+        return false;
+    }
+
+    private Direction tubeSide() {
+        Direction mount = getBlockState().getValue(BlockStateProperties.FACING);
+        return mount.getOpposite();
+    }
+
+    private boolean touchesTube(@Nullable Direction face) {
+        return face != null && face == tubeSide();
     }
 
     @Override
-    public boolean isConnectable(Direction face) {
-        return face == tubeSide();
+    public boolean connectsOn(Direction face) {
+        return touchesTube(face);
     }
 
     @Override
-    public boolean canInputFrom(Direction face) {
-        return input && face == tubeSide();
+    public boolean receivesOn(Direction face) {
+        return touchesTube(face) && input;
     }
 
     @Override
-    public boolean canOutputTo(Direction face) {
-        return !input && face == tubeSide();
+    public boolean releasesOn(Direction face) {
+        return touchesTube(face) && !input;
     }
 
     @Override
-    public void setSuction(Holder<IAspect> aspect, int amount) {}
+    public EssentiaPull pull(@Nullable Direction face) {
+        return input && touchesTube(face) ? INTAKE_PULL : EssentiaPull.NONE;
+    }
 
     @Override
-    public @Nullable Holder<IAspect> getSuctionType(Direction face) {
+    public int insert(Holder<IAspect> aspect, int amount, Direction face, boolean simulate) {
+        if (amount != SINGLE_POINT || !input || !touchesTube(face)) {
+            return 0;
+        }
+        if (simulate) {
+            return SINGLE_POINT;
+        }
+        if (level instanceof ServerLevel server && sources.insert(server, aspect, VISUAL_EXTENSION)) {
+            return SINGLE_POINT;
+        }
+        return 0;
+    }
+
+    @Override
+    public int extract(Holder<IAspect> aspect, int amount, Direction face, boolean simulate) {
+        return 0;
+    }
+
+    @Override
+    public int roomFor(Holder<IAspect> aspect, Direction face) {
+        return input && touchesTube(face) ? SINGLE_POINT : 0;
+    }
+
+    @Override
+    public @Nullable Holder<IAspect> heldAspect(@Nullable Direction face) {
         return null;
     }
 
     @Override
-    public int getSuctionAmount(Direction face) {
-        return input && face == tubeSide() ? SUCTION : 0;
-    }
-
-    @Override
-    public @Nullable Holder<IAspect> getEssentiaType(Direction face) {
-        return null;
-    }
-
-    @Override
-    public int getEssentiaAmount(Direction face) {
+    public int heldAmount(@Nullable Direction face) {
         return 0;
     }
 
     @Override
-    public int takeEssentia(Holder<IAspect> aspect, int amount, Direction face) {
-        return 0;
-    }
-
-    @Override
-    public int addEssentia(Holder<IAspect> aspect, int amount, Direction face) {
-        if (canInputFrom(face)
-                && level instanceof ServerLevel server
-                && amount == 1
-                && sources.insert(server, aspect, WORK_INTERVAL)) {
-            return 1;
-        }
-        return 0;
-    }
-
-    @Override
-    public int getMinimumSuction() {
+    public int pullThreshold() {
         return 0;
     }
 }

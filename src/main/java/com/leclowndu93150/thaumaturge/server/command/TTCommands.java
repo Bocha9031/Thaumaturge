@@ -7,7 +7,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTrait;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
@@ -805,12 +805,12 @@ public final class TTCommands {
             ctx.getSource().sendSuccess(problem::message, false);
         }
         ItemStack held = player.getMainHandItem();
-        if (held.getItem() instanceof ICaster caster) {
-            ItemStack previous = caster.getFocusStack(held);
+        if (held.getItem() instanceof FocusCaster caster) {
+            ItemStack previous = caster.socketedFocus(held);
             if (!previous.isEmpty()) {
                 player.getInventory().add(previous);
             }
-            caster.setFocus(held, focusStack);
+            caster.socketFocus(held, focusStack);
             success(ctx.getSource(), "focus.socketed", summary.complexity(), summary.budget());
         } else {
             player.getInventory().add(focusStack);

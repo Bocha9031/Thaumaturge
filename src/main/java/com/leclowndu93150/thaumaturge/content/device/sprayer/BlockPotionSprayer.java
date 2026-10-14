@@ -79,6 +79,14 @@ public final class BlockPotionSprayer extends BaseEntityBlock {
     }
 
     @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof BlockEntityPotionSprayer sprayer) {
+            sprayer.dropPotionOnBreak(pos);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(
             Level level, BlockState state, BlockEntityType<T> type) {
         return type == TTBlockEntities.POTION_SPRAYER.get()
@@ -91,7 +99,7 @@ public final class BlockPotionSprayer extends BaseEntityBlock {
     protected InteractionResult useWithoutItem(
             BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!level.isClientSide() && !DeviceGate.passes(player, TTIds.rl("potion_sprayer"))) {
-            return InteractionResult.CONSUME;
+            return InteractionResult.SUCCESS;
         }
         if (!(level.getBlockEntity(pos) instanceof BlockEntityPotionSprayer sprayer)) {
             return InteractionResult.PASS;

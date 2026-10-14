@@ -36,7 +36,7 @@ public final class TubeValveRenderer implements BlockEntityRenderer<BlockEntityT
             int overlay) {
         poseStack.pushPose();
         poseStack.translate(0.5F, 0.5F, 0.5F);
-        orientTo(valve.facing(), poseStack);
+        orientTo(valve.flowSide(), poseStack);
         float rotation = valve.rotation(partialTick);
         poseStack.mulPose(Axis.YP.rotationDegrees(-rotation * 1.5F));
         poseStack.translate(0.0F, -0.03F - rotation / 360.0F * 0.09F, 0.0F);

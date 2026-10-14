@@ -67,6 +67,9 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
             }
         }
         for (KnowledgeRecord record : knowledgeRecords) {
+            if (record.amount() <= 0) {
+                continue;
+            }
             result.knowledge.put(
                     new KnowledgeKey(
                             record.type(),

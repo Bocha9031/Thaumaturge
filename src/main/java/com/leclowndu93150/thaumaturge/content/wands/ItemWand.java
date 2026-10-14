@@ -3,7 +3,9 @@ package com.leclowndu93150.thaumaturge.content.wands;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
-import com.leclowndu93150.thaumaturge.api.casters.CasterTriggerRegistry;
+import com.leclowndu93150.thaumaturge.api.casters.CasterBlockActions;
+import com.leclowndu93150.thaumaturge.api.casters.CasterBlockUse;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.casters.ICaster;
 import com.leclowndu93150.thaumaturge.api.casters.IFocusBlockPicker;
 import com.leclowndu93150.thaumaturge.api.casters.IInteractWithCaster;
@@ -61,7 +63,8 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public class ItemWand extends Item implements ICaster, IArchitect, IChanneledItem {
+@SuppressWarnings("removal")
+public class ItemWand extends Item implements FocusCaster, ICaster, IArchitect, IChanneledItem {
     private static final float REFINE_SPARKLE_SPREAD = 2.0F;
     private static final DecimalFormat VIS_FORMAT = new DecimalFormat("#######.##");
     private static final String STAFF_ROD_SUFFIX = "_staff";
@@ -117,7 +120,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
             player.startUsingItem(hand);
             return new InteractionResultHolder<>(InteractionResult.CONSUME, player.getItemInHand(hand));
         }
-        ItemStack focusStack = getFocusStack(wandStack);
+        ItemStack focusStack = socketedFocus(wandStack);
         if (FocusItems.isFocus(focusStack)) {
             if (player.isShiftKeyDown() && pickerFocus(focusStack, level)) {
                 return new InteractionResultHolder<>(InteractionResult.PASS, player.getItemInHand(hand));
@@ -130,13 +133,13 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
     }
 
     @Override
-    public ItemStack getFocusStack(ItemStack stack) {
+    public ItemStack socketedFocus(ItemStack stack) {
         SocketedFocus template = stack.get(TTDataComponents.SOCKETED_FOCUS.get());
         return template == null ? ItemStack.EMPTY : template.focus().copy();
     }
 
     @Override
-    public void setFocus(ItemStack stack, ItemStack focus) {
+    public void socketFocus(ItemStack stack, @Nullable ItemStack focus) {
         if (focus == null || focus.isEmpty()) {
             stack.remove(TTDataComponents.SOCKETED_FOCUS.get());
         } else {
@@ -145,7 +148,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
     }
 
     @Override
-    public float getConsumptionModifier(ItemStack stack, Player player, boolean crafting) {
+    public float visCostFactor(ItemStack stack, @Nullable Player player, boolean crafting) {
         WandParts parts = getParts(stack);
         float modifier = parts.cap().baseCostModifier();
         if (player != null) {
@@ -158,17 +161,17 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
     }
 
     @Override
-    public boolean consumeVis(ItemStack stack, Player player, float amount, boolean crafting, boolean simulate) {
+    public boolean drawVis(ItemStack stack, Player player, float amount, boolean crafting, boolean simulate) {
         if (amount <= 0.0F) {
             return true;
         }
         Map<ResourceKey<IAspect>, Integer> split =
                 WandVisHelper.evenSplit(Math.round(amount * WandEconomy.CENTIVIS_PER_VIS));
-        return WandVisHelper.consumeAllVis(stack, player, split, !simulate, crafting);
+        return WandVisHelper.payCosts(stack, player, split, !simulate, crafting);
     }
 
     @Override
-    public @Nullable BlockState getPickedBlock(ItemStack stack) {
+    public @Nullable BlockState rememberedBlock(ItemStack stack) {
         return stack.get(TTDataComponents.PICKED_BLOCK.get());
     }
 
@@ -210,11 +213,11 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
                 && target.onCasterRightClick(level, stack, player, pos, side, hand)) {
             return InteractionResult.SUCCESS;
         }
-        if (CasterTriggerRegistry.hasTrigger(state)
-                && CasterTriggerRegistry.performTrigger(level, stack, player, pos, side, state)) {
+        if (CasterBlockActions.hasAction(state)
+                && CasterBlockActions.dispatch(new CasterBlockUse(level, stack, player, pos, side, state))) {
             return InteractionResult.SUCCESS;
         }
-        ItemStack focusStack = getFocusStack(stack);
+        ItemStack focusStack = socketedFocus(stack);
         if (!focusStack.isEmpty() && player.isShiftKeyDown() && blockEntity == null) {
             if (pickerFocus(focusStack, level)) {
                 if (!level.isClientSide()) {
@@ -231,7 +234,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
     }
 
     private @Nullable IArchitect architectElement(ItemStack stack, Level level) {
-        return behaviour(getFocusStack(stack), level, IArchitect.class);
+        return behaviour(socketedFocus(stack), level, IArchitect.class);
     }
 
     @Override
@@ -266,7 +269,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
     }
 
     private int sortingHash(ItemStack wandStack) {
-        String sortKey = FocusItems.sortKey(getFocusStack(wandStack));
+        String sortKey = FocusItems.sortKey(socketedFocus(wandStack));
         return sortKey != null ? sortKey.hashCode() : 0;
     }
 
@@ -277,7 +280,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
 
     @Override
     public void releaseUsing(ItemStack stack, Level level, LivingEntity entity, int remainingTime) {
-        ItemStack focusStack = getFocusStack(stack);
+        ItemStack focusStack = socketedFocus(stack);
         if (level instanceof ServerLevel serverLevel
                 && entity instanceof Player player
                 && SpellCasting.channels(focusStack)) {
@@ -302,7 +305,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
             node.drainToWand(serverLevel, player, stack, ticksRemaining);
             return;
         }
-        ItemStack focusStack = getFocusStack(stack);
+        ItemStack focusStack = socketedFocus(stack);
         if (SpellCasting.channels(focusStack)) {
             SpellCasting.tick(serverLevel, player, stack, focusStack, getUseDuration(stack, entity) - ticksRemaining);
             return;
@@ -424,7 +427,7 @@ public class ItemWand extends Item implements ICaster, IArchitect, IChanneledIte
             builder.add(amounts);
         }
         builder.add(WandTooltips.costSummary(registries, pctByPrimal));
-        ItemStack focusStack = getFocusStack(stack);
+        ItemStack focusStack = socketedFocus(stack);
         if (FocusItems.isFocus(focusStack)) {
             builder.add(focusStack
                     .getHoverName()

@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.items.GogglesAccess;
 import com.leclowndu93150.thaumaturge.api.items.IArchitect;
 import com.leclowndu93150.thaumaturge.api.spell.Spell;
@@ -62,7 +62,7 @@ public final class CasterManager {
         NonNullList<ItemStack> main = player.getInventory().items;
         for (int slot = main.size() - 1; slot >= 0; slot--) {
             ItemStack stack = main.get(slot);
-            if (stack.getItem() instanceof ICaster caster && caster.consumeVis(stack, player, cost, true, false)) {
+            if (stack.getItem() instanceof FocusCaster caster && caster.drawVis(stack, player, cost, true, false)) {
                 return true;
             }
         }
@@ -70,7 +70,7 @@ public final class CasterManager {
     }
 
     public static void changeFocus(ItemStack casterStack, Level level, Player player, String focusKey) {
-        if (!(casterStack.getItem() instanceof ICaster caster)) {
+        if (!(casterStack.getItem() instanceof FocusCaster caster)) {
             return;
         }
         NonNullList<ItemStack> main = player.getInventory().items;
@@ -107,11 +107,11 @@ public final class CasterManager {
             }
         }
         if (REMOVE_FOCUS.equals(focusKey) || foci.isEmpty()) {
-            ItemStack current = caster.getFocusStack(casterStack);
+            ItemStack current = caster.socketedFocus(casterStack);
             if (!current.isEmpty()
                     && (addFocusToPouch(current.copy(), pouches)
                             || player.getInventory().add(current.copy()))) {
-                caster.setFocus(casterStack, ItemStack.EMPTY);
+                caster.socketFocus(casterStack, ItemStack.EMPTY);
                 player.playSound(TTSounds.TICKS.get(), SWAP_SOUND_VOLUME, REMOVE_SOUND_PITCH);
             }
             return;
@@ -142,14 +142,14 @@ public final class CasterManager {
             }
         }
         player.playSound(TTSounds.TICKS.get(), SWAP_SOUND_VOLUME, SWAP_SOUND_PITCH);
-        ItemStack current = caster.getFocusStack(casterStack);
+        ItemStack current = caster.socketedFocus(casterStack);
         if (!current.isEmpty()
                 && (addFocusToPouch(current.copy(), pouches)
                         || player.getInventory().add(current.copy()))) {
-            caster.setFocus(casterStack, ItemStack.EMPTY);
+            caster.socketFocus(casterStack, ItemStack.EMPTY);
         }
-        if (caster.getFocusStack(casterStack).isEmpty()) {
-            caster.setFocus(casterStack, picked);
+        if (caster.socketedFocus(casterStack).isEmpty()) {
+            caster.socketFocus(casterStack, picked);
         } else if (!addFocusToPouch(picked, pouches)) {
             player.getInventory().add(picked);
         }
@@ -207,10 +207,10 @@ public final class CasterManager {
     private record PouchHandle(Supplier<ItemStack> getter, Runnable markChanged) {}
 
     public static void toggleMisc(ItemStack casterStack, Level level, Player player, int mod) {
-        if (!(casterStack.getItem() instanceof ICaster caster)) {
+        if (!(casterStack.getItem() instanceof FocusCaster caster)) {
             return;
         }
-        if (!containsArchitect(caster.getFocusStack(casterStack), level)) {
+        if (!containsArchitect(caster.socketedFocus(casterStack), level)) {
             return;
         }
         int dim = getAreaDim(casterStack);
@@ -274,7 +274,7 @@ public final class CasterManager {
     }
 
     private static int getAreaSize(ItemStack stack) {
-        return stack.getItem() instanceof ICaster ? DEFAULT_AREA_SIZE : 0;
+        return stack.getItem() instanceof FocusCaster ? DEFAULT_AREA_SIZE : 0;
     }
 
     public static int getAreaDim(ItemStack stack) {

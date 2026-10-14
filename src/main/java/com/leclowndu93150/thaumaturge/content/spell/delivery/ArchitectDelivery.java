@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.spell.delivery;
 
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.items.IArchitect;
 import com.leclowndu93150.thaumaturge.api.spell.Spell;
 import com.leclowndu93150.thaumaturge.api.spell.SpellNode;
@@ -132,10 +132,10 @@ public record ArchitectDelivery(double range) implements SpellBehavior, IArchite
     }
 
     public static int methodOf(ItemStack casterStack, Level level) {
-        if (!(casterStack.getItem() instanceof ICaster caster)) {
+        if (!(casterStack.getItem() instanceof FocusCaster caster)) {
             return FULL;
         }
-        Spell spell = Spells.spellOf(caster.getFocusStack(casterStack));
+        Spell spell = Spells.spellOf(caster.socketedFocus(casterStack));
         if (spell == null) {
             return FULL;
         }

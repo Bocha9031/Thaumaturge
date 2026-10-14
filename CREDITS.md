@@ -35,7 +35,16 @@ These replacements were drawn by community contributors on the Thaumaturge asset
 | Lorc, 700 RPG Icons (used by anquietas_sys) | CC BY 3.0 | https://opengameart.org/content/700-rpg-icons | `textures/foci/earth.png` |
 | Minecraft `full_moon.png`, Mojang Studios | Minecraft EULA | https://www.minecraft.net/eula | `textures/research/r_celestial.png` |
 | Minecraft `obsidian.png`, Mojang Studios | Minecraft EULA | https://www.minecraft.net/eula | `textures/entity/obelisk_cap_altar.png` |
+| Minecraft `lava_still.png`, Mojang Studios (greyscale) | Minecraft EULA | https://www.minecraft.net/eula | `textures/block/animatedglow.png` |
+| Minecraft `furnace_top.png`, Mojang Studios | Minecraft EULA | https://www.minecraft.net/eula | `textures/block/al_furnace_side.png`, `textures/block/golem_fetter.png`, `textures/block/golem_fetter_active.png` (with an original powered channel) |
+| Minecraft `furnace_side.png`, Mojang Studios | Minecraft EULA | https://www.minecraft.net/eula | `textures/block/golem_fetter_side.png` (with an original iron strap) |
+| Minecraft `water_bucket.png`, Mojang Studios (water recoloured to the purifying fluid) | Minecraft EULA | https://www.minecraft.net/eula | `textures/item/purifying_bucket.png` |
+| Thaum pack v3.1 elemental axe, hoe and shovel textures, zozozrob (derivatives) | used with permission | Thaum pack v3.1 | `textures/item/elemental_axe.png`, `textures/item/elemental_hoe.png`, `textures/item/elemental_shovel.png` |
 | Temphis Sweatermonkey font (runes) | used under a licence purchased by the contributor | https://www.cumberlandgames.com | `textures/block/advanced_alchemical_furnace.png`, `textures/block/advanced_alchemical_furnace_on.png` |
+
+## Rune sheets rendered from a font
+
+`textures/misc/script.png` and `textures/particle/rift_shard.png` were rendered for Thaumaturge from the Temphis Sweatermonkey font by S. John Ross (Cumberland Games & Diversions, https://www.cumberlandgames.com). The glyphs A to M, G, H and X are set one per 16-pixel cell at 16.5 px, drawn at 8x resolution and box-filtered down, then the alpha is eased with a 1.4 gamma to keep the strokes thin. Both files are the same 256x16 sheet of white glyphs on transparency.
 
 ## Third-party models
 
@@ -46,6 +55,7 @@ These replacements were drawn by community contributors on the Thaumaturge asset
 | Thaum pack v3.1 void siphon model and texture, zozozrob | used with permission | Thaum pack v3.1 | `models/block/void_siphon.json`, `textures/block/void_siphon.png` |
 | Thaum pack v3.1 arcane workbench charger model and texture, zozozrob | used with permission | Thaum pack v3.1 | `models/mesh/arcane_workbench_charger.ttmesh`, `textures/block/arcane_workbench_charger.png` |
 | Thaum pack v3.1 essentia tube models and `tube_2` texture, zozozrob | used with permission | Thaum pack v3.1 | `models/block/tube_*.json`, `textures/block/tube_2.png` |
+| Thaum pack v3.1 essentia tube, resonator, mechanism, golem bell, crimson armor, void robe, focus and mirror textures, zozozrob | used with permission | Thaum pack v3.1 | `textures/item/tube.png`, `textures/item/tube_buffer.png`, `textures/item/tube_oneway.png`, `textures/item/tube_restrict.png`, `textures/item/resonator.png`, `textures/item/mechanism_simple.png`, `textures/item/mechanism_complex.png`, `textures/item/golem_bell.png`, `textures/item/crimson_robe_chest.png`, `textures/item/crimson_praetor_legs.png`, `textures/item/crimson_plate_legs.png`, `textures/item/crimson_boots.png`, `textures/item/void_robe_helm.png`, `textures/item/void_robe_chest.png`, `textures/item/void_robe_chest_over.png`, `textures/item/void_robe_legs.png`, `textures/item/void_robe_legs_over.png`, `textures/item/focus_1.png`, `textures/item/focus_2.png`, `textures/item/focus_3.png`, `textures/item/mirrored_glass.png`, `textures/block/mirrorframe2.png`, `textures/block/mirrorpane.png`, `textures/block/mirrorpaneopen.png` |
 | ArcanaEx infusion matrix layout and motion, l-Luna | CC0 1.0 | https://github.com/l-Luna/ArcanaEx | `models/block/infusion_matrix.json`, infusion matrix renderer |
 | ArcanaEx warded jar, l-Luna | CC0 1.0 | https://github.com/l-Luna/ArcanaEx | `models/block/jar_normal.json`, `models/block/jar_void.json` |
 
@@ -58,7 +68,7 @@ Every aspect icon and the focus icons come from [game-icons.net](https://game-ic
 | `textures/aspects/_back.png` | game-icons.net contributors, edited by woxayz | https://game-icons.net |
 | `textures/aspects/_unknown.png` | game-icons.net contributors, edited by woxayz | https://game-icons.net |
 | `textures/aspects/aer.png` | game-icons.net contributors, edited by woxayz | https://game-icons.net |
-| `textures/aspects/alienis.png` | game-icons.net contributors | https://game-icons.net |
+| `textures/aspects/alienis.png` | Lorc | https://game-icons.net/1x1/lorc/orbital.html |
 | `textures/aspects/alkimia.png` | Lorc, edited by woxayz | https://game-icons.net/1x1/lorc/bubbling-flask.html |
 | `textures/aspects/aqua.png` | game-icons.net contributors, edited by woxayz | https://game-icons.net |
 | `textures/aspects/auram.png` | Lorc, edited by woxayz | https://game-icons.net/1x1/lorc/sun.html |
@@ -138,6 +148,7 @@ Every aspect icon and the focus icons come from [game-icons.net](https://game-ic
 | `textures/foci/summon.png` | Lorc | https://game-icons.net/1x1/lorc/magic-gate.html |
 | `textures/foci/touch.png` | Lorc | https://game-icons.net/1x1/lorc/smoking-finger.html |
 | `textures/research/rd_chest.png` | Lorc | https://game-icons.net/1x1/lorc/locked-chest.html |
+| `textures/research/rd_flask.png` | Lorc | https://game-icons.net/1x1/lorc/fizzing-flask.html |
 | `textures/research/rd_map.png` | Lorc | https://game-icons.net/1x1/lorc/treasure-map.html |
 
 ## Painterly Spell Icons
@@ -289,6 +300,21 @@ tag_x.png (for golems) https://opengameart.org/content/700-rpg-icons
 gui_golembuilder.png craft button anvil: https://github.com/SlimeKnights/TinkersConstruct textures/item/slot/upgrade.png (MIT, Copyright (c) 2022 SlimeKnights)
 
 
+## Third-party code
+
+Code from these sources is kept as it is and credited here. It is not Thaumcraft code, and the clean-room rewrites do not replace it.
+
+| Code | License | Source | Used in |
+| --- | --- | --- | --- |
+| GLE Tubing and Extrusion Library by Linas Vepstas (polycone extrusion, ported to Java) | IBM example source code license (free use, distribution and modification, no warranty); GPL 2 also offered | http://www.linas.org/gle/ | `client/effect/geometry/PolyCone.java` (paths under `src/main/java/com/leclowndu93150/thaumaturge/`) |
+| Minecraft end portal shader by Mojang (layered starfield, adapted) | Minecraft EULA and Mojang's usage guidelines | `assets/minecraft/shaders/core/rendertype_end_portal.vsh` and `.fsh` in the Minecraft client | `shaders/core/tt_portal.vsh`, `shaders/core/tt_portal.fsh` (paths under `src/main/resources/assets/thaumaturge/`) |
+
+## Text
+
+### Thaumcraft 6 localization (MIT)
+
+Part of the English text and its translations (Thaumonomicon research pages, item, block and interface strings in `lang/` and in the generated `en_us.json`) is adapted from the Thaumcraft 6 localization files, which were published under the MIT license (text below). The license file shipped with them names the year 2017 and no copyright holder.
+
 ## License texts
 
 ### Saereth replacement sounds (MIT)
@@ -371,6 +397,32 @@ SOFTWARE.
 
 - CC BY 3.0: https://creativecommons.org/licenses/by/3.0/
 - CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/
+
+### Thaumcraft 6 localization (MIT)
+
+```
+MIT License
+
+Copyright (c) 2017
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 
 ## 1.21.1 port inputs

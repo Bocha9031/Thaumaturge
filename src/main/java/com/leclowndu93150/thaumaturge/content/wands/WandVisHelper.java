@@ -83,17 +83,23 @@ public final class WandVisHelper {
         return Math.max(modifier, WandEconomy.MIN_CONSUMPTION_MODIFIER);
     }
 
-    public static boolean consumeVis(
+    public static boolean drainOne(
             ItemStack stack, @Nullable Player player, ResourceKey<IAspect> aspect, int centivis, boolean crafting) {
-        int cost = (int) (centivis * getConsumptionModifier(stack, player, aspect, crafting));
-        if (getVis(stack, aspect) < cost) {
-            return false;
+        int owed = scaledCost(stack, player, aspect, centivis, crafting);
+        int available = getVis(stack, aspect);
+        boolean affordable = available >= owed;
+        if (affordable) {
+            storeVis(stack, aspect, available - owed);
         }
-        storeVis(stack, aspect, getVis(stack, aspect) - cost);
-        return true;
+        return affordable;
     }
 
-    public static boolean consumeAllVis(
+    private static int scaledCost(
+            ItemStack stack, @Nullable Player player, ResourceKey<IAspect> aspect, int base, boolean crafting) {
+        return (int) (base * getConsumptionModifier(stack, player, aspect, crafting));
+    }
+
+    public static boolean payCosts(
             ItemStack stack,
             @Nullable Player player,
             Map<ResourceKey<IAspect>, Integer> centivisCosts,
@@ -102,38 +108,39 @@ public final class WandVisHelper {
         if (centivisCosts.isEmpty()) {
             return false;
         }
-        Map<ResourceKey<IAspect>, Integer> modified = new LinkedHashMap<>();
+        WandVis before = getAllVis(stack);
+        WandVis after = before;
         for (Map.Entry<ResourceKey<IAspect>, Integer> entry : centivisCosts.entrySet()) {
-            int cost = (int) (entry.getValue() * getConsumptionModifier(stack, player, entry.getKey(), crafting));
-            modified.put(entry.getKey(), cost);
-        }
-        for (Map.Entry<ResourceKey<IAspect>, Integer> entry : modified.entrySet()) {
-            if (getVis(stack, entry.getKey()) < entry.getValue()) {
+            ResourceKey<IAspect> aspect = entry.getKey();
+            int owed = scaledCost(stack, player, aspect, entry.getValue(), crafting);
+            int held = before.amount(aspect);
+            if (held < owed) {
                 return false;
             }
+            after = after.with(aspect, after.amount(aspect) - owed);
         }
         if (doit) {
-            for (Map.Entry<ResourceKey<IAspect>, Integer> entry : modified.entrySet()) {
-                storeVis(stack, entry.getKey(), getVis(stack, entry.getKey()) - entry.getValue());
-            }
+            setAllVis(stack, after);
         }
         return true;
     }
 
-    public static boolean consumeAllVisRaw(
+    public static boolean payExact(
             ItemStack stack, Map<ResourceKey<IAspect>, Integer> centivisCosts, boolean simulate) {
         if (centivisCosts.isEmpty()) {
             return false;
         }
+        WandVis before = getAllVis(stack);
+        WandVis after = before;
         for (Map.Entry<ResourceKey<IAspect>, Integer> entry : centivisCosts.entrySet()) {
-            if (getVis(stack, entry.getKey()) < entry.getValue()) {
+            ResourceKey<IAspect> aspect = entry.getKey();
+            if (before.amount(aspect) < entry.getValue()) {
                 return false;
             }
+            after = after.with(aspect, after.amount(aspect) - entry.getValue());
         }
         if (!simulate) {
-            for (Map.Entry<ResourceKey<IAspect>, Integer> entry : centivisCosts.entrySet()) {
-                storeVis(stack, entry.getKey(), getVis(stack, entry.getKey()) - entry.getValue());
-            }
+            setAllVis(stack, after);
         }
         return true;
     }
@@ -157,7 +164,7 @@ public final class WandVisHelper {
             Player player, Map<ResourceKey<IAspect>, Integer> centivisCosts, boolean doit) {
         for (int slot = 0; slot < HOTBAR_SIZE; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.getItem() instanceof ItemWand && consumeAllVis(stack, player, centivisCosts, doit, true)) {
+            if (stack.getItem() instanceof ItemWand && payCosts(stack, player, centivisCosts, doit, true)) {
                 return true;
             }
         }
@@ -210,7 +217,7 @@ public final class WandVisHelper {
         Map<ResourceKey<IAspect>, Integer> split = primalSplit(Math.round(vis * WandEconomy.CENTIVIS_PER_VIS), aspects);
         for (int slot = 0; slot < HOTBAR_SIZE; slot++) {
             ItemStack stack = player.getInventory().getItem(slot);
-            if (stack.getItem() instanceof ItemWand && consumeAllVis(stack, player, split, doit, false)) {
+            if (stack.getItem() instanceof ItemWand && payCosts(stack, player, split, doit, false)) {
                 return true;
             }
         }

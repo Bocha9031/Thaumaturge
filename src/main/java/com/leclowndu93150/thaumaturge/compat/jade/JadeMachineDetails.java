@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.content.device.BlockEntityVoidSiphon;
 import com.leclowndu93150.thaumaturge.content.device.fluxscrubber.BlockEntityFluxScrubber;
 import com.leclowndu93150.thaumaturge.content.essentia.advancedfurnace.BlockEntityAdvancedAlchemicalFurnace;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntitySmelter;
+import com.leclowndu93150.thaumaturge.content.essentia.smeltery.SmelterGauge;
 import com.leclowndu93150.thaumaturge.content.golem.press.BlockEntityGolemBuilder;
 import com.leclowndu93150.thaumaturge.content.infernalfurnace.BlockEntityInfernalFurnace;
 import com.leclowndu93150.thaumaturge.content.research.decon.BlockEntityDeconstructionTable;
@@ -47,8 +48,8 @@ final class JadeMachineDetails {
     }
 
     static void smelter(BlockEntitySmelter machine, JadeDetailBuilder data) {
-        int progress = machine.getCookProgressScaled(100);
-        int burn = machine.getBurnTimeRemainingScaled(100);
+        int progress = machine.scaled(SmelterGauge.COOK, 100);
+        int burn = machine.scaled(SmelterGauge.FUEL, 100);
         data.summary(progress > 0 || burn > 0 ? "jade.thaumaturge.state.processing" : "jade.thaumaturge.state.idle");
         if (progress > 0) data.detail("jade.thaumaturge.machine.progress", progress);
         if (burn > 0) data.detail("jade.thaumaturge.machine.heat", burn);
@@ -98,9 +99,9 @@ final class JadeMachineDetails {
 
     static void golemBuilder(BlockEntityGolemBuilder machine, JadeDetailBuilder data) {
         data.title(Component.translatable("block.thaumaturge.golem_builder"));
-        data.summary(machine.maxCost() > 0 ? "jade.thaumaturge.state.processing" : "jade.thaumaturge.state.idle");
-        progress(data, machine.maxCost() - machine.cost(), machine.maxCost());
-        int output = machine.output()
+        data.summary(machine.totalCost() > 0 ? "jade.thaumaturge.state.processing" : "jade.thaumaturge.state.idle");
+        progress(data, machine.totalCost() - machine.cost(), machine.totalCost());
+        int output = machine.outputHandler()
                 .getStackInSlot(BlockEntityGolemBuilder.SLOT_OUTPUT)
                 .getCount();
         if (output > 0) data.summary("jade.thaumaturge.machine.output", output);

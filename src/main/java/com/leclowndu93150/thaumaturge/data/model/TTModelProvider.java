@@ -2807,7 +2807,6 @@ public final class TTModelProvider implements DataProvider {
                         Optional.empty()));
         connectedCube(TTBlocks.STONE_ANCIENT_TILE.get(), "ancient_tile");
         connectedCube(TTBlocks.STONE_ANCIENT_GLYPHED.get(), "ancient_glyph");
-        connectedCube(TTBlocks.PLANK_SILVERWOOD.get(), "plank_silverwood");
         for (Block block : List.of(TTBlocks.ELDRITCH_STONE.get(), TTBlocks.ELDRITCH_STONE_INERT.get())) {
             connected(
                     block,

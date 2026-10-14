@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.warding;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.casters.ICaster;
+import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.spell.Spell;
 import com.leclowndu93150.thaumaturge.api.spell.SpellNode;
 import com.leclowndu93150.thaumaturge.api.spell.Spells;
@@ -258,10 +258,10 @@ public final class WardOverlayRenderer {
     }
 
     private static boolean hasWard(ItemStack stack) {
-        if (!(stack.getItem() instanceof ICaster caster) || Minecraft.getInstance().level == null) {
+        if (!(stack.getItem() instanceof FocusCaster caster) || Minecraft.getInstance().level == null) {
             return false;
         }
-        Spell spell = Spells.spellOf(caster.getFocusStack(stack));
+        Spell spell = Spells.spellOf(caster.socketedFocus(stack));
         if (spell == null) {
             return false;
         }

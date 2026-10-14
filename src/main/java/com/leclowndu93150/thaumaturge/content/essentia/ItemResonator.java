@@ -5,8 +5,9 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectComponents;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
-import com.leclowndu93150.thaumaturge.api.essentia.EssentiaCapabilities;
-import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaTransport;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaAccess;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaPull;
+import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaConduit;
 import com.leclowndu93150.thaumaturge.content.device.BlockEntityCondenser;
 import com.leclowndu93150.thaumaturge.content.essentia.tube.BlockEntityTubeBuffer;
 import net.minecraft.core.BlockPos;
@@ -22,71 +23,91 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import org.jspecify.annotations.Nullable;
 
 public final class ItemResonator extends Item {
-    private static final float SOUND_VOLUME = 0.5F;
-    private static final float SOUND_PITCH_BASE = 1.9F;
+    private static final String CONTENTS_KEY = "message.thaumaturge.resonator.contents";
+    private static final String SUCTION_KEY = "message.thaumaturge.resonator.suction";
+    private static final String UNTYPED_KEY = "message.thaumaturge.resonator.untyped";
+    private static final String CONDENSER_COST_KEY = "message.thaumaturge.resonator.condenser_cost";
+    private static final String CONDENSER_TIME_KEY = "message.thaumaturge.resonator.condenser_time";
     private static final int TICKS_PER_SECOND = 20;
+    private static final double CENTER_OFFSET = 0.5;
+    private static final float SOUND_VOLUME = 0.5F;
+    private static final float SOUND_BASE_PITCH = 1.9F;
+    private static final float SOUND_PITCH_SPREAD = 0.1F;
 
-    public ItemResonator(Properties properties) {
+    public ItemResonator(Item.Properties properties) {
         super(properties);
     }
 
     @Override
     public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        Player player = context.getPlayer();
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
-        Direction side = context.getClickedFace();
-        Player player = context.getPlayer();
-        IEssentiaTransport transport = level.getCapability(EssentiaCapabilities.TRANSPORT, pos, side);
-        if (transport == null || player == null) {
+        Direction face = context.getClickedFace();
+        if (player == null) {
+            return InteractionResult.FAIL;
+        }
+        IEssentiaConduit conduit = EssentiaAccess.conduit(level, pos, face);
+        if (conduit == null) {
             return InteractionResult.FAIL;
         }
         if (level.isClientSide()) {
             player.swing(context.getHand());
             return InteractionResult.SUCCESS;
         }
-        BlockEntity tile = level.getBlockEntity(pos);
-        if (tile instanceof BlockEntityTubeBuffer) {
-            IAspectContainer container = level.getCapability(AspectCapabilities.CONTAINER, pos, side);
-            if (container != null) {
-                for (AspectInstance entry : container.getAspects().sortedByTag()) {
-                    player.sendSystemMessage(Component.translatable(
-                            "message.thaumaturge.resonator.contents",
-                            String.valueOf(entry.amount()),
-                            AspectComponents.name(entry.aspect())));
-                }
-            }
-        } else if (transport.getEssentiaType(side) != null) {
-            Holder<IAspect> type = transport.getEssentiaType(side);
-            player.sendSystemMessage(Component.translatable(
-                    "message.thaumaturge.resonator.contents",
-                    String.valueOf(transport.getEssentiaAmount(side)),
-                    AspectComponents.name(type)));
-        }
-        Holder<IAspect> suction = transport.getSuctionType(side);
-        Component suctionName = suction != null
-                ? AspectComponents.name(suction)
-                : Component.translatable("message.thaumaturge.resonator.untyped");
-        player.sendSystemMessage(Component.translatable(
-                "message.thaumaturge.resonator.suction",
-                String.valueOf(transport.getSuctionAmount(side)),
-                suctionName));
+        reportContents(player, level, pos, face, conduit);
+        reportSuction(player, conduit, face);
+        reportCondenser(player, level.getBlockEntity(pos));
         level.playSound(
                 null,
-                pos,
+                pos.getX() + CENTER_OFFSET,
+                pos.getY() + CENTER_OFFSET,
+                pos.getZ() + CENTER_OFFSET,
                 SoundEvents.SHIELD_BLOCK,
                 SoundSource.BLOCKS,
                 SOUND_VOLUME,
-                SOUND_PITCH_BASE + level.getRandom().nextFloat() * 0.1F);
-        if (tile instanceof BlockEntityCondenser condenser) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.thaumaturge.resonator.condenser_cost", String.valueOf(condenser.cost())));
-            player.sendSystemMessage(Component.translatable(
-                    "message.thaumaturge.resonator.condenser_time",
-                    String.valueOf(condenser.interval()),
-                    String.valueOf(condenser.interval() / TICKS_PER_SECOND)));
-        }
+                SOUND_BASE_PITCH + level.getRandom().nextFloat() * SOUND_PITCH_SPREAD);
         return InteractionResult.SUCCESS;
+    }
+
+    private static void reportContents(
+            Player player, Level level, BlockPos pos, Direction face, IEssentiaConduit conduit) {
+        IAspectContainer container = level.getBlockEntity(pos) instanceof BlockEntityTubeBuffer
+                ? level.getCapability(AspectCapabilities.CONTAINER, pos, face)
+                : null;
+        if (container != null) {
+            for (AspectInstance entry : container.getAspects().sortedByTag()) {
+                player.sendSystemMessage(contents(entry.amount(), entry.aspect()));
+            }
+            return;
+        }
+        Holder<IAspect> type = conduit.heldAspect(face);
+        if (type != null) {
+            player.sendSystemMessage(contents(conduit.heldAmount(face), type));
+        }
+    }
+
+    private static void reportSuction(Player player, IEssentiaConduit conduit, Direction face) {
+        EssentiaPull pull = conduit.pull(face);
+        Holder<IAspect> type = pull.aspect();
+        Component name = type == null ? Component.translatable(UNTYPED_KEY) : AspectComponents.trueName(type);
+        player.sendSystemMessage(Component.translatable(SUCTION_KEY, Integer.toString(pull.strength()), name));
+    }
+
+    private static void reportCondenser(Player player, @Nullable BlockEntity entity) {
+        if (entity instanceof BlockEntityCondenser condenser) {
+            player.sendSystemMessage(Component.translatable(CONDENSER_COST_KEY, Integer.toString(condenser.cost())));
+            player.sendSystemMessage(Component.translatable(
+                    CONDENSER_TIME_KEY,
+                    Integer.toString(condenser.interval()),
+                    Integer.toString(condenser.interval() / TICKS_PER_SECOND)));
+        }
+    }
+
+    private static Component contents(int amount, Holder<IAspect> aspect) {
+        return Component.translatable(CONTENTS_KEY, Integer.toString(amount), AspectComponents.trueName(aspect));
     }
 }

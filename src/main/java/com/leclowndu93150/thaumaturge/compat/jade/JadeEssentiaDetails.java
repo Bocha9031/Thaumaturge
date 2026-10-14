@@ -55,8 +55,8 @@ final class JadeEssentiaDetails {
 
     static void centrifuge(BlockEntityCentrifuge machine, JadeDetailBuilder data) {
         AspectList contents = AspectList.EMPTY;
-        if (machine.getEssentiaType(Direction.UP) != null && machine.getEssentiaAmount(Direction.UP) > 0) {
-            contents = contents.add(machine.getEssentiaType(Direction.UP), machine.getEssentiaAmount(Direction.UP));
+        if (machine.heldAspect(Direction.UP) != null && machine.heldAmount(Direction.UP) > 0) {
+            contents = contents.add(machine.heldAspect(Direction.UP), machine.heldAmount(Direction.UP));
         }
         data.storage(contents, 1, false);
         data.summary(
@@ -67,8 +67,8 @@ final class JadeEssentiaDetails {
 
     static void crystalizer(BlockEntityEssentiaCrystalizer machine, JadeDetailBuilder data) {
         AspectList contents = AspectList.EMPTY;
-        if (machine.getEssentiaType(Direction.UP) != null) {
-            contents = contents.add(machine.getEssentiaType(Direction.UP), 1);
+        if (machine.heldAspect(Direction.UP) != null) {
+            contents = contents.add(machine.heldAspect(Direction.UP), 1);
         }
         data.summary(contents.isEmpty() ? "jade.thaumaturge.state.idle" : "jade.thaumaturge.state.processing");
         data.storage(contents, 1, false);
@@ -97,8 +97,8 @@ final class JadeEssentiaDetails {
     }
 
     static void buffer(BlockEntityTubeBuffer tube, JadeDetailBuilder data) {
-        data.storage(tube.contents(), 0, true);
-        data.detail("jade.thaumaturge.essentia.amount", tube.visSize(), BlockEntityTubeBuffer.MAX_AMOUNT);
+        data.storage(tube.heldAspects(), 0, true);
+        data.detail("jade.thaumaturge.essentia.amount", tube.heldTotal(), BlockEntityTubeBuffer.MAX_AMOUNT);
         closedSides(tube::isSideOpen, data);
         int reduced = 0;
         int blocked = 0;
@@ -137,7 +137,8 @@ final class JadeEssentiaDetails {
 
     static void oneway(BlockEntityTubeOneway tube, JadeDetailBuilder data) {
         tube(tube, data);
-        data.summary("jade.thaumaturge.tube.direction", direction(tube.facing().getOpposite()));
+        data.summary(
+                "jade.thaumaturge.tube.direction", direction(tube.flowSide().getOpposite()));
     }
 
     static void restricted(BlockEntityTubeRestrict tube, JadeDetailBuilder data) {

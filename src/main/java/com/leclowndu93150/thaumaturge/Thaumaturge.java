@@ -3,8 +3,10 @@ package com.leclowndu93150.thaumaturge;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectIndexAccess;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.aura.VisRelayHelper;
-import com.leclowndu93150.thaumaturge.api.capability.KnowledgeAccess;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaAccess;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaCrystalAccess;
 import com.leclowndu93150.thaumaturge.api.golems.GolemHelper;
 import com.leclowndu93150.thaumaturge.api.items.GogglesAccess;
 import com.leclowndu93150.thaumaturge.api.items.RechargeAccess;
@@ -121,9 +123,11 @@ public final class Thaumaturge {
         container.registerConfig(ModConfig.Type.CLIENT, ThaumaturgeClientConfig.SPEC);
         container.registerConfig(ModConfig.Type.SERVER, ThaumaturgeServerConfig.SPEC);
 
-        KnowledgeAccess.bind(player -> player.getData(TTAttachments.KNOWLEDGE));
+        PlayerResearchAccess.bind(player -> player.getData(TTAttachments.KNOWLEDGE));
         AspectIndexAccess.bind(AspectIndexHolder::get);
         WandAccess.bind(new WandAccessBindings());
+        EssentiaCrystalAccess.bind(TTItems.ESSENTIA_CRYSTAL, TTDataComponents.CRYSTAL_ASPECT);
+        EssentiaAccess.bind(TTDataComponents.ASPECT_FILTER);
         ArcaneCraftCost.bind(WorkbenchPayment::cost);
         ArcaneCraftingTransaction.bind(new ArcaneCraftingTransactions());
         InfusionCraftingTransaction.bind(new InfusionCraftingTransactions());

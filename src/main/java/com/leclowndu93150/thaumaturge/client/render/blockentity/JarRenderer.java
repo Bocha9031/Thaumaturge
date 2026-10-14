@@ -83,7 +83,7 @@ public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar> {
                 }
             }
             BlockPos above = jar.getBlockPos().above();
-            connectedAbove = EssentiaFlowHandler.transport(level, above, Direction.DOWN) != null;
+            connectedAbove = EssentiaFlowHandler.conduit(level, above, Direction.DOWN) != null;
         }
 
         if (amount > 0 && aspectColor != -1) {

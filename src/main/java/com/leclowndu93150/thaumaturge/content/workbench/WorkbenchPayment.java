@@ -84,7 +84,7 @@ public final class WorkbenchPayment {
             int centivis = entry.amount() * WandEconomy.CRYSTAL_SUBSTITUTE_VIS * WandEconomy.CENTIVIS_PER_VIS;
             Map<ResourceKey<IAspect>, Integer> single = new LinkedHashMap<>();
             single.put(primal, centivis);
-            if (hasWand && WandVisHelper.consumeAllVisRaw(wand, single, true)) {
+            if (hasWand && WandVisHelper.payExact(wand, single, true)) {
                 wandCentivis.put(primal, centivis);
             } else if (supplyFromSources(context, player, inventory, entry.aspect(), centivis, true) >= centivis) {
                 sourceCentivis.put(primal, centivis);
@@ -124,7 +124,7 @@ public final class WorkbenchPayment {
         if (plan.wandCentivis().isEmpty()) {
             return paid;
         }
-        return WandVisHelper.consumeAllVisRaw(paid, plan.wandCentivis(), false) ? paid : null;
+        return WandVisHelper.payExact(paid, plan.wandCentivis(), false) ? paid : null;
     }
 
     public static boolean canCraft(Plan plan, @Nullable BlockEntityArcaneWorkbench tile) {
@@ -142,7 +142,7 @@ public final class WorkbenchPayment {
             ArcaneWorkbenchContext context) {
         if (!plan.crystalsSatisfied()) return null;
         if (!plan.wandCentivis().isEmpty()
-                && !WandVisHelper.consumeAllVisRaw(inventory.wandStack(), plan.wandCentivis(), true)) {
+                && !WandVisHelper.payExact(inventory.wandStack(), plan.wandCentivis(), true)) {
             return null;
         }
 

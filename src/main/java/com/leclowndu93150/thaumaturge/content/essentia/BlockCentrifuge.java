@@ -1,10 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.essentia;
 
-import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -56,10 +54,7 @@ public final class BlockCentrifuge extends BaseEntityBlock {
         if (!state.is(newState.getBlock())
                 && !level.isClientSide()
                 && level.getBlockEntity(pos) instanceof BlockEntityCentrifuge centrifuge) {
-            int spill = centrifuge.getEssentiaAmount(Direction.UP);
-            if (spill > 0) {
-                AuraHelper.polluteAura(level, pos, spill, true);
-            }
+            centrifuge.releaseStoredProductOnBreak(pos);
         }
         super.onRemove(state, level, pos, newState, movedByPiston);
     }

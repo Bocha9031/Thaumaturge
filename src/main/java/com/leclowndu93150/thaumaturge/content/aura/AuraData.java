@@ -7,6 +7,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.ChunkPos;
 
 public final class AuraData implements IAuraChunk {
@@ -28,13 +29,18 @@ public final class AuraData implements IAuraChunk {
             AuraData::isInitialized,
             AuraData::new);
 
-    private short base;
-    private float vis;
-    private float flux;
-    private boolean initialized;
-    private ChunkPos pos = new ChunkPos(0, 0);
+    private static final float MAX_POOL = 32766.0F;
+    private static final int VIS_SLOT = 0;
+    private static final int FLUX_SLOT = 1;
 
-    public AuraData() {}
+    private final float[] pools = new float[2];
+    private short base;
+    private boolean initialized;
+    private ChunkPos chunkPos = new ChunkPos(0, 0);
+
+    public AuraData() {
+        this((short) 0, 0.0F, 0.0F);
+    }
 
     public AuraData(short base, float vis, float flux) {
         this(base, vis, flux, false);
@@ -42,9 +48,17 @@ public final class AuraData implements IAuraChunk {
 
     private AuraData(short base, float vis, float flux, boolean initialized) {
         this.base = base;
-        this.vis = clamp(vis);
-        this.flux = clamp(flux);
+        store(VIS_SLOT, vis);
+        store(FLUX_SLOT, flux);
         this.initialized = initialized || base != 0;
+    }
+
+    private static float clampPool(float value) {
+        return Mth.clamp(value, 0.0F, MAX_POOL);
+    }
+
+    private void store(int slot, float value) {
+        pools[slot] = clampPool(value);
     }
 
     public boolean isInitialized() {
@@ -53,42 +67,38 @@ public final class AuraData implements IAuraChunk {
 
     @Override
     public short getBase() {
-        return this.base;
+        return base;
     }
 
-    public void setBase(short value) {
-        this.base = value;
-        this.initialized = true;
+    public void setBase(short newBase) {
+        initialized = true;
+        base = newBase;
     }
 
     @Override
     public float getVis() {
-        return this.vis;
+        return pools[VIS_SLOT];
     }
 
-    public void setVis(float value) {
-        this.vis = clamp(value);
+    public void setVis(float vis) {
+        store(VIS_SLOT, vis);
     }
 
     @Override
     public float getFlux() {
-        return this.flux;
+        return pools[FLUX_SLOT];
     }
 
-    public void setFlux(float value) {
-        this.flux = clamp(value);
+    public void setFlux(float flux) {
+        store(FLUX_SLOT, flux);
     }
 
     @Override
     public ChunkPos getChunkPos() {
-        return this.pos;
+        return chunkPos;
     }
 
-    public void setChunkPos(ChunkPos value) {
-        this.pos = value;
-    }
-
-    private static float clamp(float value) {
-        return Math.min(32766.0F, Math.max(0.0F, value));
+    public void setChunkPos(ChunkPos pos) {
+        chunkPos = pos;
     }
 }

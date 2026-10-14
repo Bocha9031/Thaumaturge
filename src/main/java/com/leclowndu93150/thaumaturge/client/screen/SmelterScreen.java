@@ -4,6 +4,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.screen.widget.TTGauge;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntitySmelter;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.MenuSmelter;
+import com.leclowndu93150.thaumaturge.content.essentia.smeltery.SmelterGauge;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -45,10 +46,14 @@ public final class SmelterScreen extends AbstractTTContainerScreen<MenuSmelter> 
             return;
         }
         FLAME.renderRising(
-                graphics, leftPos + FLAME_X, topPos + FLAME_Y, smelter.getBurnTimeRemainingScaled(FLAME.height()));
+                graphics, leftPos + FLAME_X, topPos + FLAME_Y, smelter.scaled(SmelterGauge.FUEL, FLAME.height()));
         PROGRESS.renderRising(
-                graphics, leftPos + PROGRESS_X, topPos + PROGRESS_Y, smelter.getCookProgressScaled(PROGRESS.height()));
-        VIS.renderRising(graphics, leftPos + VIS_X, topPos + VIS_Y, smelter.getVisScaled(VIS.height()));
+                graphics,
+                leftPos + PROGRESS_X,
+                topPos + PROGRESS_Y,
+                smelter.scaled(SmelterGauge.COOK, PROGRESS.height()));
+        VIS.renderRising(
+                graphics, leftPos + VIS_X, topPos + VIS_Y, smelter.scaled(SmelterGauge.ESSENTIA, VIS.height()));
         VIS_GLASS.renderFull(graphics, leftPos + VIS_GLASS_X, topPos + VIS_GLASS_Y);
     }
 }

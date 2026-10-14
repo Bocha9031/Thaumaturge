@@ -47,7 +47,7 @@ public final class BlockTubeBuffer extends BlockEssentiaTransport {
     @Override
     protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         if (!(level.getBlockEntity(pos) instanceof BlockEntityTubeBuffer buffer)) return 0;
-        int size = buffer.visSize();
+        int size = buffer.heldTotal();
         if (size <= 0) return 0;
         float ratio = size / (float) BlockEntityTubeBuffer.MAX_AMOUNT;
         return Math.min(15, (int) Math.floor(ratio * 14.0F) + 1);
