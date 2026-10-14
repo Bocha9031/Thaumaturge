@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.world.tree.crown;
 
+import com.leclowndu93150.thaumaturge.content.world.tree.TrunkCorner;
 import com.leclowndu93150.thaumaturge.registry.TTTreePlacers;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -9,6 +10,7 @@ import java.util.function.BiConsumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.LevelSimulatedReader;
 import net.minecraft.world.level.WorldGenLevel;
@@ -24,21 +26,22 @@ import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacerType;
 public final class CrownTrunkPlacer extends TrunkPlacer {
     public static final MapCodec<CrownTrunkPlacer> CODEC =
             RecordCodecBuilder.mapCodec(instance -> trunkPlacerParts(instance)
-                    .and(instance.group(
-                            CrownShape.CODEC.fieldOf("shape").forGetter(placer -> placer.shape),
-                            CrownRule.CODEC.fieldOf("rule").forGetter(placer -> placer.rule)))
+                    .and(CrownShape.CODEC.fieldOf("shape").forGetter(placer -> placer.shape))
+                    .and(CrownRule.CODEC.fieldOf("rule").forGetter(placer -> placer.rule))
                     .apply(instance, CrownTrunkPlacer::new));
 
-    private static final int UNOBSTRUCTED = -1;
-    private static final int NO_ROOM = 0;
-    private static final int MIN_CLEARANCE = 6;
-    private static final int CLUSTER_DEPTH = 4;
-    private static final double CLUSTER_DENSITY = 0.9;
-    private static final double CLUSTERS_PER_LAYER_BASE = 1.382;
-    private static final double CLUSTERS_PER_LAYER_SCALE = 13.0;
-    private static final double CLUSTER_REACH_FLOOR = 0.328;
-    private static final double BRANCHING_FLOOR = 0.2;
-    private static final double STACKED_CROWN_WIDTH = 1.66;
+    private static final int MIN_HEIGHT_LIMIT = 6;
+    private static final int CLUSTER_LAYERS = 4;
+    private static final int CLUSTER_PROBE_LENGTH = 5;
+    private static final int CLUSTER_LAYER_DROP = 1;
+    private static final double CROWN_FLOOR_SHARE = 0.3;
+    private static final double BRANCH_FLOOR_SHARE = 0.2;
+    private static final double CLUSTER_COUNT_BASE = 1.382;
+    private static final double CLUSTER_COUNT_HEIGHT_SHARE = 0.9;
+    private static final double CLUSTER_COUNT_REFERENCE_HEIGHT = 13.0;
+    private static final double PROFILE_SCALE = 0.5;
+    private static final double REACH_FLOOR = 0.328;
+    private static final double UPPER_CROWN_WIDTH = 1.66;
 
     private final CrownShape shape;
     private final CrownRule rule;
@@ -55,14 +58,8 @@ public final class CrownTrunkPlacer extends TrunkPlacer {
     }
 
     @Override
-    public int getTreeHeight(RandomSource random) {
-        int height = baseHeight + random.nextInt(heightRandA + 1);
-        return heightRandB > 0 ? height + random.nextInt(heightRandB + 1) : height;
-    }
-
-    @Override
-    public boolean isFree(LevelSimulatedReader level, BlockPos pos) {
-        return true;
+    public boolean isFree(LevelSimulatedReader reader, BlockPos pos) {
+        return !(reader instanceof WorldGenLevel level) || !level.isOutsideBuildHeight(pos);
     }
 
     @Override
@@ -77,206 +74,289 @@ public final class CrownTrunkPlacer extends TrunkPlacer {
             return List.of();
         }
         Block ownLeaves = config.foliageProvider.getState(random, origin).getBlock();
-        int heightLimit = surveyHeight(level, origin, treeHeight, ownLeaves);
-        if (heightLimit < MIN_CLEARANCE) {
+        if (!standsOnSoil(level, origin) || baseHasFluid(level, origin)) {
             return List.of();
         }
-        List<FoliagePlacer.FoliageAttachment> clusters = new ArrayList<>();
-        int trunkHeight = Math.min((int) (heightLimit * shape.trunkShare()), heightLimit - 1);
-        growTier(
-                level,
-                trunkSetter,
-                random,
-                config,
-                origin,
-                heightLimit,
-                trunkHeight,
-                shape.crownWidth(),
-                ownLeaves,
-                clusters);
-        if (shape.stackedCrown()) {
-            growTier(
-                    level,
-                    trunkSetter,
-                    random,
-                    config,
-                    origin.above(trunkHeight),
-                    heightLimit,
-                    trunkHeight,
-                    STACKED_CROWN_WIDTH,
-                    ownLeaves,
-                    clusters);
+        int limit = clearHeight(level, origin, treeHeight, ownLeaves);
+        if (limit < MIN_HEIGHT_LIMIT) {
+            return List.of();
         }
-        return clusters;
+
+        List<FoliagePlacer.FoliageAttachment> attachments = new ArrayList<>();
+        Crown lower = new Crown(origin, limit, shape.crownWidth(), ownLeaves);
+        int lowerTop = lower.grow(level, trunkSetter, random, config, attachments);
+        if (shape.stackedCrown()) {
+            Crown upper = new Crown(origin.atY(lowerTop), limit, UPPER_CROWN_WIDTH, ownLeaves);
+            upper.grow(level, trunkSetter, random, config, attachments);
+        }
+        return attachments;
     }
 
-    private int surveyHeight(WorldGenLevel level, BlockPos origin, int heightLimit, Block ownLeaves) {
-        int limit = heightLimit;
-        for (int dx = 0; dx < shape.trunkWidth(); dx++) {
-            for (int dz = 0; dz < shape.trunkWidth(); dz++) {
-                BlockPos column = origin.offset(dx, 0, dz);
-                if (!level.getFluidState(column).isEmpty() || !isSoil(level.getBlockState(column.below()))) {
-                    return NO_ROOM;
+    private boolean standsOnSoil(WorldGenLevel level, BlockPos origin) {
+        int width = shape.trunkWidth();
+        for (int dx = 0; dx < width; dx++) {
+            for (int dz = 0; dz < width; dz++) {
+                BlockState support = level.getBlockState(origin.offset(dx, -1, dz));
+                if (!support.is(BlockTags.DIRT) && !support.is(Blocks.FARMLAND)) {
+                    return false;
                 }
-                int blockedAt = firstObstruction(level, column, column.above(limit - 1), ownLeaves);
-                if (blockedAt != UNOBSTRUCTED) {
-                    if (blockedAt < MIN_CLEARANCE) {
-                        return NO_ROOM;
+            }
+        }
+        return true;
+    }
+
+    private boolean baseHasFluid(WorldGenLevel level, BlockPos origin) {
+        int width = shape.trunkWidth();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int dx = 0; dx < width; dx++) {
+            for (int dz = 0; dz < width; dz++) {
+                cursor.setWithOffset(origin, dx, 0, dz);
+                if (!level.getFluidState(cursor).isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int clearHeight(WorldGenLevel level, BlockPos origin, int limit, Block ownLeaves) {
+        int width = shape.trunkWidth();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int dy = 0; dy < limit; dy++) {
+            for (int dx = 0; dx < width; dx++) {
+                for (int dz = 0; dz < width; dz++) {
+                    cursor.setWithOffset(origin, dx, dy, dz);
+                    if (!rule.isOpen(level.getBlockState(cursor), ownLeaves)) {
+                        return dy;
                     }
-                    limit = blockedAt;
                 }
             }
         }
         return limit;
     }
 
-    private static boolean isSoil(BlockState state) {
-        return state.is(BlockTags.DIRT) || state.is(Blocks.FARMLAND);
+    private static int clustersPerLayer(int limit) {
+        double scaled = CLUSTER_COUNT_HEIGHT_SHARE * limit / CLUSTER_COUNT_REFERENCE_HEIGHT;
+        return Math.max(1, Mth.floor(CLUSTER_COUNT_BASE + scaled * scaled));
     }
 
-    private void growTier(
-            WorldGenLevel level,
-            BiConsumer<BlockPos, BlockState> trunkSetter,
-            RandomSource random,
-            TreeConfiguration config,
-            BlockPos foot,
-            int heightLimit,
-            int trunkHeight,
-            double crownWidth,
-            Block ownLeaves,
-            List<FoliagePlacer.FoliageAttachment> clusters) {
-        List<CrownNode> nodes =
-                surveyCrown(level, random, foot, heightLimit, foot.getY() + trunkHeight, crownWidth, ownLeaves);
-        for (CrownNode node : nodes) {
-            if (node.branchFootY() - foot.getY() >= heightLimit * BRANCHING_FLOOR) {
-                layLimb(
+    private static double profile(int limit, int layer) {
+        double half = limit / 2.0;
+        double fromMiddle = half - layer;
+        if (Math.abs(fromMiddle) >= half) {
+            return 0.0;
+        }
+        return PROFILE_SCALE * Math.sqrt(half * half - fromMiddle * fromMiddle);
+    }
+
+    private static Direction.Axis branchAxis(int offsetX, int offsetZ) {
+        int absX = Math.abs(offsetX);
+        int absZ = Math.abs(offsetZ);
+        if (absX == 0 && absZ == 0) {
+            return Direction.Axis.Y;
+        }
+        return absX >= absZ ? Direction.Axis.X : Direction.Axis.Z;
+    }
+
+    private static int span(int dx, int dy, int dz) {
+        return Math.max(Math.abs(dx), Math.max(Math.abs(dy), Math.abs(dz)));
+    }
+
+    private final class Crown {
+        private final BlockPos base;
+        private final int limit;
+        private final double width;
+        private final Block ownLeaves;
+        private final int trunkTop;
+
+        private Crown(BlockPos base, int limit, double width, Block ownLeaves) {
+            this.base = base;
+            this.limit = limit;
+            this.width = width;
+            this.ownLeaves = ownLeaves;
+            this.trunkTop = base.getY() + Mth.floor(limit * shape.trunkShare());
+        }
+
+        private int grow(
+                WorldGenLevel level,
+                BiConsumer<BlockPos, BlockState> trunkSetter,
+                RandomSource random,
+                TreeConfiguration config,
+                List<FoliagePlacer.FoliageAttachment> attachments) {
+            List<CrownNode> nodes = new ArrayList<>();
+            BlockPos summit = new BlockPos(base.getX(), base.getY() + limit - CLUSTER_LAYERS, base.getZ());
+            nodes.add(new CrownNode(summit, trunkTop));
+            int perLayer = clustersPerLayer(limit);
+            int crownFloor = Mth.ceil(limit * CROWN_FLOOR_SHARE);
+            for (int layer = limit - CLUSTER_LAYERS; !rule.belowCrown(layer, crownFloor); layer--) {
+                double reach = width * profile(limit, layer);
+                for (int attempt = 0; attempt < perLayer; attempt++) {
+                    CrownNode node = scout(level, random, layer, reach);
+                    if (node != null) {
+                        nodes.add(node);
+                    }
+                }
+            }
+            raiseTrunk(level, trunkSetter, random, config);
+            double branchFloor = base.getY() + limit * BRANCH_FLOOR_SHARE;
+            for (CrownNode node : nodes) {
+                if (node.branchFootY() >= branchFloor) {
+                    growBranch(level, trunkSetter, random, config, node);
+                    attachments.add(new FoliagePlacer.FoliageAttachment(node.cluster(), 0, false));
+                }
+            }
+            return trunkTop;
+        }
+
+        private CrownNode scout(WorldGenLevel level, RandomSource random, int layer, double reach) {
+            double distance = reach * (random.nextFloat() + REACH_FLOOR);
+            double angle = random.nextFloat() * Mth.TWO_PI;
+            int x = rule.clusterCoordinate(base.getX(), distance * Math.sin(angle));
+            int z = rule.clusterCoordinate(base.getZ(), distance * Math.cos(angle));
+            BlockPos cluster = new BlockPos(x, base.getY() + layer - CLUSTER_LAYER_DROP, z);
+            if (!clusterHasRoom(level, cluster)) {
+                return null;
+            }
+            int runX = cluster.getX() - base.getX();
+            int runZ = cluster.getZ() - base.getZ();
+            double run = Math.sqrt(runX * runX + runZ * runZ);
+            int footY = Math.min(Mth.floor(cluster.getY() - run * shape.branchSlope()), trunkTop);
+            if (!lineIsOpen(level, new BlockPos(base.getX(), footY, base.getZ()), cluster)) {
+                return null;
+            }
+            return new CrownNode(cluster, footY);
+        }
+
+        private boolean clusterHasRoom(WorldGenLevel level, BlockPos cluster) {
+            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+            for (int dy = 0; dy < CLUSTER_PROBE_LENGTH; dy++) {
+                cursor.setWithOffset(cluster, 0, dy, 0);
+                if (!isPassable(level, cursor)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private boolean lineIsOpen(WorldGenLevel level, BlockPos start, BlockPos end) {
+            int dx = end.getX() - start.getX();
+            int dy = end.getY() - start.getY();
+            int dz = end.getZ() - start.getZ();
+            int steps = span(dx, dy, dz);
+            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+            for (int step = 0; step <= steps; step++) {
+                pointOnLine(start, dx, dy, dz, step, steps, cursor);
+                if (!isPassable(level, cursor)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private boolean isPassable(WorldGenLevel level, BlockPos pos) {
+            return !level.isOutsideBuildHeight(pos) && rule.isOpen(level.getBlockState(pos), ownLeaves);
+        }
+
+        private void raiseTrunk(
+                WorldGenLevel level,
+                BiConsumer<BlockPos, BlockState> trunkSetter,
+                RandomSource random,
+                TreeConfiguration config) {
+            int width = shape.trunkWidth();
+            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+            for (int y = base.getY(); y <= trunkTop; y++) {
+                for (int dx = 0; dx < width; dx++) {
+                    for (int dz = 0; dz < width; dz++) {
+                        cursor.set(base.getX() + dx, y, base.getZ() + dz);
+                        setLog(
+                                level,
+                                trunkSetter,
+                                random,
+                                config,
+                                cursor,
+                                Direction.Axis.Y,
+                                TrunkCorner.atOffset(dx, dz, width));
+                    }
+                }
+            }
+        }
+
+        private void growBranch(
+                WorldGenLevel level,
+                BiConsumer<BlockPos, BlockState> trunkSetter,
+                RandomSource random,
+                TreeConfiguration config,
+                CrownNode node) {
+            BlockPos end = node.cluster();
+            BlockPos start = new BlockPos(base.getX(), node.branchFootY(), base.getZ());
+            int dx = end.getX() - start.getX();
+            int dy = end.getY() - start.getY();
+            int dz = end.getZ() - start.getZ();
+            int steps = span(dx, dy, dz);
+            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+            for (int step = 1; step <= steps; step++) {
+                pointOnLine(start, dx, dy, dz, step, steps, cursor);
+                if (isTrunkCell(cursor)) {
+                    continue;
+                }
+                setLog(
                         level,
                         trunkSetter,
                         random,
                         config,
-                        new BlockPos(foot.getX(), node.branchFootY(), foot.getZ()),
-                        node.cluster());
-                clusters.add(new FoliagePlacer.FoliageAttachment(node.cluster(), 0, false));
+                        cursor,
+                        branchAxis(cursor.getX() - start.getX(), cursor.getZ() - start.getZ()));
             }
         }
-        for (int dx = 0; dx < shape.trunkWidth(); dx++) {
-            for (int dz = 0; dz < shape.trunkWidth(); dz++) {
-                BlockPos column = foot.offset(dx, 0, dz);
-                layLimb(level, trunkSetter, random, config, column, column.above(trunkHeight));
-            }
-        }
-    }
 
-    private List<CrownNode> surveyCrown(
-            WorldGenLevel level,
-            RandomSource random,
-            BlockPos foot,
-            int heightLimit,
-            int branchTop,
-            double crownWidth,
-            Block ownLeaves) {
-        List<CrownNode> nodes = new ArrayList<>();
-        int topLayer = heightLimit - CLUSTER_DEPTH;
-        nodes.add(new CrownNode(foot.above(topLayer), branchTop));
-        int perLayer = Math.max(1, (int)
-                (CLUSTERS_PER_LAYER_BASE + Math.pow(CLUSTER_DENSITY * heightLimit / CLUSTERS_PER_LAYER_SCALE, 2.0)));
-        for (int layer = topLayer; layer >= 0; layer--) {
-            if (rule.belowCrown(layer, heightLimit)) {
-                continue;
-            }
-            float spread = crownSpread(layer, heightLimit);
-            for (int attempt = 0; attempt < perLayer; attempt++) {
-                double reach = crownWidth * spread * (random.nextFloat() + CLUSTER_REACH_FLOOR);
-                double angle = random.nextFloat() * 2.0 * Math.PI;
-                BlockPos cluster = new BlockPos(
-                        rule.clusterCoordinate(foot.getX(), reach * Math.sin(angle)),
-                        foot.getY() + layer - 1,
-                        rule.clusterCoordinate(foot.getZ(), reach * Math.cos(angle)));
-                if (firstObstruction(level, cluster, cluster.above(CLUSTER_DEPTH), ownLeaves) != UNOBSTRUCTED) {
-                    continue;
-                }
-                int offX = foot.getX() - cluster.getX();
-                int offZ = foot.getZ() - cluster.getZ();
-                double sag = cluster.getY() - Math.sqrt(offX * offX + offZ * offZ) * shape.branchSlope();
-                int branchFoot = sag > branchTop ? branchTop : (int) sag;
-                if (firstObstruction(level, new BlockPos(foot.getX(), branchFoot, foot.getZ()), cluster, ownLeaves)
-                        == UNOBSTRUCTED) {
-                    nodes.add(new CrownNode(cluster, branchFoot));
-                }
-            }
+        private boolean isTrunkCell(BlockPos pos) {
+            int last = shape.trunkWidth() - 1;
+            return pos.getY() >= base.getY()
+                    && pos.getY() <= trunkTop
+                    && pos.getX() >= base.getX()
+                    && pos.getX() <= base.getX() + last
+                    && pos.getZ() >= base.getZ()
+                    && pos.getZ() <= base.getZ() + last;
         }
-        return nodes;
-    }
 
-    private static float crownSpread(int layer, int heightLimit) {
-        float half = heightLimit / 2.0F;
-        float fromMiddle = half - layer;
-        if (fromMiddle == 0.0F) {
-            return half * 0.5F;
-        }
-        if (Math.abs(fromMiddle) >= half) {
-            return 0.0F;
-        }
-        return (float) Math.sqrt(half * half - fromMiddle * fromMiddle) * 0.5F;
-    }
-
-    private int firstObstruction(WorldGenLevel level, BlockPos from, BlockPos to, Block ownLeaves) {
-        int dx = to.getX() - from.getX();
-        int dy = to.getY() - from.getY();
-        int dz = to.getZ() - from.getZ();
-        int steps = Math.max(Math.abs(dx), Math.max(Math.abs(dy), Math.abs(dz)));
-        if (steps == 0) {
-            return UNOBSTRUCTED;
-        }
-        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
-        for (int index = 0; index <= steps; index++) {
-            probe.set(
-                    rule.lineCoordinate(from.getX(), dx, steps, index, true),
-                    rule.lineCoordinate(from.getY(), dy, steps, index, true),
-                    rule.lineCoordinate(from.getZ(), dz, steps, index, true));
-            if (!rule.isOpen(level.getBlockState(probe), ownLeaves)) {
-                return index;
+        private void pointOnLine(
+                BlockPos start, int dx, int dy, int dz, int step, int steps, BlockPos.MutableBlockPos cursor) {
+            if (steps == 0) {
+                cursor.set(start);
+                return;
             }
+            int x = rule.lineCoordinate(start.getX(), dx, step, steps, Math.abs(dx) == steps);
+            int y = rule.lineCoordinate(start.getY(), dy, step, steps, Math.abs(dy) == steps);
+            int z = rule.lineCoordinate(start.getZ(), dz, step, steps, Math.abs(dz) == steps);
+            cursor.set(x, y, z);
         }
-        return UNOBSTRUCTED;
-    }
 
-    private void layLimb(
-            WorldGenLevel level,
-            BiConsumer<BlockPos, BlockState> trunkSetter,
-            RandomSource random,
-            TreeConfiguration config,
-            BlockPos from,
-            BlockPos to) {
-        int dx = to.getX() - from.getX();
-        int dy = to.getY() - from.getY();
-        int dz = to.getZ() - from.getZ();
-        int steps = Math.max(Math.abs(dx), Math.max(Math.abs(dy), Math.abs(dz)));
-        if (steps == 0) {
-            return;
+        private void setLog(
+                WorldGenLevel level,
+                BiConsumer<BlockPos, BlockState> trunkSetter,
+                RandomSource random,
+                TreeConfiguration config,
+                BlockPos pos,
+                Direction.Axis axis) {
+            setLog(level, trunkSetter, random, config, pos, axis, TrunkCorner.NONE);
         }
-        for (int index = 0; index <= steps; index++) {
-            BlockPos pos = new BlockPos(
-                    rule.lineCoordinate(from.getX(), dx, steps, index, false),
-                    rule.lineCoordinate(from.getY(), dy, steps, index, false),
-                    rule.lineCoordinate(from.getZ(), dz, steps, index, false));
-            if (CrownRule.canHostLog(level.getBlockState(pos))) {
-                trunkSetter.accept(
-                        pos,
-                        config.trunkProvider
-                                .getState(random, pos)
-                                .trySetValue(RotatedPillarBlock.AXIS, grainAxis(from, pos)));
+
+        private void setLog(
+                WorldGenLevel level,
+                BiConsumer<BlockPos, BlockState> trunkSetter,
+                RandomSource random,
+                TreeConfiguration config,
+                BlockPos pos,
+                Direction.Axis axis,
+                TrunkCorner corner) {
+            if (level.isOutsideBuildHeight(pos) || !level.isStateAtPosition(pos, CrownRule::canHostLog)) {
+                return;
             }
+            BlockState logState = config.trunkProvider
+                    .getState(random, pos)
+                    .trySetValue(RotatedPillarBlock.AXIS, axis)
+                    .trySetValue(TrunkCorner.PROPERTY, corner);
+            trunkSetter.accept(pos.immutable(), logState);
         }
-    }
-
-    private static Direction.Axis grainAxis(BlockPos from, BlockPos to) {
-        int runX = Math.abs(to.getX() - from.getX());
-        int runZ = Math.abs(to.getZ() - from.getZ());
-        int run = Math.max(runX, runZ);
-        if (run == 0) {
-            return Direction.Axis.Y;
-        }
-        return runX == run ? Direction.Axis.X : Direction.Axis.Z;
     }
 }

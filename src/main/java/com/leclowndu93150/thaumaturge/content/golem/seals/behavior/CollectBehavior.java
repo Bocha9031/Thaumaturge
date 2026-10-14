@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealBehavior;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
@@ -7,7 +8,6 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.ISealFilter;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealArea;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
-import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskHandoff;
 import java.util.List;
 import net.minecraft.server.level.ServerLevel;
@@ -33,7 +33,7 @@ public final class CollectBehavior implements ISealBehavior {
             if (isLoose(item) && !claimedItems.tracks(item.getId()) && wanted(seal, item.getItem())) {
                 Task task = Task.onEntity(seal.pos(), item);
                 task.setPriority(seal.priority());
-                TaskBoard.of(level).post(task);
+                GolemDispatch.postTask(level, task);
                 claimedItems.record(task, item.getId());
                 break;
             }

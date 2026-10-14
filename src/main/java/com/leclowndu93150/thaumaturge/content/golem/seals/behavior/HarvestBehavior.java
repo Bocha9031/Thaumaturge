@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
-import com.leclowndu93150.thaumaturge.api.golems.GolemHelper;
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealBehavior;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
@@ -98,7 +98,7 @@ public final class HarvestBehavior implements ISealBehavior {
     private static Task post(ServerLevel level, ISealEntity seal, BlockPos pos) {
         Task task = Task.atBlock(seal.pos(), pos);
         task.setPriority(seal.priority());
-        TaskBoard.of(level).post(task);
+        GolemDispatch.postTask(level, task);
         return task;
     }
 
@@ -147,7 +147,7 @@ public final class HarvestBehavior implements ISealBehavior {
             Task replant = Task.atBlock(seal.pos(), pos);
             replant.setPriority(task.priority());
             replant.setLife(REPLANT_LIFESPAN);
-            TaskBoard.of(level).post(replant);
+            GolemDispatch.postTask(level, replant);
             ReplantSite site = new ReplantSite(
                     pos,
                     plantFace,
@@ -212,7 +212,7 @@ public final class HarvestBehavior implements ISealBehavior {
         }
         boolean holdingSeed = golem.hands().holds(site.seed());
         if (!holdingSeed && seal.setting(REQUEST_SEEDS)) {
-            GolemHelper.requestProvisioning(golem.level(), seal, site.seed());
+            GolemDispatch.orderSupply(golem.level(), seal, site.seed());
         }
         return holdingSeed;
     }

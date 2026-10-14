@@ -1,11 +1,11 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealBehavior;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealArea;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
@@ -36,7 +36,7 @@ abstract class CellWorkBehavior implements ISealBehavior {
             Task task = Task.atBlock(seal.pos(), cell);
             task.setPriority(seal.priority());
             prepare(level, cell, task);
-            TaskBoard.of(level).post(task);
+            GolemDispatch.postTask(level, task);
             claimed.record(task, cell.asLong());
         }
     }

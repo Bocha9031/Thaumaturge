@@ -1,8 +1,9 @@
 package com.leclowndu93150.thaumaturge.api.golems.tasks;
 
-import com.leclowndu93150.thaumaturge.api.golems.GolemHelper;
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.ProvisionRequest;
+import com.leclowndu93150.thaumaturge.api.golems.SupplyOrder;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealPos;
 import java.util.UUID;
@@ -34,7 +35,7 @@ public final class Task {
     private boolean claimed;
     private boolean ended;
     private boolean finished;
-    private @Nullable ProvisionRequest provision;
+    private @Nullable SupplyOrder servedOrder;
 
     private Task(@Nullable SealPos origin, TaskTarget target) {
         this.origin = origin;
@@ -295,7 +296,7 @@ public final class Task {
      */
     public void end() {
         this.ended = true;
-        this.provision = null;
+        this.servedOrder = null;
     }
 
     /**
@@ -342,8 +343,17 @@ public final class Task {
      * @return the provisioning request this task is serving, or {@code null}
      * @since 1.0.0
      */
+    public @Nullable SupplyOrder servedOrder() {
+        return servedOrder;
+    }
+
+    public void serveOrder(@Nullable SupplyOrder order) {
+        this.servedOrder = order;
+    }
+
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public @Nullable ProvisionRequest linkedProvision() {
-        return provision;
+        return servedOrder instanceof ProvisionRequest request ? request : null;
     }
 
     /**
@@ -355,7 +365,7 @@ public final class Task {
      */
     @Deprecated(since = "1.1.0", forRemoval = true)
     public void linkProvision(@Nullable ProvisionRequest request) {
-        this.provision = request;
+        serveOrder(request);
     }
 
     /**
@@ -369,7 +379,8 @@ public final class Task {
         if (origin == null) {
             return true;
         }
-        ISealEntity seal = GolemHelper.getSealEntity(golem.asEntity().level(), origin);
+        ISealEntity seal =
+                GolemDispatch.sealAt(golem.asEntity().level(), origin).orElse(null);
         if (seal == null) {
             return true;
         }

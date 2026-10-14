@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealBehavior;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
@@ -8,7 +9,6 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.SealPos;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
-import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import java.util.List;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -51,7 +51,7 @@ public final class EmptyBehavior implements ISealBehavior {
             Task task = Task.atBlock(seal.pos(), seal.pos().pos());
             task.setPriority(seal.priority());
             task.setLife(TASK_LIFESPAN);
-            TaskBoard.of(level).post(task);
+            GolemDispatch.postTask(level, task);
             takings.record(task, found);
         }
     }

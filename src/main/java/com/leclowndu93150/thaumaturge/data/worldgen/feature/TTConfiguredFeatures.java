@@ -6,6 +6,7 @@ import com.leclowndu93150.thaumaturge.content.aura.node.NodeFeatureConfig;
 import com.leclowndu93150.thaumaturge.content.aura.node.NodeGenerator;
 import com.leclowndu93150.thaumaturge.content.world.crystal.CrystalClusterConfig;
 import com.leclowndu93150.thaumaturge.content.world.plant.MagicForestFloraConfig;
+import com.leclowndu93150.thaumaturge.content.world.taint.TaintBiomeConfig;
 import com.leclowndu93150.thaumaturge.content.world.tree.TTTreeGrowers;
 import com.leclowndu93150.thaumaturge.content.world.tree.crown.CrownFoliagePlacer;
 import com.leclowndu93150.thaumaturge.content.world.tree.crown.CrownRule;
@@ -150,6 +151,14 @@ public final class TTConfiguredFeatures {
     private static final int FLORA_RED_MUSHROOM_RARITY = 8;
     private static final int FLORA_HUGE_MUSHROOM_RARITY = 40;
     private static final int HUGE_MUSHROOM_FOLIAGE_RADIUS = 3;
+    private static final int TAINT_BIOME_MAX_CRUST_BLOBS = 2;
+    private static final int TAINT_BIOME_MIN_CRUST_RADIUS = 1;
+    private static final int TAINT_BIOME_MAX_CRUST_RADIUS = 2;
+    private static final int TAINT_BIOME_GRASS_FIBRE_ATTEMPTS = 10;
+    private static final int TAINT_BIOME_GENERAL_FIBRE_ATTEMPTS = 8;
+    private static final int TAINT_BIOME_GROUND_SEARCH_DEPTH = 32;
+    private static final int TAINT_BIOME_LANDMARK_RADIUS_CHUNKS = 4;
+    private static final int TAINT_BIOME_LANDMARK_ATTEMPTS = 48;
 
     private TTConfiguredFeatures() {}
 
@@ -455,8 +464,21 @@ public final class TTConfiguredFeatures {
         context.register(
                 MANA_PODS, new ConfiguredFeature<>(TTFeatures.MANA_PODS.get(), NoneFeatureConfiguration.INSTANCE));
 
+        UniformInt taintCrustRadius = UniformInt.of(TAINT_BIOME_MIN_CRUST_RADIUS, TAINT_BIOME_MAX_CRUST_RADIUS);
         context.register(
-                TAINT_BIOME, new ConfiguredFeature<>(TTFeatures.TAINT_BIOME.get(), NoneFeatureConfiguration.INSTANCE));
+                TAINT_BIOME,
+                new ConfiguredFeature<>(
+                        TTFeatures.TAINT_BIOME.get(),
+                        new TaintBiomeConfig(
+                                TTBlocks.TAINT_CRUST.get(),
+                                TAINT_BIOME_MAX_CRUST_BLOBS,
+                                taintCrustRadius,
+                                TAINT_BIOME_GRASS_FIBRE_ATTEMPTS,
+                                TAINT_BIOME_GENERAL_FIBRE_ATTEMPTS,
+                                TAINT_BIOME_GROUND_SEARCH_DEPTH,
+                                true,
+                                TAINT_BIOME_LANDMARK_RADIUS_CHUNKS,
+                                TAINT_BIOME_LANDMARK_ATTEMPTS)));
 
         context.register(
                 NODES_WILD,

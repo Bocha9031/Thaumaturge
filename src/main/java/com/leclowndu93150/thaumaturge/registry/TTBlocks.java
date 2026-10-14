@@ -121,6 +121,7 @@ import com.leclowndu93150.thaumaturge.content.world.mound.BlockLoot;
 import com.leclowndu93150.thaumaturge.content.world.plant.BlockGrassAmbient;
 import com.leclowndu93150.thaumaturge.content.world.plant.MagicPlantBlock;
 import com.leclowndu93150.thaumaturge.content.world.plant.MagicPlantTraits;
+import com.leclowndu93150.thaumaturge.content.world.tree.BlockGreatwoodLog;
 import com.leclowndu93150.thaumaturge.content.world.tree.BlockSaplingTT;
 import com.leclowndu93150.thaumaturge.content.world.tree.BlockSilverwoodNodeLog;
 import com.leclowndu93150.thaumaturge.content.world.tree.TTTreeGrowers;
@@ -1174,9 +1175,9 @@ public final class TTBlocks {
     public static final DeferredBlock<FlowerPotBlock> POTTED_SAPLING_SILVERWOOD =
             pottedPlant("potted_sapling_silverwood", SAPLING_SILVERWOOD);
 
-    public static final DeferredBlock<RotatedPillarBlock> LOG_GREATWOOD = BLOCKS.registerBlock(
+    public static final DeferredBlock<BlockGreatwoodLog> LOG_GREATWOOD = BLOCKS.registerBlock(
             "log_greatwood",
-            RotatedPillarBlock::new,
+            BlockGreatwoodLog::new,
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.WOOD)
                     .strength(2.0F, 5.0F)

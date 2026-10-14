@@ -13,6 +13,7 @@ import com.leclowndu93150.thaumaturge.content.world.objects.MagicalCavePondFeatu
 import com.leclowndu93150.thaumaturge.content.world.objects.ObsidianTotemFeature;
 import com.leclowndu93150.thaumaturge.content.world.plant.MagicForestFloraConfig;
 import com.leclowndu93150.thaumaturge.content.world.plant.MagicForestFloraFeature;
+import com.leclowndu93150.thaumaturge.content.world.taint.TaintBiomeConfig;
 import com.leclowndu93150.thaumaturge.content.world.taint.TaintBiomeFeature;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -53,7 +54,7 @@ public final class TTFeatures {
             FEATURES.register("magical_cave_bush", () -> new MagicalCaveBushFeature(NoneFeatureConfiguration.CODEC));
 
     public static final DeferredHolder<Feature<?>, TaintBiomeFeature> TAINT_BIOME =
-            FEATURES.register("taint_biome", () -> new TaintBiomeFeature(NoneFeatureConfiguration.CODEC));
+            FEATURES.register("taint_biome", () -> new TaintBiomeFeature(TaintBiomeConfig.CODEC));
 
     private TTFeatures() {}
 

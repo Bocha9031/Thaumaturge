@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.logistics;
 
-import com.leclowndu93150.thaumaturge.api.golems.GolemHelper;
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealEntity;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealHandler;
@@ -96,9 +96,9 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
             ItemStack batch = requested.copyWithCount(Math.min(remaining, requested.getMaxStackSize()));
             remaining -= batch.getCount();
             if (target == null) {
-                GolemHelper.requestProvisioning(level, player, batch, ui);
+                GolemDispatch.orderSupply(level, player, batch, ui);
             } else {
-                GolemHelper.requestProvisioning(level, target.pos(), target.face(), batch, ui);
+                GolemDispatch.orderSupply(level, target.pos(), target.face(), batch, ui);
             }
         }
     }

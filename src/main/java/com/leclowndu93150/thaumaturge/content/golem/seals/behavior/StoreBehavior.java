@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
+import com.leclowndu93150.thaumaturge.api.golems.GolemDispatch;
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealBehavior;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
@@ -44,7 +45,7 @@ public final class StoreBehavior implements ISealBehavior {
     private void offerWork(ServerLevel level, ISealEntity seal) {
         Task task = Task.atBlock(seal.pos(), seal.pos().pos());
         task.setPriority(seal.priority());
-        TaskBoard.of(level).post(task);
+        GolemDispatch.postTask(level, task);
         pendingTask = task.id();
     }
 

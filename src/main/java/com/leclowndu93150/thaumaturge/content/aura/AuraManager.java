@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -27,7 +28,8 @@ public final class AuraManager {
     private static final float PRESERVE_RATIO = 0.1F;
     private static final int CHUNK_SHIFT = 4;
     private static final double PARTICLE_RANGE = 64.0;
-    private static final double BLOCK_CENTER = 0.5;
+    private static final double POLLUTION_INSET = 0.2;
+    private static final double POLLUTION_SPAN = 0.6;
     private static final Map<ResourceKey<Level>, DimensionState> STATES = new ConcurrentHashMap<>();
 
     private AuraManager() {}
@@ -169,12 +171,13 @@ public final class AuraManager {
     }
 
     private static void emitFume(ServerLevel level, BlockPos pos) {
-        double cx = pos.getX() + BLOCK_CENTER;
-        double cy = pos.getY() + BLOCK_CENTER;
-        double cz = pos.getZ() + BLOCK_CENTER;
+        RandomSource random = level.getRandom();
+        double x = pos.getX() + POLLUTION_INSET + random.nextDouble() * POLLUTION_SPAN;
+        double y = pos.getY() + POLLUTION_INSET + random.nextDouble() * POLLUTION_SPAN;
+        double z = pos.getZ() + POLLUTION_INSET + random.nextDouble() * POLLUTION_SPAN;
         ClientboundSpawnParticlePayload fume =
-                new ClientboundSpawnParticlePayload(TTParticles.POLLUTION_FUME.get(), cx, cy, cz);
-        PacketDistributor.sendToPlayersNear(level, null, cx, cy, cz, PARTICLE_RANGE, fume);
+                new ClientboundSpawnParticlePayload(TTParticles.POLLUTION_FUME.get(), x, y, z);
+        PacketDistributor.sendToPlayersNear(level, null, x, y, z, PARTICLE_RANGE, fume);
     }
 
     private static final class DimensionState {

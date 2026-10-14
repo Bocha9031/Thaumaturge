@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.google.gson.JsonObject;
+import com.leclowndu93150.thaumaturge.api.aura.IAuraChunk;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.content.aura.pressure.FluxPressureEvents;
@@ -16,8 +17,8 @@ import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.Lifecycle;
 import io.netty.buffer.Unpooled;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.MappedRegistry;
@@ -27,7 +28,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 class AuraCompatibilityTest {
     private ServerLevel level;
@@ -65,7 +66,7 @@ class AuraCompatibilityTest {
                 .thenAnswer(call -> chunks.get(new ChunkPos(call.getArgument(0), call.getArgument(1))));
         MappedRegistry<Biome> biomes = new MappedRegistry<>(Registries.BIOME, Lifecycle.stable());
         Registry.register(biomes, Biomes.PLAINS, mock(Biome.class));
-        when(level.getNoiseBiome(anyInt(), anyInt(), anyInt())).thenReturn(biomes.getHolderOrThrow(Biomes.PLAINS));
+        when(level.getBiome(any(BlockPos.class))).thenReturn(biomes.getHolderOrThrow(Biomes.PLAINS));
     }
 
     @AfterEach
@@ -83,8 +84,8 @@ class AuraCompatibilityTest {
     }
 
     private void tick(float physicalFloor) {
-        try (var outbreaks = mockStatic(PhysicalFluxOutbreaks.class);
-                var floor = mockStatic(PhysicalFluxAuraFloor.class)) {
+        try (MockedStatic<PhysicalFluxOutbreaks> outbreaks = mockStatic(PhysicalFluxOutbreaks.class);
+                MockedStatic<PhysicalFluxAuraFloor> floor = mockStatic(PhysicalFluxAuraFloor.class)) {
             floor.when(() -> PhysicalFluxAuraFloor.target(any(), anyFloat())).thenReturn(physicalFloor);
             AuraTickHandler.onLevelTick(new LevelTickEvent.Post(() -> true, level));
         }
@@ -130,7 +131,7 @@ class AuraCompatibilityTest {
 
     @Test
     void streamCodecKeepsTheExactNativeFieldOrderAndWidths() {
-        var buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
+        RegistryFriendlyByteBuf buffer = new RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY);
         try {
             AuraData data = new AuraData((short) 120, 25.5F, 8.5F);
             AuraData.STREAM_CODEC.encode(buffer, data);
@@ -203,7 +204,7 @@ class AuraCompatibilityTest {
         assertEquals(10.0F, bindings.capacityRemaining(level, BlockPos.ZERO));
         assertTrue(bindings.canAcceptVis(level, BlockPos.ZERO, 10));
         assertFalse(bindings.canAcceptVis(level, BlockPos.ZERO, 11));
-        var missing = bindings.chunkLookup(level, new ChunkPos(3, 4));
+        IAuraChunk missing = bindings.chunkLookup(level, new ChunkPos(3, 4));
         assertEquals(new ChunkPos(3, 4), missing.getChunkPos());
         assertEquals(0.0F, missing.getVis());
     }
@@ -215,7 +216,7 @@ class AuraCompatibilityTest {
         assertTrue(AuraManager.isPreservationDue(level, null, BlockPos.ZERO));
         Player player = mock(Player.class);
         PlayerResearch knowledge = mock(PlayerResearch.class);
-        try (var access = mockStatic(PlayerResearchAccess.class)) {
+        try (MockedStatic<PlayerResearchAccess> access = mockStatic(PlayerResearchAccess.class)) {
             access.when(() -> PlayerResearchAccess.of(player)).thenReturn(knowledge);
             assertFalse(AuraManager.isPreservationDue(level, player, BlockPos.ZERO));
             when(knowledge.hasCompleted(AuraManager.AURA_PRESERVE_RESEARCH)).thenReturn(true);
@@ -250,11 +251,13 @@ class AuraCompatibilityTest {
     @Test
     void pollutionUsesTheExistingNativeParticlePayloadWithoutChangingItsFormat() {
         attach(new ChunkPos(0, 0), new AuraData((short) 100, 50, 0));
-        try (var packets = mockStatic(PacketDistributor.class)) {
+        when(random.nextDouble()).thenReturn(0.5);
+        try (MockedStatic<PacketDistributor> packets = mockStatic(PacketDistributor.class)) {
             AuraManager.taint(level, BlockPos.ZERO, 3, false);
             packets.verifyNoInteractions();
             AuraManager.taint(level, BlockPos.ZERO, 2, true);
-            var payload = ArgumentCaptor.forClass(ClientboundSpawnParticlePayload.class);
+            ArgumentCaptor<ClientboundSpawnParticlePayload> payload =
+                    ArgumentCaptor.forClass(ClientboundSpawnParticlePayload.class);
             packets.verify(() -> PacketDistributor.sendToPlayersNear(
                     eq(level), isNull(), eq(0.5), eq(0.5), eq(0.5), eq(64.0), payload.capture()));
             assertEquals(TTParticles.POLLUTION_FUME.get(), payload.getValue().options());
@@ -263,26 +266,28 @@ class AuraCompatibilityTest {
         }
     }
 
-    @Test
-    void initializationSamplesFiveNoiseBiomesAndIsIdempotentForLegacySaves() {
-        ChunkPos pos = new ChunkPos(-2, 3);
+    @ParameterizedTest
+    @CsvSource({"-2,3,241", "3,-2,279", "-7,-9,233", "7,9,250"})
+    void initializationUsesMainSeedFormulaAndSamplesFiveBiomes(int chunkX, int chunkZ, int expectedBase) {
+        ChunkPos pos = new ChunkPos(chunkX, chunkZ);
         AuraData data = new AuraData();
         LevelChunk chunk = attach(pos, data);
         when(level.getSeed()).thenReturn(37L);
         AuraGenHandler.initializeIfNeeded(level, chunk, data);
-        int expected =
-                Mth.floor(250.0 * (1.0 + 0.1 * new Random(37L + Mth.getSeed(pos.x, 0x6A75, pos.z)).nextGaussian()));
-        assertEquals(Math.max(0, Math.min(500, expected)), data.getBase());
+        assertEquals(expectedBase, data.getBase());
         assertEquals(data.getBase(), data.getVis());
         assertEquals(pos, data.getChunkPos());
-        verify(level).getNoiseBiome(-6, 16, 14);
-        verify(level).getNoiseBiome(-2, 16, 14);
-        verify(level).getNoiseBiome(-10, 16, 14);
-        verify(level).getNoiseBiome(-6, 16, 18);
-        verify(level).getNoiseBiome(-6, 16, 10);
-        verify(level, times(5)).getNoiseBiome(anyInt(), anyInt(), anyInt());
+        ArgumentCaptor<BlockPos> probeCaptor = ArgumentCaptor.forClass(BlockPos.class);
+        verify(level, times(5)).getBiome(probeCaptor.capture());
+        List<BlockPos> expectedProbes = List.of(
+                new BlockPos(pos.getMiddleBlockX(), 50, pos.getMiddleBlockZ()),
+                new BlockPos(pos.getMiddleBlockX(), 50, new ChunkPos(chunkX, chunkZ + 1).getMiddleBlockZ()),
+                new BlockPos(new ChunkPos(chunkX - 1, chunkZ).getMiddleBlockX(), 50, pos.getMiddleBlockZ()),
+                new BlockPos(pos.getMiddleBlockX(), 50, new ChunkPos(chunkX, chunkZ - 1).getMiddleBlockZ()),
+                new BlockPos(new ChunkPos(chunkX + 1, chunkZ).getMiddleBlockX(), 50, pos.getMiddleBlockZ()));
+        assertEquals(expectedProbes, probeCaptor.getAllValues());
         AuraGenHandler.initializeIfNeeded(level, chunk, data);
-        verify(level, times(5)).getNoiseBiome(anyInt(), anyInt(), anyInt());
+        verify(level, times(5)).getBiome(any(BlockPos.class));
         verify(chunk, times(1)).setUnsaved(true);
         AuraData partial = new AuraData((short) 0, 12, 4);
         AuraGenHandler.initializeIfNeeded(level, chunk, partial);
@@ -434,7 +439,7 @@ class AuraCompatibilityTest {
         AuraData data = new AuraData((short) 100, 0, 100);
         attach(pos, data);
         AuraManager.onChunkLoaded(level, pos);
-        try (var pressure = mockStatic(FluxPressureEvents.class)) {
+        try (MockedStatic<FluxPressureEvents> pressure = mockStatic(FluxPressureEvents.class)) {
             tick(0);
             assertEquals(BlockPos.ZERO, AuraManager.pollRiftTrigger(level));
             pressure.verifyNoInteractions();
@@ -446,16 +451,16 @@ class AuraCompatibilityTest {
     }
 
     @Test
-    void zeroBaseSkipsPhysicalOutbreaksAndRegenerationAtTheCutoff() {
+    void zeroBaseStillChecksForOutbreaksButSkipsFluxFloorAndRegeneration() {
         ChunkPos pos = new ChunkPos(0, 0);
         AuraData data = new AuraData();
         data.setBase((short) 0);
         LevelChunk chunk = attach(pos, data);
         AuraManager.onChunkLoaded(level, pos);
-        try (var outbreaks = mockStatic(PhysicalFluxOutbreaks.class);
-                var floor = mockStatic(PhysicalFluxAuraFloor.class)) {
+        try (MockedStatic<PhysicalFluxOutbreaks> outbreaks = mockStatic(PhysicalFluxOutbreaks.class);
+                MockedStatic<PhysicalFluxAuraFloor> floor = mockStatic(PhysicalFluxAuraFloor.class)) {
             AuraTickHandler.onLevelTick(new LevelTickEvent.Post(() -> true, level));
-            outbreaks.verifyNoInteractions();
+            outbreaks.verify(() -> PhysicalFluxOutbreaks.tryOutbreak(level, chunk, random));
             floor.verifyNoInteractions();
             assertEquals(0.0F, data.getVis());
             verify(chunk, never()).setUnsaved(anyBoolean());

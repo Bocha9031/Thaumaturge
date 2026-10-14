@@ -1567,7 +1567,13 @@ public final class TTModelProvider implements DataProvider {
         simpleFromExisting(TTBlocks.PLANK_SILVERWOOD.get(), "plank_silverwood");
         simpleFromExisting(TTBlocks.LEAVES_GREATWOOD.get(), "leaves_greatwood");
         simpleFromExisting(TTBlocks.LEAVES_SILVERWOOD.get(), "leaves_silverwood");
-        log(TTBlocks.LOG_GREATWOOD.get(), TTBlocks.WOOD_GREATWOOD.get());
+        TrunkModels.register(
+                blockStateOutput,
+                modelOutput,
+                TTBlocks.LOG_GREATWOOD.get(),
+                TTBlocks.WOOD_GREATWOOD.get(),
+                TTIds.rl("block/log_greatwood_wide"),
+                TTIds.rl("block/log_greatwood_top_wide"));
         log(TTBlocks.LOG_SILVERWOOD.get(), TTBlocks.WOOD_SILVERWOOD.get());
         axisPillar(
                 TTBlocks.SILVERWOOD_NODE_LOG.get(),

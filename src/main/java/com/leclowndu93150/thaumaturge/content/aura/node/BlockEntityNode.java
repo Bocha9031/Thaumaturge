@@ -1,11 +1,12 @@
 package com.leclowndu93150.thaumaturge.content.aura.node;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.aspect.AspectIndexAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
+import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.aura.IVisRelaySource;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
@@ -13,11 +14,9 @@ import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
 import com.leclowndu93150.thaumaturge.api.taint.TaintApi;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
-import com.leclowndu93150.thaumaturge.content.aspect.EntityAspects;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.entity.EntityBrainyZombie;
-import com.leclowndu93150.thaumaturge.content.particle.BoreDebrisParticleOptions;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
@@ -26,7 +25,6 @@ import com.leclowndu93150.thaumaturge.content.wands.WandChargingEvents;
 import com.leclowndu93150.thaumaturge.content.wands.WandEconomy;
 import com.leclowndu93150.thaumaturge.content.wands.WandParts;
 import com.leclowndu93150.thaumaturge.content.wands.WandVisHelper;
-import com.leclowndu93150.thaumaturge.content.warding.WardHandler;
 import com.leclowndu93150.thaumaturge.data.worldgen.biome.TTBiomes;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
@@ -47,35 +45,25 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.commands.FillBiomeCommand;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspectContainer {
-    private static final int HUNGRY_SCAN_INTERVAL = 10;
     private static final int REGEN_INTERVAL_NORMAL = 600;
     private static final int REGEN_INTERVAL_BRIGHT = 400;
     private static final int REGEN_INTERVAL_PALE = 900;
@@ -91,8 +79,6 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     private static final float BRIGHTEN_FILL_FRACTION = 0.9F;
     private static final int BRIGHTEN_CHANCE = 50;
     private static final double HUNGRY_PULL_RANGE = 15.0;
-    private static final double HUNGRY_ITEM_PULL_MARGIN = 0.5;
-    private static final double HUNGRY_EAT_RANGE_SQ = 4.0;
     private static final int DARK_SPAWN_PLAYER_RANGE = 24;
     private static final int DARK_SPAWN_CAP = 3;
     private static final float PURE_FLUX_CLEANSE = 0.25F;
@@ -124,8 +110,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     private static final ResourceLocation RESEARCH_NODE_PRESERVE = TTIds.rl("node_preserve");
     private static final int MAX_DECOMPOSE_DEPTH = 8;
 
-    private List<Entity> hungryTargets = List.of();
-    private long hungryScanAt;
+    private final NodeHunger hunger = new NodeHunger(this);
     private NodeType nodeType = NodeType.NORMAL;
     private @Nullable NodeModifier nodeModifier;
     protected AspectList aspects = AspectList.EMPTY;
@@ -216,6 +201,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
 
     public void setNodeModifier(@Nullable NodeModifier modifier) {
         this.nodeModifier = modifier;
+        regeneration = -1;
     }
 
     @Override
@@ -360,8 +346,6 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
     }
 
-    private static final int ENERGIZED_REFILL_INTERVAL = 20;
-    private static final int ENERGIZED_REFILL_BASE_DIVISOR = 20;
     private static final int CV_BUFFER_CAP_SECONDS = 10;
     private static final int TICKS_PER_SECOND = 20;
 
@@ -423,35 +407,8 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         applyNaturalTaintBootstrap(serverLevel, pos);
         if (energized) {
             boolean changed = false;
-            if (tickLevel.getGameTime() % ENERGIZED_REFILL_INTERVAL == 0) {
-                float visPerPoint = ThaumaturgeCommonConfig.ENERGIZED_NODE_VIS_PER_POINT
-                        .get()
-                        .floatValue();
-                boolean fluxFed = nodeType == NodeType.TAINTED;
-                for (AspectInstance entry : aspectsBase.entries()) {
-                    int points = Math.max(1, entry.amount() / ENERGIZED_REFILL_BASE_DIVISOR);
-                    for (int i = 0; i < points; i++) {
-                        if (aspects.amountOf(entry.aspect()) >= entry.amount()) {
-                            break;
-                        }
-                        float drained = fluxFed
-                                ? AuraHelper.drainFlux(serverLevel, pos, visPerPoint, false)
-                                : AuraHelper.drainVis(serverLevel, pos, visPerPoint, false);
-                        if (drained >= visPerPoint - 0.01F) {
-                            aspects = aspects.add(entry.aspect(), 1);
-                            changed = true;
-                        } else {
-                            if (drained > 0.0F) {
-                                if (fluxFed) {
-                                    AuraHelper.addFlux(serverLevel, pos, drained);
-                                } else {
-                                    AuraHelper.addVis(serverLevel, pos, drained);
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
+            if (NodeEnergy.refillDue(serverLevel) && NodeEnergy.refill(this, serverLevel, pos)) {
+                changed = true;
             }
             accrueCentivis();
             if (drainTicks > 0 && --drainTicks == 0) {
@@ -475,10 +432,12 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         count++;
         checkLock(serverLevel, pos);
         boolean change = false;
-        change = handleHungryNode(serverLevel, pos, change);
-        change = handleDischarge(serverLevel, pos, change);
         change = handleFeeding(serverLevel, pos, change);
+        change = handleDischarge(serverLevel, pos, change);
         change = handleDecay(serverLevel, pos, change);
+        if (count % DECAY_INTERVAL == 0 && aspectsBase.isEmpty()) {
+            return;
+        }
         change = handleStability(serverLevel, pos, change);
         change = handleTypeBehavior(serverLevel, pos, change);
         handleBiomeSpread(serverLevel, pos);
@@ -493,21 +452,11 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     private boolean handleFeeding(ServerLevel serverLevel, BlockPos pos, boolean change) {
-        if (regeneration < 0) {
-            regeneration = REGEN_INTERVAL_NORMAL;
-            if (nodeModifier != null) {
-                regeneration = switch (nodeModifier) {
-                    case BRIGHT -> REGEN_INTERVAL_BRIGHT;
-                    case PALE -> REGEN_INTERVAL_PALE;
-                    case FADING -> 0;
-                };
-            }
-            regeneration *= feedingIntervalFactor();
-        }
+        int interval = refillInterval();
         if (wait > 0) {
             wait--;
         }
-        if (regeneration <= 0 || wait != 0 || count % regeneration != 0) {
+        if (interval <= 0 || wait != 0 || count % interval != 0) {
             return change;
         }
         List<Holder<IAspect>> depleted = new ArrayList<>();
@@ -545,6 +494,21 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             return true;
         }
         return change;
+    }
+
+    int refillInterval() {
+        if (regeneration < 0) {
+            regeneration = REGEN_INTERVAL_NORMAL;
+            if (nodeModifier != null) {
+                regeneration = switch (nodeModifier) {
+                    case BRIGHT -> REGEN_INTERVAL_BRIGHT;
+                    case PALE -> REGEN_INTERVAL_PALE;
+                    case FADING -> 0;
+                };
+            }
+            regeneration *= feedingIntervalFactor();
+        }
+        return regeneration;
     }
 
     private void starve() {
@@ -596,10 +560,12 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         RandomSource random = serverLevel.getRandom();
         for (AspectInstance entry : aspectsBase.entries()) {
             if (aspects.amountOf(entry.aspect()) <= 0) {
-                aspectsBase = reduce(aspectsBase, entry.aspect(), 1);
-                if (random.nextInt(20) == 0 || aspectsBase.amountOf(entry.aspect()) <= 0) {
+                int remaining = entry.amount() - 1;
+                if (remaining > 0 && random.nextInt(20) != 0) {
+                    aspectsBase = reduce(aspectsBase, entry.aspect(), 1);
+                } else {
                     aspects = reduce(aspects, entry.aspect(), aspects.amountOf(entry.aspect()));
-                    aspectsBase = reduce(aspectsBase, entry.aspect(), aspectsBase.amountOf(entry.aspect()));
+                    aspectsBase = reduce(aspectsBase, entry.aspect(), remaining + 1);
                     if (random.nextInt(5) == 0) {
                         if (nodeModifier == NodeModifier.BRIGHT) {
                             nodeModifier = null;
@@ -679,7 +645,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     private boolean handleDischarge(ServerLevel serverLevel, BlockPos pos, boolean change) {
-        if (nodeModifier == NodeModifier.FADING || !allowDischarge() || lock > 0) {
+        if (nodeModifier == NodeModifier.FADING || !allowDischarge() || lock == LOCK_BASIC) {
             return change;
         }
         boolean shiny = nodeType == NodeType.HUNGRY || nodeModifier == NodeModifier.BRIGHT;
@@ -726,13 +692,13 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
                     regeneration = -1;
                 }
                 if (random.nextInt(3) == 0) {
-                    other.aspectsBase = reduce(other.aspectsBase, stolen, 1);
+                    shrinkCapacity(other, stolen);
                 }
             }
             moved = true;
         }
         if (moved) {
-            other.wait = other.regeneration / 2;
+            other.wait = other.refillInterval() / 2;
             other.setChanged();
             serverLevel.sendBlockUpdated(otherPos, other.getBlockState(), other.getBlockState(), 3);
             serverLevel.playSound(
@@ -744,6 +710,16 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             return true;
         }
         return change;
+    }
+
+    private static void shrinkCapacity(BlockEntityNode node, Holder<IAspect> aspect) {
+        node.aspectsBase = reduce(node.aspectsBase, aspect, 1);
+        int capacity = node.aspectsBase.amountOf(aspect);
+        int stored = node.aspects.amountOf(aspect);
+        if (stored > capacity) {
+            node.aspects = reduce(node.aspects, aspect, stored - capacity);
+        }
+        node.regeneration = -1;
     }
 
     private boolean handleStability(ServerLevel serverLevel, BlockPos pos, boolean change) {
@@ -871,8 +847,8 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
         RandomSource random = serverLevel.getRandom();
         if (nodeType == NodeType.HUNGRY) {
-            int interval = ThaumaturgeCommonConfig.HUNGRY_NODE_BLOCK_EAT_INTERVAL.get();
-            if (count % interval == 0) {
+            hunger.tick(serverLevel, pos, count);
+            if (NodeHunger.eatDue(count)) {
                 eatBlock(serverLevel, pos, random);
             }
             return change;
@@ -933,17 +909,14 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
 
         if (level instanceof ServerLevel serverLevel) {
-            for (Holder.Reference<IAspect> aspect : serverLevel
-                    .registryAccess()
-                    .lookupOrThrow(IAspect.REGISTRY_KEY)
-                    .listElements()
-                    .toList()) {
-                if (!aspect.value().isPrimal()) {
+            for (ResourceKey<IAspect> key : TTAspects.PRIMALS) {
+                Holder<IAspect> aspect = Aspects.resolve(serverLevel, key);
+                if (aspect == null) {
                     continue;
                 }
                 int base = aspectsBase.amountOf(aspect);
                 int replacement = random.nextInt(researched ? 4 : 3);
-                if (replacement > 0 && replacement > base) {
+                if (replacement > base) {
                     setBaseAmount(aspect, replacement);
                     if (aspects.amountOf(aspect) < replacement) {
                         aspects = aspects.add(aspect, 1);
@@ -1021,87 +994,6 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
     }
 
-    private boolean handleHungryNode(ServerLevel serverLevel, BlockPos pos, boolean change) {
-        if (nodeType != NodeType.HUNGRY || !allowTypeBehavior()) {
-            return change;
-        }
-        Vec3 center = Vec3.atCenterOf(pos);
-        double itemPullRange = hungryBlockEatRange() + HUNGRY_ITEM_PULL_MARGIN;
-        if (serverLevel.getGameTime() >= hungryScanAt) {
-            hungryScanAt = serverLevel.getGameTime() + HUNGRY_SCAN_INTERVAL;
-            hungryTargets = serverLevel.getEntitiesOfClass(
-                    Entity.class, new AABB(pos).inflate(Math.max(itemPullRange, HUNGRY_PULL_RANGE)));
-        }
-        for (Entity target : hungryTargets) {
-            if (target instanceof Player player && (player.isCreative() || player.isSpectator())) {
-                continue;
-            }
-            if (!target.isAlive()) {
-                continue;
-            }
-            double distanceSq = target.distanceToSqr(center);
-            double pullRange = target instanceof ItemEntity ? itemPullRange : HUNGRY_PULL_RANGE;
-            if (distanceSq >= pullRange * pullRange) {
-                continue;
-            }
-            if (distanceSq < HUNGRY_EAT_RANGE_SQ) {
-                if (target instanceof ItemEntity item) {
-                    ItemStack stack = item.getItem();
-                    AspectList itemAspects = AspectIndexAccess.of(stack);
-                    item.hurt(serverLevel.damageSources().fellOutOfWorld(), 1.0F);
-                    if (!item.isAlive()) {
-                        devour(serverLevel, itemAspects, stack.getCount());
-                        change = true;
-                    }
-                } else {
-                    target.hurt(serverLevel.damageSources().fellOutOfWorld(), 1.0F);
-                }
-                if (!target.isAlive() && target instanceof LivingEntity living) {
-                    devour(serverLevel, living);
-                    change = true;
-                }
-            }
-            Vec3 delta = center.subtract(target.position()).scale(1.0 / pullRange);
-            double power = 1.0 - delta.length();
-            if (power > 0.0) {
-                power *= power;
-                Vec3 pull = delta.normalize();
-                target.push(pull.x * power * 0.15, pull.y * power * 0.25, pull.z * power * 0.15);
-                if (target instanceof ServerPlayer player) {
-                    player.connection.send(new ClientboundSetEntityMotionPacket(player));
-                }
-            }
-        }
-        return change;
-    }
-
-    private void devour(ServerLevel serverLevel, LivingEntity living) {
-        devour(serverLevel, EntityAspects.of(living), 1);
-    }
-
-    private void devour(ServerLevel serverLevel, AspectList sourceAspects, int count) {
-        if (sourceAspects.isEmpty() || count <= 0) {
-            return;
-        }
-        Map<ResourceKey<IAspect>, Integer> primals = WandChargingEvents.reduceToPrimals(sourceAspects);
-        if (primals.isEmpty()) {
-            return;
-        }
-        RandomSource random = serverLevel.getRandom();
-        List<ResourceKey<IAspect>> keys = new ArrayList<>(primals.keySet());
-        ResourceKey<IAspect> chosen = keys.get(random.nextInt(keys.size()));
-        Holder<IAspect> holder =
-                serverLevel.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY).getOrThrow(chosen);
-        int available = primals.get(chosen) * count;
-        if (aspects.amountOf(holder) < aspectsBase.amountOf(holder)) {
-            fill(holder, 1);
-        } else if (random.nextInt(1 + aspectsBase.amountOf(holder) * 2) < available) {
-            aspectsBase = raiseBase(aspectsBase, holder, 1);
-            aspects = aspects.add(holder, 1);
-        }
-        nodeChange();
-    }
-
     private void eatBlock(ServerLevel serverLevel, BlockPos pos, RandomSource random) {
         BlockPos target = hungryTarget(serverLevel, pos, random);
         if (target != null) {
@@ -1110,50 +1002,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     private @Nullable BlockPos hungryTarget(Level level, BlockPos pos, RandomSource random) {
-        int range = hungryBlockEatRange();
-        int tx = pos.getX() + random.nextInt(range) - random.nextInt(range);
-        int ty = pos.getY() + random.nextInt(range) - random.nextInt(range);
-        int tz = pos.getZ() + random.nextInt(range) - random.nextInt(range);
-        if (!level.hasChunk(SectionPos.blockToSectionCoord(tx), SectionPos.blockToSectionCoord(tz))) {
-            return null;
-        }
-        ty = Math.min(ty, level.getHeight(Heightmap.Types.MOTION_BLOCKING, tx, tz));
-        Vec3 from = Vec3.atCenterOf(pos);
-        Vec3 to = new Vec3(tx + 0.5, ty + 0.5, tz + 0.5);
-        BlockHitResult hit = level.clip(
-                new SourceIgnoringClipContext(pos, from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.SOURCE_ONLY));
-        if (hit.getType() != HitResult.Type.BLOCK) {
-            return null;
-        }
-        BlockPos target = hit.getBlockPos();
-        if (target.equals(pos) || target.distSqr(pos) > (double) range * range || WardHandler.isWarded(level, target)) {
-            return null;
-        }
-        BlockState state = level.getBlockState(target);
-        float hardness = state.getDestroySpeed(level, target);
-        if (state.isAir() || hardness < 0.0F || hardness >= ThaumaturgeCommonConfig.HUNGRY_NODE_BLOCK_HARDNESS.get()) {
-            return null;
-        }
-        return target;
-    }
-
-    private int hungryBlockEatRange() {
-        if (!ThaumaturgeCommonConfig.SCALE_HUNGRY_NODE_RANGE_BY_MODIFIER.get()) {
-            return ThaumaturgeCommonConfig.HUNGRY_NODE_BLOCK_EAT_RANGE.get();
-        }
-        int minimum = ThaumaturgeCommonConfig.HUNGRY_NODE_MINIMUM_BLOCK_EAT_RANGE.get();
-        int maximum = Math.max(minimum, ThaumaturgeCommonConfig.HUNGRY_NODE_MAXIMUM_BLOCK_EAT_RANGE.get());
-        int difference = maximum - minimum;
-        if (nodeModifier == NodeModifier.BRIGHT) {
-            return maximum;
-        }
-        if (nodeModifier == NodeModifier.PALE) {
-            return minimum + Math.round(difference / 3.0F);
-        }
-        if (nodeModifier == NodeModifier.FADING) {
-            return minimum;
-        }
-        return minimum + Math.round(difference * 2.0F / 3.0F);
+        return NodeHunger.findTarget(level, pos, nodeModifier, random);
     }
 
     public void burstIntoOrbs(ServerLevel serverLevel, BlockPos pos) {
@@ -1237,21 +1086,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         if (energized || nodeType != NodeType.HUNGRY || !allowTypeBehavior()) {
             return;
         }
-        RandomSource random = clientLevel.getRandom();
-        BlockPos target = hungryTarget(clientLevel, pos, random);
-        if (target == null) {
-            return;
-        }
-        BlockState state = clientLevel.getBlockState(target);
-        Vec3 from = Vec3.atCenterOf(pos);
-        clientLevel.addParticle(
-                new BoreDebrisParticleOptions(state, from.x, from.y, from.z, 0.0, 0.0, 0.0),
-                target.getX() + random.nextFloat(),
-                target.getY() + random.nextFloat(),
-                target.getZ() + random.nextFloat(),
-                0.0,
-                0.0,
-                0.0);
+        NodeHunger.predict(clientLevel, pos, nodeModifier);
     }
 
     private void applyNaturalTaintBootstrap(ServerLevel level, BlockPos pos) {

@@ -4,6 +4,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.content.world.objects.ConfigNodeSpawnFilter;
 import com.leclowndu93150.thaumaturge.content.world.objects.ConfigRarityFilter;
 import com.leclowndu93150.thaumaturge.content.world.objects.MagicalCaveFloorPlacement;
+import com.leclowndu93150.thaumaturge.content.world.objects.SurfaceBiomeSearch;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import java.util.List;
 import net.minecraft.core.Direction;
@@ -286,10 +287,7 @@ public final class TTPlacedFeatures {
                 TAINT_BIOME,
                 new PlacedFeature(
                         configured.getOrThrow(TTConfiguredFeatures.TAINT_BIOME),
-                        List.of(
-                                InSquarePlacement.spread(),
-                                HeightmapPlacement.onHeightmap(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES),
-                                BiomeFilter.biome())));
+                        List.of(SurfaceBiomeSearch.INSTANCE, BiomeFilter.biome())));
 
         context.register(
                 MANA_PODS,
