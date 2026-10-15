@@ -11,55 +11,52 @@ import net.minecraft.world.phys.HitResult;
 import org.jspecify.annotations.Nullable;
 
 /**
- * An item that previews a set of block positions it is about to affect, rendered client-side
- * as a white grid overlay while the item is held.
+ * An item that previews a set of block positions before acting.
  *
- * <p>Implemented by the caster's gauntlet, which delegates to an architect-capable focus medium
- * such as Plan.
- *
- * @since 1.0.0
+ * @deprecated use {@link AreaPreviewer}. This interface remains as a bridge for existing addons. Each old and new
+ *     method set delegates to the other; implementations must override one complete set to avoid recursion.
  */
-public interface IArchitect {
-    /**
-     * Traces the block this architect anchors its preview on. Called on the client every frame while the item is held.
-     *
-     * @param stack  the architect item stack
-     * @param level  the level of the holder
-     * @param caster the entity holding the item
-     * @return the trace result, or null when the item cannot anchor a preview right now
-     */
+@Deprecated(since = "1.1.0", forRemoval = true)
+public interface IArchitect extends AreaPreviewer {
+    @Deprecated(since = "1.1.0", forRemoval = true)
     @Nullable
-    HitResult aim(ItemStack stack, Level level, LivingEntity caster);
+    default HitResult aim(ItemStack stack, Level level, LivingEntity caster) {
+        return traceAnchor(stack, level, caster);
+    }
 
-    /**
-     * Whether the preview replaces the vanilla block highlight instead of drawing during the level render pass.
-     *
-     * @param stack the architect item stack
-     * @return true to draw in place of the vanilla block outline
-     */
-    boolean replacesBlockHighlight(ItemStack stack);
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default boolean replacesBlockHighlight(ItemStack stack) {
+        return hidesBlockOutline(stack);
+    }
 
-    /**
-     * The block positions the item would currently affect, anchored at the traced block.
-     *
-     * @param stack  the architect item stack
-     * @param level  the level of the holder
-     * @param pos    the traced block position
-     * @param side   the traced block face
-     * @param player the player holding the item
-     * @return the affected positions; empty when nothing would be affected
-     */
-    List<BlockPos> previewBlocks(ItemStack stack, Level level, BlockPos pos, Direction side, Player player);
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default List<BlockPos> previewBlocks(ItemStack stack, Level level, BlockPos pos, Direction side, Player player) {
+        return previewArea(stack, level, pos, side, player);
+    }
 
-    /**
-     * Whether the axis indicator for the given axis should render at the anchor block.
-     *
-     * @param stack  the architect item stack
-     * @param level  the level of the holder
-     * @param player the player holding the item
-     * @param side   the traced block face
-     * @param axis   the axis being queried
-     * @return true to render the indicator for that axis
-     */
-    boolean showsAxis(ItemStack stack, Level level, Player player, Direction side, Direction.Axis axis);
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default boolean showsAxis(ItemStack stack, Level level, Player player, Direction side, Direction.Axis axis) {
+        return showsAxisArrows(stack, level, player, side, axis);
+    }
+
+    @Override
+    @Nullable
+    default HitResult traceAnchor(ItemStack stack, Level level, LivingEntity holder) {
+        return aim(stack, level, holder);
+    }
+
+    @Override
+    default boolean hidesBlockOutline(ItemStack stack) {
+        return replacesBlockHighlight(stack);
+    }
+
+    @Override
+    default List<BlockPos> previewArea(ItemStack stack, Level level, BlockPos anchor, Direction face, Player player) {
+        return previewBlocks(stack, level, anchor, face, player);
+    }
+
+    @Override
+    default boolean showsAxisArrows(ItemStack stack, Level level, Player player, Direction face, Direction.Axis axis) {
+        return showsAxis(stack, level, player, face, axis);
+    }
 }
