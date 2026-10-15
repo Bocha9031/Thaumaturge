@@ -2,11 +2,11 @@ package com.leclowndu93150.thaumaturge.content.warp;
 
 import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
 import com.leclowndu93150.thaumaturge.content.entity.EntityEldritchGuardian;
+import com.leclowndu93150.thaumaturge.content.warp.spawn.SpawnSpots;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
@@ -14,8 +14,6 @@ import net.neoforged.neoforge.event.EventHooks;
 
 public final class GuardianSpawner {
     private static final int SPAWN_ATTEMPTS = 50;
-    private static final int MIN_OFFSET = 7;
-    private static final int MAX_OFFSET = 24;
 
     private GuardianSpawner() {}
 
@@ -28,8 +26,9 @@ public final class GuardianSpawner {
     private static void spawnGuardian(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         RandomSource rand = player.getRandom();
+        BlockPos origin = player.blockPosition();
         for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
-            BlockPos pos = randomOffset(player, rand);
+            BlockPos pos = SpawnSpots.ringCell(origin, rand);
             if (!level.getBlockState(pos.below()).isCollisionShapeFullBlock(level, pos.below())) {
                 continue;
             }
@@ -52,8 +51,9 @@ public final class GuardianSpawner {
     public static void spawnPortal(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         RandomSource rand = player.getRandom();
+        BlockPos origin = player.blockPosition();
         for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
-            BlockPos pos = randomOffset(player, rand);
+            BlockPos pos = SpawnSpots.ringCell(origin, rand);
             if (!level.getBlockState(pos.below()).isSolidRender(level, pos.below())) {
                 continue;
             }
@@ -73,13 +73,6 @@ public final class GuardianSpawner {
             WarpManager.sendActionBar(player, "warp.thaumaturge.text.16");
             return;
         }
-    }
-
-    private static BlockPos randomOffset(ServerPlayer player, RandomSource rand) {
-        int x = Mth.floor(player.getX()) + Mth.nextInt(rand, MIN_OFFSET, MAX_OFFSET) * Mth.nextInt(rand, -1, 1);
-        int y = Mth.floor(player.getY()) + Mth.nextInt(rand, MIN_OFFSET, MAX_OFFSET) * Mth.nextInt(rand, -1, 1);
-        int z = Mth.floor(player.getZ()) + Mth.nextInt(rand, MIN_OFFSET, MAX_OFFSET) * Mth.nextInt(rand, -1, 1);
-        return new BlockPos(x, y, z);
     }
 
     private static boolean canPlace(ServerLevel level, Mob mob) {
