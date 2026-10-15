@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
+import com.leclowndu93150.thaumaturge.content.entity.cloak.CloakTracker;
+import com.leclowndu93150.thaumaturge.content.entity.cloak.CloakWearer;
 import java.util.Map;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceKey;
@@ -19,10 +21,11 @@ import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.storage.loot.LootTable;
 import org.jspecify.annotations.Nullable;
 
-public abstract class EntityCultist extends Monster {
+public abstract class EntityCultist extends Monster implements CloakWearer {
     public static final byte ARRIVAL_EVENT = 20;
     private static final float GEAR_DROP_CHANCE = 0.05F;
     private static final int ARRIVAL_PARTICLES = 20;
+    private final CloakTracker cloak = new CloakTracker();
 
     protected EntityCultist(EntityType<? extends EntityCultist> type, Level level) {
         super(type, level);
@@ -43,6 +46,17 @@ public abstract class EntityCultist extends Monster {
     @Override
     public boolean canPickUpLoot() {
         return false;
+    }
+
+    @Override
+    public void tick() {
+        cloak.tick(this);
+        super.tick();
+    }
+
+    @Override
+    public CloakTracker cloak() {
+        return cloak;
     }
 
     protected abstract ResourceKey<LootTable> equipmentTable();
