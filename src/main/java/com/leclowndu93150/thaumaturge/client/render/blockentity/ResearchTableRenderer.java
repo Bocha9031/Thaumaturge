@@ -2,7 +2,9 @@ package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.entity.TTModelLayers;
+import com.leclowndu93150.thaumaturge.client.golem.GolemMeshes;
 import com.leclowndu93150.thaumaturge.client.model.entity.ResearchTableModel;
+import com.leclowndu93150.thaumaturge.client.model.mesh.TTMeshPart;
 import com.leclowndu93150.thaumaturge.content.research.note.ResearchNoteData;
 import com.leclowndu93150.thaumaturge.content.research.note.ResearchNotes;
 import com.leclowndu93150.thaumaturge.content.research.table.BlockEntityResearchTable;
@@ -24,12 +26,16 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEntityResearchTable> {
-    private static final ResourceLocation TABLE_TEXTURE = TTIds.rl("textures/entity/restable.png");
+    private static final ResourceLocation INKWELL_MESH = TTIds.rl("models/mesh/research_inkwell.ttmesh");
+    private static final ResourceLocation INKWELL_TEXTURE = TTIds.rl("textures/entity/research_inkwell.png");
     private static final ResourceLocation SCROLL_TEXTURE = TTIds.rl("textures/entity/restable2.png");
     private static final ResourceLocation QUILL_TEXTURE = TTIds.rl("textures/entity/tablequill.png");
     private static final ResourceLocation PARCHMENT_TEXTURE = TTIds.rl("textures/misc/parchment.png");
 
     private static final int DEFAULT_SCROLL_COLOR = 0x999999;
+    private static final int WHITE = 0xFFFFFFFF;
+    private static final float INKWELL_X = -0.28125F;
+    private static final float INKWELL_Z = 0.28125F;
     private static final float QUILL_THICKNESS = 0.025F;
     private static final int QUILL_TEXELS = 16;
     private static final int PARCHMENT_COUNT = 6;
@@ -87,12 +93,8 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
                 };
         poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
 
+        renderInkwell(hasTools, poseStack, buffers, light);
         if (hasTools) {
-            model.inkwell.render(
-                    poseStack,
-                    buffers.getBuffer(RenderType.entityCutout(TABLE_TEXTURE)),
-                    light,
-                    OverlayTexture.NO_OVERLAY);
             poseStack.pushPose();
             poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
             poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
@@ -130,6 +132,20 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
             poseStack.popPose();
         }
 
+        poseStack.popPose();
+    }
+
+    static void renderInkwell(boolean hasTools, PoseStack poseStack, MultiBufferSource buffers, int light) {
+        if (!hasTools) {
+            return;
+        }
+        poseStack.pushPose();
+        poseStack.translate(INKWELL_X, 0.0F, INKWELL_Z);
+        poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+        VertexConsumer buffer = buffers.getBuffer(RenderType.entityCutout(INKWELL_TEXTURE));
+        for (TTMeshPart part : GolemMeshes.get(INKWELL_MESH).parts()) {
+            GolemMeshes.renderPart(part, poseStack.last(), buffer, light, WHITE);
+        }
         poseStack.popPose();
     }
 
