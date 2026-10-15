@@ -34,11 +34,25 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
 
     private static final int DEFAULT_SCROLL_COLOR = 0x999999;
     private static final int WHITE = 0xFFFFFFFF;
+    private static final float FRAME_HEIGHT = 1.0F;
+    private static final float BOUNDS_MARGIN = 0.5F;
     private static final float INKWELL_X = -0.28125F;
     private static final float INKWELL_Z = 0.28125F;
+    private static final float QUILL_X = -0.226F;
+    private static final float QUILL_Y = -0.095F;
+    private static final float QUILL_Z = 0.076F;
+    private static final float QUILL_YAW = -105.0F;
+    private static final float QUILL_SCALE = 0.5F;
     private static final float QUILL_THICKNESS = 0.025F;
     private static final int QUILL_TEXELS = 16;
-    private static final int PARCHMENT_COUNT = 6;
+    private static final float SHEET_X = 0.12F;
+    private static final float SHEET_Z = 0.32F;
+    private static final float SHEET_WIDTH = 0.48F;
+    private static final float SHEET_LENGTH = 0.56F;
+    private static final float SHEET_BASE_HEIGHT = 1.008F;
+    private static final float SHEET_STEP = 0.013F;
+    private static final float[] SHEET_TILTS = {-6.0F, 8.0F, 14.0F, -3.0F, 11.0F};
+    private static final float LAY_FLAT = -90.0F;
     private static final float RIBBON_SCALE = 1.2F;
 
     private final ResearchTableModel model;
@@ -54,7 +68,7 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
         Direction facing = state.hasProperty(BlockResearchTable.FACING)
                 ? state.getValue(BlockResearchTable.FACING)
                 : Direction.NORTH;
-        return new AABB(pos).minmax(new AABB(pos.relative(facing))).inflate(0.5);
+        return renderBounds(pos, facing);
     }
 
     @Override
@@ -96,21 +110,14 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
         renderInkwell(hasTools, poseStack, buffers, light);
         if (hasTools) {
             poseStack.pushPose();
-            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
-            poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
-            poseStack.translate(0.150F, 0.095F, -0.230F);
-            poseStack.mulPose(Axis.YP.rotationDegrees(15.0F));
-            poseStack.scale(0.5F, 0.5F, 0.5F);
+            applyQuillPose(poseStack);
             itemIn2D(poseStack.last(), buffers.getBuffer(RenderType.entityCutout(QUILL_TEXTURE)), light);
             poseStack.popPose();
         }
 
-        for (int a = 0; a < PARCHMENT_COUNT; a++) {
+        for (int sheet = 0; sheet < SHEET_TILTS.length; sheet++) {
             poseStack.pushPose();
-            poseStack.translate(0.1F, -0.01F - a * 0.015F, 0.35F);
-            poseStack.mulPose(Axis.XN.rotationDegrees(90.0F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(15 + a % 3 * 2));
-            poseStack.scale(0.5F, 0.6F, 0.6F);
+            applySheetPose(poseStack, sheet);
             parchmentQuad(poseStack.last(), buffers.getBuffer(RenderType.entityTranslucent(PARCHMENT_TEXTURE)), light);
             poseStack.popPose();
         }
@@ -133,6 +140,24 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
         }
 
         poseStack.popPose();
+    }
+
+    static void applySheetPose(PoseStack poseStack, int sheet) {
+        poseStack.translate(SHEET_X, FRAME_HEIGHT - (SHEET_BASE_HEIGHT + sheet * SHEET_STEP), SHEET_Z);
+        poseStack.mulPose(Axis.YP.rotationDegrees(SHEET_TILTS[sheet]));
+        poseStack.mulPose(Axis.XP.rotationDegrees(LAY_FLAT));
+        poseStack.scale(SHEET_WIDTH, SHEET_LENGTH, 1.0F);
+    }
+
+    static void applyQuillPose(PoseStack poseStack) {
+        poseStack.translate(QUILL_X, QUILL_Y, QUILL_Z);
+        poseStack.mulPose(Axis.YP.rotationDegrees(QUILL_YAW));
+        poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+        poseStack.scale(QUILL_SCALE, QUILL_SCALE, QUILL_SCALE);
+    }
+
+    static AABB renderBounds(BlockPos pos, Direction facing) {
+        return new AABB(pos).minmax(new AABB(pos.relative(facing)).inflate(BOUNDS_MARGIN));
     }
 
     static void renderInkwell(boolean hasTools, PoseStack poseStack, MultiBufferSource buffers, int light) {
