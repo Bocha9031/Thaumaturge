@@ -213,6 +213,7 @@ public final class InfusionEnchantmentEvents {
         ItemStack held = player.getMainHandItem();
         if (event.getAction() == Action.ABORT
                 || player.isShiftKeyDown()
+                || event.getFace() == null
                 || !InfusionEnchantmentHelper.has(held, InfusionEnchantment.DESTRUCTIVE)
                 || !held.isCorrectToolForDrops(event.getLevel().getBlockState(event.getPos()))) {
             DESTRUCTIVE_TARGETS.remove(player.getUUID());
