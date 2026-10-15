@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.client.golem;
 
-import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.client.golems.GolemAccessoryAnchor;
 import com.leclowndu93150.thaumaturge.api.client.golems.GolemPartRenderHook;
 import com.leclowndu93150.thaumaturge.api.golems.ISealDisplayer;
@@ -33,7 +32,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
 public final class GolemRenderer extends EntityRenderer<EntityThaumaturgeGolem> {
-    private static final ResourceLocation FALLBACK_TEXTURE = TTIds.rl("textures/models/golem_decoration.png");
+    private static final ResourceLocation FALLBACK_TEXTURE = GolemSkins.COPPER;
     private static final float GHOST_ALPHA = 0.15F;
     private static final int XRAY_COLOR = ARGB32.colorFromFloat(0.25F, 0.25F, 0.25F, 0.25F);
 

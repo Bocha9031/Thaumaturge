@@ -44,7 +44,7 @@ public final class TTGolemParts {
             "wood",
             () -> new GolemMaterial(
                     List.of(TTIds.rl("mat_stud_wood")),
-                    materialTexture("mat_wood"),
+                    TTIds.rl("textures/block/base_wood.png"),
                     5059370,
                     6,
                     2,
@@ -57,7 +57,7 @@ public final class TTGolemParts {
             "iron",
             () -> new GolemMaterial(
                     List.of(TTIds.rl("mat_stud_iron")),
-                    materialTexture("mat_iron"),
+                    ResourceLocation.withDefaultNamespace("textures/block/iron_block.png"),
                     16777215,
                     20,
                     8,
@@ -70,7 +70,7 @@ public final class TTGolemParts {
             "clay",
             () -> new GolemMaterial(
                     List.of(TTIds.rl("mat_stud_clay")),
-                    materialTexture("mat_clay"),
+                    ResourceLocation.withDefaultNamespace("textures/block/terracotta.png"),
                     13071447,
                     10,
                     4,
@@ -83,7 +83,7 @@ public final class TTGolemParts {
             "brass",
             () -> new GolemMaterial(
                     List.of(TTIds.rl("mat_stud_brass")),
-                    materialTexture("mat_brass"),
+                    TTIds.rl("textures/block/metal_brass.png"),
                     15638812,
                     16,
                     6,
@@ -96,7 +96,7 @@ public final class TTGolemParts {
             "thaumium",
             () -> new GolemMaterial(
                     List.of(TTIds.rl("mat_stud_thaumium")),
-                    materialTexture("mat_thaumium"),
+                    TTIds.rl("textures/block/metal_thaumium.png"),
                     5257074,
                     24,
                     10,
@@ -109,7 +109,7 @@ public final class TTGolemParts {
             "void",
             () -> new GolemMaterial(
                     List.of(TTIds.rl("mat_stud_void")),
-                    materialTexture("mat_void"),
+                    TTIds.rl("textures/block/metal_void.png"),
                     1445161,
                     20,
                     6,
@@ -133,8 +133,7 @@ public final class TTGolemParts {
             () -> new GolemHead(
                     List.of(TTIds.rl("mind_biothaumic")),
                     partIcon("head_smart"),
-                    new GolemPartModel(
-                            obj("golem_head_smart"), golemTexture("golem_head_other"), GolemPartModel.AttachPoint.HEAD),
+                    new GolemPartModel(obj("golem_head_smart"), null, GolemPartModel.AttachPoint.HEAD),
                     List.of(stackComponent(TTItems.MIND_BIOTHAUMIC)),
                     null,
                     List.of(TTGolemTraits.SMART, TTGolemTraits.FRAGILE)));
@@ -156,8 +155,7 @@ public final class TTGolemParts {
             () -> new GolemHead(
                     List.of(TTIds.rl("golem_vision")),
                     partIcon("head_scout"),
-                    new GolemPartModel(
-                            obj("golem_head_scout"), golemTexture("golem_head_other"), GolemPartModel.AttachPoint.HEAD),
+                    new GolemPartModel(obj("golem_head_scout"), null, GolemPartModel.AttachPoint.HEAD),
                     List.of(stackComponent(TTItems.MIND_CLOCKWORK), stackComponent(TTItems.MODULE_VISION)),
                     null,
                     List.of(TTGolemTraits.SCOUT, TTGolemTraits.FRAGILE)));
@@ -167,10 +165,7 @@ public final class TTGolemParts {
             () -> new GolemHead(
                     List.of(TTIds.rl("golem_vision"), TTIds.rl("mind_biothaumic")),
                     partIcon("head_smartscout"),
-                    new GolemPartModel(
-                            obj("golem_head_scout_smart"),
-                            golemTexture("golem_head_other"),
-                            GolemPartModel.AttachPoint.HEAD),
+                    new GolemPartModel(obj("golem_head_scout_smart"), null, GolemPartModel.AttachPoint.HEAD),
                     List.of(stackComponent(TTItems.MIND_BIOTHAUMIC), stackComponent(TTItems.MODULE_VISION)),
                     null,
                     List.of(TTGolemTraits.SCOUT, TTGolemTraits.SMART, TTGolemTraits.FRAGILE)));
@@ -195,8 +190,7 @@ public final class TTGolemParts {
             () -> new GolemArm(
                     List.of(TTIds.rl("golem_combat_adv")),
                     partIcon("arms_claws"),
-                    new GolemPartModel(
-                            obj("golem_arms_claws"), golemTexture("golem_arms_claws"), GolemPartModel.AttachPoint.ARMS),
+                    new GolemPartModel(obj("golem_arms_claws"), null, GolemPartModel.AttachPoint.ARMS),
                     List.of(
                             stackComponent(TTItems.MODULE_AGGRESSION),
                             GolemComponent.of(() -> new ItemStack(Items.SHEARS, 2)),
@@ -209,10 +203,7 @@ public final class TTGolemParts {
             () -> new GolemArm(
                     List.of(TTIds.rl("golem_breaker")),
                     partIcon("arms_breakers"),
-                    new GolemPartModel(
-                            obj("golem_arms_breakers"),
-                            golemTexture("golem_arms_breakers"),
-                            GolemPartModel.AttachPoint.ARMS),
+                    new GolemPartModel(obj("golem_arms_breakers"), null, GolemPartModel.AttachPoint.ARMS),
                     List.of(
                             GolemComponent.of(() -> new ItemStack(Items.DIAMOND, 2)),
                             GolemComponent.base(),
@@ -225,10 +216,7 @@ public final class TTGolemParts {
             () -> new GolemArm(
                     List.of(TTIds.rl("golem_combat_adv")),
                     partIcon("arms_darts"),
-                    new GolemPartModel(
-                            obj("golem_arms_darter"),
-                            golemTexture("golem_arms_darter"),
-                            GolemPartModel.AttachPoint.ARMS),
+                    new GolemPartModel(obj("golem_arms_darter"), null, GolemPartModel.AttachPoint.ARMS),
                     List.of(
                             stackComponent(TTItems.MODULE_AGGRESSION),
                             GolemComponent.of(() -> new ItemStack(Blocks.DISPENSER, 2)),
@@ -252,8 +240,7 @@ public final class TTGolemParts {
             () -> new GolemLeg(
                     List.of(TTIds.rl("mind_clockwork")),
                     partIcon("legs_roller"),
-                    new GolemPartModel(
-                            obj("golem_legs_wheel"), golemTexture("golem_legs_wheel"), GolemPartModel.AttachPoint.BODY),
+                    new GolemPartModel(obj("golem_legs_wheel"), null, GolemPartModel.AttachPoint.BODY),
                     List.of(
                             GolemComponent.of(() -> new ItemStack(Items.BOWL, 2)),
                             GolemComponent.of(() -> new ItemStack(Items.LEATHER)),
@@ -281,10 +268,7 @@ public final class TTGolemParts {
             () -> new GolemLeg(
                     List.of(TTIds.rl("golem_flyer")),
                     partIcon("legs_flyer"),
-                    new GolemPartModel(
-                            obj("golem_legs_floater"),
-                            golemTexture("golem_legs_floater"),
-                            GolemPartModel.AttachPoint.BODY),
+                    new GolemPartModel(obj("golem_legs_floater"), null, GolemPartModel.AttachPoint.BODY),
                     List.of(
                             stackComponent(TTBlocks.LEVITATOR),
                             GolemComponent.of(() -> new ItemStack(TTItems.PLATE_BRASS.get(), 4)),
@@ -330,8 +314,7 @@ public final class TTGolemParts {
             () -> new GolemAddon(
                     List.of(TTIds.rl("mind_clockwork")),
                     partIcon("addon_hauler"),
-                    new GolemPartModel(
-                            obj("golem_hauler"), golemTexture("golem_hauler"), GolemPartModel.AttachPoint.BODY),
+                    new GolemPartModel(obj("golem_hauler"), null, GolemPartModel.AttachPoint.BODY),
                     List.of(
                             GolemComponent.of(() -> new ItemStack(Items.LEATHER)),
                             GolemComponent.of(() -> new ItemStack(Blocks.CHEST))),
@@ -339,14 +322,6 @@ public final class TTGolemParts {
                     List.of(TTGolemTraits.HAULER)));
 
     private TTGolemParts() {}
-
-    private static ResourceLocation materialTexture(String name) {
-        return TTIds.rl("textures/entity/golems/" + name + ".png");
-    }
-
-    private static ResourceLocation golemTexture(String name) {
-        return TTIds.rl("textures/entity/golems/" + name + ".png");
-    }
 
     private static ResourceLocation partIcon(String name) {
         return TTIds.rl("textures/misc/golem/" + name + ".png");
