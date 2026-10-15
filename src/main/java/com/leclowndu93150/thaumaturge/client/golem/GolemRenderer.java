@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.client.golem;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.client.golems.GolemAccessoryAnchor;
+import com.leclowndu93150.thaumaturge.api.client.golems.GolemPartRenderHook;
 import com.leclowndu93150.thaumaturge.api.golems.ISealDisplayer;
 import com.leclowndu93150.thaumaturge.api.golems.parts.GolemPart;
 import com.leclowndu93150.thaumaturge.api.golems.parts.GolemPartModel;
@@ -106,12 +107,14 @@ public final class GolemRenderer extends EntityRenderer<EntityThaumaturgeGolem> 
         state.speedSq = dx * dx + dz * dz;
         state.yawDelta = entity.getYRot() - entity.yRotO;
         state.wheelRotation = entity.wheelRotation;
-        float grinderSpeed = Math.max(entity.grinderSpeed, state.attackTime * 20.0F);
-        entity.grinderRot += grinderSpeed;
-        entity.grinderSpeed = grinderSpeed * 0.99F;
-        state.grinderRot = entity.grinderRot;
         state.combat = entity.isInCombat();
-        LocalPlayer player = Minecraft.getInstance().player;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (minecraft.shouldEntityAppearGlowing(entity)) {
+            int teamColor = entity.getTeamColor();
+            state.outlineColor =
+                    ARGB32.color(255, ARGB32.red(teamColor), ARGB32.green(teamColor), ARGB32.blue(teamColor));
+        }
         state.invisible = entity.isInvisible();
         state.ghost = state.invisible && player != null && !entity.isInvisibleTo(player);
         state.xray = player != null
@@ -237,10 +240,10 @@ public final class GolemRenderer extends EntityRenderer<EntityThaumaturgeGolem> 
                     ? matTexture
                     : part.texture();
             texture = GolemMeshes.texture(objectPart, texture);
-            hook.preRenderObjectPart(objectPart.name(), state, poseStack, side, 0.0F);
+            hook.posePiece(objectPart.name(), state, poseStack, side);
             renderMeshPart(objectPart, poseStack, buffers, texture, xray, color, state.lightCoords);
             if (!xray) {
-                hook.postRenderObjectPart(objectPart.name(), state, poseStack, buffers, side);
+                hook.decoratePiece(objectPart.name(), state, poseStack, buffers, side);
             }
             poseStack.popPose();
         }

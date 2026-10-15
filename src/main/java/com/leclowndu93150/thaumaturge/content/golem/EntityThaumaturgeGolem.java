@@ -145,8 +145,6 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
 
     public boolean redrawParts;
     public float wheelRotation;
-    public float grinderRot;
-    public float grinderSpeed;
     int rankXp;
     private boolean firstRun = true;
     private final GolemAccessoryStateHolder accessoryStates = new GolemAccessoryStateHolder(this);
