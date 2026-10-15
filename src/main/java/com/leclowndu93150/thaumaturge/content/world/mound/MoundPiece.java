@@ -11,13 +11,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.LadderBlock;
@@ -35,9 +33,9 @@ import net.neoforged.neoforge.event.EventHooks;
 
 public class MoundPiece extends ScatteredFeaturePiece {
     private static final int SURFACE_OFFSET = -10;
-    private static final float RARE_CHANCE = 0.1F;
-    private static final float UNCOMMON_CHANCE = 0.33F;
-    private static final float CRATE_CHANCE = 0.3F;
+    private static final int RARE_THRESHOLD = 10;
+    private static final int UNCOMMON_THRESHOLD = 33;
+    private static final int CRATE_THRESHOLD = 30;
     private static final int TRAPPED_CHEST_ONE_IN = 3;
     private static final BlockPos URN_A = new BlockPos(9, 2, 7);
     private static final BlockPos URN_B = new BlockPos(9, 2, 11);
@@ -152,11 +150,10 @@ public class MoundPiece extends ScatteredFeaturePiece {
             return;
         }
         boolean trapped = random.nextInt(TRAPPED_CHEST_ONE_IN) == 0;
-        Block chestBlock = trapped ? Blocks.TRAPPED_CHEST : Blocks.CHEST;
-        level.setBlock(
-                pos, chestBlock.defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, Direction.WEST), 2);
-        RandomizableContainer.setBlockEntityLootTable(level, random, pos, BuiltInLootTables.SIMPLE_DUNGEON);
-        if (trapped) {
+        BlockState chestState = (trapped ? Blocks.TRAPPED_CHEST : Blocks.CHEST)
+                .defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, Direction.WEST);
+        if (this.createChest(level, chunkBB, random, pos, BuiltInLootTables.SIMPLE_DUNGEON, chestState) && trapped) {
             level.setBlock(pos.below(2), Blocks.TNT.defaultBlockState(), 2);
         }
     }
@@ -193,14 +190,14 @@ public class MoundPiece extends ScatteredFeaturePiece {
     }
 
     private static BlockState lootContainer(RandomSource random) {
-        float roll = random.nextFloat();
-        boolean crate = random.nextFloat() < CRATE_CHANCE;
-        if (roll < RARE_CHANCE) {
+        int tierRoll = random.nextInt(100);
+        boolean crate = random.nextInt(100) < CRATE_THRESHOLD;
+        if (tierRoll < RARE_THRESHOLD) {
             return (crate ? TTBlocks.LOOT_CRATE_RARE : TTBlocks.LOOT_URN_RARE)
                     .get()
                     .defaultBlockState();
         }
-        if (roll < UNCOMMON_CHANCE) {
+        if (tierRoll < UNCOMMON_THRESHOLD) {
             return (crate ? TTBlocks.LOOT_CRATE_UNCOMMON : TTBlocks.LOOT_URN_UNCOMMON)
                     .get()
                     .defaultBlockState();
