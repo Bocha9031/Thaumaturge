@@ -9,6 +9,8 @@ import com.leclowndu93150.thaumaturge.registry.TTItems;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -130,6 +132,73 @@ class ElementalSwordWhirlwindTest {
         verify(player, never()).push(any(Vec3.class));
         verify(mount, never()).push(any(Vec3.class));
         verify(user, never()).push(any(Vec3.class));
+    }
+
+    @Test
+    void clientSmokeUsesFlooredEntityYAndDoublePrecisionCenter() {
+        Level level = level(true);
+        RandomSource random = level.getRandom();
+        LivingEntity user = user(Vec3.ZERO);
+        when(user.getY()).thenReturn(-63.25);
+        when(user.getX()).thenReturn(4.0);
+        when(user.getZ()).thenReturn(7.25);
+        when(user.getBbHeight()).thenReturn(1.8F);
+        when(user.getBoundingBox()).thenReturn(new AABB(4.0, -50.0, 7.25, 5.0, -48.2, 8.25));
+        when(user.onGround()).thenReturn(false);
+
+        double expectedCenterY = -63.25 + (double) 1.8F * 0.5;
+        try (MockedStatic<ClientEffects> clientEffects = mockStatic(ClientEffects.class)) {
+            TTItems.ELEMENTAL_SWORD.get().onUseTick(level, user, ItemStack.EMPTY, 71999);
+
+            clientEffects.verify(
+                    () -> ClientEffects.smokeSpiral(
+                            eq(level),
+                            eq(4.0),
+                            doubleThat(value -> Math.abs(value - expectedCenterY) < 1.0E-12),
+                            eq(7.25),
+                            eq(1.5F),
+                            anyInt(),
+                            eq(-66),
+                            eq(14540253)),
+                    times(5));
+        }
+        verify(random, times(5)).nextInt(360);
+        verify(random, never()).nextDouble();
+    }
+
+    @Test
+    void groundedSmokePuffUsesSourceDoubleAngleAndCosineSineVector() {
+        Level level = level(true);
+        RandomSource random = level.getRandom();
+        when(random.nextDouble()).thenReturn(0.25);
+        when(random.nextFloat()).thenReturn(0.25F);
+
+        LivingEntity user = user(Vec3.ZERO);
+        when(user.getY()).thenReturn(-0.25);
+        when(user.getX()).thenReturn(2.0);
+        when(user.getZ()).thenReturn(3.0);
+        when(user.getBbHeight()).thenReturn(1.8F);
+        when(user.getBoundingBox()).thenReturn(new AABB(2.0, 50.0, 3.0, 3.0, 51.8, 4.0));
+        when(user.onGround()).thenReturn(true);
+
+        try (MockedStatic<ClientEffects> clientEffects = mockStatic(ClientEffects.class)) {
+            TTItems.ELEMENTAL_SWORD.get().onUseTick(level, user, ItemStack.EMPTY, 71999);
+
+            double heading = 0.25 * Mth.TWO_PI;
+            verify(level)
+                    .addParticle(
+                            eq(ParticleTypes.SMOKE),
+                            eq(2.0),
+                            doubleThat(value -> Math.abs(value - (-0.25 + 0.1)) < 1.0E-12),
+                            eq(3.0),
+                            doubleThat(value -> Math.abs(value - Math.cos(heading) * 0.2) < 1.0E-12),
+                            eq(0.0),
+                            doubleThat(value -> Math.abs(value - Math.sin(heading) * 0.2) < 1.0E-12));
+        }
+
+        verify(random, times(5)).nextInt(360);
+        verify(random).nextDouble();
+        verify(random, never()).nextFloat();
     }
 
     private static LivingEntity user(Vec3 movement) {

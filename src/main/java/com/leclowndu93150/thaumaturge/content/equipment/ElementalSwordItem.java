@@ -111,33 +111,29 @@ public final class ElementalSwordItem extends SwordItem implements IChanneledIte
         repelNearby(level, player);
 
         if (level.isClientSide()) {
-            int miny = (int) (player.getBoundingBox().minY - 2.0);
-            if (player.onGround()) {
-                miny = Mth.floor(player.getBoundingBox().minY);
-            }
+            int minY = Mth.floor(player.getY()) - (player.onGround() ? 0 : 2);
+            double centerY = player.getY() + player.getBbHeight() * 0.5;
             for (int a = 0; a < 5; a++) {
                 ClientEffects.smokeSpiral(
                         level,
                         player.getX(),
-                        player.getBoundingBox().minY + player.getBbHeight() / 2.0F,
+                        centerY,
                         player.getZ(),
                         1.5F,
                         level.getRandom().nextInt(360),
-                        miny,
+                        minY,
                         SMOKE_COLOR);
             }
             if (player.onGround()) {
-                float r1 = level.getRandom().nextFloat() * 360.0F;
-                float mx = -Mth.sin(r1 / 180.0F * (float) Math.PI) / 5.0F;
-                float mz = Mth.cos(r1 / 180.0F * (float) Math.PI) / 5.0F;
+                double heading = level.getRandom().nextDouble() * Mth.TWO_PI;
                 level.addParticle(
                         ParticleTypes.SMOKE,
                         player.getX(),
-                        player.getBoundingBox().minY + 0.1F,
+                        player.getY() + 0.1,
                         player.getZ(),
-                        mx,
+                        Math.cos(heading) * 0.2,
                         0.0,
-                        mz);
+                        Math.sin(heading) * 0.2);
             }
         } else if (ticks == 0 || ticks % PULSE_INTERVAL_TICKS == 0) {
             level.playSound(
