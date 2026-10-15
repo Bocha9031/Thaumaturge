@@ -671,9 +671,9 @@ public final class TTCommands {
             return failure(source, "spawn_failed", TTEntities.FLUX_RIFT.get().getDescription());
         }
         Vec3 pos = player.getEyePosition().add(player.getLookAngle().scale(RIFT_SPAWN_DISTANCE));
-        rift.setRiftSeed(level.getRandom().nextInt());
+        rift.reseed(level.getRandom().nextInt());
         rift.moveTo(pos.x, pos.y, pos.z, level.getRandom().nextFloat() * 360.0F, 0.0F);
-        rift.setRiftSize(size);
+        rift.resize(size);
         level.addFreshEntity(rift);
         success(source, "rift", size);
         return Command.SINGLE_SUCCESS;

@@ -48,7 +48,7 @@ public final class EntityCausalityCollapser extends AbstractThrownCharge {
         level.explode(this, getX(), getY(), getZ(), EXPLOSION_STRENGTH, Level.ExplosionInteraction.MOB);
         for (EntityFluxRift rift :
                 level.getEntitiesOfClass(EntityFluxRift.class, getBoundingBox().inflate(RIFT_COLLAPSE_RANGE))) {
-            rift.setCollapse(true);
+            rift.beginCollapse();
         }
     }
 }

@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderStateShard;
@@ -91,14 +92,16 @@ public final class FluxRiftRenderer extends EntityRenderer<EntityFluxRift> {
             MultiBufferSource buffers,
             int packedLight) {
         super.render(entity, entityYaw, partialTicks, poseStack, buffers, packedLight);
-        int count = entity.points.size();
+        List<Vec3> outline = entity.outline;
+        List<Float> widths = entity.outlineWidths;
+        int count = Math.min(outline.size(), widths.size());
         if (count <= 2) {
             return;
         }
         float animationTime = entity.tickCount + partialTicks;
         boolean goggles = Minecraft.getInstance().player != null
                 && GogglesAccess.wearsRevealingGear(Minecraft.getInstance().player);
-        float stab = Mth.clamp(1.0F - entity.getRiftStability() / STAB_DIVISOR, 0.0F, MAX_STAB_FACTOR);
+        float stab = Mth.clamp(1.0F - entity.stabilityValue() / STAB_DIVISOR, 0.0F, MAX_STAB_FACTOR);
         Vec3[] centers = new Vec3[count];
         float[] radii = new float[count];
         for (int a = 0; a < count; a++) {
@@ -108,13 +111,13 @@ public final class FluxRiftRenderer extends EntityRenderer<EntityFluxRift> {
             } else if (a < count / 2) {
                 time += a * TIME_OFFSET_PER_POINT;
             }
-            Vec3 p = entity.points.get(a);
+            Vec3 p = outline.get(a);
             centers[a] = new Vec3(
                     p.x + Math.sin(time / WOBBLE_X_PERIOD) * WOBBLE_AMPLITUDE * stab,
                     p.y + Math.sin(time / WOBBLE_Y_PERIOD) * WOBBLE_AMPLITUDE * stab,
                     p.z + Math.sin(time / WOBBLE_Z_PERIOD) * WOBBLE_AMPLITUDE * stab);
             double pulse = 1.0 - Math.sin(time / WIDTH_PULSE_PERIOD) * 0.1F * stab;
-            radii[a] = (float) (entity.pointsWidth.get(a) * pulse);
+            radii[a] = (float) (widths.get(a) * pulse);
         }
         for (int pass = 0; pass <= GLOW_PASSES; pass++) {
             RenderType type;

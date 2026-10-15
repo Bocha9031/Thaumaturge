@@ -67,8 +67,8 @@ public final class BlockEntityStabilizer extends BlockEntity {
                 new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1)
                         .inflate(RIFT_RANGE));
         for (EntityFluxRift rift : rifts) {
-            if (!rift.isRemoved() && rift.getStability() != EntityFluxRift.Stability.VERY_STABLE && mitigate(1)) {
-                rift.addStability();
+            if (!rift.isRemoved() && rift.stabilityTier() != EntityFluxRift.Stability.VERY_STABLE && mitigate(1)) {
+                rift.nudgeStability();
                 delay += WORK_DELAY;
                 if (energy <= 0) {
                     return;

@@ -63,11 +63,11 @@ public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
         }
         if (siphon.hasOutputRoom()) {
             for (EntityFluxRift rift : siphon.getValidRifts(level, pos)) {
-                double d = Math.sqrt(rift.getRiftSize());
+                double d = Math.sqrt(rift.currentSize());
                 siphon.progress += (int) d;
-                rift.setRiftStability((float) (rift.getRiftStability() - d / 15.0));
+                rift.adjustStability((float) (-d / 15.0));
                 if (level.getRandom().nextInt(SHRINK_CHANCE) == 0) {
-                    rift.setRiftSize(rift.getRiftSize() - 1);
+                    rift.resize(rift.currentSize() - 1);
                 }
             }
         }
@@ -96,7 +96,7 @@ public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
         List<EntityFluxRift> found = new ArrayList<>();
         AABB box = new AABB(pos).inflate(RIFT_RANGE);
         for (EntityFluxRift rift : level.getEntitiesOfClass(EntityFluxRift.class, box)) {
-            if (rift.isRemoved() || rift.getRiftSize() < 2) {
+            if (rift.isRemoved() || rift.currentSize() < 2) {
                 continue;
             }
             Vec3 from = new Vec3(pos.getX() + 0.5, pos.getY() + 1, pos.getZ() + 0.5);
