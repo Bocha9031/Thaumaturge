@@ -16,14 +16,20 @@ import net.minecraft.world.level.block.Block;
  * default stabilisation amount.
  *
  * @since 1.0.0
+ * @deprecated use {@link AltarStabiliser}. This interface extends it so existing implementations keep working.
  */
-public interface IInfusionStabiliser {
+@Deprecated(since = "1.1.0", forRemoval = true)
+public interface IInfusionStabiliser extends AltarStabiliser {
     /**
      * The stabilisation amount granted by blocks registered through the tag rather than the
      * interface, and the assumed amount for interface implementors that do not override
      * {@link #getStabilizationAmount}.
      */
-    float DEFAULT_STABILIZATION = 0.1F;
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    float DEFAULT_STABILIZATION = AltarStabiliser.STANDARD_PAIR_VALUE;
+
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    float NO_SYMMETRY_PENALTY = AltarStabiliser.NO_PENALTY;
 
     /**
      * Whether this block currently acts as a stabiliser. State-dependent stabilisers, such as
@@ -33,6 +39,7 @@ public interface IInfusionStabiliser {
      * @param pos the position of this block
      * @return {@code true} when the block should be included in the stability survey
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     boolean canStabiliseInfusion(Level level, BlockPos pos);
 
     /**
@@ -43,6 +50,7 @@ public interface IInfusionStabiliser {
      * @param pos the position of this block
      * @return the stabilisation amount
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     default float getStabilizationAmount(Level level, BlockPos pos) {
         return DEFAULT_STABILIZATION;
     }
@@ -57,6 +65,7 @@ public interface IInfusionStabiliser {
      * @return the block used for symmetry and diminishing returns, never {@code null}
      * @since 1.0.0
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     default Block stabiliserIdentity(Level level, BlockPos pos) {
         return level.getBlockState(pos).getBlock();
     }
@@ -70,6 +79,7 @@ public interface IInfusionStabiliser {
      * @param mirrored the point-mirrored position across the matrix
      * @return {@code true} when the pair should be penalised instead of counted
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     default boolean hasSymmetryPenalty(Level level, BlockPos pos, BlockPos mirrored) {
         return false;
     }
@@ -82,7 +92,33 @@ public interface IInfusionStabiliser {
      * @param pos the position of this block
      * @return the penalty amount
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     default float getSymmetryPenalty(Level level, BlockPos pos) {
-        return 0.0F;
+        return NO_SYMMETRY_PENALTY;
+    }
+
+    @Override
+    default boolean stabilisesNow(Level level, BlockPos pos) {
+        return canStabiliseInfusion(level, pos);
+    }
+
+    @Override
+    default float pairValue(Level level, BlockPos pos) {
+        return getStabilizationAmount(level, pos);
+    }
+
+    @Override
+    default Block countsAs(Level level, BlockPos pos) {
+        return stabiliserIdentity(level, pos);
+    }
+
+    @Override
+    default boolean penalisesPairWith(Level level, BlockPos pos, BlockPos mirror) {
+        return hasSymmetryPenalty(level, pos, mirror);
+    }
+
+    @Override
+    default float penaltyValue(Level level, BlockPos pos) {
+        return getSymmetryPenalty(level, pos);
     }
 }

@@ -2,7 +2,7 @@ package com.leclowndu93150.thaumaturge.client;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
-import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
+import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
 import com.leclowndu93150.thaumaturge.api.items.ChargeProfile;
 import com.leclowndu93150.thaumaturge.api.items.InfusionEnchantment;
 import com.leclowndu93150.thaumaturge.api.items.RechargeAccess;
@@ -77,6 +77,6 @@ public final class TTTooltipEvents {
     }
 
     private static boolean isStabiliser(Block block) {
-        return block instanceof IInfusionStabiliser || block.defaultBlockState().is(TTBlockTags.INFUSION_STABILISERS);
+        return block instanceof AltarStabiliser || block.defaultBlockState().is(TTBlockTags.INFUSION_STABILISERS);
     }
 }

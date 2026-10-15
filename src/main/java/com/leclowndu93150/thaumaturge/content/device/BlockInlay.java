@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.device;
 
-import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
+import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
 import com.leclowndu93150.thaumaturge.content.infusion.BlockPedestal;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.mojang.serialization.MapCodec;
@@ -26,7 +26,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public final class BlockInlay extends Block implements IInfusionStabiliser {
+public final class BlockInlay extends Block implements AltarStabiliser {
     public static final MapCodec<BlockInlay> CODEC = simpleCodec(BlockInlay::new);
     public static final IntegerProperty CHARGE = IntegerProperty.create("charge", 0, 15);
     public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
@@ -228,12 +228,12 @@ public final class BlockInlay extends Block implements IInfusionStabiliser {
     }
 
     @Override
-    public boolean canStabiliseInfusion(Level level, BlockPos pos) {
+    public boolean stabilisesNow(Level level, BlockPos pos) {
         return true;
     }
 
     @Override
-    public float getStabilizationAmount(Level level, BlockPos pos) {
+    public float pairValue(Level level, BlockPos pos) {
         return STABILIZATION;
     }
 }

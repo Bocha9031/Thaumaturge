@@ -42,7 +42,7 @@ public final class BlockCandle extends AbstractCandleBlock {
     }
 
     @Override
-    public boolean canStabiliseInfusion(Level level, BlockPos pos) {
+    public boolean stabilisesNow(Level level, BlockPos pos) {
         return true;
     }
 }

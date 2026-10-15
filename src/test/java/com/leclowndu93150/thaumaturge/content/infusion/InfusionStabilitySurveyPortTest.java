@@ -1,0 +1,146 @@
+package com.leclowndu93150.thaumaturge.content.infusion;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
+import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
+import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
+import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import org.junit.jupiter.api.Test;
+
+final class InfusionStabilitySurveyPortTest {
+    @Test
+    void mirroredInlaysUseModernAltarStabiliserContract() {
+        Level level = mock(Level.class);
+        BlockPos matrix = new BlockPos(0, 64, 0);
+        BlockPos near = matrix.east();
+        BlockPos mirror = matrix.west();
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(true);
+        doReturn(Blocks.AIR.defaultBlockState()).when(level).getBlockState(any(BlockPos.class));
+        doReturn(TTBlocks.INLAY.get().defaultBlockState()).when(level).getBlockState(near);
+        doReturn(TTBlocks.INLAY.get().defaultBlockState()).when(level).getBlockState(mirror);
+
+        InfusionStabilitySurvey.Result result = InfusionStabilitySurvey.survey(level, matrix);
+
+        assertTrue(TTBlocks.INLAY.get() instanceof AltarStabiliser);
+        assertEquals(0.025F, result.stabilityReplenish(), 0.0001F);
+    }
+
+    @Test
+    void unloadedMirrorUsesDefaultPairValueWithoutReadingItsChunk() {
+        Level level = mock(Level.class);
+        BlockPos matrix = new BlockPos(0, 64, 0);
+        BlockPos near = matrix.east();
+        BlockPos mirror = matrix.west();
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(true);
+        when(level.hasChunkAt(mirror)).thenReturn(false);
+        doReturn(Blocks.AIR.defaultBlockState()).when(level).getBlockState(any(BlockPos.class));
+        doReturn(TTBlocks.INLAY.get().defaultBlockState()).when(level).getBlockState(near);
+
+        InfusionStabilitySurvey.Result result = InfusionStabilitySurvey.survey(level, matrix);
+
+        assertEquals(-AltarStabiliser.STANDARD_PAIR_VALUE, result.stabilityReplenish(), 0.0001F);
+        verify(level, never()).getBlockState(mirror);
+    }
+
+    @Test
+    void directStabiliserCheckSkipsUnloadedPositions() {
+        Level level = mock(Level.class);
+        BlockPos pos = new BlockPos(80, 64, 0);
+        when(level.hasChunkAt(pos)).thenReturn(false);
+
+        assertFalse(InfusionStabilitySurvey.isStabiliser(level, pos));
+        verify(level, never()).getBlockState(pos);
+    }
+
+    @Test
+    void modernMatchingPairUsesTheLargerReportedSymmetryPenalty() {
+        Level level = mock(Level.class);
+        BlockPos matrix = new BlockPos(0, 64, 0);
+        BlockPos west = matrix.west();
+        BlockPos east = matrix.east();
+        Block modernBlock = mock(Block.class, withSettings().extraInterfaces(AltarStabiliser.class));
+        AltarStabiliser stabiliser = (AltarStabiliser) modernBlock;
+        BlockState stabiliserState = mock(BlockState.class);
+        when(stabiliserState.getBlock()).thenReturn(modernBlock);
+        when(stabiliserState.is(TTBlockTags.INFUSION_STABILISERS)).thenReturn(false);
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(true);
+        doReturn(Blocks.AIR.defaultBlockState()).when(level).getBlockState(any(BlockPos.class));
+        doReturn(stabiliserState).when(level).getBlockState(west);
+        doReturn(stabiliserState).when(level).getBlockState(east);
+        doReturn(true).when(stabiliser).stabilisesNow(level, west);
+        doReturn(true).when(stabiliser).stabilisesNow(level, east);
+        doReturn(Blocks.GOLD_BLOCK).when(stabiliser).countsAs(level, west);
+        doReturn(Blocks.GOLD_BLOCK).when(stabiliser).countsAs(level, east);
+        doReturn(0.2F).when(stabiliser).pairValue(level, west);
+        doReturn(0.2F).when(stabiliser).pairValue(level, east);
+        doReturn(true).when(stabiliser).penalisesPairWith(level, west, east);
+        doReturn(0.1F).when(stabiliser).penaltyValue(level, west);
+        doReturn(0.3F).when(stabiliser).penaltyValue(level, east);
+
+        InfusionStabilitySurvey.Result result = InfusionStabilitySurvey.survey(level, matrix);
+
+        assertEquals(-0.3F, result.stabilityReplenish(), 0.0001F);
+        verify(stabiliser).penalisesPairWith(level, west, east);
+    }
+
+    @Test
+    void legacyStabiliserRemainsAnAltarStabiliser() {
+        assertTrue(AltarStabiliser.class.isAssignableFrom(IInfusionStabiliser.class));
+        assertEquals(AltarStabiliser.STANDARD_PAIR_VALUE, IInfusionStabiliser.DEFAULT_STABILIZATION);
+        assertEquals(AltarStabiliser.NO_PENALTY, IInfusionStabiliser.NO_SYMMETRY_PENALTY);
+    }
+
+    @Test
+    void legacyHooksForwardThroughModernAltarContract() {
+        Level level = mock(Level.class);
+        BlockPos pos = new BlockPos(2, 64, 3);
+        BlockPos mirror = new BlockPos(-2, 64, -3);
+        IInfusionStabiliser legacy = new IInfusionStabiliser() {
+            @Override
+            public boolean canStabiliseInfusion(Level checkedLevel, BlockPos checkedPos) {
+                return true;
+            }
+
+            @Override
+            public float getStabilizationAmount(Level checkedLevel, BlockPos checkedPos) {
+                return 0.3F;
+            }
+
+            @Override
+            public Block stabiliserIdentity(Level checkedLevel, BlockPos checkedPos) {
+                return Blocks.GOLD_BLOCK;
+            }
+
+            @Override
+            public boolean hasSymmetryPenalty(Level checkedLevel, BlockPos checkedPos, BlockPos checkedMirror) {
+                return checkedMirror.equals(mirror);
+            }
+
+            @Override
+            public float getSymmetryPenalty(Level checkedLevel, BlockPos checkedPos) {
+                return 0.2F;
+            }
+        };
+
+        assertTrue(legacy.stabilisesNow(level, pos));
+        assertEquals(0.3F, legacy.pairValue(level, pos));
+        assertEquals(Blocks.GOLD_BLOCK, legacy.countsAs(level, pos));
+        assertTrue(legacy.penalisesPairWith(level, pos, mirror));
+        assertEquals(0.2F, legacy.penaltyValue(level, pos));
+    }
+}
