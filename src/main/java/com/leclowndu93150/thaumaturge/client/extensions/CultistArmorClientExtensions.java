@@ -2,6 +2,8 @@ package com.leclowndu93150.thaumaturge.client.extensions;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.entity.TTModelLayers;
+import com.leclowndu93150.thaumaturge.client.model.gear.ClericArmorModel;
+import com.leclowndu93150.thaumaturge.client.model.gear.CrimsonBootsModel;
 import com.leclowndu93150.thaumaturge.client.model.gear.FortressArmorModel;
 import com.leclowndu93150.thaumaturge.client.model.gear.KnightArmorModel;
 import com.leclowndu93150.thaumaturge.client.model.gear.PraetorArmorModel;
@@ -51,13 +53,16 @@ public final class CultistArmorClientExtensions {
                 TTItems.CRIMSON_PLATE_LEGS.get());
         event.registerItem(
                 new CustomArmorExtension(
-                        RobeArmorModel::new,
-                        TTModelLayers.ROBE_ARMOR_HEAD,
-                        TTModelLayers.ROBE_ARMOR_CHEST,
-                        TTModelLayers.ROBE_ARMOR_LEGS),
+                        ClericArmorModel::new,
+                        TTModelLayers.CLERIC_ARMOR_HEAD,
+                        TTModelLayers.CLERIC_ARMOR_CHEST,
+                        TTModelLayers.CLERIC_ARMOR_LEGS),
                 TTItems.CRIMSON_ROBE_HELM.get(),
                 TTItems.CRIMSON_ROBE_CHEST.get(),
                 TTItems.CRIMSON_ROBE_LEGS.get());
+        event.registerItem(
+                new SingleLayerArmorExtension(CrimsonBootsModel::new, TTModelLayers.CRIMSON_BOOTS),
+                TTItems.CRIMSON_BOOTS.get());
         event.registerItem(
                 new CustomArmorExtension(
                         RobeArmorModel::new,
@@ -139,6 +144,48 @@ public final class CultistArmorClientExtensions {
 
         private HumanoidModel<LivingEntity> bake(ModelLayerLocation layer) {
             return factory.apply(Minecraft.getInstance().getEntityModels().bakeLayer(layer));
+        }
+    }
+
+    private static final class SingleLayerArmorExtension implements IClientItemExtensions {
+        private final Function<ModelPart, HumanoidModel<LivingEntity>> factory;
+        private final ModelLayerLocation layer;
+        private HumanoidModel<LivingEntity> model;
+
+        private SingleLayerArmorExtension(
+                Function<ModelPart, HumanoidModel<LivingEntity>> factory, ModelLayerLocation layer) {
+            this.factory = factory;
+            this.layer = layer;
+        }
+
+        @Override
+        public HumanoidModel<?> getHumanoidArmorModel(
+                LivingEntity entity, ItemStack stack, EquipmentSlot slot, HumanoidModel<?> original) {
+            if (slot != EquipmentSlot.FEET) {
+                return original;
+            }
+            if (model == null) {
+                model = factory.apply(Minecraft.getInstance().getEntityModels().bakeLayer(layer));
+            }
+            return model;
+        }
+
+        @Override
+        public void setupModelAnimations(
+                LivingEntity entity,
+                ItemStack stack,
+                EquipmentSlot slot,
+                Model model,
+                float limbSwing,
+                float limbSwingAmount,
+                float partialTick,
+                float ageInTicks,
+                float netHeadYaw,
+                float headPitch) {
+            if (model instanceof com.leclowndu93150.thaumaturge.client.model.gear.AbstractTTArmorModel armor) {
+                armor.setupAnim(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch);
+            }
+            applyArmorStandHeadPose(entity, slot, model);
         }
     }
 
