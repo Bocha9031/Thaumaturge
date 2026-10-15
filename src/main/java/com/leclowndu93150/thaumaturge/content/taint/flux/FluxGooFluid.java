@@ -153,6 +153,9 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         int count = 1;
         for (Direction side : HORIZONTAL) {
             BlockPos off = pos.relative(side);
+            if (!level.hasChunkAt(off)) {
+                continue;
+            }
             if (displaceIfPossible(level, off)) {
                 level.setBlock(off, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             }
@@ -174,6 +177,9 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         int rem = total % count;
         for (Direction side : HORIZONTAL) {
             BlockPos off = pos.relative(side);
+            if (!level.hasChunkAt(off)) {
+                continue;
+            }
             int quanta = getQuantaValueBelow(level, off, lowerThan);
             if (quanta >= 0) {
                 int newQuanta = each;
@@ -205,6 +211,9 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
             return 0;
         }
 
+        if (!level.hasChunkAt(other)) {
+            return amtToInput;
+        }
         int amt = getQuantaValueBelow(level, other, QUANTA_PER_BLOCK);
         if (amt >= 0) {
             amt += amtToInput;
