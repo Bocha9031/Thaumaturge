@@ -4,18 +4,17 @@ import com.leclowndu93150.thaumaturge.api.spell.cast.SpellStats;
 import com.leclowndu93150.thaumaturge.api.spell.cast.SpellTarget;
 import com.leclowndu93150.thaumaturge.content.spell.world.SpellTargeting;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -29,15 +28,23 @@ import net.neoforged.neoforge.entity.IEntityWithComplexSpawn;
 import org.jspecify.annotations.Nullable;
 
 public final class SpellProjectile extends ThrowableProjectile implements IEntityWithComplexSpawn {
+    private static final String GRAVITY_KEY = "gravity";
+    private static final String SPLASH_KEY = "splash";
+    private static final String HOMING_KEY = "homing";
+    private static final String BOUNCES_KEY = "bounces";
+    private static final String PIERCE_KEY = "pierce";
     private static final int LIFESPAN = 1200;
     private static final double SPAWN_AHEAD = 0.6;
+    private static final float NO_DIVERGENCE = 0.0F;
     private static final int SEEK_INTERVAL = 5;
     private static final double SEEK_RANGE = 16.0;
     private static final double SEEK_CONE_COS = 0.5;
     private static final double SEEK_STEER = 0.25;
+    private static final double PARALLEL_EPSILON = 1.0E-6;
     private static final double BOUNCE_DAMPING = 0.8;
     private static final double MIN_BOUNCE_SPEED = 0.15;
     private static final float BOUNCE_VOLUME = 0.25F;
+    private static final float BOUNCE_PITCH = 1.5F;
     private static final double TRAIL_JITTER = 0.02;
     private static final double BOUNCE_LIFT = 0.05;
 
@@ -47,8 +54,8 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
     private boolean homing;
     private int bounces;
     private int pierce;
-    private final Set<Integer> pierced = new HashSet<>();
-    private @Nullable Entity quarry;
+    private final IntOpenHashSet pierced = new IntOpenHashSet();
+    private @Nullable LivingEntity quarry;
 
     public SpellProjectile(EntityType<? extends SpellProjectile> type, Level level) {
         super(type, level);
@@ -72,7 +79,7 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         projectile.setOwner(owner);
         Vec3 start = origin.position().add(origin.direction().scale(SPAWN_AHEAD));
         projectile.setPos(start.x, start.y, start.z);
-        projectile.shoot(origin.direction().x, origin.direction().y, origin.direction().z, speed, 0.0F);
+        projectile.shoot(origin.direction().x, origin.direction().y, origin.direction().z, speed, NO_DIVERGENCE);
         level.addFreshEntity(projectile);
     }
 
@@ -102,41 +109,42 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
 
     @Override
     public void addAdditionalSaveData(CompoundTag output) {
-        HolderLookup.Provider registries = registryAccess();
         super.addAdditionalSaveData(output);
+        output.putInt(PIERCE_KEY, pierce);
+        output.putInt(BOUNCES_KEY, bounces);
+        output.putBoolean(HOMING_KEY, homing);
+        output.putFloat(SPLASH_KEY, splash);
+        output.putDouble(GRAVITY_KEY, gravity);
         charge.save(output, registryAccess());
-        output.putDouble("gravity", gravity);
-        output.putFloat("splash", splash);
-        output.putBoolean("homing", homing);
-        output.putInt("bounces", bounces);
-        output.putInt("pierce", pierce);
     }
 
     @Override
     public void readAdditionalSaveData(CompoundTag input) {
-        HolderLookup.Provider registries = registryAccess();
         super.readAdditionalSaveData(input);
+        pierce = input.contains(PIERCE_KEY) ? input.getInt(PIERCE_KEY) : 0;
+        bounces = input.contains(BOUNCES_KEY) ? input.getInt(BOUNCES_KEY) : 0;
+        homing = input.contains(HOMING_KEY) && input.getBoolean(HOMING_KEY);
+        splash = input.contains(SPLASH_KEY) ? input.getFloat(SPLASH_KEY) : 0.0F;
+        gravity = input.contains(GRAVITY_KEY) ? input.getDouble(GRAVITY_KEY) : 0.0;
         charge.load(input, registryAccess());
-        gravity = (input.contains("gravity") ? input.getDouble("gravity") : 0.0);
-        splash = (input.contains("splash") ? input.getFloat("splash") : 0.0F);
-        homing = (input.contains("homing") ? input.getBoolean("homing") : false);
-        bounces = (input.contains("bounces") ? input.getInt("bounces") : 0);
-        pierce = (input.contains("pierce") ? input.getInt("pierce") : 0);
     }
 
     @Override
     public void tick() {
-        super.tick();
-        if (level().isClientSide()) {
-            trail();
-            return;
-        }
-        if (tickCount > LIFESPAN || getOwner() == null || charge.isSpent()) {
+        if (level() instanceof ServerLevel
+                && (!(getOwner() instanceof LivingEntity) || tickCount > LIFESPAN || charge.isSpent())) {
             discard();
             return;
         }
-        if (homing) {
-            steer();
+        super.tick();
+        if (level() instanceof ServerLevel server
+                && homing
+                && !isRemoved()
+                && getOwner() instanceof LivingEntity owner) {
+            steer(server, owner);
+        }
+        if (level().isClientSide()) {
+            trail();
         }
     }
 
@@ -147,91 +155,119 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
 
     @Override
     protected void onHit(HitResult hit) {
-        if (hit instanceof BlockHitResult blockHit && bounces > 0) {
-            bounce(blockHit);
+        if (bounces > 0
+                && hit instanceof BlockHitResult blockHit
+                && blockHit.getType() == HitResult.Type.BLOCK
+                && bounce(blockHit)) {
             return;
         }
-        if (!(level() instanceof ServerLevel level) || charge.isSpent()) {
+        if (charge.isSpent() || !(level() instanceof ServerLevel level)) {
             return;
         }
         Vec3 heading = getDeltaMovement().normalize();
-        if (hit instanceof EntityHitResult entityHit && pierce > 0) {
+        Entity struck = hit instanceof EntityHitResult entityHit ? entityHit.getEntity() : null;
+        if (struck != null && pierce > 0) {
             pierce--;
-            pierced.add(entityHit.getEntity().getId());
-            charge.resume(level, List.of(SpellTarget.entity(entityHit.getEntity(), heading)));
+            pierced.add(struck.getId());
+            charge.resume(level, List.of(SpellTarget.entity(struck, heading)));
             return;
         }
-        charge.resume(level, impact(level, hit, heading));
+        List<SpellTarget> targets = new ArrayList<>();
+        targets.add(struck != null ? SpellTarget.entity(struck, heading) : SpellTarget.of(hit, heading));
+        targets.addAll(splashTargets(level, hit.getLocation(), struck));
+        charge.resume(level, targets);
         discard();
     }
 
-    private List<SpellTarget> impact(ServerLevel level, HitResult hit, Vec3 heading) {
-        List<SpellTarget> targets = new ArrayList<>();
-        Entity struck = hit instanceof EntityHitResult entityHit ? entityHit.getEntity() : null;
-        targets.add(struck != null ? SpellTarget.entity(struck, heading) : SpellTarget.of(hit, heading));
+    private List<SpellTarget> splashTargets(ServerLevel level, Vec3 centre, @Nullable Entity struck) {
         CarrierPayload payload = charge.payload();
-        float radius = splash > 0.0F && payload != null
-                ? splash + payload.continuation().state().get(SpellStats.RADIUS)
-                : 0.0F;
-        if (radius > 0.0F) {
-            Vec3 centre = hit.getLocation();
-            for (LivingEntity living : SpellTargeting.livingWithin(level, centre, radius, living -> living != struck)) {
-                targets.add(SpellTarget.entity(
-                        living, living.getBoundingBox().getCenter().subtract(centre)));
-            }
+        if (!(splash > 0.0F) || payload == null) {
+            return List.of();
+        }
+        double radius = splash + payload.continuation().state().get(SpellStats.RADIUS);
+        List<SpellTarget> targets = new ArrayList<>();
+        for (LivingEntity living :
+                SpellTargeting.livingWithin(level, centre, radius, candidate -> candidate != struck)) {
+            Vec3 outward = living.getBoundingBox().getCenter().subtract(centre);
+            targets.add(SpellTarget.entity(living, outward));
         }
         return targets;
     }
 
-    private void bounce(BlockHitResult hit) {
+    private boolean bounce(BlockHitResult hit) {
         Direction face = hit.getDirection();
-        Vec3 motion = getDeltaMovement();
-        Vec3 reflected = new Vec3(
-                        face.getAxis() == Direction.Axis.X ? -motion.x : motion.x,
-                        face.getAxis() == Direction.Axis.Y ? -motion.y : motion.y,
-                        face.getAxis() == Direction.Axis.Z ? -motion.z : motion.z)
-                .scale(BOUNCE_DAMPING);
-        setDeltaMovement(reflected);
-        setPos(hit.getLocation()
-                .add(face.getStepX() * BOUNCE_LIFT, face.getStepY() * BOUNCE_LIFT, face.getStepZ() * BOUNCE_LIFT));
+        Vec3 velocity = getDeltaMovement();
+        double rx = face.getAxis() == Direction.Axis.X ? -velocity.x : velocity.x;
+        double ry = face.getAxis() == Direction.Axis.Y ? -velocity.y : velocity.y;
+        double rz = face.getAxis() == Direction.Axis.Z ? -velocity.z : velocity.z;
+        Vec3 reflected = new Vec3(rx, ry, rz).scale(BOUNCE_DAMPING);
         bounces--;
+        setDeltaMovement(reflected);
+        Vec3 clear = hit.getLocation()
+                .add(face.getStepX() * BOUNCE_LIFT, face.getStepY() * BOUNCE_LIFT, face.getStepZ() * BOUNCE_LIFT);
+        setPos(clear.x, clear.y, clear.z);
         if (!level().isClientSide()) {
-            playSound(SoundEvents.SLIME_BLOCK_HIT, BOUNCE_VOLUME, 1.5F);
-            if (reflected.length() < MIN_BOUNCE_SPEED) {
-                bounces = 0;
-            }
+            level().playSound(
+                            null,
+                            clear.x,
+                            clear.y,
+                            clear.z,
+                            SoundEvents.SLIME_BLOCK_HIT,
+                            SoundSource.NEUTRAL,
+                            BOUNCE_VOLUME,
+                            BOUNCE_PITCH);
+        }
+        if (reflected.length() < MIN_BOUNCE_SPEED) {
+            bounces = 0;
+        }
+        return true;
+    }
+
+    private void steer(ServerLevel server, LivingEntity owner) {
+        if (quarry != null && !quarry.isAlive()) {
+            quarry = null;
+        }
+        if (tickCount % SEEK_INTERVAL == 0) {
+            refreshQuarry(server, owner, getDeltaMovement());
+        }
+        if (quarry != null) {
+            bendToward(quarry, getDeltaMovement());
         }
     }
 
-    private void steer() {
-        if (quarry == null
-                || !quarry.isAlive()
-                || tickCount % SEEK_INTERVAL == 0 && !SpellTargeting.canSee(level(), position(), quarry, this)) {
-            quarry = tickCount % SEEK_INTERVAL == 0 ? seek() : null;
-        }
-        if (quarry == null) {
+    private void bendToward(LivingEntity target, Vec3 velocity) {
+        double speed = velocity.length();
+        Vec3 aim = target.getBoundingBox().getCenter().subtract(position());
+        if (speed < PARALLEL_EPSILON || aim.lengthSqr() < PARALLEL_EPSILON) {
             return;
         }
-        Vec3 motion = getDeltaMovement();
-        double speed = motion.length();
-        Vec3 toward = quarry.getBoundingBox().getCenter().subtract(position()).normalize();
-        setDeltaMovement(
-                motion.normalize().add(toward.scale(SEEK_STEER)).normalize().scale(speed));
+        Vec3 blended = velocity.scale(1.0 / speed).add(aim.normalize().scale(SEEK_STEER));
+        if (blended.lengthSqr() < PARALLEL_EPSILON) {
+            return;
+        }
+        setDeltaMovement(blended.normalize().scale(speed));
         hurtMarked = true;
     }
 
-    private @Nullable Entity seek() {
-        Vec3 heading = getDeltaMovement().normalize();
-        Entity owner = getOwner();
-        Optional<LivingEntity> found = SpellTargeting.nearest(
-                level(),
-                position(),
-                SEEK_RANGE,
-                living -> living != owner
-                        && !SpellTargeting.isAlly(owner, living)
-                        && SpellTargeting.withinCone(position(), heading, living, SEEK_RANGE, SEEK_CONE_COS)
-                        && SpellTargeting.canSee(level(), position(), living, this));
-        return found.orElse(null);
+    private void refreshQuarry(ServerLevel server, LivingEntity owner, Vec3 velocity) {
+        if (quarry != null && !SpellTargeting.canSee(server, position(), quarry, this)) {
+            quarry = null;
+        }
+        if (quarry == null) {
+            quarry = acquire(server, owner, velocity).orElse(null);
+        }
+    }
+
+    private Optional<LivingEntity> acquire(ServerLevel server, LivingEntity owner, Vec3 velocity) {
+        Vec3 from = position();
+        Vec3 axis = velocity.normalize();
+        return SpellTargeting.nearest(server, from, SEEK_RANGE, candidate -> {
+            if (candidate == owner || SpellTargeting.isAlly(owner, candidate)) {
+                return false;
+            }
+            return SpellTargeting.withinCone(from, axis, candidate, SEEK_RANGE, SEEK_CONE_COS)
+                    && SpellTargeting.canSee(server, from, candidate, this);
+        });
     }
 
     private void trail() {
