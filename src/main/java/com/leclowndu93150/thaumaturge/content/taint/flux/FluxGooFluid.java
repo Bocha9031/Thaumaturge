@@ -330,7 +330,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
                 .setValue(LiquidBlock.LEVEL, clamped >= QUANTA_PER_BLOCK ? 0 : QUANTA_PER_BLOCK - clamped);
     }
 
-    private void scheduleGooTick(ServerLevel level, BlockPos pos) {
+    private static void scheduleGooTick(ServerLevel level, BlockPos pos) {
         FluidState fluidState = level.getFluidState(pos);
         if (!fluidState.isEmpty()) {
             Fluid fluid = fluidState.getType();
@@ -341,14 +341,18 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
     public static void applyEntityInside(Level level, BlockPos pos, Entity entity) {
         FluidState fs = level.getFluidState(pos);
         int amount = fs.getAmount();
+        if (amount <= 0) {
+            return;
+        }
         int meta = amount - 1;
         if (entity instanceof ThaumicSlime slime) {
-            if (!level.isClientSide()
+            if (level instanceof ServerLevel serverLevel
                     && slime.getSize() < meta
-                    && level.getRandom().nextBoolean()) {
+                    && serverLevel.getRandom().nextBoolean()) {
                 slime.setSize(slime.getSize() + 1, true);
                 if (meta > 1) {
                     level.setBlock(pos, gooBlockState(meta), Block.UPDATE_CLIENTS);
+                    scheduleGooTick(serverLevel, pos);
                 } else {
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 }
@@ -361,7 +365,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
             double damp = 1.0 - quanta * MAX_DRAG;
             entity.setDeltaMovement(motion.x * damp, motion.y, motion.z * damp);
         }
-        if (entity instanceof LivingEntity living) {
+        if (!level.isClientSide() && entity instanceof LivingEntity living) {
             int amp = meta / 3;
             living.addEffect(
                     new MobEffectInstance(TTMobEffects.VIS_EXHAUST, VIS_EXHAUST_DURATION, amp, true, true, false));
