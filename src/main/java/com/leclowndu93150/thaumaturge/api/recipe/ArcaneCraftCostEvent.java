@@ -11,8 +11,8 @@ import net.neoforged.bus.api.Event;
  *
  * <p>The event fires with the same context used to plan and to pay, so a replaced cost is honored
  * by the subsequent payment. Listeners that redirect payment to an external store are responsible
- * for draining that store themselves; for coordinated, simulate-aware payment prefer registering an
- * {@link IWorkbenchVisSource} instead.
+ * for draining that store themselves; for coordinated transactional payment prefer registering an
+ * {@link IWorkbenchVisSource} instead, which participates in the craft transaction.
  *
  * @since 1.0.0
  */

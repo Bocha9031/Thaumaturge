@@ -12,14 +12,14 @@ import com.leclowndu93150.thaumaturge.api.recipe.IArcaneRecipe;
 import com.leclowndu93150.thaumaturge.api.recipe.IArcaneWorkbench;
 import com.leclowndu93150.thaumaturge.api.recipe.IWorkbenchAuraSource;
 import com.leclowndu93150.thaumaturge.api.recipe.IWorkbenchVisSource;
+import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.leclowndu93150.thaumaturge.content.casters.CasterManager;
 import com.leclowndu93150.thaumaturge.content.wands.ItemWand;
 import com.leclowndu93150.thaumaturge.content.wands.WandEconomy;
 import com.leclowndu93150.thaumaturge.content.wands.WandVisHelper;
 import com.leclowndu93150.thaumaturge.registry.TTWorkbenchSources;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceKey;
@@ -36,22 +36,47 @@ public final class WorkbenchPayment {
 
     public static Plan plan(
             IArcaneRecipe recipe, IArcaneWorkbench inventory, Player player, ArcaneWorkbenchContext context) {
-        return planInternal(recipe, inventory, player, context);
+        return plan(recipe, inventory, player, context, null);
+    }
+
+    public static Plan plan(
+            IArcaneRecipe recipe,
+            IArcaneWorkbench inventory,
+            Player player,
+            ArcaneWorkbenchContext context,
+            @Nullable TransactionContext transaction) {
+        if (transaction != null) {
+            return planInternal(recipe, inventory, player, context, transaction);
+        }
+        try (Transaction root = Transaction.openRoot()) {
+            return planInternal(recipe, inventory, player, context, root);
+        }
     }
 
     public static Plan plan(IArcaneRecipe recipe, IArcaneWorkbench inventory, Player player) {
-        return planInternal(recipe, inventory, player, null);
+        return planInternalOutsideTransaction(recipe, inventory, player, null);
+    }
+
+    private static Plan planInternalOutsideTransaction(
+            IArcaneRecipe recipe, IArcaneWorkbench inventory, Player player, @Nullable ArcaneWorkbenchContext context) {
+        try (Transaction transaction = Transaction.openRoot()) {
+            return planInternal(recipe, inventory, player, context, transaction);
+        }
     }
 
     private static Plan planInternal(
-            IArcaneRecipe recipe, IArcaneWorkbench inventory, Player player, @Nullable ArcaneWorkbenchContext context) {
+            IArcaneRecipe recipe,
+            IArcaneWorkbench inventory,
+            Player player,
+            @Nullable ArcaneWorkbenchContext context,
+            TransactionContext transaction) {
         ItemStack wand = inventory.wandStack();
         boolean hasWand = wand.getItem() instanceof ItemWand;
 
         Map<ResourceKey<IAspect>, Integer> wandCentivis = new LinkedHashMap<>();
         Map<ResourceKey<IAspect>, Integer> sourceCentivis = new LinkedHashMap<>();
-        AspectList crystalNeeds =
-                calculateCrystalNeeds(recipe, inventory, player, context, hasWand, wand, wandCentivis, sourceCentivis);
+        AspectList crystalNeeds = calculateCrystalNeeds(
+                recipe, inventory, player, context, hasWand, wand, wandCentivis, sourceCentivis, transaction);
 
         boolean fullWand = hasWand && crystalNeeds.isEmpty() && sourceCentivis.isEmpty();
         float modifier;
@@ -77,7 +102,8 @@ public final class WorkbenchPayment {
             boolean hasWand,
             ItemStack wand,
             Map<ResourceKey<IAspect>, Integer> wandCentivis,
-            Map<ResourceKey<IAspect>, Integer> sourceCentivis) {
+            Map<ResourceKey<IAspect>, Integer> sourceCentivis,
+            TransactionContext transaction) {
         AspectList crystalNeeds = AspectList.EMPTY;
         for (AspectInstance entry : recipe.crystalCost().entries()) {
             ResourceKey<IAspect> primal = entry.aspect().getKey();
@@ -86,7 +112,8 @@ public final class WorkbenchPayment {
             single.put(primal, centivis);
             if (hasWand && WandVisHelper.payExact(wand, single, true)) {
                 wandCentivis.put(primal, centivis);
-            } else if (supplyFromSources(context, player, inventory, entry.aspect(), centivis, true) >= centivis) {
+            } else if (supplyFromSources(context, player, inventory, entry.aspect(), centivis, transaction)
+                    >= centivis) {
                 sourceCentivis.put(primal, centivis);
             } else {
                 crystalNeeds = crystalNeeds.add(entry.aspect(), entry.amount());
@@ -116,7 +143,9 @@ public final class WorkbenchPayment {
 
     public static ArcaneCraftCost cost(
             IArcaneRecipe recipe, IArcaneWorkbench workbench, Player player, @Nullable ArcaneWorkbenchContext context) {
-        return planInternal(recipe, workbench, player, context).cost();
+        try (Transaction transaction = Transaction.openRoot()) {
+            return planInternal(recipe, workbench, player, context, transaction).cost();
+        }
     }
 
     public static @Nullable ItemStack paidWand(Plan plan, ItemStack wand) {
@@ -134,87 +163,75 @@ public final class WorkbenchPayment {
         return plan.auraVis() <= 0 || (tile != null && tile.auraVis >= plan.auraVis());
     }
 
-    public static @Nullable PaymentReservation reserve(
+    static boolean pay(
             Plan plan,
-            @Nullable BlockEntityArcaneWorkbench tile,
             ServerPlayer player,
             IArcaneWorkbench inventory,
-            ArcaneWorkbenchContext context) {
-        if (!plan.crystalsSatisfied()) return null;
-        if (!plan.wandCentivis().isEmpty()
-                && !WandVisHelper.payExact(inventory.wandStack(), plan.wandCentivis(), true)) {
-            return null;
-        }
+            ArcaneWorkbenchContext context,
+            TransactionContext transaction) {
+        return paySources(plan, context, player, inventory, transaction)
+                && payAura(plan, context, player, inventory, transaction);
+    }
 
-        List<VisAllocation> visAllocations = new ArrayList<>();
+    public static boolean paySources(
+            Plan plan,
+            ArcaneWorkbenchContext context,
+            ServerPlayer player,
+            IArcaneWorkbench inventory,
+            TransactionContext transaction) {
+        if (!plan.crystalsSatisfied()) return false;
+        if (!plan.wandCentivis().isEmpty() && !WandVisHelper.payExact(inventory.wandStack(), plan.wandCentivis(), true))
+            return false;
+
         for (Map.Entry<ResourceKey<IAspect>, Integer> entry :
                 plan.sourceCentivis().entrySet()) {
             Holder<IAspect> aspect = Aspects.resolve(player.level(), entry.getKey());
-            if (aspect == null) return null;
+            if (aspect == null) return false;
             int remaining = entry.getValue();
             for (IWorkbenchVisSource source : TTWorkbenchSources.visSources()) {
                 if (remaining <= 0) break;
-                int supplied =
-                        clampSupply(source.supply(context, player, inventory, aspect, remaining, true), remaining);
-                if (supplied > 0) {
-                    visAllocations.add(new VisAllocation(source, aspect, supplied));
-                    remaining -= supplied;
-                }
+                int supplied = clampSupply(
+                        source.supply(context, player, inventory, aspect, remaining, transaction), remaining);
+                remaining -= supplied;
             }
-            if (remaining > 0) return null;
+            if (remaining > 0) return false;
         }
+        return true;
+    }
 
+    public static boolean payAura(
+            Plan plan,
+            ArcaneWorkbenchContext context,
+            ServerPlayer player,
+            IArcaneWorkbench inventory,
+            TransactionContext transaction) {
         if (plan.auraVis() <= 0) {
-            return new PaymentReservation(plan, tile, List.copyOf(visAllocations), List.of());
+            return true;
         }
+        BlockEntityArcaneWorkbench tile = placedWorkbench(context);
         if (tile != null) {
-            if (tile.auraVis < plan.auraVis()) return null;
-            return new PaymentReservation(plan, tile, List.copyOf(visAllocations), List.of());
+            return tile.spendAura(plan.auraVis(), transaction);
         }
 
         int remainingAura = plan.auraVis();
-        List<AuraAllocation> auraAllocations = new ArrayList<>();
         for (IWorkbenchAuraSource source : TTWorkbenchSources.auraSources()) {
             if (remainingAura <= 0) break;
-            int supplied = clampSupply(source.supply(context, player, inventory, remainingAura, true), remainingAura);
-            if (supplied > 0) {
-                auraAllocations.add(new AuraAllocation(source, supplied));
-                remainingAura -= supplied;
-            }
+            int supplied =
+                    clampSupply(source.supply(context, player, inventory, remainingAura, transaction), remainingAura);
+            remainingAura -= supplied;
         }
-        return remainingAura == 0
-                ? new PaymentReservation(plan, null, List.copyOf(visAllocations), List.copyOf(auraAllocations))
-                : null;
+        return remainingAura == 0;
     }
 
-    public static void commit(
-            PaymentReservation reservation,
-            ServerPlayer player,
-            IArcaneWorkbench inventory,
-            ArcaneWorkbenchContext context) {
-        Plan plan = reservation.plan();
-        for (VisAllocation allocation : reservation.visAllocations()) {
-            int supplied = clampSupply(
-                    allocation
-                            .source()
-                            .supply(context, player, inventory, allocation.aspect(), allocation.amount(), false),
-                    allocation.amount());
-            if (supplied != allocation.amount()) {
-                throw new IllegalStateException("Workbench vis source changed between simulation and commit");
-            }
+    private static @Nullable BlockEntityArcaneWorkbench placedWorkbench(ArcaneWorkbenchContext context) {
+        if (context.kind() != ArcaneWorkbenchContext.Kind.PLACED) {
+            return null;
         }
-        if (reservation.nativeWorkbench() != null && plan.auraVis() > 0) {
-            reservation.nativeWorkbench().spendAura(plan.auraVis());
-        } else {
-            for (AuraAllocation allocation : reservation.auraAllocations()) {
-                int supplied = clampSupply(
-                        allocation.source().supply(context, player, inventory, allocation.amount(), false),
-                        allocation.amount());
-                if (supplied != allocation.amount()) {
-                    throw new IllegalStateException("Workbench aura source changed between simulation and commit");
-                }
-            }
-        }
+        return context.blockPosition()
+                .map(context.level()::getBlockEntity)
+                .filter(BlockEntityArcaneWorkbench.class::isInstance)
+                .map(BlockEntityArcaneWorkbench.class::cast)
+                .orElse(null);
     }
 
     private static int supplyFromSources(
@@ -223,18 +240,20 @@ public final class WorkbenchPayment {
             IArcaneWorkbench inventory,
             Holder<IAspect> aspect,
             int need,
-            boolean simulate) {
+            TransactionContext transaction) {
         if (context == null || !(player instanceof ServerPlayer serverPlayer)) {
             return 0;
         }
         int supplied = 0;
-        for (IWorkbenchVisSource source : TTWorkbenchSources.visSources()) {
-            if (supplied >= need) {
-                break;
+        try (Transaction probe = Transaction.open(transaction)) {
+            for (IWorkbenchVisSource source : TTWorkbenchSources.visSources()) {
+                if (supplied >= need) {
+                    break;
+                }
+                supplied += clampSupply(
+                        source.supply(context, serverPlayer, inventory, aspect, need - supplied, probe),
+                        need - supplied);
             }
-            supplied += clampSupply(
-                    source.supply(context, serverPlayer, inventory, aspect, need - supplied, simulate),
-                    need - supplied);
         }
         return supplied;
     }
@@ -288,14 +307,4 @@ public final class WorkbenchPayment {
             return new ArcaneCraftCost(fullWand, wandCentivis, crystalsToConsume, auraVis, crystalsSatisfied);
         }
     }
-
-    public record PaymentReservation(
-            Plan plan,
-            @Nullable BlockEntityArcaneWorkbench nativeWorkbench,
-            List<VisAllocation> visAllocations,
-            List<AuraAllocation> auraAllocations) {}
-
-    public record VisAllocation(IWorkbenchVisSource source, Holder<IAspect> aspect, int amount) {}
-
-    public record AuraAllocation(IWorkbenchAuraSource source, int amount) {}
 }

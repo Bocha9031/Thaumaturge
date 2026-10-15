@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.aura;
 
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.aura.IAuraChunk;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -74,6 +75,11 @@ public final class AuraHelperBindings implements AuraHelper.Bindings {
     @Override
     public float drainVis(Level level, BlockPos pos, float amount, boolean simulate) {
         return AuraManager.withdrawVis(level, pos, amount, simulate);
+    }
+
+    @Override
+    public float drainVis(Level level, BlockPos pos, float amount, TransactionContext transaction) {
+        return AuraManager.withdrawVis(level, pos, amount, transaction);
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.api.aura;
 
 import com.leclowndu93150.thaumaturge.api.ApiBinding;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -43,6 +44,13 @@ public final class VisRelayHelper {
          */
         int drainCentivis(
                 ServerLevel level, BlockPos consumerPos, ResourceKey<IAspect> primal, int amount, boolean simulate);
+
+        int drainCentivis(
+                ServerLevel level,
+                BlockPos consumerPos,
+                ResourceKey<IAspect> primal,
+                int amount,
+                TransactionContext transaction);
     }
 
     /**
@@ -68,5 +76,14 @@ public final class VisRelayHelper {
     public static int drainCentivis(
             ServerLevel level, BlockPos consumerPos, ResourceKey<IAspect> primal, int amount, boolean simulate) {
         return BINDING.isBound() ? BINDING.get().drainCentivis(level, consumerPos, primal, amount, simulate) : 0;
+    }
+
+    public static int drainCentivis(
+            ServerLevel level,
+            BlockPos consumerPos,
+            ResourceKey<IAspect> primal,
+            int amount,
+            TransactionContext transaction) {
+        return BINDING.isBound() ? BINDING.get().drainCentivis(level, consumerPos, primal, amount, transaction) : 0;
     }
 }

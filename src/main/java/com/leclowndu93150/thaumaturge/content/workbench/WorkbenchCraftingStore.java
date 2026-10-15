@@ -3,6 +3,8 @@ package com.leclowndu93150.thaumaturge.content.workbench;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.recipe.IArcaneCraftingStore;
+import com.leclowndu93150.thaumaturge.api.transaction.RootCommitJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.leclowndu93150.thaumaturge.content.taint.item.ItemEssentiaCrystal;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +45,7 @@ public final class WorkbenchCraftingStore implements IArcaneCraftingStore {
     }
 
     @Override
-    public boolean consume(Consumption consumption, boolean simulate) {
+    public boolean consume(Consumption consumption, TransactionContext transaction) {
         if (!gridMatches(consumption.grid())) {
             return false;
         }
@@ -68,9 +70,11 @@ public final class WorkbenchCraftingStore implements IArcaneCraftingStore {
         if (!ItemStack.matches(inventory.wandStack(), consumption.wand())) {
             updated.set(InventoryArcaneWorkbench.WAND_SLOT, consumption.wand().copy());
         }
-        if (!simulate) {
-            inventory.applyCraft(updated);
-            overflow.forEach(overflowSink);
+        inventory.applyCraft(updated, transaction);
+        if (!overflow.isEmpty()) {
+            List<ItemStack> committedOverflow =
+                    overflow.stream().map(ItemStack::copy).toList();
+            new RootCommitJournal(() -> committedOverflow.forEach(overflowSink)).updateSnapshots(transaction);
         }
         return true;
     }

@@ -13,6 +13,7 @@ import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,17 +92,18 @@ public final class InfusionEnchantmentEvents {
         Entity target = event.getTarget();
         ServerLevel level = (ServerLevel) player.level();
         AABB area = target.getBoundingBox().inflate(1.5 + rank, 1.0F + rank / 2.0F, 1.5 + rank);
-        List<Entity> nearby = level.getEntities(player, area);
+        List<Mob> nearby = new ArrayList<>(level.getEntitiesOfClass(
+                Mob.class,
+                area,
+                other -> other.getId() != target.getId()
+                        && !other.isRemoved()
+                        && other.isAlive()
+                        && !isFriendly(player, other)));
+        nearby.sort(Comparator.comparingDouble(mob -> mob.distanceToSqr(target)));
         int count = 0;
-        for (Entity other : nearby) {
+        for (Mob living : nearby) {
             if (count >= rank) {
                 break;
-            }
-            if (other.isRemoved() || other.getId() == target.getId() || !other.isAlive() || isFriendly(player, other)) {
-                continue;
-            }
-            if (!(other instanceof Mob living)) {
-                continue;
             }
             float damage = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE);
             if (living.hurt(level.damageSources().playerAttack(player), damage * ARCING_DAMAGE_FRACTION)) {

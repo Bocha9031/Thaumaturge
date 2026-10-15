@@ -3,6 +3,8 @@ package com.leclowndu93150.thaumaturge.content.workbench;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.recipe.IArcaneWorkbench;
+import com.leclowndu93150.thaumaturge.api.transaction.SnapshotJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.leclowndu93150.thaumaturge.content.recipe.workbench.ArcaneCraftingInput;
 import com.leclowndu93150.thaumaturge.content.taint.item.ItemEssentiaCrystal;
 import java.util.ArrayList;
@@ -19,7 +21,22 @@ public class InventoryArcaneWorkbench extends SimpleContainer implements IArcane
     public static final int WAND_SLOT = CRAFTING_SLOTS + CRYSTAL_SLOTS;
     public static final int SIZE = WAND_SLOT + 1;
 
-    private boolean applyingCraft;
+    private final SnapshotJournal<List<ItemStack>> craftJournal = new SnapshotJournal<>() {
+        @Override
+        protected List<ItemStack> createSnapshot() {
+            return getItems().stream().map(ItemStack::copy).toList();
+        }
+
+        @Override
+        protected void revertToSnapshot(List<ItemStack> snapshot) {
+            replaceItems(snapshot);
+        }
+
+        @Override
+        protected void onRootCommit(List<ItemStack> original) {
+            publishCraftChange();
+        }
+    };
 
     private final List<Runnable> changeListeners = new ArrayList<>();
 
@@ -66,7 +83,6 @@ public class InventoryArcaneWorkbench extends SimpleContainer implements IArcane
 
     @Override
     public void setChanged() {
-        if (applyingCraft) return;
         super.setChanged();
         for (Runnable listener : changeListeners) {
             listener.run();
@@ -96,15 +112,18 @@ public class InventoryArcaneWorkbench extends SimpleContainer implements IArcane
         return CraftingInput.ofPositioned(3, 3, getItems().subList(0, CRAFTING_SLOTS));
     }
 
-    void applyCraft(List<ItemStack> items) {
-        applyingCraft = true;
-        try {
-            for (int i = 0; i < SIZE; i++) {
-                setItem(i, items.get(i));
-            }
-        } finally {
-            applyingCraft = false;
+    void applyCraft(List<ItemStack> items, TransactionContext transaction) {
+        craftJournal.updateSnapshots(transaction);
+        replaceItems(items);
+    }
+
+    private void replaceItems(List<ItemStack> items) {
+        for (int i = 0; i < SIZE; i++) {
+            getItems().set(i, items.get(i).copy());
         }
+    }
+
+    private void publishCraftChange() {
         setChanged();
     }
 

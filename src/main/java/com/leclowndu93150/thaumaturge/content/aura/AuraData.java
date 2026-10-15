@@ -1,6 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.aura;
 
 import com.leclowndu93150.thaumaturge.api.aura.IAuraChunk;
+import com.leclowndu93150.thaumaturge.api.transaction.SnapshotJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -33,6 +35,17 @@ public final class AuraData implements IAuraChunk {
     private static final int VIS_SLOT = 0;
     private static final int FLUX_SLOT = 1;
 
+    private final SnapshotJournal<Float> visJournal = new SnapshotJournal<>() {
+        @Override
+        protected Float createSnapshot() {
+            return pools[VIS_SLOT];
+        }
+
+        @Override
+        protected void revertToSnapshot(Float snapshot) {
+            pools[VIS_SLOT] = snapshot;
+        }
+    };
     private final float[] pools = new float[2];
     private short base;
     private boolean initialized;
@@ -81,6 +94,11 @@ public final class AuraData implements IAuraChunk {
     }
 
     public void setVis(float vis) {
+        store(VIS_SLOT, vis);
+    }
+
+    public void setVis(float vis, TransactionContext transaction) {
+        visJournal.updateSnapshots(transaction);
         store(VIS_SLOT, vis);
     }
 

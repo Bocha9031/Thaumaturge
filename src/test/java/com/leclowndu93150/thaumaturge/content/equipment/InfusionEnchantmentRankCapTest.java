@@ -2,12 +2,14 @@ package com.leclowndu93150.thaumaturge.content.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,6 +18,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.items.InfusionEnchantment;
 import com.leclowndu93150.thaumaturge.content.aspect.EntityAspects;
+import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.taint.item.EssentiaCrystalFactory;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import java.util.ArrayList;
@@ -31,12 +34,15 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
@@ -66,14 +72,70 @@ class InfusionEnchantmentRankCapTest {
         when(level.isClientSide()).thenReturn(false);
         when(target.isAlive()).thenReturn(true);
         when(target.getBoundingBox()).thenReturn(targetBounds);
-        when(level.getEntities(eq(attacker), any(AABB.class))).thenReturn(List.<Entity>of());
+        when(level.getEntitiesOfClass(eq(Mob.class), any(AABB.class), any())).thenReturn(List.of());
         AttackEntityEvent event = mock(AttackEntityEvent.class);
         when(event.getEntity()).thenReturn(attacker);
         when(event.getTarget()).thenReturn(target);
 
         InfusionEnchantmentEvents.onAttack(event);
 
-        verify(level).getEntities(attacker, targetBounds.inflate(5.5, 3.0, 5.5));
+        verify(level).getEntitiesOfClass(eq(Mob.class), eq(targetBounds.inflate(5.5, 3.0, 5.5)), any());
+    }
+
+    @Test
+    void arcingHitsNearestValidTargetsFirst() {
+        Player attacker = mock(Player.class);
+        ServerLevel level = mock(ServerLevel.class);
+        LivingEntity target = mock(LivingEntity.class);
+        Mob farther = mock(Mob.class);
+        Mob nearer = mock(Mob.class);
+        DamageSource damageSource = mock(DamageSource.class);
+        DamageSources damageSources = mock(DamageSources.class);
+        RandomSource random = mock(RandomSource.class);
+        ItemStack weapon = stackWithLevel(InfusionEnchantment.ARCING, 1);
+        AABB targetBounds = new AABB(-1.0, -1.0, -1.0, 1.0, 1.0, 1.0);
+        when(attacker.level()).thenReturn(level);
+        when(attacker.getMainHandItem()).thenReturn(weapon);
+        when(attacker.getRootVehicle()).thenReturn(attacker);
+        when(attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)).thenReturn(10.0);
+        when(level.isClientSide()).thenReturn(false);
+        when(level.getRandom()).thenReturn(random);
+        when(level.damageSources()).thenReturn(damageSources);
+        when(damageSources.playerAttack(attacker)).thenReturn(damageSource);
+        when(target.isAlive()).thenReturn(true);
+        when(target.getId()).thenReturn(99);
+        when(target.getBoundingBox()).thenReturn(targetBounds);
+        when(target.getX()).thenReturn(0.0);
+        when(target.getY()).thenReturn(0.0);
+        when(target.getZ()).thenReturn(0.0);
+        when(farther.getId()).thenReturn(2);
+        when(farther.isAlive()).thenReturn(true);
+        when(farther.getRootVehicle()).thenReturn(farther);
+        when(farther.getX()).thenReturn(8.0);
+        when(farther.getY()).thenReturn(0.0);
+        when(farther.getZ()).thenReturn(0.0);
+        when(nearer.getId()).thenReturn(1);
+        when(nearer.isAlive()).thenReturn(true);
+        when(nearer.getRootVehicle()).thenReturn(nearer);
+        when(nearer.getX()).thenReturn(1.0);
+        when(nearer.getY()).thenReturn(0.0);
+        when(nearer.getZ()).thenReturn(0.0);
+        when(farther.distanceToSqr(target)).thenReturn(64.0);
+        when(nearer.distanceToSqr(target)).thenReturn(1.0);
+        when(farther.hurt(damageSource, 5.0F)).thenReturn(true);
+        when(nearer.hurt(damageSource, 5.0F)).thenReturn(true);
+        when(level.getEntitiesOfClass(eq(Mob.class), any(AABB.class), any())).thenReturn(List.of(farther, nearer));
+        AttackEntityEvent event = mock(AttackEntityEvent.class);
+        when(event.getEntity()).thenReturn(attacker);
+        when(event.getTarget()).thenReturn(target);
+
+        try (MockedStatic<EnchantmentHelper> enchantments = mockStatic(EnchantmentHelper.class);
+                MockedStatic<Effects> effects = mockStatic(Effects.class)) {
+            InfusionEnchantmentEvents.onAttack(event);
+
+            verify(nearer).hurt(damageSource, 5.0F);
+            verify(farther, never()).hurt(any(DamageSource.class), anyFloat());
+        }
     }
 
     @Test

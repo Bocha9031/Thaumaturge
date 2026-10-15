@@ -3,6 +3,9 @@ package com.leclowndu93150.thaumaturge.content.aura.relay;
 import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aura.VisRelayHelper;
+import com.leclowndu93150.thaumaturge.api.transaction.RootCommitJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.leclowndu93150.thaumaturge.content.aura.node.BlockEntityJarNode;
 import com.leclowndu93150.thaumaturge.content.aura.node.BlockEntityNode;
 import java.util.ArrayList;
@@ -27,18 +30,34 @@ public final class VisRelayNetwork implements VisRelayHelper.Bindings {
         if (amount <= 0) {
             return 0;
         }
+        try (Transaction transaction = Transaction.openRoot()) {
+            int drained = drainCentivis(level, consumerPos, primal, amount, transaction);
+            if (!simulate) {
+                transaction.commit();
+            }
+            return drained;
+        }
+    }
+
+    @Override
+    public int drainCentivis(
+            ServerLevel level,
+            BlockPos consumerPos,
+            ResourceKey<IAspect> primal,
+            int amount,
+            TransactionContext transaction) {
+        if (amount <= 0) {
+            return 0;
+        }
         BlockEntityVisRelay relay = findRelayNear(level, consumerPos);
         LinkedRelaySource source = relay == null ? null : relay.resolveSource(level);
         Holder<IAspect> aspect = Aspects.resolve(level.registryAccess(), primal);
         if (source == null || aspect == null) {
             return 0;
         }
-        if (simulate) {
-            return clamp(source.source().availableCentivis(primal), amount);
-        }
-        int drained = drainNow(source, primal, amount);
+        int drained = clamp(source.source().drainCentivis(primal, amount, transaction), amount);
         if (drained > 0) {
-            relay.triggerConsumeEffect(level, aspect);
+            new RootCommitJournal(() -> relay.triggerConsumeEffect(level, aspect)).updateSnapshots(transaction);
         }
         return drained;
     }
@@ -47,7 +66,11 @@ public final class VisRelayNetwork implements VisRelayHelper.Bindings {
         if (amount <= 0) {
             return 0;
         }
-        return clamp(source.source().drainCentivis(primal, amount, false), amount);
+        try (Transaction transaction = Transaction.openRoot()) {
+            int drained = clamp(source.source().drainCentivis(primal, amount, transaction), amount);
+            transaction.commit();
+            return drained;
+        }
     }
 
     public static int drainEverySourceNear(

@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.api.recipe;
 
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -8,8 +9,8 @@ import net.minecraft.server.level.ServerPlayer;
  * every other host, placed or virtual, pays it from the registered aura sources in registration
  * order. A craft with an aura cost fails when the sources together cannot cover it.
  *
- * <p>Supply follows the same simulate contract as {@link IWorkbenchVisSource}: a simulated call
- * changes nothing, and a real call supplies what the matching simulated call reported.
+ * <p>Supplies are made in the caller's transaction; closing without commit restores tentative
+ * changes.
  *
  * <p>Register sources through {@link RegisterWorkbenchAuraSourcesEvent}.
  *
@@ -24,7 +25,7 @@ public interface IWorkbenchAuraSource {
      * @param player    the crafting player
      * @param workbench the workbench inventory
      * @param need      the aura vis still required
-     * @param simulate  true to report what would be supplied without changing anything
+     * @param transaction the transaction that owns resource changes
      * @return the vis supplied, never more than {@code need}; larger or negative values are
      *         clamped by the caller
      */
@@ -33,5 +34,5 @@ public interface IWorkbenchAuraSource {
             ServerPlayer player,
             IArcaneWorkbench workbench,
             int need,
-            boolean simulate);
+            TransactionContext transaction);
 }

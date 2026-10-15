@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.api.recipe;
 
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.world.item.ItemStack;
@@ -8,8 +9,7 @@ import net.minecraft.world.item.ItemStack;
 /**
  * The item side of an arcane craft: the storage that holds the crafting grid, the crystals and
  * the wand that an {@link IArcaneCraftingInput} was read from. The craft checks the vis and aura
- * payment, asks the store whether it can apply a {@link Consumption}, and only then pays and has
- * the store apply it.
+ * payment, and applies a {@link Consumption} together with payment in one transaction.
  *
  * <p>The crafted output is not part of the consumption; the caller receives it in
  * {@link ArcaneCraftingTransaction.Result#output()} and places it itself.
@@ -19,20 +19,18 @@ import net.minecraft.world.item.ItemStack;
 @FunctionalInterface
 public interface IArcaneCraftingStore {
     /**
-     * Applies one craft to the storage, or checks that it could.
+     * Applies one craft to the storage within the supplied transaction.
      *
      * <p>For each grid position the store removes one item and puts the matching remainder in its
      * place, or elsewhere when that position still holds items. It removes the listed crystals and
      * replaces its wand with {@link Consumption#wand()}.
      *
      * @param consumption what the craft uses up
-     * @param simulate    true to only check that the storage still matches {@link Consumption#grid()}
-     *                    and holds the crystals, without changing it
-     * @return true when the storage still matched the consumption (and, when not simulating, the
-     *         change was applied); false when the storage changed since the input was read, in which
-     *         case the craft fails
+     * @param transaction the transaction that owns the mutation; closing it without commit restores
+     *                    the storage
+     * @return true when the storage matched and the change was applied; false when it has changed
      */
-    boolean consume(Consumption consumption, boolean simulate);
+    boolean consume(Consumption consumption, TransactionContext transaction);
 
     /**
      * What one craft uses up. All stacks are copies owned by the receiver.
