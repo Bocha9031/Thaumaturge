@@ -160,12 +160,12 @@ public final class RobeArmorModel extends AbstractTTArmorModel {
                 PartPose.offsetAndRotation(0.0F, 6.0F, -2.625F, 0.0F, 0.0F, -0.6108652F));
         body.addOrReplaceChild(
                 "back_scroll",
-                CubeListBuilder.create().texOffs(102, 59).addBox(-3.75F, -1.375F, -0.875F, 7.5F, 2.5F, 2.5F),
-                PartPose.offsetAndRotation(0.0F, 9.5F, 4.0F, 0.0F, 0.0F, -0.1919862F));
+                CubeListBuilder.create().texOffs(102, 59).addBox(-3.75F, -1.25F, -1.25F, 7.5F, 2.5F, 2.5F),
+                PartPose.offsetAndRotation(0.0F, 8.75F, 4.3F, 0.0F, 0.0F, -0.19F));
         body.addOrReplaceChild(
                 "void_tome",
-                CubeListBuilder.create().texOffs(1, 72).addBox(1.0F, 0.0F, 3.1875F, 5.0F, 7.0F, 2.0F),
-                PartPose.offsetAndRotation(0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.7679449F));
+                CubeListBuilder.create().texOffs(1, 72).addBox(-2.5F, 0.0F, -1.0F, 5.0F, 7.0F, 2.0F),
+                PartPose.offsetAndRotation(-5.75F, 12.6F, 0.25F, 1.5707964F, 1.3507963F, 1.6907964F));
         PartDefinition tailRightUpper = body.addOrReplaceChild(
                 "tail_right_upper",
                 CubeListBuilder.create().texOffs(1, 59).addBox(-1.5F, 0.0F, -0.125F, 3.0F, 7.0F, 0.5F),
