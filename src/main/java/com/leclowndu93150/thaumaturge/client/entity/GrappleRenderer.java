@@ -33,8 +33,11 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
     private static final RenderType ROPE_TYPE = TTRenderTypes.fxTranslucent(ROPE);
     private static final RenderType GLOW_TYPE = TTRenderTypes.fxAdditiveBlurred(ParticleTextures.GOLEM_ORB_BLUE);
 
-    private static final double ROPE_RADIUS = 0.025;
-    private static final int ROPE_SIDES = 4;
+    private static final double ROPE_RADIUS = 0.022;
+    private static final int ROPE_SIDES = 6;
+    private static final double VERTICAL_THRESHOLD = 0.9;
+    private static final double TANGENT_EPSILON = 1.0E-8;
+    private static final float ROPE_V_STEP = 0.5F;
     private static final int EMISSIVE_LIGHT = 0x00F000DC;
     private static final float GLOW_ALPHA = 0.21F;
     private static final float GLOW_HALF = 0.5F;
@@ -123,35 +126,19 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
     }
 
     private static void submitRope(VertexConsumer buffer, Matrix4f mat, List<Vec3> points, int light) {
-        Vector3f[] previousRing = null;
-        double previousV = 0.0;
-        for (int index = 0; index < points.size(); index++) {
-            Vec3 center = points.get(index);
-            Vec3 next = points.get(Math.min(index + 1, points.size() - 1));
-            Vec3 prev = points.get(Math.max(index - 1, 0));
-            Vec3 direction = next.subtract(prev);
-            if (direction.lengthSqr() < 1.0E-8) {
-                direction = new Vec3(0.0, 1.0, 0.0);
+        Vector3f[] rings = buildRings(points);
+        for (int index = 0; index < points.size() - 1; index++) {
+            float v0 = index * ROPE_V_STEP;
+            float v1 = (index + 1) * ROPE_V_STEP;
+            for (int side = 0; side < ROPE_SIDES; side++) {
+                int nextSide = (side + 1) % ROPE_SIDES;
+                float u0 = side / (float) ROPE_SIDES;
+                float u1 = (side + 1) / (float) ROPE_SIDES;
+                addRopeVertex(buffer, mat, rings[index * ROPE_SIDES + side], u0, v0, light);
+                addRopeVertex(buffer, mat, rings[(index + 1) * ROPE_SIDES + side], u0, v1, light);
+                addRopeVertex(buffer, mat, rings[(index + 1) * ROPE_SIDES + nextSide], u1, v1, light);
+                addRopeVertex(buffer, mat, rings[index * ROPE_SIDES + nextSide], u1, v0, light);
             }
-            Vector3f[] ring = buildRing(center, direction.normalize());
-            double v = index * 0.5;
-            if (previousRing != null) {
-                for (int side = 0; side < ROPE_SIDES; side++) {
-                    int nextSide = (side + 1) % ROPE_SIDES;
-                    addRopeVertex(buffer, mat, previousRing[side], side / (float) ROPE_SIDES, (float) previousV, light);
-                    addRopeVertex(
-                            buffer,
-                            mat,
-                            previousRing[nextSide],
-                            (side + 1) / (float) ROPE_SIDES,
-                            (float) previousV,
-                            light);
-                    addRopeVertex(buffer, mat, ring[nextSide], (side + 1) / (float) ROPE_SIDES, (float) v, light);
-                    addRopeVertex(buffer, mat, ring[side], side / (float) ROPE_SIDES, (float) v, light);
-                }
-            }
-            previousRing = ring;
-            previousV = v;
         }
     }
 
@@ -162,18 +149,60 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
                 .setLight(light);
     }
 
-    private static Vector3f[] buildRing(Vec3 center, Vec3 direction) {
-        Vec3 reference = Math.abs(direction.y) > 0.99 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
-        Vec3 side = direction.cross(reference).normalize();
-        Vec3 up = direction.cross(side).normalize();
-        Vector3f[] ring = new Vector3f[ROPE_SIDES];
-        for (int index = 0; index < ROPE_SIDES; index++) {
-            double angle = index * (Math.PI * 2.0 / ROPE_SIDES);
-            Vec3 offset = side.scale(Math.cos(angle) * ROPE_RADIUS).add(up.scale(Math.sin(angle) * ROPE_RADIUS));
-            ring[index] = new Vector3f(
-                    (float) (center.x + offset.x), (float) (center.y + offset.y), (float) (center.z + offset.z));
+    static Vector3f[] buildRings(List<Vec3> points) {
+        Vector3f[] rings = new Vector3f[points.size() * ROPE_SIDES];
+        double nx = 0.0;
+        double ny = 0.0;
+        double nz = 0.0;
+        double tx = 0.0;
+        double ty = 1.0;
+        double tz = 0.0;
+        for (int index = 0; index < points.size(); index++) {
+            Vec3 center = points.get(index);
+            Vec3 before = points.get(Math.max(0, index - 1));
+            Vec3 after = points.get(Math.min(points.size() - 1, index + 1));
+            double dx = after.x - before.x;
+            double dy = after.y - before.y;
+            double dz = after.z - before.z;
+            double tangentLength = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (tangentLength > TANGENT_EPSILON) {
+                tx = dx / tangentLength;
+                ty = dy / tangentLength;
+                tz = dz / tangentLength;
+            }
+            boolean steep = Math.abs(ty) > VERTICAL_THRESHOLD;
+            if (index == 0) {
+                nx = steep ? 1.0 : 0.0;
+                ny = steep ? 0.0 : 1.0;
+                nz = 0.0;
+            }
+            double normalAlongTangent = nx * tx + ny * ty + nz * tz;
+            nx -= normalAlongTangent * tx;
+            ny -= normalAlongTangent * ty;
+            nz -= normalAlongTangent * tz;
+            double normalLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            if (normalLength < TANGENT_EPSILON) {
+                nx = steep ? 1.0 - tx * tx : -ty * tx;
+                ny = steep ? -tx * ty : 1.0 - ty * ty;
+                nz = steep ? -tx * tz : -ty * tz;
+                normalLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            }
+            nx /= normalLength;
+            ny /= normalLength;
+            nz /= normalLength;
+            double bx = ty * nz - tz * ny;
+            double by = tz * nx - tx * nz;
+            double bz = tx * ny - ty * nx;
+            for (int side = 0; side < ROPE_SIDES; side++) {
+                double angle = side * Mth.TWO_PI / ROPE_SIDES;
+                double cos = Math.cos(angle) * ROPE_RADIUS;
+                double sin = Math.sin(angle) * ROPE_RADIUS;
+                rings[index * ROPE_SIDES + side] = new Vector3f(
+                        (float) (center.x + nx * cos + bx * sin), (float) (center.y + ny * cos + by * sin), (float)
+                                (center.z + nz * cos + bz * sin));
+            }
         }
-        return ring;
+        return rings;
     }
 
     private static void calcPoints(Entity thrower, EntityGrapple grapple, float partialTicks, List<Vec3> points) {
@@ -184,7 +213,8 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
         double ty = Mth.lerp(partialTicks, thrower.yOld, thrower.getY());
         double tz = Mth.lerp(partialTicks, thrower.zOld, thrower.getZ());
         Minecraft minecraft = Minecraft.getInstance();
-        if (thrower == minecraft.player && minecraft.options.getCameraType().isFirstPerson()) {
+        if (thrower == minecraft.getCameraEntity()
+                && minecraft.options.getCameraType().isFirstPerson()) {
             double yaw = Mth.rotLerp(partialTicks, thrower.yRotO, thrower.getYRot());
             int handSign = grapple.getHand() == InteractionHand.MAIN_HAND ? 1 : -1;
             double px = -Mth.cos((float) ((yaw - 0.5) / 180.0 * Math.PI)) * 0.1F * handSign;
