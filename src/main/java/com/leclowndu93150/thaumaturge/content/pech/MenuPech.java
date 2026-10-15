@@ -50,7 +50,7 @@ public final class MenuPech extends AbstractContainerMenu {
         super(TTMenus.PECH.get(), containerId);
         this.pech = pech;
         if (pech != null) {
-            pech.trading = true;
+            pech.atTradeTable = true;
         }
         addSlot(new Slot(table, OFFER_SLOT, OFFER_X, OFFER_Y));
         for (int index = 0; index < PAYOUT_SLOTS; index++) {
@@ -80,7 +80,7 @@ public final class MenuPech extends AbstractContainerMenu {
         ItemStack offer = table.getItem(OFFER_SLOT);
         return pech != null
                 && !offer.isEmpty()
-                && pech.isValued(offer)
+                && pech.isPrizedItem(offer)
                 && IntStream.rangeClosed(1, PAYOUT_SLOTS)
                         .allMatch(index -> table.getItem(index).isEmpty());
     }
@@ -123,14 +123,17 @@ public final class MenuPech extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return pech != null && pech.isAlive() && pech.isTamed() && player.canInteractWithEntity(pech, REACH_BUFFER);
+        return pech != null
+                && pech.isAlive()
+                && pech.isDomesticated()
+                && player.canInteractWithEntity(pech, REACH_BUFFER);
     }
 
     @Override
     public void removed(Player player) {
         super.removed(player);
         if (pech != null) {
-            pech.trading = false;
+            pech.atTradeTable = false;
         }
         if (player.level().isClientSide()) {
             return;

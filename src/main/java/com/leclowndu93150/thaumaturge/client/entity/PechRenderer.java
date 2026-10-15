@@ -105,6 +105,6 @@ public final class PechRenderer extends MobRenderer<EntityPech, PechModel> {
 
     @Override
     public ResourceLocation getTextureLocation(EntityPech entity) {
-        return TEXTURES[Math.min(entity.getPechType(), TEXTURES.length - 1)];
+        return TEXTURES[Math.min(entity.variant(), TEXTURES.length - 1)];
     }
 }

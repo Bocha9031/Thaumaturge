@@ -141,7 +141,7 @@ public final class PechModel extends HierarchicalModel<EntityPech> {
         this.head.xRot = headPitch * Mth.DEG_TO_RAD;
         this.jowls.yRot = this.head.yRot;
         this.jowls.xRot = this.head.xRot
-                + JAW_MUMBLE_OPEN * Mth.abs(Mth.sin(entity.mumble * JAW_MUMBLE_RATE))
+                + JAW_MUMBLE_OPEN * Mth.abs(Mth.sin(entity.chatterLevel * JAW_MUMBLE_RATE))
                 + JAW_WALK_CHATTER * speed * Mth.abs(Mth.sin(phase * 2.0F));
         this.rightLeg.xRot = stride * LEG_SWING;
         this.leftLeg.xRot = -stride * LEG_SWING;

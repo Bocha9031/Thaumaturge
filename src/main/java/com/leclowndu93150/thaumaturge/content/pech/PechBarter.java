@@ -25,11 +25,11 @@ public final class PechBarter {
             EntityPech pech, ItemStack offering, RandomSource random, HolderLookup.Provider registries) {
         int budget = pech.getValue(offering);
         if (random.nextInt(GRUMPINESS_ROLL) <= budget / 2) {
-            pech.setTamed(false);
+            pech.setDomesticated(false);
             pech.playSound(TTSounds.PECH_TRADE.get(), GRUMBLE_VOLUME, 1.0F);
         }
         budget += moodSwing(random);
-        List<PechTrades.Entry> table = PechTrades.tradesFor(pech.getPechType(), registries);
+        List<PechTrades.Entry> table = PechTrades.tradesFor(pech.variant(), registries);
         List<ItemStack> payout = new ArrayList<>();
         while (budget > 0) {
             int tier = Math.min(RICHEST_TIER, Math.max((budget + 1) / 2, random.nextInt(budget) + 1));
