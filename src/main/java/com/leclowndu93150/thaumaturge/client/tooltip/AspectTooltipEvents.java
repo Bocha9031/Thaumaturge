@@ -4,10 +4,9 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectChipsTooltip;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectIndexAccess;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
-import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
-import com.leclowndu93150.thaumaturge.api.research.scan.ScanKeys;
+import com.leclowndu93150.thaumaturge.config.ThaumaturgeClientConfig;
 import com.mojang.datafixers.util.Either;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -22,10 +21,7 @@ public final class AspectTooltipEvents {
         if (event.getItemStack().isEmpty()) {
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null
-                || !PlayerResearchAccess.of(mc.player)
-                        .knows(ScanKeys.item(event.getItemStack().getItem()))) {
+        if (!shouldShowAspects(Screen.hasShiftDown(), ThaumaturgeClientConfig.showAspectsByDefault())) {
             return;
         }
         AspectList aspects = AspectIndexAccess.index().of(event.getItemStack());
@@ -33,5 +29,9 @@ public final class AspectTooltipEvents {
             return;
         }
         event.getTooltipElements().add(Either.right(new AspectChipsTooltip(aspects)));
+    }
+
+    static boolean shouldShowAspects(boolean shift, boolean showAspectsByDefault) {
+        return shift != showAspectsByDefault;
     }
 }
