@@ -764,7 +764,7 @@ public final class TTModelProvider implements DataProvider {
     }
 
     private void registerBanners() {
-        ResourceLocation bannerModel = TTIds.rl("block/tt_banner");
+        ResourceLocation bannerModel = TTIds.rl("block/tc_banner");
         ResourceLocation stand = TTIds.rl("item/banner_stand");
         ResourceLocation cloth = TTIds.rl("item/banner_cloth");
         ResourceLocation symbol = TTIds.rl("item/banner_symbol");
