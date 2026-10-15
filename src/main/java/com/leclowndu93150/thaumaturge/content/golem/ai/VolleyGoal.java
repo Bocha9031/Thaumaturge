@@ -6,6 +6,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.RangedAttackMob;
+import org.jspecify.annotations.Nullable;
 
 public final class VolleyGoal extends Goal {
     private static final int STEADY_AIM_TICKS = 20;
@@ -34,12 +35,12 @@ public final class VolleyGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return shooter.getTarget() != null;
+        return liveTarget() != null;
     }
 
     @Override
     public boolean canContinueToUse() {
-        return canUse() || !shooter.getNavigation().isDone();
+        return liveTarget() != null || !shooter.getNavigation().isDone();
     }
 
     @Override
@@ -54,33 +55,56 @@ public final class VolleyGoal extends Goal {
     }
 
     @Override
+    public void start() {
+        steadyTicks = 0;
+        reload = -1;
+    }
+
+    @Override
     public void tick() {
-        LivingEntity target = shooter.getTarget();
+        LivingEntity target = liveTarget();
         if (target == null) {
             return;
         }
-        double distanceSqr = shooter.distanceToSqr(target.getX(), target.getBoundingBox().minY, target.getZ());
+        float reach = rangeFraction(target);
         boolean inSight = shooter.getSensing().hasLineOfSight(target);
         steadyTicks = inSight ? steadyTicks + 1 : 0;
-        boolean inRange = distanceSqr <= range * range;
+        boolean inRange = reach <= 1.0F;
         if (inRange && steadyTicks >= STEADY_AIM_TICKS) {
             shooter.getNavigation().stop();
         } else {
             shooter.getNavigation().moveTo(target, pace);
         }
         shooter.getLookControl().setLookAt(target, GAZE_TURN, GAZE_PITCH);
-        float reach = (float) Math.sqrt(distanceSqr) / range;
-        if (--reload == 0) {
-            if (inRange && inSight) {
-                archer.performRangedAttack(target, Mth.clamp(reach, WEAKEST_SHOT, 1.0F));
-                reload = reloadFor(reach);
-            }
-        } else if (reload < 0) {
+        if (reload < 0) {
             reload = reloadFor(reach);
+            return;
         }
+        if (--reload > 0) {
+            return;
+        }
+        if (!canShootAt(target)) {
+            reload = -1;
+            return;
+        }
+        archer.performRangedAttack(target, Mth.clamp(reach, WEAKEST_SHOT, 1.0F));
+        reload = reloadFor(reach);
     }
 
     private int reloadFor(float reach) {
         return Mth.floor(reach * (slowestReload - quickestReload) + quickestReload);
+    }
+
+    private boolean canShootAt(LivingEntity target) {
+        return rangeFraction(target) <= 1.0F && shooter.getSensing().hasLineOfSight(target);
+    }
+
+    private float rangeFraction(LivingEntity target) {
+        return (float) (Math.sqrt(shooter.distanceToSqr(target)) / range);
+    }
+
+    private @Nullable LivingEntity liveTarget() {
+        LivingEntity target = shooter.getTarget();
+        return target != null && target.isAlive() ? target : null;
     }
 }
