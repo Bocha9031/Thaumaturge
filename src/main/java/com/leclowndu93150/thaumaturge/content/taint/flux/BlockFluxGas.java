@@ -204,6 +204,9 @@ public final class BlockFluxGas extends Block implements PhysicalFluxBlock, Liqu
         int total = amount;
         for (Direction direction : Direction.Plane.HORIZONTAL) {
             BlockPos target = pos.relative(direction);
+            if (!level.hasChunkAt(target)) {
+                continue;
+            }
             int neighbour = room(level, target);
             if (neighbour >= 0 && amount - neighbour >= MIN_SPREAD_DIFFERENCE) {
                 targets[count++] = target;
