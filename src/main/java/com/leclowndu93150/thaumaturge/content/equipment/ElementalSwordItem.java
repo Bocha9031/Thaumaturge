@@ -30,6 +30,9 @@ import net.minecraft.world.phys.Vec3;
 public final class ElementalSwordItem extends SwordItem implements IChanneledItem {
     private static final int USE_DURATION = 72000;
     private static final double PULL_RANGE = 2.5;
+    private static final double DESCENT_DIVISOR = 1.2;
+    private static final double MAX_RISE_PER_TICK = 0.5;
+    private static final double RISE_AFTER_OVERSHOOT = 0.2;
     private static final int SMOKE_COLOR = 14540253;
     private static final int PULSE_INTERVAL_TICKS = 20;
 
@@ -91,12 +94,12 @@ public final class ElementalSwordItem extends SwordItem implements IChanneledIte
         Vec3 movement = player.getDeltaMovement();
         double dy = movement.y;
         if (dy < 0.0) {
-            dy /= 1.2F;
-            player.fallDistance /= 1.2F;
+            dy /= DESCENT_DIVISOR;
+            player.fallDistance /= DESCENT_DIVISOR;
         }
-        dy += 0.08F;
-        if (dy > 0.5) {
-            dy = 0.2F;
+        dy += player.getGravity();
+        if (dy > MAX_RISE_PER_TICK) {
+            dy = RISE_AFTER_OVERSHOOT;
         }
         player.setDeltaMovement(movement.x, dy, movement.z);
         if (player instanceof ServerPlayer serverPlayer) {
@@ -160,7 +163,7 @@ public final class ElementalSwordItem extends SwordItem implements IChanneledIte
             player.gameEvent(GameEvent.ELYTRA_GLIDE);
         }
 
-        if (ticks % PULSE_INTERVAL_TICKS == 0) {
+        if (!level.isClientSide() && ticks % PULSE_INTERVAL_TICKS == 0) {
             stack.hurtAndBreak(
                     1,
                     player,
