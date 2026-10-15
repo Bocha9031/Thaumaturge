@@ -83,7 +83,7 @@ public final class InfusionEnchantmentEvents {
             return;
         }
         ItemStack held = player.getMainHandItem();
-        int rank = InfusionEnchantmentHelper.level(held, InfusionEnchantment.ARCING);
+        int rank = cappedLevel(held, InfusionEnchantment.ARCING);
         if (rank <= 0 || !event.getTarget().isAlive()) {
             return;
         }
@@ -156,7 +156,7 @@ public final class InfusionEnchantmentEvents {
         }
         Player player = event.getEntity();
         ItemStack held = player.getItemInHand(event.getHand() == null ? InteractionHand.MAIN_HAND : event.getHand());
-        int rank = InfusionEnchantmentHelper.level(held, InfusionEnchantment.SOUNDING);
+        int rank = cappedLevel(held, InfusionEnchantment.SOUNDING);
         if (rank > 0 && player.isShiftKeyDown()) {
             held.hurtAndBreak(
                     SOUNDING_DAMAGE,
@@ -242,7 +242,7 @@ public final class InfusionEnchantmentEvents {
         ItemStack held = player.getMainHandItem();
 
         if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.REFINING)) {
-            int fortune = 1 + InfusionEnchantmentHelper.level(held, InfusionEnchantment.REFINING);
+            int fortune = 1 + cappedLevel(held, InfusionEnchantment.REFINING);
             float chance = fortune * REFINING_CHANCE_PER_LEVEL;
             Item cluster = RefiningResults.clusterFor(state);
             if (cluster != null) {
@@ -373,7 +373,7 @@ public final class InfusionEnchantmentEvents {
         }
 
         if (list.contains(InfusionEnchantment.ESSENCE)) {
-            int rank = InfusionEnchantmentHelper.level(held, InfusionEnchantment.ESSENCE);
+            int rank = cappedLevel(held, InfusionEnchantment.ESSENCE);
             AspectList aspects = EntityAspects.of(victim);
             if (!aspects.isEmpty()) {
                 distillEssence(
@@ -410,6 +410,10 @@ public final class InfusionEnchantmentEvents {
                 produced += 1 + level.getRandom().nextInt(2);
             }
         }
+    }
+
+    private static int cappedLevel(ItemStack stack, InfusionEnchantment enchantment) {
+        return Math.min(InfusionEnchantmentHelper.level(stack, enchantment), enchantment.maxLevel());
     }
 
     private static void addRareNugget(BlockDropsEvent event, ServerLevel level, BlockState state) {
