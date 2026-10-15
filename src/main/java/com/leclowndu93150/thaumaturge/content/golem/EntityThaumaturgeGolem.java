@@ -616,15 +616,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     }
 
     private void updateWheelRotation() {
-        double dist = Math.sqrt(distanceToSqr(xOld, yOld, zOld));
-        double dx = getX() - xOld;
-        double dz = getZ() - zOld;
-        float travelDir = (float) (Math.atan2(dz, dx) * 180.0 / Math.PI) - 90.0F;
-        double dir = 360.0F - (getYRot() - travelDir);
-        wheelRotation = (float) (wheelRotation + dist / 1.571 * dir);
-        if (wheelRotation > 360.0F) {
-            wheelRotation -= 360.0F;
-        }
+        wheelRotation = GolemWheel.spun(wheelRotation, getX() - xo, getZ() - zo, yBodyRot);
     }
 
     private void goHome() {
