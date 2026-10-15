@@ -49,7 +49,7 @@ public final class VisSparkleParticle extends TTParticle {
         }
         Vec3 toTarget = this.target.subtract(this.x, this.y, this.z);
         double distance = toTarget.length();
-        if (distance < ARRIVE_DISTANCE) {
+        if (distance <= ARRIVE_DISTANCE) {
             remove();
             return;
         }

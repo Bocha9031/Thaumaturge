@@ -59,6 +59,7 @@ public abstract class SeekerParticle extends TTParticle {
     }
 
     private void initSeeker(double x, double y, double z, Vec3 spawnVelocity) {
+        refreshTarget();
         this.xd = spawnVelocity.x + this.random.nextGaussian() * SPAWN_JITTER;
         this.yd = spawnVelocity.y + this.random.nextGaussian() * SPAWN_JITTER;
         this.zd = spawnVelocity.z + this.random.nextGaussian() * SPAWN_JITTER;
@@ -91,7 +92,7 @@ public abstract class SeekerParticle extends TTParticle {
         if (this.targetEntity == null) {
             this.targetEntity = this.level.getEntity(this.targetEntityId);
         }
-        if (this.targetEntity != null) {
+        if (this.targetEntity != null && !this.targetEntity.isRemoved()) {
             this.target = new Vec3(this.targetEntity.getX(), this.targetEntity.getEyeY(), this.targetEntity.getZ());
         }
     }

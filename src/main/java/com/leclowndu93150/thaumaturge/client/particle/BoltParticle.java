@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.client.particle;
 
+import com.leclowndu93150.thaumaturge.client.particle.support.BoltLineShape;
 import com.leclowndu93150.thaumaturge.content.particle.BoltParticleOptions;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
@@ -8,7 +9,6 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -16,21 +16,16 @@ import org.joml.Vector3f;
 public final class BoltParticle extends TTParticle {
     private static final int FRAME_COUNT = 16;
     private static final int BOLT_LIFETIME = 3;
-    private static final float WAVE_AMPLITUDE_RATE = 10.0F;
-    private static final float JITTER = 0.1F;
     private static final float MIN_ALPHA = 0.1F;
-    private static final int SUBDIVISIONS = 4;
-    private static final float BEAD_SIZE_FACTOR = 1.0F / 6.0F;
+    private static final float WIDTH_DIVISOR = 6.0F;
     private static final int EMISSIVE_LIGHT = 0x00F000F0;
     private static final int SEED_BOUND = 1000;
+    private static final int PHASE_MULTIPLES = 50;
+    private static final int BEADS_PER_SECTION = 4;
 
-    private final Vec3 delta;
     private final float beadSize;
-    private final int steps;
-    private final long seed;
-    private final float[] waveX;
-    private final float[] waveY;
-    private final float[] waveZ;
+    private final int seed;
+    private final BoltLineShape shape;
 
     private BoltParticle(
             ClientLevel level, double x, double y, double z, BoltParticleOptions options, ParticleSheet sheet) {
@@ -38,24 +33,15 @@ public final class BoltParticle extends TTParticle {
         setColor(options.r(), options.g(), options.b());
         this.setSize(0.02F, 0.02F);
         this.lifetime = BOLT_LIFETIME;
-        this.delta = new Vec3(options.targetX() - x, options.targetY() - y, options.targetZ() - z);
-        this.beadSize = options.width() * BEAD_SIZE_FACTOR;
-        float boltLength = (float) (this.delta.length() * Math.PI);
-        this.steps = Mth.clamp((int) boltLength, 2, 512);
-        if (!Float.isFinite(boltLength)) {
+        this.beadSize = options.width() / WIDTH_DIVISOR;
+        this.seed = this.random.nextInt(SEED_BOUND);
+        double phase = this.random.nextInt(PHASE_MULTIPLES) * Math.PI;
+        this.shape =
+                new BoltLineShape(x, y, z, options.targetX(), options.targetY(), options.targetZ(), this.random, phase);
+        if (this.shape.isEmpty()) {
             remove();
         }
-        this.seed = this.random.nextInt(SEED_BOUND);
-        float phase = (float) (this.random.nextInt(50) * Math.PI);
-        this.waveX = new float[this.steps + 1];
-        this.waveY = new float[this.steps + 1];
-        this.waveZ = new float[this.steps + 1];
-        for (int step = 1; step < this.steps; step++) {
-            float along = step * (boltLength / this.steps) + phase;
-            this.waveX[step] = Mth.sin(along / 4.0F);
-            this.waveY[step] = Mth.sin(along / 3.0F);
-            this.waveZ[step] = Mth.sin(along / 2.0F);
-        }
+        frame(this.seed % FRAME_COUNT);
     }
 
     @Override
@@ -65,49 +51,27 @@ public final class BoltParticle extends TTParticle {
 
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTick) {
+        if (this.removed || this.shape.isEmpty()) {
+            return;
+        }
         Vec3 cam = camera.getPosition();
-        float baseX = (float) (this.x - cam.x());
-        float baseY = (float) (this.y - cam.y());
-        float baseZ = (float) (this.z - cam.z());
         float fade = Mth.clamp(1.0F - (this.age + partialTick) / this.lifetime, MIN_ALPHA, 1.0F);
         int color = ARGB32.colorFromFloat(fade, this.rCol, this.gCol, this.bCol);
-        float amplitude = (this.age + partialTick) / WAVE_AMPLITUDE_RATE;
-        RandomSource jitter = RandomSource.create(this.seed);
+        double amplitude = (this.age + partialTick) / 10.0F;
         Quaternionf rotation = camera.rotation();
         float u0 = getU0();
         float u1 = getU1();
         float v0 = getV0();
         float v1 = getV1();
-        float prevX = 0.0F;
-        float prevY = 0.0F;
-        float prevZ = 0.0F;
-        for (int step = 1; step <= this.steps; step++) {
-            float px;
-            float py;
-            float pz;
-            if (step == this.steps) {
-                px = (float) this.delta.x;
-                py = (float) this.delta.y;
-                pz = (float) this.delta.z;
-            } else {
-                px = (float) (this.delta.x * step / this.steps)
-                        + this.waveX[step] * amplitude
-                        + (jitter.nextFloat() - jitter.nextFloat()) * JITTER;
-                py = (float) (this.delta.y * step / this.steps)
-                        + this.waveY[step] * amplitude
-                        + (jitter.nextFloat() - jitter.nextFloat()) * JITTER;
-                pz = (float) (this.delta.z * step / this.steps)
-                        + this.waveZ[step] * amplitude
-                        + (jitter.nextFloat() - jitter.nextFloat()) * JITTER;
-            }
-            for (int sub = 0; sub < SUBDIVISIONS; sub++) {
-                float t = (sub + 1.0F) / SUBDIVISIONS;
+        for (int section = 1; section <= this.shape.sections(); section++) {
+            for (int bead = 1; bead <= BEADS_PER_SECTION; bead++) {
+                float fraction = (float) bead / BEADS_PER_SECTION;
                 emitQuad(
                         buffer,
                         rotation,
-                        baseX + Mth.lerp(t, prevX, px),
-                        baseY + Mth.lerp(t, prevY, py),
-                        baseZ + Mth.lerp(t, prevZ, pz),
+                        (float) (beadCoordinate(section, fraction, 0, amplitude) - cam.x()),
+                        (float) (beadCoordinate(section, fraction, 1, amplitude) - cam.y()),
+                        (float) (beadCoordinate(section, fraction, 2, amplitude) - cam.z()),
                         this.beadSize,
                         u0,
                         u1,
@@ -116,10 +80,14 @@ public final class BoltParticle extends TTParticle {
                         color,
                         EMISSIVE_LIGHT);
             }
-            prevX = px;
-            prevY = py;
-            prevZ = pz;
         }
+    }
+
+    private double beadCoordinate(int section, double fraction, int axis, double amplitude) {
+        return Mth.lerp(
+                fraction,
+                this.shape.coordinate(section - 1, axis, amplitude),
+                this.shape.coordinate(section, axis, amplitude));
     }
 
     private static void emitQuad(
