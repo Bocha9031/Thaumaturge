@@ -1,25 +1,21 @@
 package com.leclowndu93150.thaumaturge.content.taint.block;
 
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
-import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
 import com.leclowndu93150.thaumaturge.api.taint.ITaintBlock;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintEcology;
+import com.leclowndu93150.thaumaturge.content.taint.effect.FluxTaintExposure;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
-import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import com.mojang.serialization.MapCodec;
 import java.util.EnumMap;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -75,8 +71,7 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
     private static final int GROWTH3_VALUE = 6;
     private static final int GROWTH4_THRESHOLD = 47;
 
-    private static final int WALK_EFFECT_CHANCE = 750;
-    private static final int WALK_EFFECT_DURATION = 200;
+    private static final int CONTACT_ONE_IN = 750;
 
     public BlockTaintFibre(Properties properties) {
         super(properties);
@@ -260,22 +255,9 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
     }
 
     @Override
-    public void stepOn(Level level, BlockPos pos, BlockState state, Entity entity) {
-        if (!(level instanceof ServerLevel serverLevel)) {
-            return;
-        }
-        if (!(entity instanceof LivingEntity living)) {
-            return;
-        }
-        if (MobTraits.isTainted(living)) {
-            return;
-        }
-        if (living.getType().is(EntityTypeTags.UNDEAD)) {
-            return;
-        }
-        if (serverLevel.getRandom().nextInt(WALK_EFFECT_CHANCE) == 0) {
-            living.addEffect(
-                    new MobEffectInstance(TTMobEffects.FLUX_TAINT, WALK_EFFECT_DURATION, 0, true, false, false));
+    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+        if (pos.equals(entity.blockPosition())) {
+            FluxTaintExposure.onStep(level, entity, CONTACT_ONE_IN);
         }
     }
 
