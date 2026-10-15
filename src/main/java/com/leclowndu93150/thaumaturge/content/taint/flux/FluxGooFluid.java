@@ -10,6 +10,9 @@ import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -44,7 +47,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
     private static final int FESTER_SPREAD_ATTEMPTS = 6;
     private static final int VIS_EXHAUST_DURATION = 600;
     private static final float POLLUTE_AMOUNT = 1.0F;
-    private static final Direction[] HORIZONTAL = {Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST};
+    private static final int MAX_PARTIES = 5;
 
     protected FluxGooFluid(Properties properties) {
         super(properties);
@@ -65,7 +68,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
     public void tick(Level level, BlockPos pos, FluidState fluidState) {
         if (level instanceof ServerLevel server
                 && level.getFluidState(pos).getType().isSame(this)) {
-            spreadTick(server, pos, fluidState, level.getRandom());
+            spreadTick(server, pos, fluidState);
         }
     }
 
@@ -112,7 +115,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
                 }
             }
         } else {
-            spreadTick(level, pos, state, rand);
+            spreadTick(level, pos, state);
         }
     }
 
@@ -130,7 +133,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         return true;
     }
 
-    private void spreadTick(ServerLevel level, BlockPos pos, FluidState state, RandomSource rand) {
+    private void spreadTick(ServerLevel level, BlockPos pos, FluidState state) {
         boolean changed = false;
         int quantaRemaining = state.getAmount();
         int prevRemaining = quantaRemaining;
@@ -149,59 +152,52 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         }
 
         int lowerThan = quantaRemaining - 1;
+        List<BlockPos> parties = new ArrayList<>(MAX_PARTIES);
+        parties.add(pos);
         int total = quantaRemaining;
-        int count = 1;
-        for (Direction side : HORIZONTAL) {
-            BlockPos off = pos.relative(side);
-            if (!level.hasChunkAt(off)) {
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            BlockPos neighbour = pos.relative(direction);
+            if (!level.hasChunkAt(neighbour)) {
                 continue;
             }
-            if (displaceIfPossible(level, off)) {
-                level.setBlock(off, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            BlockState neighbourState = level.getBlockState(neighbour);
+            if (!neighbourState.isAir() && displaceIfPossible(level, neighbour)) {
+                level.setBlock(neighbour, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             }
-            int quanta = getQuantaValueBelow(level, off, lowerThan);
+            int quanta = getQuantaValueBelow(level, neighbour, lowerThan);
             if (quanta >= 0) {
-                count++;
+                parties.add(neighbour);
                 total += quanta;
             }
         }
 
-        if (count == 1) {
+        if (parties.size() == 1) {
             if (changed) {
                 setGoo(level, pos, quantaRemaining, Block.UPDATE_CLIENTS);
             }
             return;
         }
 
-        int each = total / count;
-        int rem = total % count;
-        for (Direction side : HORIZONTAL) {
-            BlockPos off = pos.relative(side);
-            if (!level.hasChunkAt(off)) {
-                continue;
-            }
-            int quanta = getQuantaValueBelow(level, off, lowerThan);
-            if (quanta >= 0) {
-                int newQuanta = each;
-                if (rem == count || rem > 1 && rand.nextInt(count - rem) != 0) {
-                    ++newQuanta;
-                    --rem;
+        Util.shuffle(parties, level.getRandom());
+        int share = total / parties.size();
+        int leftover = total % parties.size();
+        for (int index = 0; index < parties.size(); index++) {
+            BlockPos party = parties.get(index);
+            int wanted = share + (index < leftover ? 1 : 0);
+            BlockState currentState = level.getBlockState(party);
+            int current = currentState.is(TTBlocks.FLUX_GOO.get())
+                    ? currentState.getFluidState().getAmount()
+                    : 0;
+            if (wanted != current) {
+                if (wanted == 0) {
+                    level.setBlock(party, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                } else {
+                    int flags = currentState.is(TTBlocks.FLUX_GOO.get()) ? Block.UPDATE_CLIENTS : Block.UPDATE_ALL;
+                    setGoo(level, party, wanted, flags);
+                    scheduleGooTick(level, party);
                 }
-                if (newQuanta != quanta) {
-                    if (newQuanta == 0) {
-                        level.setBlock(off, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-                    } else {
-                        setGoo(level, off, newQuanta, Block.UPDATE_CLIENTS);
-                    }
-                    scheduleGooTick(level, off);
-                }
-                --count;
             }
         }
-        if (rem > 0) {
-            ++each;
-        }
-        setGoo(level, pos, each, Block.UPDATE_CLIENTS);
     }
 
     private int tryToFlowVerticallyInto(ServerLevel level, BlockPos pos, int amtToInput) {
@@ -333,7 +329,11 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
     }
 
     private void scheduleGooTick(ServerLevel level, BlockPos pos) {
-        level.scheduleTick(pos, level.getFluidState(pos).getType(), getTickDelay(level));
+        FluidState fluidState = level.getFluidState(pos);
+        if (!fluidState.isEmpty()) {
+            Fluid fluid = fluidState.getType();
+            level.scheduleTick(pos, fluid, fluid.getTickDelay(level));
+        }
     }
 
     public static void applyEntityInside(Level level, BlockPos pos, Entity entity) {
