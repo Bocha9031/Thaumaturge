@@ -6,12 +6,14 @@ import static org.mockito.Mockito.*;
 
 import com.leclowndu93150.thaumaturge.client.effect.ClientEffects;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -70,6 +72,66 @@ class ElementalSwordWhirlwindTest {
         verify(stack).hurtAndBreak(1, user, EquipmentSlot.MAINHAND);
     }
 
+    @Test
+    void clientWhirlwindDoesNotQueryOrPushRepelTargets() {
+        Level level = level(true);
+        LivingEntity user = user(Vec3.ZERO);
+        when(user.position()).thenReturn(Vec3.ZERO);
+        LivingEntity target = mock(LivingEntity.class);
+        when(target.isAlive()).thenReturn(true);
+        when(target.position()).thenReturn(new Vec3(1.0, 0.0, 0.0));
+        when(level.getEntitiesOfClass(eq(LivingEntity.class), any(AABB.class), any()))
+                .thenReturn(List.of(target));
+        when(level.getEntities(eq(user), any(AABB.class))).thenReturn(List.of(target));
+
+        try (MockedStatic<ClientEffects> clientEffects = mockStatic(ClientEffects.class)) {
+            TTItems.ELEMENTAL_SWORD.get().onUseTick(level, user, ItemStack.EMPTY, 71999);
+        }
+
+        verify(level, never()).getEntitiesOfClass(eq(LivingEntity.class), any(AABB.class), any());
+        verify(level, never()).getEntities(eq(user), any(AABB.class));
+        verifyNoInteractions(target);
+    }
+
+    @Test
+    void serverRepelUsesLivingEntityPredicateAndSourceVector() {
+        Level level = level(false);
+        LivingEntity user = user(Vec3.ZERO);
+        when(user.position()).thenReturn(Vec3.ZERO);
+
+        LivingEntity mount = mock(LivingEntity.class);
+        when(mount.isAlive()).thenReturn(true);
+        when(user.getVehicle()).thenReturn(mount);
+
+        LivingEntity valid = mock(LivingEntity.class);
+        when(valid.isAlive()).thenReturn(true);
+        when(valid.position()).thenReturn(new Vec3(1.0, 0.0, 0.0));
+
+        LivingEntity dead = mock(LivingEntity.class);
+        when(dead.isAlive()).thenReturn(false);
+        Player player = mock(Player.class);
+        when(player.isAlive()).thenReturn(true);
+
+        List<LivingEntity> candidates = List.of(user, mount, dead, player, valid);
+        List<LivingEntity> accepted = new ArrayList<>();
+        AABB field = new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0).inflate(2.5);
+        when(level.getEntitiesOfClass(eq(LivingEntity.class), eq(field), any())).thenAnswer(invocation -> {
+            Predicate<? super LivingEntity> filter = invocation.getArgument(2);
+            accepted.addAll(candidates.stream().filter(filter).toList());
+            return accepted;
+        });
+
+        TTItems.ELEMENTAL_SWORD.get().onUseTick(level, user, ItemStack.EMPTY, 71999);
+
+        assertEquals(List.of(valid), accepted);
+        verify(level).getEntitiesOfClass(eq(LivingEntity.class), eq(field), any());
+        verify(valid).push(new Vec3(1.0 / 2.75, 0.0, 0.0));
+        verify(dead, never()).push(any(Vec3.class));
+        verify(player, never()).push(any(Vec3.class));
+        verify(mount, never()).push(any(Vec3.class));
+        verify(user, never()).push(any(Vec3.class));
+    }
+
     private static LivingEntity user(Vec3 movement) {
         LivingEntity user = mock(LivingEntity.class);
         when(user.getDeltaMovement()).thenReturn(movement);
@@ -82,7 +144,8 @@ class ElementalSwordWhirlwindTest {
         RandomSource random = mock(RandomSource.class);
         when(level.isClientSide()).thenReturn(clientSide);
         when(level.getRandom()).thenReturn(random);
-        when(level.getEntities(any(Entity.class), any(AABB.class))).thenReturn(List.of());
+        when(level.getEntitiesOfClass(eq(LivingEntity.class), any(AABB.class), any()))
+                .thenReturn(List.of());
         return level;
     }
 }

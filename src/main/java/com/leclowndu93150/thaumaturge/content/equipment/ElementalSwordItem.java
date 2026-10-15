@@ -25,11 +25,13 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public final class ElementalSwordItem extends SwordItem implements IChanneledItem {
     private static final int USE_DURATION = 72000;
-    private static final double PULL_RANGE = 2.5;
+    private static final double FIELD_REACH = 2.5;
+    private static final double DISTANCE_SOFTENING = 0.1;
     private static final double DESCENT_DIVISOR = 1.2;
     private static final double MAX_RISE_PER_TICK = 0.5;
     private static final double RISE_AFTER_OVERSHOOT = 0.2;
@@ -106,20 +108,7 @@ public final class ElementalSwordItem extends SwordItem implements IChanneledIte
             ((ServerGamePacketListenerImplAccessor) serverPlayer.connection).setAboveGroundTickCount(0);
         }
 
-        List<Entity> targets = level.getEntities(player, player.getBoundingBox().inflate(PULL_RANGE));
-        for (Entity entity : targets) {
-            if (entity instanceof Player
-                    || !(entity instanceof LivingEntity)
-                    || !entity.isAlive()
-                    || player.getVehicle() == entity) {
-                continue;
-            }
-            Vec3 p = player.position();
-            Vec3 t = entity.position();
-            double distance = p.distanceTo(t) + 0.1;
-            Vec3 r = t.subtract(p);
-            entity.push(r.x / PULL_RANGE / distance, r.y / PULL_RANGE / distance, r.z / PULL_RANGE / distance);
-        }
+        repelNearby(level, player);
 
         if (level.isClientSide()) {
             int miny = (int) (player.getBoundingBox().minY - 2.0);
@@ -170,6 +159,26 @@ public final class ElementalSwordItem extends SwordItem implements IChanneledIte
                     player.getUsedItemHand() == InteractionHand.OFF_HAND
                             ? EquipmentSlot.OFFHAND
                             : EquipmentSlot.MAINHAND);
+        }
+    }
+
+    private static void repelNearby(Level level, LivingEntity user) {
+        if (level.isClientSide()) {
+            return;
+        }
+        AABB field = user.getBoundingBox().inflate(FIELD_REACH);
+        Vec3 origin = user.position();
+        Entity mount = user.getVehicle();
+        for (LivingEntity target : level.getEntitiesOfClass(
+                LivingEntity.class,
+                field,
+                candidate -> candidate != user
+                        && candidate != mount
+                        && !(candidate instanceof Player)
+                        && candidate.isAlive())) {
+            Vec3 away = target.position().subtract(origin);
+            double distance = away.length();
+            target.push(away.scale(1.0 / (FIELD_REACH * (distance + DISTANCE_SOFTENING))));
         }
     }
 }
