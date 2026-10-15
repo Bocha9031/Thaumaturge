@@ -10,6 +10,7 @@ import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintEcology;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
+import com.leclowndu93150.thaumaturge.content.taint.spread.FibreGrowth;
 import com.leclowndu93150.thaumaturge.content.taint.spread.TaintSeedRegistry;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
@@ -23,6 +24,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -65,6 +67,10 @@ public final class TaintHelper {
         return ThaumaturgeCommonConfig.TAINT_SPREAD_AREA.get();
     }
 
+    public static double fringeDistance() {
+        return spreadArea() * SEED_EDGE_RATIO;
+    }
+
     public static void addTaintSeed(ServerLevel level, BlockPos pos) {
         TaintSeedRegistry.get(level).addSeed(pos);
     }
@@ -82,7 +88,7 @@ public final class TaintHelper {
         List<BlockPos> stale = null;
         boolean found = false;
         for (BlockPos seed : registry.all()) {
-            if (seed.distSqr(pos) > area) {
+            if (seed.distSqr(pos) > area || !serverLevel.areEntitiesLoaded(ChunkPos.asLong(seed))) {
                 continue;
             }
             if (serverLevel
@@ -124,6 +130,14 @@ public final class TaintHelper {
         return false;
     }
 
+    public static boolean isOnSeedFringe(Level level, BlockPos pos) {
+        return isAtTaintSeedEdge(level, pos);
+    }
+
+    public static boolean isTaintBlock(BlockState state) {
+        return state.getBlock() instanceof ITaintBlock;
+    }
+
     public static boolean isAdjacentToSolidBlock(LevelReader level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
             BlockPos neighbor = pos.relative(direction);
@@ -133,6 +147,22 @@ public final class TaintHelper {
             }
         }
         return false;
+    }
+
+    public static boolean hasSturdyNeighbour(LevelReader level, BlockPos pos) {
+        return isAdjacentToSolidBlock(level, pos);
+    }
+
+    public static boolean isRootless(LevelReader level, BlockPos pos) {
+        for (Direction direction : Direction.values()) {
+            BlockPos neighbour = pos.relative(direction);
+            BlockState neighbourState = level.getBlockState(neighbour);
+            if (!(neighbourState.getBlock() instanceof ITaintBlock)
+                    && neighbourState.isFaceSturdy(level, neighbour, direction.getOpposite())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static int countAdjacentTaint(LevelReader level, BlockPos pos) {
@@ -217,6 +247,10 @@ public final class TaintHelper {
         }
 
         trySpawnTaintSeed(level, target, targetState, random);
+    }
+
+    public static void attemptFibreGrowth(ServerLevel level, BlockPos origin, boolean force) {
+        FibreGrowth.attempt(level, origin, force);
     }
 
     public static boolean canHostFoothold(BlockState state) {
