@@ -134,7 +134,6 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
     }
 
     private void spreadTick(ServerLevel level, BlockPos pos, FluidState state) {
-        boolean changed = false;
         int quantaRemaining = state.getAmount();
         int prevRemaining = quantaRemaining;
         quantaRemaining = tryToFlowVerticallyInto(level, pos, quantaRemaining);
@@ -142,9 +141,9 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
             return;
         }
         if (quantaRemaining != prevRemaining) {
-            changed = true;
+            setGoo(level, pos, quantaRemaining, Block.UPDATE_CLIENTS);
+            scheduleGooTick(level, pos);
             if (quantaRemaining == 1) {
-                setGoo(level, pos, quantaRemaining, Block.UPDATE_CLIENTS);
                 return;
             }
         } else if (quantaRemaining == 1) {
@@ -172,9 +171,6 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         }
 
         if (parties.size() == 1) {
-            if (changed) {
-                setGoo(level, pos, quantaRemaining, Block.UPDATE_CLIENTS);
-            }
             return;
         }
 
@@ -214,12 +210,18 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         if (amt >= 0) {
             amt += amtToInput;
             if (amt > QUANTA_PER_BLOCK) {
-                setGoo(level, other, QUANTA_PER_BLOCK, Block.UPDATE_ALL);
+                int flags = level.getBlockState(other).is(TTBlocks.FLUX_GOO.get())
+                        ? Block.UPDATE_CLIENTS
+                        : Block.UPDATE_ALL;
+                setGoo(level, other, QUANTA_PER_BLOCK, flags);
                 scheduleGooTick(level, other);
                 return amt - QUANTA_PER_BLOCK;
             }
             if (amt > 0) {
-                setGoo(level, other, amt, Block.UPDATE_ALL);
+                int flags = level.getBlockState(other).is(TTBlocks.FLUX_GOO.get())
+                        ? Block.UPDATE_CLIENTS
+                        : Block.UPDATE_ALL;
+                setGoo(level, other, amt, flags);
                 scheduleGooTick(level, other);
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 return 0;
