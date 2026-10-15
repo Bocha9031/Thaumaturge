@@ -1,6 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.taint.flux;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -14,6 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import org.junit.jupiter.api.Test;
 
 class BlockFluxGasSpreadTest {
@@ -54,6 +57,55 @@ class BlockFluxGasSpreadTest {
         verify(level).setBlock(BlockPos.ZERO, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
         verify(level).setBlock(target, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
         verify(random, never()).nextInt(anyInt());
+    }
+
+    @Test
+    void sidewaysSpreadLeavesOrdinaryLiquidNeighborsUntouched() throws Exception {
+        BlockFluxGas gas = (BlockFluxGas) BlockFluxGas.gasBlockState(1).getBlock();
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        BlockPos target = BlockPos.ZERO.north();
+        when(level.hasChunkAt(target)).thenReturn(true);
+        when(level.getBlockState(target)).thenReturn(Blocks.WATER.defaultBlockState());
+        when(level.getBlockState(BlockPos.ZERO)).thenReturn(BlockFluxGas.gasBlockState(8));
+
+        invokeSpread(gas, level, BlockPos.ZERO, 8, random);
+
+        verify(level).getBlockState(target);
+        verify(level, never()).setBlock(any(BlockPos.class), any(), anyInt());
+        verify(level, never()).destroyBlock(any(BlockPos.class), anyBoolean());
+        verify(random, never()).nextInt(anyInt());
+    }
+
+    @Test
+    void verticalFlowStillSwapsWithAnOrdinaryLiquidAbove() throws Exception {
+        BlockFluxGas gas = (BlockFluxGas) BlockFluxGas.gasBlockState(1).getBlock();
+        ServerLevel level = mock(ServerLevel.class);
+        BlockPos above = BlockPos.ZERO.above();
+        BlockState waterState = Blocks.WATER.defaultBlockState();
+        when(level.getMaxBuildHeight()).thenReturn(320);
+        when(level.getBlockState(above)).thenReturn(waterState);
+
+        assertEquals(0, invokeFlowUp(gas, level, BlockPos.ZERO, 4));
+
+        verify(level).setBlock(above, BlockFluxGas.gasBlockState(4), Block.UPDATE_ALL);
+        verify(level).setBlock(BlockPos.ZERO, waterState, Block.UPDATE_ALL);
+    }
+
+    @Test
+    void existingGasNeighborStillParticipatesInSidewaysSpread() throws Exception {
+        BlockFluxGas gas = (BlockFluxGas) BlockFluxGas.gasBlockState(1).getBlock();
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        BlockPos target = BlockPos.ZERO.north();
+        when(level.hasChunkAt(target)).thenReturn(true);
+        when(level.getBlockState(target)).thenReturn(BlockFluxGas.gasBlockState(1));
+        when(level.getBlockState(BlockPos.ZERO)).thenReturn(BlockFluxGas.gasBlockState(4));
+
+        invokeSpread(gas, level, BlockPos.ZERO, 4, random);
+
+        verify(level).setBlock(BlockPos.ZERO, BlockFluxGas.gasBlockState(3), Block.UPDATE_ALL);
+        verify(level).setBlock(target, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
     }
 
     @Test
@@ -103,5 +155,11 @@ class BlockFluxGasSpreadTest {
                 "spreadSideways", ServerLevel.class, BlockPos.class, int.class, RandomSource.class);
         spread.setAccessible(true);
         spread.invoke(gas, level, pos, amount, random);
+    }
+
+    private static int invokeFlowUp(BlockFluxGas gas, ServerLevel level, BlockPos pos, int amount) throws Exception {
+        Method flowUp = BlockFluxGas.class.getDeclaredMethod("flowUp", ServerLevel.class, BlockPos.class, int.class);
+        flowUp.setAccessible(true);
+        return (int) flowUp.invoke(gas, level, pos, amount);
     }
 }
