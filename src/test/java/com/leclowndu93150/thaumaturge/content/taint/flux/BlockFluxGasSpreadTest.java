@@ -53,6 +53,48 @@ class BlockFluxGasSpreadTest {
         verify(level, never()).getBlockState(BlockPos.ZERO.east());
         verify(level).setBlock(BlockPos.ZERO, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
         verify(level).setBlock(target, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
+        verify(random, never()).nextInt(anyInt());
+    }
+
+    @Test
+    void remainderBonusUsesSourceRandomChoiceWithoutShufflingCandidates() throws Exception {
+        BlockFluxGas gas = (BlockFluxGas) BlockFluxGas.gasBlockState(1).getBlock();
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        BlockPos target = BlockPos.ZERO.north();
+        when(level.hasChunkAt(target)).thenReturn(true);
+        when(level.getBlockState(target)).thenReturn(BlockFluxGas.gasBlockState(1));
+        when(level.getBlockState(BlockPos.ZERO)).thenReturn(BlockFluxGas.gasBlockState(4));
+        when(random.nextInt(2)).thenReturn(1);
+
+        invokeSpread(gas, level, BlockPos.ZERO, 4, random);
+
+        verify(random).nextInt(2);
+        verify(random, never()).nextInt(3);
+        verify(level).setBlock(BlockPos.ZERO, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
+        verify(level).setBlock(target, BlockFluxGas.gasBlockState(3), Block.UPDATE_ALL);
+    }
+
+    @Test
+    void repeatedBonusRollsKeepDrawingUntilEachRemainderIsAssignedOnce() throws Exception {
+        BlockFluxGas gas = (BlockFluxGas) BlockFluxGas.gasBlockState(1).getBlock();
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        BlockPos north = BlockPos.ZERO.north();
+        BlockPos south = BlockPos.ZERO.south();
+        when(level.hasChunkAt(north)).thenReturn(true);
+        when(level.hasChunkAt(south)).thenReturn(true);
+        when(level.getBlockState(north)).thenReturn(Blocks.AIR.defaultBlockState());
+        when(level.getBlockState(south)).thenReturn(Blocks.AIR.defaultBlockState());
+        when(level.getBlockState(BlockPos.ZERO)).thenReturn(BlockFluxGas.gasBlockState(5));
+        when(random.nextInt(3)).thenReturn(1, 1, 2);
+
+        invokeSpread(gas, level, BlockPos.ZERO, 5, random);
+
+        verify(random, times(3)).nextInt(3);
+        verify(level).setBlock(BlockPos.ZERO, BlockFluxGas.gasBlockState(1), Block.UPDATE_ALL);
+        verify(level).setBlock(north, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
+        verify(level).setBlock(south, BlockFluxGas.gasBlockState(2), Block.UPDATE_ALL);
     }
 
     private static void invokeSpread(BlockFluxGas gas, ServerLevel level, BlockPos pos, int amount, RandomSource random)

@@ -199,7 +199,9 @@ public final class BlockFluxGas extends Block implements PhysicalFluxBlock, Liqu
 
     private void spreadSideways(ServerLevel level, BlockPos pos, int amount, RandomSource random) {
         BlockPos[] targets = new BlockPos[SPREAD_TARGETS];
+        int[] amounts = new int[SPREAD_TARGETS];
         targets[0] = pos;
+        amounts[0] = amount;
         int count = 1;
         int total = amount;
         for (Direction direction : Direction.Plane.HORIZONTAL) {
@@ -210,22 +212,28 @@ public final class BlockFluxGas extends Block implements PhysicalFluxBlock, Liqu
             int neighbour = room(level, target);
             if (neighbour >= 0 && amount - neighbour >= MIN_SPREAD_DIFFERENCE) {
                 targets[count++] = target;
+                amounts[count - 1] = neighbour;
                 total += neighbour;
             }
         }
         if (count == 1) {
             return;
         }
-        for (int i = count - 1; i > 0; i--) {
-            int swap = random.nextInt(i + 1);
-            BlockPos held = targets[i];
-            targets[i] = targets[swap];
-            targets[swap] = held;
-        }
         int each = total / count;
         int remainder = total % count;
-        for (int i = 0; i < count; i++) {
-            setAmount(level, targets[i], each + (i < remainder ? 1 : 0));
+        boolean[] bonus = new boolean[count];
+        while (remainder > 0) {
+            int index = random.nextInt(count);
+            if (!bonus[index]) {
+                bonus[index] = true;
+                remainder--;
+            }
+        }
+        for (int index = 0; index < count; index++) {
+            int result = each + (bonus[index] ? 1 : 0);
+            if (result != amounts[index]) {
+                setAmount(level, targets[index], result);
+            }
         }
     }
 
