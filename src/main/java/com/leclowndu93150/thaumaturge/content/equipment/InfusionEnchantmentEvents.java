@@ -61,8 +61,6 @@ public final class InfusionEnchantmentEvents {
     private static final float ARCING_DAMAGE_FRACTION = 0.5F;
     private static final int SLASH_LIFE = 8;
     private static final int GLIMMER_LIGHT_THRESHOLD = 10;
-    private static final float TC_QUARTZ_NUGGET_CHANCE = 0.05F;
-
     private static final ThreadLocal<Boolean> DESTRUCTIVE_RECURSION = ThreadLocal.withInitial(() -> false);
     private static final Map<UUID, DestructiveTarget> DESTRUCTIVE_TARGETS = new HashMap<>();
 
@@ -235,9 +233,9 @@ public final class InfusionEnchantmentEvents {
         ServerLevel level = event.getLevel();
         BlockState state = event.getState();
         BlockPos pos = event.getPos();
-        addRareNugget(event, level, state);
         Entity breaker = event.getBreaker();
         if (!(breaker instanceof Player player)) {
+            addRareNugget(event, level, state);
             return;
         }
         DestructiveTarget target = DESTRUCTIVE_TARGETS.remove(player.getUUID());
@@ -266,6 +264,7 @@ public final class InfusionEnchantmentEvents {
                 }
             }
         }
+        addRareNugget(event, level, state);
 
         if (!DESTRUCTIVE_RECURSION.get()
                 && InfusionEnchantmentHelper.has(held, InfusionEnchantment.DESTRUCTIVE)
@@ -423,24 +422,35 @@ public final class InfusionEnchantmentEvents {
         if (silk) {
             return;
         }
-        float roll = level.getRandom().nextFloat();
-        boolean rare = state.is(BlockTags.DIAMOND_ORES) && roll < 0.05F
-                || state.is(BlockTags.EMERALD_ORES) && roll < 0.075F
-                || state.is(BlockTags.LAPIS_ORES) && roll < 0.01F
-                || state.is(BlockTags.COAL_ORES) && roll < 0.001F
-                || state.is(BlockTags.REDSTONE_ORES) && roll < 0.01F
-                || state.is(TTBlocks.ORE_QUARTZ.get()) && roll < TC_QUARTZ_NUGGET_CHANCE
-                || state.is(Tags.Blocks.ORES_QUARTZ) && roll < 0.01F
-                || state.is(TTBlockTags.ORES_AMBER) && roll < 0.05F;
-        if (rare) {
-            BlockPos pos = event.getPos();
-            event.getDrops()
-                    .add(new ItemEntity(
-                            level,
-                            pos.getX() + 0.5,
-                            pos.getY() + 0.5,
-                            pos.getZ() + 0.5,
-                            new ItemStack(TTItems.NUGGET_QUARTZ.get())));
+        double chance = rareNuggetChance(state);
+        if (chance <= 0.0 || level.getRandom().nextDouble() >= chance) {
+            return;
         }
+        BlockPos pos = event.getPos();
+        event.getDrops()
+                .add(new ItemEntity(
+                        level,
+                        pos.getX() + 0.5,
+                        pos.getY() + 0.5,
+                        pos.getZ() + 0.5,
+                        new ItemStack(TTItems.NUGGET_QUARTZ.get())));
+    }
+
+    private static double rareNuggetChance(BlockState state) {
+        if (state.is(BlockTags.EMERALD_ORES)) {
+            return 0.075;
+        }
+        if (state.is(BlockTags.DIAMOND_ORES)
+                || state.is(TTBlocks.ORE_QUARTZ.get())
+                || state.is(TTBlockTags.ORES_AMBER)) {
+            return 0.05;
+        }
+        if (state.is(BlockTags.LAPIS_ORES) || state.is(BlockTags.REDSTONE_ORES) || state.is(Tags.Blocks.ORES_QUARTZ)) {
+            return 0.01;
+        }
+        if (state.is(BlockTags.COAL_ORES)) {
+            return 0.001;
+        }
+        return 0.0;
     }
 }
