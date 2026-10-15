@@ -1,0 +1,65 @@
+package com.leclowndu93150.thaumaturge.content.aura.node;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
+import java.lang.reflect.Method;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+
+class NodeDevicePortTest {
+    @Test
+    void jarredNodeDoesNotAcceptStabilizerLocks() {
+        BlockEntityJarNode node =
+                new BlockEntityJarNode(BlockPos.ZERO, TTBlocks.JAR_NODE.get().defaultBlockState());
+        assertFalse(node.allowLock());
+    }
+
+    @Test
+    void naturalBootstrapRequiresCenterAndCardinalColumnsToBeLoaded() {
+        LevelReader level = mock(LevelReader.class);
+        BlockPos target = new BlockPos(16, 70, 16);
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(true);
+        assertTrue(NodeBootstrap.columnsGenerated(level, target));
+
+        when(level.hasChunkAt(target.east())).thenReturn(false);
+        assertFalse(NodeBootstrap.columnsGenerated(level, target));
+    }
+
+    @Test
+    void catastrophicTransducerFailurePreservesNodeHostBlock() throws Exception {
+        BlockPos nodePos = new BlockPos(4, 70, 9);
+        ServerLevel level = mock(ServerLevel.class);
+        BlockState hostState = TTBlocks.SILVERWOOD_NODE_LOG.get().defaultBlockState();
+        BlockEntityNode node = new BlockEntityNode(nodePos, hostState);
+        BlockState depletedState = ((NodeHostBlock) hostState.getBlock()).depletedState(hostState);
+        when(level.getBlockEntity(nodePos)).thenReturn(node);
+        when(level.getBlockState(nodePos)).thenReturn(hostState);
+        RandomSource random = mock(RandomSource.class);
+        when(level.getRandom()).thenReturn(random);
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(false);
+
+        Method catastrophe = BlockEntityNodeTransducer.class.getDeclaredMethod(
+                "catastrophicFailure", ServerLevel.class, BlockPos.class);
+        catastrophe.setAccessible(true);
+        try (MockedStatic<AuraHelper> aura = org.mockito.Mockito.mockStatic(AuraHelper.class)) {
+            catastrophe.invoke(null, level, nodePos);
+        }
+
+        verify(level).setBlock(nodePos, depletedState, Block.UPDATE_ALL);
+        verify(level, never()).removeBlock(nodePos, false);
+    }
+}

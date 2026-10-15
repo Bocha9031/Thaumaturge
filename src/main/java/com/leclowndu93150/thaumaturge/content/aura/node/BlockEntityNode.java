@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.content.aura.node;
 
-import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
@@ -9,29 +8,18 @@ import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.aura.IVisRelaySource;
-import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
-import com.leclowndu93150.thaumaturge.api.taint.TaintApi;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
-import com.leclowndu93150.thaumaturge.content.entity.EntityBrainyZombie;
-import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
-import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
-import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
 import com.leclowndu93150.thaumaturge.content.wands.EntityAspectOrb;
 import com.leclowndu93150.thaumaturge.content.wands.WandChargingEvents;
 import com.leclowndu93150.thaumaturge.content.wands.WandEconomy;
-import com.leclowndu93150.thaumaturge.content.wands.WandParts;
-import com.leclowndu93150.thaumaturge.content.wands.WandVisHelper;
 import com.leclowndu93150.thaumaturge.data.worldgen.biome.TTBiomes;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
-import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
-import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
-import com.leclowndu93150.thaumaturge.registry.TTWandParts;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,23 +31,18 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.commands.FillBiomeCommand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
@@ -79,15 +62,6 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     private static final float BRIGHTEN_FILL_FRACTION = 0.9F;
     private static final int BRIGHTEN_CHANCE = 50;
     private static final double HUNGRY_PULL_RANGE = 15.0;
-    private static final int DARK_SPAWN_PLAYER_RANGE = 24;
-    private static final int DARK_SPAWN_CAP = 3;
-    private static final float PURE_FLUX_CLEANSE = 0.25F;
-    private static final int LEGACY_NODE_PERIODIC_INTERVAL = 200;
-    private static final float NATURAL_TAINTED_NODE_FLUX = 100.0F;
-    private static final int NATURAL_TAINTED_FIBRE_ATTEMPTS = 16;
-    private static final int NATURAL_TAINTED_FIBRE_RANGE = 16;
-    private static final float PURE_EROSION_CHANCE = 0.025F;
-    private static final int NODE_DRAIN_INTERVAL = 5;
     private static final int ORB_BURST_MAX_PER_ASPECT = 10;
     private static final int ORB_BURST_MAX_ORBS_PER_ASPECT = 20;
     private static final float ZAP_WIDTH = 0.3F;
@@ -98,16 +72,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     private static final int UNSTABLE_CURE_ROLL = 10000;
     private static final int UNSTABLE_CURE_MAGIC = 42;
     private static final int FADING_CURE_ROLL = 12500;
-    private static final int BIOME_SPREAD_INTERVAL = 50;
-    private static final int DARK_BIOME_SPREAD_RANGE = 12;
-    private static final int PURE_BIOME_SPREAD_RANGE = 8;
-    private static final int TAINTED_BIOME_SPREAD_RANGE = 8;
-    private static final int TAINTED_NODE_CONVERSION_INTERVAL = 100;
-    private static final int TAINTED_NODE_CONVERSION_CHANCE = 500;
     private static final int FADING_CURE_MAGIC = 69;
-    private static final ResourceLocation RESEARCH_NODE_TAPPER_1 = TTIds.rl("node_tapper_1");
-    private static final ResourceLocation RESEARCH_NODE_TAPPER_2 = TTIds.rl("node_tapper_2");
-    private static final ResourceLocation RESEARCH_NODE_PRESERVE = TTIds.rl("node_preserve");
     private static final int MAX_DECOMPOSE_DEPTH = 8;
 
     private final NodeHunger hunger = new NodeHunger(this);
@@ -182,12 +147,22 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
     }
 
-    private static void removeDepletedNode(ServerLevel serverLevel, BlockPos pos) {
+    void removeDepleted(ServerLevel serverLevel, BlockPos pos) {
         BlockState state = serverLevel.getBlockState(pos);
         if (state.getBlock() instanceof NodeHostBlock host) {
             serverLevel.setBlock(pos, host.depletedState(state), Block.UPDATE_ALL);
         } else {
             serverLevel.removeBlock(pos, false);
+        }
+    }
+
+    void recordDrain(UUID player, int color) {
+        drainPlayer = player;
+        drainColor = color;
+        drainTicks = DRAIN_LINGER_TICKS;
+        setChanged();
+        if (level instanceof ServerLevel serverLevel) {
+            serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
 
@@ -439,8 +414,9 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             return;
         }
         change = handleStability(serverLevel, pos, change);
-        change = handleTypeBehavior(serverLevel, pos, change);
-        handleBiomeSpread(serverLevel, pos);
+        if (allowTypeBehavior() && !handleTypeBehavior(serverLevel, pos)) {
+            handleBiomeSpread(serverLevel, pos);
+        }
         if (drainTicks > 0 && --drainTicks == 0) {
             drainPlayer = null;
             change = true;
@@ -583,7 +559,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             }
         }
         if (aspectsBase.isEmpty()) {
-            removeDepletedNode(serverLevel, pos);
+            removeDepleted(serverLevel, pos);
         }
         return change;
     }
@@ -626,17 +602,23 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             return;
         }
         int oldLock = lock;
-        lock = 0;
-        if (!serverLevel.hasNeighborSignal(below)
+        int nextLock = 0;
+        if (allowLock()
+                && !serverLevel.hasNeighborSignal(below)
                 && serverLevel.getBlockState(below).getBlock() instanceof BlockNodeStabilizer stabilizer) {
-            lock = stabilizer.isAdvanced() ? LOCK_ADVANCED : LOCK_BASIC;
+            nextLock = stabilizer.isAdvanced() ? LOCK_ADVANCED : LOCK_BASIC;
         }
-        if (oldLock != lock) {
+        lock = nextLock;
+        if (oldLock != nextLock) {
             regeneration = -1;
         }
     }
 
     protected boolean allowDischarge() {
+        return true;
+    }
+
+    protected boolean allowLock() {
         return true;
     }
 
@@ -763,134 +745,22 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     private void handleBiomeSpread(ServerLevel serverLevel, BlockPos pos) {
-        if (!allowTypeBehavior() || serverLevel.dimension() != Level.OVERWORLD) {
-            return;
-        }
-        RandomSource random = serverLevel.getRandom();
-
-        // An ordinary node engulfed by Tainted Lands can itself become tainted.
-        if (count % TAINTED_NODE_CONVERSION_INTERVAL == 0
-                && nodeType != NodeType.PURE
-                && nodeType != NodeType.TAINTED
-                && TaintBiomeManager.isTainted(serverLevel, pos)
-                && random.nextInt(TAINTED_NODE_CONVERSION_CHANCE) == 0) {
-            setNodeType(NodeType.TAINTED);
-            nodeChange();
-        }
-
-        if (count % BIOME_SPREAD_INTERVAL != 0) {
-            return;
-        }
-        if (nodeType == NodeType.TAINTED) {
-            spreadTaintedBiomeColumn(serverLevel, pos, TAINTED_BIOME_SPREAD_RANGE);
-        } else if (nodeType == NodeType.DARK) {
-            spreadBiomeColumn(serverLevel, pos, DARK_BIOME_SPREAD_RANGE, TTBiomes.EERIE);
-        } else if (nodeType == NodeType.PURE) {
-            BlockPos target = randomBiomeTarget(serverLevel, pos, PURE_BIOME_SPREAD_RANGE);
-            if (target != null && TaintBiomeManager.isTainted(serverLevel, target)) {
-                // Pure Nodes reclaim Tainted Lands specifically into Magical Forest.
-                TaintBiomeManager.replaceColumn(serverLevel, target, TTBiomes.MAGICAL_FOREST);
-            } else if (nearSilverwood(serverLevel, pos)) {
-                spreadBiomeColumn(serverLevel, pos, PURE_BIOME_SPREAD_RANGE, TTBiomes.MAGICAL_FOREST);
-            }
-        }
+        NodeBiomeSpread.tick(serverLevel, this, pos, count);
     }
 
-    private static void spreadTaintedBiomeColumn(ServerLevel serverLevel, BlockPos origin, int range) {
-        BlockPos target = randomBiomeTarget(serverLevel, origin, range);
-        if (target != null && !TaintBlooms.isProtected(serverLevel, target)) {
-            TaintBiomeManager.taintColumn(serverLevel, target);
-        }
-    }
-
-    private static boolean nearSilverwood(ServerLevel serverLevel, BlockPos pos) {
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-                for (int dz = -1; dz <= 1; dz++) {
-                    cursor.setWithOffset(pos, dx, dy, dz);
-                    if (serverLevel.getBlockState(cursor).is(TTBlockTags.SILVERWOOD_LOGS)) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private static void spreadBiomeColumn(
-            ServerLevel serverLevel, BlockPos origin, int range, ResourceKey<Biome> biomeKey) {
-        BlockPos sample = randomBiomeTarget(serverLevel, origin, range);
-        if (sample == null || serverLevel.getBiome(sample).is(biomeKey)) {
-            return;
-        }
-        Holder<Biome> biome =
-                serverLevel.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(biomeKey);
-        FillBiomeCommand.fill(
-                serverLevel,
-                new BlockPos(sample.getX(), serverLevel.getMinBuildHeight(), sample.getZ()),
-                new BlockPos(sample.getX(), serverLevel.getMaxBuildHeight(), sample.getZ()),
-                biome);
-    }
-
-    private static @Nullable BlockPos randomBiomeTarget(ServerLevel serverLevel, BlockPos origin, int range) {
-        RandomSource random = serverLevel.getRandom();
-        int x = origin.getX() + random.nextInt(range) - random.nextInt(range);
-        int z = origin.getZ() + random.nextInt(range) - random.nextInt(range);
-        BlockPos sample = new BlockPos(x, origin.getY(), z);
-        return serverLevel.hasChunkAt(sample) ? sample : null;
-    }
-
-    private boolean handleTypeBehavior(ServerLevel serverLevel, BlockPos pos, boolean change) {
-        if (!allowTypeBehavior()) {
-            return change;
-        }
+    private boolean handleTypeBehavior(ServerLevel serverLevel, BlockPos pos) {
         RandomSource random = serverLevel.getRandom();
         if (nodeType == NodeType.HUNGRY) {
             hunger.tick(serverLevel, pos, count);
             if (NodeHunger.eatDue(count)) {
                 eatBlock(serverLevel, pos, random);
             }
-            return change;
+            return false;
         }
         if (count % BEHAVIOR_INTERVAL != 0) {
-            return change;
+            return false;
         }
-        switch (nodeType) {
-            case TAINTED -> {
-                BlockPos target = pos.offset(
-                        random.nextInt(5) - random.nextInt(5),
-                        random.nextInt(5) - random.nextInt(5),
-                        random.nextInt(5) - random.nextInt(5));
-                if (random.nextBoolean()) {
-                    TaintApi.spreadFibres(serverLevel, target, true);
-                }
-                if (count % LEGACY_NODE_PERIODIC_INTERVAL == 0) {
-                    float base = Math.max(1.0F, AuraHelper.getAuraBase(serverLevel, pos));
-                    float saturation = AuraHelper.getFlux(serverLevel, pos) / base;
-                    if (random.nextFloat() > saturation * 0.8F) {
-                        AuraHelper.polluteAura(serverLevel, pos, taintedFluxStrength(), true);
-                    }
-                }
-            }
-            case PURE -> {
-                float drained = AuraHelper.drainFlux(serverLevel, pos, PURE_FLUX_CLEANSE, false);
-                if (drained > 0.0F
-                        && count % LEGACY_NODE_PERIODIC_INTERVAL == 0
-                        && random.nextFloat() < PURE_EROSION_CHANCE) {
-                    erodePureNode(serverLevel, pos, random);
-                    change = true;
-                }
-            }
-            case DARK -> spawnDarkGuard(serverLevel, pos, random);
-            default -> {}
-        }
-        return change;
-    }
-
-    private float taintedFluxStrength() {
-        int strength = (int) Math.max(1.0D, Math.sqrt(Math.max(1, aspectsBase.totalAmount()) / 3.0D));
-        return Math.max(1.0F, strength * 0.2F);
+        return NodeTypeBehavior.tick(this, serverLevel, pos, count, random);
     }
 
     public void applyPrimordialPearl(RandomSource random, boolean researched) {
@@ -948,50 +818,20 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
     }
 
-    private void erodePureNode(ServerLevel serverLevel, BlockPos pos, RandomSource random) {
+    boolean erodePureNode(ServerLevel serverLevel, BlockPos pos, Holder<IAspect> aspect) {
+        if (!aspectsBase.isEmpty()) {
+            aspectsBase = reduce(aspectsBase, aspect, 1);
+            int excess = aspects.amountOf(aspect) - aspectsBase.amountOf(aspect);
+            if (excess > 0) {
+                aspects = reduce(aspects, aspect, excess);
+            }
+            nodeChange();
+        }
         if (aspectsBase.isEmpty()) {
-            return;
+            removeDepleted(serverLevel, pos);
+            return true;
         }
-        List<AspectInstance> entries = aspectsBase.entries();
-        AspectInstance chosen = entries.get(random.nextInt(entries.size()));
-        aspectsBase = reduce(aspectsBase, chosen.aspect(), 1);
-        int excess = aspects.amountOf(chosen.aspect()) - aspectsBase.amountOf(chosen.aspect());
-        if (excess > 0) {
-            aspects = reduce(aspects, chosen.aspect(), excess);
-        }
-        nodeChange();
-        if (aspectsBase.isEmpty()) {
-            removeDepletedNode(serverLevel, pos);
-        }
-    }
-
-    private void spawnDarkGuard(ServerLevel serverLevel, BlockPos pos, RandomSource random) {
-        if (!random.nextBoolean()) {
-            return;
-        }
-        Player player = serverLevel.getNearestPlayer(
-                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, DARK_SPAWN_PLAYER_RANGE, false);
-        if (player == null) {
-            return;
-        }
-        AABB box = new AABB(pos).inflate(10.0, 6.0, 10.0);
-        if (serverLevel.getEntitiesOfClass(EntityBrainyZombie.class, box).size() > DARK_SPAWN_CAP) {
-            return;
-        }
-        double x = pos.getX() + (random.nextDouble() - random.nextDouble()) * 5.0;
-        double y = pos.getY() + random.nextInt(3) - 1;
-        double z = pos.getZ() + (random.nextDouble() - random.nextDouble()) * 5.0;
-        EntityBrainyZombie zombie = TTEntities.BRAINY_ZOMBIE.get().create(serverLevel);
-        if (zombie == null) {
-            return;
-        }
-        zombie.moveTo(x, y, z, random.nextFloat() * 360.0F, 0.0F);
-        if (zombie.checkSpawnRules(serverLevel, MobSpawnType.EVENT)) {
-            serverLevel.addFreshEntity(zombie);
-            serverLevel.levelEvent(2004, pos, 0);
-        } else {
-            zombie.discard();
-        }
+        return false;
     }
 
     private void eatBlock(ServerLevel serverLevel, BlockPos pos, RandomSource random) {
@@ -1028,58 +868,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     public boolean drainToWand(ServerLevel serverLevel, Player player, ItemStack wandStack, int useTicks) {
-        if (useTicks % NODE_DRAIN_INTERVAL != 0) {
-            return false;
-        }
-        int tap = 1;
-        if (PlayerResearchAccess.of(player).knows(RESEARCH_NODE_TAPPER_1)) {
-            tap++;
-        }
-        if (PlayerResearchAccess.of(player).knows(RESEARCH_NODE_TAPPER_2)) {
-            tap++;
-        }
-        WandParts parts = WandVisHelper.getParts(wandStack);
-        boolean starterWand = parts.rod() == TTWandParts.ROD_WOOD.get() && parts.cap() == TTWandParts.CAP_IRON.get();
-        boolean preserve = !player.isShiftKeyDown()
-                && !starterWand
-                && PlayerResearchAccess.of(player).knows(RESEARCH_NODE_PRESERVE);
-        RandomSource random = serverLevel.getRandom();
-        List<Holder<IAspect>> candidates = new ArrayList<>();
-        int min = preserve ? 1 : 0;
-        for (AspectInstance entry : aspects.entries()) {
-            if (!entry.aspect().value().isPrimal() || entry.amount() <= min) {
-                continue;
-            }
-            ResourceKey<IAspect> key = entry.aspect().unwrapKey().orElseThrow();
-            if (WandVisHelper.getVis(wandStack, key) < WandVisHelper.getMaxVis(wandStack)) {
-                candidates.add(entry.aspect());
-            }
-        }
-        if (candidates.isEmpty()) {
-            return false;
-        }
-        Holder<IAspect> chosen = candidates.get(random.nextInt(candidates.size()));
-        int available = aspects.amountOf(chosen);
-        int take = Math.min(tap, available);
-        if (preserve && take == available) {
-            take--;
-        }
-        if (take <= 0) {
-            return false;
-        }
-        ResourceKey<IAspect> key = chosen.unwrapKey().orElseThrow();
-        int leftover = WandVisHelper.addVis(wandStack, key, take, true);
-        int moved = take - leftover;
-        if (moved <= 0) {
-            return false;
-        }
-        drain(chosen, moved);
-        drainPlayer = player.getUUID();
-        drainColor = chosen.value().color();
-        drainTicks = DRAIN_LINGER_TICKS;
-        setChanged();
-        serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-        return true;
+        return NodeWandTap.tap(this, serverLevel, player, wandStack, useTicks);
     }
 
     public void clientTick(Level clientLevel, BlockPos pos) {
@@ -1098,23 +887,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         if (nodeType != NodeType.TAINTED || ThaumaturgeCommonConfig.WUSS_MODE.get()) {
             return;
         }
-
-        AuraHelper.polluteAura(level, pos, NATURAL_TAINTED_NODE_FLUX, false);
-        RandomSource random = level.getRandom();
-        for (int attempt = 0; attempt < NATURAL_TAINTED_FIBRE_ATTEMPTS; attempt++) {
-            BlockPos target = pos.offset(
-                    random.nextInt(NATURAL_TAINTED_FIBRE_RANGE) - random.nextInt(NATURAL_TAINTED_FIBRE_RANGE),
-                    random.nextInt(NATURAL_TAINTED_FIBRE_RANGE) - random.nextInt(NATURAL_TAINTED_FIBRE_RANGE),
-                    random.nextInt(NATURAL_TAINTED_FIBRE_RANGE) - random.nextInt(NATURAL_TAINTED_FIBRE_RANGE));
-            if (!isNeighbourhoodGenerated(level, target)) {
-                continue;
-            }
-            BlockState targetState = level.getBlockState(target);
-            if ((targetState.isAir() || targetState.canBeReplaced())
-                    && TaintHelper.isAdjacentToSolidBlock(level, target)) {
-                level.setBlock(target, TTBlocks.TAINT_FIBRE.get().defaultBlockState(), 3);
-            }
-        }
+        NodeBootstrap.run(level, pos);
     }
 
     @Override

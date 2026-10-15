@@ -1,0 +1,112 @@
+package com.leclowndu93150.thaumaturge.content.aura.node;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
+import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
+import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
+import com.leclowndu93150.thaumaturge.data.worldgen.biome.TTBiomes;
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+
+class NodeTypeBehaviorPortTest {
+    private static BlockEntityNode node(NodeType type) {
+        BlockEntityNode node =
+                new BlockEntityNode(BlockPos.ZERO, TTBlocks.NODE.get().defaultBlockState());
+        node.setNodeType(type);
+        return node;
+    }
+
+    @Test
+    void taintedBehaviorRollsChanceBeforeDrawingOffsets() {
+        BlockEntityNode node = node(NodeType.TAINTED);
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        AtomicBoolean chanceRolled = new AtomicBoolean();
+        when(random.nextBoolean()).thenAnswer(invocation -> {
+            chanceRolled.set(true);
+            return true;
+        });
+        when(random.nextInt(5)).thenAnswer(invocation -> {
+            assertTrue(chanceRolled.get(), "offset draws must follow the spread chance roll");
+            return 0;
+        });
+
+        try (MockedStatic<TaintHelper> taint = mockStatic(TaintHelper.class)) {
+            NodeTypeBehavior.tick(node, level, BlockPos.ZERO, 50, random);
+            verify(random).nextBoolean();
+            verify(random, org.mockito.Mockito.times(6)).nextInt(5);
+            taint.verify(() -> TaintHelper.attemptFibreGrowth(level, BlockPos.ZERO, true));
+        }
+    }
+
+    @Test
+    void pureErosionOfFinalAspectReturnsTickStopSignal() {
+        BlockEntityNode node = node(NodeType.PURE);
+        Holder<IAspect> aspect = Holder.direct(mock(IAspect.class));
+        node.aspectsBase = AspectList.ofEntries(List.of(new AspectInstance(aspect, 1)));
+        node.aspects = node.aspectsBase;
+        ServerLevel level = mock(ServerLevel.class);
+        when(level.getBlockState(BlockPos.ZERO)).thenReturn(Blocks.AIR.defaultBlockState());
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextFloat()).thenReturn(0.0F);
+        when(random.nextInt(1)).thenReturn(0);
+
+        try (MockedStatic<AuraHelper> aura = mockStatic(AuraHelper.class)) {
+            aura.when(() -> AuraHelper.drainFlux(level, BlockPos.ZERO, 0.25F, false))
+                    .thenReturn(1.0F);
+            assertTrue(NodeTypeBehavior.tick(node, level, BlockPos.ZERO, 200, random));
+        }
+    }
+
+    @Test
+    void pureNodeWithAlreadyEmptyBaseIsRemovedAndStopsTick() {
+        BlockEntityNode node = node(NodeType.PURE);
+        ServerLevel level = mock(ServerLevel.class);
+        when(level.getBlockState(BlockPos.ZERO)).thenReturn(Blocks.AIR.defaultBlockState());
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextFloat()).thenReturn(0.0F);
+
+        try (MockedStatic<AuraHelper> aura = mockStatic(AuraHelper.class)) {
+            aura.when(() -> AuraHelper.drainFlux(level, BlockPos.ZERO, 0.25F, false))
+                    .thenReturn(1.0F);
+            assertTrue(NodeTypeBehavior.tick(node, level, BlockPos.ZERO, 200, random));
+        }
+
+        verify(level).removeBlock(BlockPos.ZERO, false);
+    }
+
+    @Test
+    void pureBiomeSpreadReplacesTheSingleSampledColumn() {
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        when(level.dimension()).thenReturn(Level.OVERWORLD);
+        when(level.getRandom()).thenReturn(random);
+        when(level.hasChunkAt(new BlockPos(2, 0, 2))).thenReturn(true);
+        when(random.nextInt(8)).thenReturn(3, 1, 4, 2);
+        try (MockedStatic<TaintBiomeManager> taint = mockStatic(TaintBiomeManager.class)) {
+            taint.when(() -> TaintBiomeManager.isTainted(level, new BlockPos(2, 0, 2)))
+                    .thenReturn(true);
+            NodeBiomeSpread.tick(level, node(NodeType.PURE), BlockPos.ZERO, 50);
+            taint.verify(() -> TaintBiomeManager.replaceColumn(level, new BlockPos(2, 0, 2), TTBiomes.MAGICAL_FOREST));
+            verify(random, org.mockito.Mockito.times(4)).nextInt(8);
+        }
+    }
+}

@@ -227,16 +227,16 @@ class NodeHungerPortTest {
         when(entity.level()).thenReturn(level);
         when(entity.position()).thenReturn(new Vec3(5.0, 0.5, 0.5));
         when(level.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any())).thenReturn(List.of(entity));
-        Method behavior = BlockEntityNode.class.getDeclaredMethod(
-                "handleTypeBehavior", ServerLevel.class, BlockPos.class, boolean.class);
+        Method behavior =
+                BlockEntityNode.class.getDeclaredMethod("handleTypeBehavior", ServerLevel.class, BlockPos.class);
         behavior.setAccessible(true);
 
         setInt(node, "count", 9);
-        behavior.invoke(node, level, BlockPos.ZERO, false);
+        behavior.invoke(node, level, BlockPos.ZERO);
         verify(level, never()).getEntitiesOfClass(eq(Entity.class), any(AABB.class), any());
 
         setInt(node, "count", 10);
-        behavior.invoke(node, level, BlockPos.ZERO, false);
+        behavior.invoke(node, level, BlockPos.ZERO);
 
         verify(level).getEntitiesOfClass(eq(Entity.class), any(AABB.class), any());
     }

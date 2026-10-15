@@ -169,7 +169,9 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
 
     private static void catastrophicFailure(ServerLevel level, BlockPos nodePos) {
         AuraHelper.polluteAura(level, nodePos, CATASTROPHIC_FAILURE_FLUX_POLLUTION, true);
-        level.removeBlock(nodePos, false);
+        if (level.getBlockEntity(nodePos) instanceof BlockEntityNode node) {
+            node.removeDepleted(level, nodePos);
+        }
         level.explode(
                 null,
                 nodePos.getX() + 0.5,
