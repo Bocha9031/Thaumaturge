@@ -5,6 +5,7 @@ import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.entity.construct.EntityOwnedConstruct;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitEngine;
+import com.leclowndu93150.thaumaturge.content.taint.effect.FluxTaintExposure;
 import com.leclowndu93150.thaumaturge.content.taint.spread.TaintSplosion;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import com.leclowndu93150.thaumaturge.registry.TTMobTraits;
@@ -12,7 +13,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Creeper;
@@ -36,10 +36,9 @@ import net.neoforged.neoforge.event.level.ExplosionEvent;
 public final class TaintCreatureEvents {
     private static final float BLAST_STRENGTH = 1.5F;
     private static final double POISON_RANGE = 6.0;
-    private static final int FLUX_TAINT_TICKS = 100;
+    private static final int BLAST_DURATION = 100;
     private static final float SPLOSION_SPREAD = 5.0F;
     private static final float INFECTION_HEALTH = 2.0F;
-    private static final int TAINTED_ATTACK_FLUX_TAINT_TICKS = 200;
     private static final int BROOD_EXPERIENCE = 2;
 
     private TaintCreatureEvents() {}
@@ -64,9 +63,8 @@ public final class TaintCreatureEvents {
                 Level.ExplosionInteraction.NONE);
         AABB area = new AABB(creeper.position(), creeper.position()).inflate(POISON_RANGE);
         for (LivingEntity living : level.getEntitiesOfClass(LivingEntity.class, area)) {
-            if (!MobTraits.isTainted(living) && !living.getType().is(EntityTypeTags.UNDEAD)) {
-                living.addEffect(
-                        new MobEffectInstance(TTMobEffects.FLUX_TAINT, FLUX_TAINT_TICKS, 0, false, true, false));
+            if (!FluxTaintExposure.isImmune(living)) {
+                FluxTaintExposure.expose(living, BLAST_DURATION, false, true);
             }
         }
         if (!ThaumaturgeCommonConfig.WUSS_MODE.get()) {
@@ -81,7 +79,7 @@ public final class TaintCreatureEvents {
             return;
         }
         if (victim.getHealth() < INFECTION_HEALTH
-                && !victim.isInvertedHealAndHarm()
+                && !victim.getType().is(EntityTypeTags.UNDEAD)
                 && victim.isAlive()
                 && !(victim instanceof EntityOwnedConstruct)
                 && victim.hasEffect(TTMobEffects.FLUX_TAINT)
@@ -92,8 +90,7 @@ public final class TaintCreatureEvents {
         if (event.getAmount() > 0.0F
                 && event.getSource().getEntity() instanceof LivingEntity attacker
                 && MobTraits.isTainted(attacker)) {
-            victim.addEffect(new MobEffectInstance(
-                    TTMobEffects.FLUX_TAINT, TAINTED_ATTACK_FLUX_TAINT_TICKS, 0, true, false, false));
+            FluxTaintExposure.exposeQuietly(victim);
         }
     }
 

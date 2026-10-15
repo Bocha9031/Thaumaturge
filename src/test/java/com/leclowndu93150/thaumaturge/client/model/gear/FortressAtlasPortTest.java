@@ -26,29 +26,36 @@ import org.junit.jupiter.api.Test;
 
 class FortressAtlasPortTest {
     @Test
-    void allArmorRootsExposeTheExpectedNamedParts() {
+    void allFortressLayerRootsBakeWithTheirAuthoredPartsAndPivots() {
         ModelPart headRoot = FortressArmorModel.createHead().bakeRoot();
         assertNotNull(new FortressArmorModel(headRoot));
         ModelPart head = headRoot.getChild("head");
-        assertNotNull(head.getChild("mask_0"));
-        assertNotNull(head.getChild("mask_1"));
-        assertNotNull(head.getChild("mask_2"));
-        assertNotNull(head.getChild("goggles"));
+        assertNotNull(head.getChild("swept_crest_-1"));
+        assertNotNull(head.getChild("swept_crest_1"));
+        for (int mask = 0; mask < 3; mask++) {
+            assertNotNull(head.getChild("mask_" + mask));
+            assertFalse(head.getChild("mask_" + mask).visible);
+        }
+        assertFalse(head.getChild("goggles").visible);
 
         ModelPart chestRoot = FortressArmorModel.createChest().bakeRoot();
         assertNotNull(new FortressArmorModel(chestRoot));
         assertNotNull(chestRoot.getChild("body"));
-        assertNotNull(chestRoot.getChild("right_arm"));
-        assertNotNull(chestRoot.getChild("left_arm"));
+        assertEquals(-5.0F, chestRoot.getChild("right_arm").x);
+        assertEquals(5.0F, chestRoot.getChild("left_arm").x);
+        assertEquals(2.0F, chestRoot.getChild("right_arm").y);
+        assertEquals(2.0F, chestRoot.getChild("left_arm").y);
 
         ModelPart legsRoot = FortressArmorModel.createLegs().bakeRoot();
         assertNotNull(new FortressArmorModel(legsRoot));
-        assertNotNull(legsRoot.getChild("right_leg"));
-        assertNotNull(legsRoot.getChild("left_leg"));
+        assertEquals(-1.9F, legsRoot.getChild("right_leg").x);
+        assertEquals(1.9F, legsRoot.getChild("left_leg").x);
+        assertEquals(12.0F, legsRoot.getChild("right_leg").y);
+        assertEquals(12.0F, legsRoot.getChild("left_leg").y);
     }
 
     @Test
-    void atlasDimensionsAndNormalizedMaskUvAddressTheAuthoredTexel() throws Exception {
+    void fortressAtlasesAndAuthoredMaskAndGogglesUvsMatch() throws Exception {
         Path armorTextures =
                 Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets/thaumaturge/textures/models/armor");
         BufferedImage humanoid =
@@ -59,19 +66,25 @@ class FortressAtlasPortTest {
         assertEquals(256, humanoid.getHeight());
         assertEquals(256, leggings.getWidth());
         assertEquals(256, leggings.getHeight());
+        assertEquals(0xFF35170E, humanoid.getRGB(173, 2));
+        assertEquals(0xFF35170E, leggings.getRGB(173, 2));
 
-        UvBounds maskUv = uvBounds(firstCube(
-                FortressArmorModel.createHead().bakeRoot().getChild("head").getChild("mask_0")));
-        // The source flatPlate has depth 0.5. Cube UV layout places the north face at
-        // u + depth .. u + depth + width, then the south face after another depth.
+        ModelPart head = FortressArmorModel.createHead().bakeRoot().getChild("head");
+        UvBounds maskUv = uvBounds(firstCube(head.getChild("mask_0")));
+        // Cube UV layout includes both front and back faces; the 0.5-depth inset is full-depth.
         assertEquals(1.5F / 128.0F, maskUv.minU, 0.0001F);
         assertEquals(20.0F / 128.0F, maskUv.maxU, 0.0001F);
         assertEquals(1.5F / 128.0F, maskUv.minV, 0.0001F);
         assertEquals(6.5F / 128.0F, maskUv.maxV, 0.0001F);
-
         int sampleX = (int) ((maskUv.minU + 0.25F / 128.0F) * humanoid.getWidth());
         int sampleY = (int) ((maskUv.minV + 0.25F / 128.0F) * humanoid.getHeight());
         assertEquals(0xFF121212, humanoid.getRGB(sampleX, sampleY));
+
+        UvBounds gogglesUv = uvBounds(firstCube(head.getChild("goggles")));
+        assertEquals(61.5F / 128.0F, gogglesUv.minU, 0.0001F);
+        assertEquals(80.0F / 128.0F, gogglesUv.maxU, 0.0001F);
+        assertEquals(1.5F / 128.0F, gogglesUv.minV, 0.0001F);
+        assertEquals(6.5F / 128.0F, gogglesUv.maxV, 0.0001F);
         humanoid.flush();
         leggings.flush();
     }
@@ -102,8 +115,7 @@ class FortressAtlasPortTest {
         assertMaskVisibility(head, 2);
         assertTrue(head.getChild("goggles").visible);
 
-        ItemStack replacement = new ItemStack(TTItems.FORTRESS_HELM.get());
-        equippedHead.set(replacement);
+        equippedHead.set(new ItemStack(TTItems.FORTRESS_HELM.get()));
         model.setupAnim(entity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
         assertMaskVisibility(head, -1);
         assertFalse(head.getChild("goggles").visible);
@@ -118,7 +130,7 @@ class FortressAtlasPortTest {
     private static Object firstCube(ModelPart part) throws Exception {
         Field cubesField = ModelPart.class.getDeclaredField("cubes");
         cubesField.setAccessible(true);
-        return ((List<?>) cubesField.get(part)).getFirst();
+        return ((List<?>) cubesField.get(part)).get(0);
     }
 
     private static UvBounds uvBounds(Object cube) throws Exception {
@@ -140,12 +152,10 @@ class FortressAtlasPortTest {
                 Field vField = vertex.getClass().getDeclaredField("v");
                 uField.setAccessible(true);
                 vField.setAccessible(true);
-                float u = uField.getFloat(vertex);
-                float v = vField.getFloat(vertex);
-                minU = Math.min(minU, u);
-                maxU = Math.max(maxU, u);
-                minV = Math.min(minV, v);
-                maxV = Math.max(maxV, v);
+                minU = Math.min(minU, uField.getFloat(vertex));
+                maxU = Math.max(maxU, uField.getFloat(vertex));
+                minV = Math.min(minV, vField.getFloat(vertex));
+                maxV = Math.max(maxV, vField.getFloat(vertex));
             }
         }
         return new UvBounds(minU, maxU, minV, maxV);

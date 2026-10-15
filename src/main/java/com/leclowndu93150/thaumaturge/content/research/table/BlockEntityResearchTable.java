@@ -4,7 +4,6 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.api.research.IResearchTableAid;
@@ -17,13 +16,10 @@ import com.leclowndu93150.thaumaturge.content.research.note.ResearchNoteData;
 import com.leclowndu93150.thaumaturge.content.research.note.ResearchNotes;
 import com.leclowndu93150.thaumaturge.content.research.pool.AspectPools;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
-import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
-import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.registry.TTItemTags;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
-import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -36,8 +32,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -49,7 +43,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jspecify.annotations.Nullable;
@@ -64,9 +57,6 @@ public final class BlockEntityResearchTable extends AbstractSyncedBlockEntity im
     public static final ResourceLocation RESEARCH_DUPLICATION = TTIds.rl("research_duplication");
 
     private static final int RECALC_INTERVAL_TICKS = 600;
-    private static final int BONUS_SCAN_RADIUS = 8;
-    private static final int BOOKSHELF_BONUS_CHANCE = 300;
-    private static final int BRAIN_JAR_BONUS_CHANCE = 200;
     private static final float EXPERTISE_REFUND_CHANCE = 0.25F;
     private static final float MASTERY_REFUND_CHANCE = 0.5F;
     private static final float MASTERY_FREE_CHANCE = 0.1F;
@@ -108,74 +98,12 @@ public final class BlockEntityResearchTable extends AbstractSyncedBlockEntity im
     }
 
     private void recalculateBonus(Level level, BlockPos pos) {
-        RandomSource random = level.getRandom();
-        HolderLookup.RegistryLookup<IAspect> aspects = level.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY);
-        boolean changed = false;
-        if (level.getRawBrightness(pos.above(), 0) < 4 && !level.canSeeSky(pos.above()) && random.nextInt(20) == 0) {
-            changed |= addBonus(aspects, TTAspects.PERDITIO);
-        }
-        int height = level.getHeight();
-        for (float factor : new float[] {0.5F, 0.66F, 0.75F}) {
-            if (pos.getY() > height * factor && random.nextInt(20) == 0) {
-                changed |= addBonus(aspects, TTAspects.AER);
-            }
-        }
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        scan:
-        for (int x = -BONUS_SCAN_RADIUS; x <= BONUS_SCAN_RADIUS; x++) {
-            for (int y = -BONUS_SCAN_RADIUS; y <= BONUS_SCAN_RADIUS; y++) {
-                for (int z = -BONUS_SCAN_RADIUS; z <= BONUS_SCAN_RADIUS; z++) {
-                    cursor.setWithOffset(pos, x, y, z);
-                    if (!level.isLoaded(cursor)) {
-                        continue;
-                    }
-                    ResourceKey<IAspect> match = bonusFor(level.getBlockState(cursor), random, aspects);
-                    if (match != null && addBonus(aspects, match)) {
-                        changed = true;
-                        break scan;
-                    }
-                }
-            }
-        }
-        if (changed) {
+        AspectList updated = ResearchTableBonuses.recalculate(level, pos, bonusAspects, level.getRandom());
+        if (updated != bonusAspects) {
+            bonusAspects = updated;
             setChanged();
             syncToClient();
         }
-    }
-
-    private @Nullable ResourceKey<IAspect> bonusFor(
-            BlockState state, RandomSource random, HolderLookup.RegistryLookup<IAspect> aspects) {
-        if ((state.is(Blocks.BOOKSHELF) && random.nextInt(BOOKSHELF_BONUS_CHANCE) == 0)
-                || (state.is(TTBlocks.JAR_BRAIN.get()) && random.nextInt(BRAIN_JAR_BONUS_CHANCE) == 0)) {
-            List<Holder.Reference<IAspect>> candidates = aspects.listElements().toList();
-            return candidates.isEmpty()
-                    ? null
-                    : candidates.get(random.nextInt(candidates.size())).key();
-        }
-        if (state.is(TTBlocks.CRYSTAL_AER.get()) && random.nextInt(10) == 0) return TTAspects.AER;
-        if (state.is(TTBlocks.CRYSTAL_IGNIS.get()) && random.nextInt(10) == 0) return TTAspects.IGNIS;
-        if (state.is(TTBlocks.CRYSTAL_AQUA.get()) && random.nextInt(10) == 0) return TTAspects.AQUA;
-        if (state.is(TTBlocks.CRYSTAL_TERRA.get()) && random.nextInt(10) == 0) return TTAspects.TERRA;
-        if (state.is(TTBlocks.CRYSTAL_ORDO.get()) && random.nextInt(10) == 0) return TTAspects.ORDO;
-        if (state.is(TTBlocks.CRYSTAL_PERDITIO.get()) && random.nextInt(10) == 0) return TTAspects.PERDITIO;
-        if (state.is(BlockTags.DIRT) && random.nextInt(20) == 0) return TTAspects.TERRA;
-        if (state.getFluidState().is(FluidTags.WATER) && random.nextInt(15) == 0) return TTAspects.AQUA;
-        if ((state.getFluidState().is(FluidTags.LAVA) || state.is(Blocks.FIRE)) && random.nextInt(20) == 0) {
-            return TTAspects.IGNIS;
-        }
-        if (state.is(TTBlockTags.RESEARCH_BONUS_ORDO) && random.nextInt(20) == 0) {
-            return TTAspects.ORDO;
-        }
-        return null;
-    }
-
-    private boolean addBonus(HolderLookup.RegistryLookup<IAspect> aspects, ResourceKey<IAspect> key) {
-        Holder<IAspect> holder = aspects.get(key).orElse(null);
-        if (holder == null || bonusAspects.amountOf(holder) >= 1) {
-            return false;
-        }
-        bonusAspects = bonusAspects.add(holder, 1);
-        return true;
     }
 
     public void ensureNotePuzzle() {

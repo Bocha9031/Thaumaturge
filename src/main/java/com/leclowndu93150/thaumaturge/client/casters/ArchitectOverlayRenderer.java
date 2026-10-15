@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.items.IArchitect;
+import com.leclowndu93150.thaumaturge.api.items.AreaPreviewer;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -80,10 +80,10 @@ public final class ArchitectOverlayRenderer {
             return;
         }
         ItemStack stack = heldArchitect(player);
-        if (!(stack.getItem() instanceof IArchitect architect)) {
+        if (!(stack.getItem() instanceof AreaPreviewer architect)) {
             return;
         }
-        HitResult target = architect.aim(stack, mc.level, player);
+        HitResult target = architect.traceAnchor(stack, mc.level, player);
         if (!(target instanceof BlockHitResult hit) || target.getType() != HitResult.Type.BLOCK) {
             return;
         }
@@ -94,7 +94,7 @@ public final class ArchitectOverlayRenderer {
         if (hash != lastArcHash) {
             lastArcHash = hash;
             bmCache.clear();
-            architectBlocks = architect.previewBlocks(stack, mc.level, anchor, hit.getDirection(), player);
+            architectBlocks = architect.previewArea(stack, mc.level, anchor, hit.getDirection(), player);
             architectSet.clear();
             architectSet.addAll(architectBlocks);
         }
@@ -111,9 +111,9 @@ public final class ArchitectOverlayRenderer {
                 player,
                 anchor,
                 cam,
-                architect.showsAxis(stack, mc.level, player, hit.getDirection(), Direction.Axis.X),
-                architect.showsAxis(stack, mc.level, player, hit.getDirection(), Direction.Axis.Y),
-                architect.showsAxis(stack, mc.level, player, hit.getDirection(), Direction.Axis.Z));
+                architect.showsAxisArrows(stack, mc.level, player, hit.getDirection(), Direction.Axis.X),
+                architect.showsAxisArrows(stack, mc.level, player, hit.getDirection(), Direction.Axis.Y),
+                architect.showsAxisArrows(stack, mc.level, player, hit.getDirection(), Direction.Axis.Z));
         for (BlockPos pos : architectBlocks) {
             drawOverlayBlock(poseStack, effectBuffers, pos, cam);
         }
@@ -128,20 +128,20 @@ public final class ArchitectOverlayRenderer {
             return;
         }
         ItemStack stack = heldArchitect(player);
-        if (!(stack.getItem() instanceof IArchitect architect) || !architect.replacesBlockHighlight(stack)) {
+        if (!(stack.getItem() instanceof AreaPreviewer architect) || !architect.hidesBlockOutline(stack)) {
             return;
         }
         BlockHitResult hit = event.getTarget();
         if (!architect
-                .previewBlocks(stack, mc.level, hit.getBlockPos(), hit.getDirection(), player)
+                .previewArea(stack, mc.level, hit.getBlockPos(), hit.getDirection(), player)
                 .isEmpty()) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack heldArchitect(LocalPlayer player) {
+    static ItemStack heldArchitect(LocalPlayer player) {
         ItemStack stack = player.getMainHandItem();
-        return stack.getItem() instanceof IArchitect ? stack : player.getOffhandItem();
+        return stack.getItem() instanceof AreaPreviewer ? stack : player.getOffhandItem();
     }
 
     private static boolean isConnected(BlockPos pos) {

@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.particle;
 
 import com.leclowndu93150.thaumaturge.content.particle.VentParticleOptions;
+import net.minecraft.client.Camera;
 import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -67,10 +68,14 @@ public final class VentParticle extends TTParticle {
     }
 
     private void removeIfFarFromCamera(double x, double y, double z) {
+        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+        if (!camera.isInitialized()) {
+            return;
+        }
         int range =
                 Minecraft.getInstance().options.graphicsMode().get() == GraphicsStatus.FAST ? NEAR_RANGE : FAR_RANGE;
-        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
-        if (camera.distanceToSqr(x, y, z) > (double) range * range) {
+        Vec3 cameraPosition = camera.getPosition();
+        if (cameraPosition.distanceToSqr(x, y, z) > (double) range * range) {
             remove();
         }
     }

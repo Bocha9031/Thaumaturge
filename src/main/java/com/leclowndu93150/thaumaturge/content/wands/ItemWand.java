@@ -9,6 +9,7 @@ import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.casters.ICaster;
 import com.leclowndu93150.thaumaturge.api.casters.IFocusBlockPicker;
 import com.leclowndu93150.thaumaturge.api.casters.IInteractWithCaster;
+import com.leclowndu93150.thaumaturge.api.items.AreaPreviewer;
 import com.leclowndu93150.thaumaturge.api.items.IArchitect;
 import com.leclowndu93150.thaumaturge.api.items.IChanneledItem;
 import com.leclowndu93150.thaumaturge.api.spell.Spell;
@@ -64,7 +65,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("removal")
-public class ItemWand extends Item implements FocusCaster, ICaster, IArchitect, IChanneledItem {
+public class ItemWand extends Item implements FocusCaster, AreaPreviewer, ICaster, IArchitect, IChanneledItem {
     private static final float REFINE_SPARKLE_SPREAD = 2.0F;
     private static final DecimalFormat VIS_FORMAT = new DecimalFormat("#######.##");
     private static final String STAFF_ROD_SUFFIX = "_staff";
@@ -233,31 +234,31 @@ public class ItemWand extends Item implements FocusCaster, ICaster, IArchitect, 
         return InteractionResult.PASS;
     }
 
-    private @Nullable IArchitect architectElement(ItemStack stack, Level level) {
-        return behaviour(socketedFocus(stack), level, IArchitect.class);
+    private @Nullable AreaPreviewer architectElement(ItemStack stack, Level level) {
+        return behaviour(socketedFocus(stack), level, AreaPreviewer.class);
     }
 
     @Override
-    public @Nullable HitResult aim(ItemStack stack, Level level, LivingEntity caster) {
-        IArchitect architect = architectElement(stack, level);
-        return architect == null ? null : architect.aim(stack, level, caster);
+    public @Nullable HitResult traceAnchor(ItemStack stack, Level level, LivingEntity holder) {
+        AreaPreviewer architect = architectElement(stack, level);
+        return architect == null ? null : architect.traceAnchor(stack, level, holder);
     }
 
     @Override
-    public boolean replacesBlockHighlight(ItemStack stack) {
+    public boolean hidesBlockOutline(ItemStack stack) {
         return false;
     }
 
     @Override
-    public List<BlockPos> previewBlocks(ItemStack stack, Level level, BlockPos pos, Direction side, Player player) {
-        IArchitect architect = architectElement(stack, level);
-        return architect == null ? List.of() : architect.previewBlocks(stack, level, pos, side, player);
+    public List<BlockPos> previewArea(ItemStack stack, Level level, BlockPos anchor, Direction face, Player player) {
+        AreaPreviewer architect = architectElement(stack, level);
+        return architect == null ? List.of() : architect.previewArea(stack, level, anchor, face, player);
     }
 
     @Override
-    public boolean showsAxis(ItemStack stack, Level level, Player player, Direction side, Direction.Axis axis) {
-        IArchitect architect = architectElement(stack, level);
-        return architect != null && architect.showsAxis(stack, level, player, side, axis);
+    public boolean showsAxisArrows(ItemStack stack, Level level, Player player, Direction face, Direction.Axis axis) {
+        AreaPreviewer architect = architectElement(stack, level);
+        return architect != null && architect.showsAxisArrows(stack, level, player, face, axis);
     }
 
     @Override

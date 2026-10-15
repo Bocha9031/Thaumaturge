@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.decor;
 
-import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
+import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-public abstract class AbstractCandleBlock extends Block implements IInfusionStabiliser {
+public abstract class AbstractCandleBlock extends Block implements AltarStabiliser {
     private final double flameYOffset;
 
     protected AbstractCandleBlock(double flameYOffset, Properties properties) {

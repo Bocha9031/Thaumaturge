@@ -2,8 +2,8 @@ package com.leclowndu93150.thaumaturge.content.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
+import com.leclowndu93150.thaumaturge.api.items.AreaPreviewer;
 import com.leclowndu93150.thaumaturge.api.items.GogglesAccess;
-import com.leclowndu93150.thaumaturge.api.items.IArchitect;
 import com.leclowndu93150.thaumaturge.api.spell.Spell;
 import com.leclowndu93150.thaumaturge.api.spell.SpellNode;
 import com.leclowndu93150.thaumaturge.api.spell.Spells;
@@ -257,7 +257,7 @@ public final class CasterManager {
         }
         for (SpellNode node : spell.nodes()) {
             Optional<SpellPart> part = Spells.part(level.registryAccess(), node.part());
-            if (part.isPresent() && part.get().behavior() instanceof IArchitect) {
+            if (part.isPresent() && part.get().behavior() instanceof AreaPreviewer) {
                 return true;
             }
         }

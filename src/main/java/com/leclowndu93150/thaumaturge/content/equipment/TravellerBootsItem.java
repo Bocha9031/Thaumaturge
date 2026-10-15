@@ -105,7 +105,10 @@ public final class TravellerBootsItem extends ArmorItem {
     }
 
     public static void clientMovementTick(Player player, ItemStack stack) {
-        if (RechargeAccess.getCharge(stack) <= 0 || player.getAbilities().flying || player.zza <= 0.0F) {
+        if (RechargeAccess.getCharge(stack) <= 0
+                || player.getAbilities().flying
+                || player.isPassenger()
+                || player.zza <= 0.0F) {
             return;
         }
         if (player.onGround()) {

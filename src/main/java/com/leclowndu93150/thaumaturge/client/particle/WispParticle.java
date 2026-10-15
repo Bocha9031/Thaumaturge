@@ -53,10 +53,9 @@ public final class WispParticle extends SingleQuadParticle {
         if (this.target == null && this.targetEntityId != WispParticleOptions.NO_ENTITY) {
             this.target = this.level.getEntity(this.targetEntityId);
         }
-        if (this.target != null && !this.onGround) {
-            Vec3 motion = this.target.getDeltaMovement();
-            this.x += motion.x;
-            this.z += motion.z;
+        if (this.target != null && !this.target.isRemoved() && !this.onGround) {
+            this.x += this.target.getX() - this.target.xo;
+            this.z += this.target.getZ() - this.target.zo;
         }
     }
 

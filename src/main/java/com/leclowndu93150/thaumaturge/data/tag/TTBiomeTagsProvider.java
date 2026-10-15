@@ -42,7 +42,9 @@ public final class TTBiomeTagsProvider extends TagsProvider<Biome> {
                 .add(Biomes.BIRCH_FOREST)
                 .addTag(TTBiomeTags.IS_MAGICAL)
                 .addOptionalTag(Tags.Biomes.IS_MAGICAL)
-                .remove(TTBiomes.MAGICAL_FOREST, TTBiomes.TAINTED_LANDS);
+                .remove(TTBiomes.MAGICAL_FOREST)
+                .remove(TTBiomes.TAINTED_LANDS)
+                .remove(TTBiomes.ELDRITCH);
         tag(TTBiomeTags.HAS_PECH).addTag(TTBiomeTags.IS_MAGICAL).remove(TTBiomes.ELDRITCH);
         tag(TTBiomeTags.HAS_CINDERPEARL)
                 .add(Biomes.DESERT)
@@ -53,7 +55,6 @@ public final class TTBiomeTagsProvider extends TagsProvider<Biome> {
                 .add(TTBiomes.MAGICAL_FOREST)
                 .add(TTBiomes.MAGICAL_FOREST_CAVES)
                 .add(TTBiomes.EERIE)
-                .add(TTBiomes.ELDRITCH)
                 .add(TTBiomes.TAINTED_LANDS);
         tag(BiomeTags.IS_FOREST).add(TTBiomes.MAGICAL_FOREST);
         tag(TTBiomeTags.IS_MAGICAL)

@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.warp;
 
 import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.warp.WarpType;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
@@ -23,6 +24,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
@@ -190,7 +192,7 @@ public final class WarpEvents {
     }
 
     private static void checkWarpMilestones(ServerPlayer player, int actualWarp) {
-        var knowledge = PlayerResearchAccess.of(player);
+        PlayerResearch knowledge = PlayerResearchAccess.of(player);
         if (actualWarp > BATH_SALTS_WARP_THRESHOLD
                 && !knowledge.knows(BATH_SALTS_ENTRY)
                 && !knowledge.knows(BATHSALTS_FLAG)) {
@@ -261,25 +263,26 @@ public final class WarpEvents {
         WarpManager.sendActionBar(player, "warp.thaumaturge.text.6");
     }
 
-    private static void suddenlySpiders(ServerPlayer player, int warp, boolean real) {
+    static void suddenlySpiders(ServerPlayer player, int warp, boolean real) {
         ServerLevel level = (ServerLevel) player.level();
         RandomSource rand = player.getRandom();
         int spawns = Math.min(MAX_SPIDERS, warp);
         for (int i = 0; i < spawns; i++) {
+            EntityMindSpider spider = TTEntities.MIND_SPIDER.get().create(level);
+            if (spider == null) {
+                return;
+            }
             for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
-                EntityMindSpider spider = TTEntities.MIND_SPIDER.get().create(level);
-                if (spider == null) {
-                    return;
-                }
                 double x = player.getX() + rand.nextInt(15) - rand.nextInt(15);
                 double y = player.getY() + rand.nextInt(5) - rand.nextInt(5);
                 double z = player.getZ() + rand.nextInt(15) - rand.nextInt(15);
+                BlockPos cell = BlockPos.containing(x, y, z);
+                BlockPos below = cell.below();
+                if (!level.getBlockState(below).isCollisionShapeFullBlock(level, below)) {
+                    continue;
+                }
                 spider.moveTo(x, y, z, rand.nextFloat() * 360.0F, 0.0F);
-                BlockPos below = spider.blockPosition().below();
-                if (!level.getBlockState(below).isCollisionShapeFullBlock(level, below)
-                        || !level.noCollision(spider)
-                        || level.containsAnyLiquid(spider.getBoundingBox())) {
-                    spider.discard();
+                if (!level.noCollision(spider) || level.containsAnyLiquid(spider.getBoundingBox())) {
                     continue;
                 }
                 if (!real) {
@@ -303,7 +306,7 @@ public final class WarpEvents {
         ServerLevel level = (ServerLevel) player.level();
         int range = Math.min(8 + gaze.getAmplifier() * 3, 24);
         for (LivingEntity entity : level.getEntitiesOfClass(
-                LivingEntity.class, player.getBoundingBox().inflate(range))) {
+                LivingEntity.class, player.getBoundingBox().inflate(range), EntitySelector.NO_SPECTATORS)) {
             if (entity == player || !entity.isAlive() || entity.hasEffect(MobEffects.WITHER)) {
                 continue;
             }

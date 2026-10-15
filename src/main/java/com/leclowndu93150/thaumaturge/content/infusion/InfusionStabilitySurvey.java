@@ -1,111 +1,102 @@
 package com.leclowndu93150.thaumaturge.content.infusion;
 
-import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
+import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.AbstractSkullBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jspecify.annotations.Nullable;
 
 public final class InfusionStabilitySurvey {
-    private static final int HORIZONTAL_RANGE = 8;
-    private static final int RANGE_ABOVE = 3;
-    private static final int RANGE_BELOW = 7;
-    private static final double DIMINISHING_FACTOR = 0.75;
+    static final int HALF_WIDTH = 8;
+    static final int HEIGHT_ABOVE = 3;
+    static final int DEPTH_BELOW = 7;
+    private static final float DIMINISHING_FACTOR = 0.75F;
 
     private InfusionStabilitySurvey() {}
 
-    public record Result(float stabilityReplenish, List<BlockPos> problemBlocks) {}
-
     public static Result survey(Level level, BlockPos matrix) {
-        Set<Long> stabilisers = new LinkedHashSet<>();
+        Set<BlockPos> settled = new HashSet<>();
+        Map<Block, Integer> ranks = new HashMap<>();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int xx = -HORIZONTAL_RANGE; xx <= HORIZONTAL_RANGE; xx++) {
-            for (int zz = -HORIZONTAL_RANGE; zz <= HORIZONTAL_RANGE; zz++) {
-                if (xx == 0 && zz == 0) {
+        float total = 0.0F;
+        for (int dx = -HALF_WIDTH; dx <= HALF_WIDTH; dx++) {
+            for (int dz = -HALF_WIDTH; dz <= HALF_WIDTH; dz++) {
+                if (dx == 0 && dz == 0) {
                     continue;
                 }
-                for (int yy = -RANGE_ABOVE; yy <= RANGE_BELOW; yy++) {
-                    cursor.set(matrix.getX() + xx, matrix.getY() - yy, matrix.getZ() + zz);
-                    if (isStabiliser(level, cursor)) {
-                        stabilisers.add(cursor.asLong());
+                for (int dy = HEIGHT_ABOVE; dy >= -DEPTH_BELOW; dy--) {
+                    cursor.set(matrix.getX() + dx, matrix.getY() + dy, matrix.getZ() + dz);
+                    if (!isStabiliser(level, cursor) || settled.contains(cursor)) {
+                        continue;
                     }
+                    BlockPos pos = cursor.immutable();
+                    BlockPos mirror = new BlockPos(matrix.getX() - dx, pos.getY(), matrix.getZ() - dz);
+                    settled.add(pos);
+                    settled.add(mirror);
+                    total += scorePair(level, pos, mirror, ranks);
                 }
             }
         }
-
-        float replenish = 0.0F;
-        List<BlockPos> problems = new ArrayList<>();
-        Map<Block, Integer> countedByType = new HashMap<>();
-        while (!stabilisers.isEmpty()) {
-            long first = stabilisers.iterator().next();
-            stabilisers.remove(first);
-            BlockPos pos = BlockPos.of(first);
-            BlockPos mirrored =
-                    new BlockPos(2 * matrix.getX() - pos.getX(), pos.getY(), 2 * matrix.getZ() - pos.getZ());
-            stabilisers.remove(mirrored.asLong());
-
-            Block block = identity(level, pos);
-            Block mirroredBlock = identity(level, mirrored);
-            float amount = stabilizationAmount(level, pos);
-            float mirroredAmount = stabilizationAmount(level, mirrored);
-            if (block == mirroredBlock && amount == mirroredAmount) {
-                if (hasSymmetryPenalty(level, pos, mirrored) || hasSymmetryPenalty(level, mirrored, pos)) {
-                    replenish -= Math.max(symmetryPenalty(level, pos), symmetryPenalty(level, mirrored));
-                    problems.add(pos);
-                } else {
-                    replenish += diminishingReturns(countedByType, block, amount);
-                }
-            } else {
-                replenish -= Math.max(amount, mirroredAmount);
-                problems.add(pos);
-            }
-        }
-        return new Result(replenish, List.copyOf(problems));
+        return new Result(total);
     }
 
     public static boolean isStabiliser(Level level, BlockPos pos) {
-        BlockState state = level.getBlockState(pos);
-        if (state.is(TTBlockTags.INFUSION_STABILISERS)) {
-            return true;
+        if (!level.hasChunkAt(pos)) {
+            return false;
         }
-        return state.getBlock() instanceof IInfusionStabiliser stabiliser
-                && stabiliser.canStabiliseInfusion(level, pos);
+        BlockState state = level.getBlockState(pos);
+        return state.is(TTBlockTags.INFUSION_STABILISERS)
+                || state.getBlock() instanceof AltarStabiliser behaviour && behaviour.stabilisesNow(level, pos);
     }
 
-    private static Block identity(Level level, BlockPos pos) {
-        Block block = level.getBlockState(pos).getBlock();
-        if (block instanceof IInfusionStabiliser stabiliser) {
-            return stabiliser.stabiliserIdentity(level, pos);
+    private static float scorePair(Level level, BlockPos pos, BlockPos mirror, Map<Block, Integer> ranks) {
+        Profile near = profile(level, pos);
+        Profile far = profile(level, mirror);
+        if (near.identity() != far.identity() || near.amount() != far.amount()) {
+            return -Math.max(near.amount(), far.amount());
         }
+        if (penalised(level, near, pos, mirror) || penalised(level, far, mirror, pos)) {
+            return -Math.max(penaltyOf(level, near, pos), penaltyOf(level, far, mirror));
+        }
+        int rank = ranks.merge(near.identity(), 1, Integer::sum) - 1;
+        return near.amount() * (float) Math.pow(DIMINISHING_FACTOR, rank);
+    }
+
+    private static boolean penalised(Level level, Profile profile, BlockPos pos, BlockPos other) {
+        AltarStabiliser behaviour = profile.behaviour();
+        return behaviour != null && behaviour.penalisesPairWith(level, pos, other);
+    }
+
+    private static float penaltyOf(Level level, Profile profile, BlockPos pos) {
+        AltarStabiliser behaviour = profile.behaviour();
+        return behaviour == null ? 0.0F : behaviour.penaltyValue(level, pos);
+    }
+
+    private static Profile profile(Level level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) {
+            return new Profile(Blocks.AIR, AltarStabiliser.STANDARD_PAIR_VALUE, null);
+        }
+        Block block = level.getBlockState(pos).getBlock();
+        if (block instanceof AltarStabiliser behaviour) {
+            return new Profile(normalise(behaviour.countsAs(level, pos)), behaviour.pairValue(level, pos), behaviour);
+        }
+        return new Profile(normalise(block), AltarStabiliser.STANDARD_PAIR_VALUE, null);
+    }
+
+    private static Block normalise(Block block) {
         return block instanceof AbstractSkullBlock ? Blocks.SKELETON_SKULL : block;
     }
 
-    private static boolean hasSymmetryPenalty(Level level, BlockPos pos, BlockPos mirrored) {
-        return level.getBlockState(pos).getBlock() instanceof IInfusionStabiliser stabiliser
-                && stabiliser.hasSymmetryPenalty(level, pos, mirrored);
-    }
+    private record Profile(
+            Block identity, float amount, @Nullable AltarStabiliser behaviour) {}
 
-    private static float symmetryPenalty(Level level, BlockPos pos) {
-        return level.getBlockState(pos).getBlock() instanceof IInfusionStabiliser stabiliser
-                ? stabiliser.getSymmetryPenalty(level, pos)
-                : 0.0F;
-    }
-
-    private static float stabilizationAmount(Level level, BlockPos pos) {
-        return level.getBlockState(pos).getBlock() instanceof IInfusionStabiliser stabiliser
-                ? stabiliser.getStabilizationAmount(level, pos)
-                : IInfusionStabiliser.DEFAULT_STABILIZATION;
-    }
-
-    private static float diminishingReturns(Map<Block, Integer> countedByType, Block block, float base) {
-        int counted = countedByType.merge(block, 1, Integer::sum) - 1;
-        if (counted <= 0) {
-            return base;
-        }
-        return (float) (base * Math.pow(DIMINISHING_FACTOR, counted));
-    }
+    public record Result(float stabilityReplenish) {}
 }

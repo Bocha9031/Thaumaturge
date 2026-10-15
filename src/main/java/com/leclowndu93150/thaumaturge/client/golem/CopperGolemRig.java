@@ -1,7 +1,9 @@
 package com.leclowndu93150.thaumaturge.client.golem;
 
 import com.leclowndu93150.thaumaturge.api.client.golems.GolemAccessoryAnchor;
+import com.leclowndu93150.thaumaturge.api.client.golems.GolemPartRenderHook;
 import com.leclowndu93150.thaumaturge.api.golems.accessory.GolemAccessory;
+import com.leclowndu93150.thaumaturge.api.golems.parts.GolemPart;
 import com.leclowndu93150.thaumaturge.api.golems.parts.GolemPartModel;
 import com.leclowndu93150.thaumaturge.content.golem.EntityThaumaturgeGolem;
 import com.leclowndu93150.thaumaturge.content.golem.GolemProperties;
@@ -104,10 +106,25 @@ public final class CopperGolemRig extends HierarchicalModel<EntityThaumaturgeGol
         if (state.attackTime > 0.0F) {
             rightArm.xRot -= Mth.sin(state.attackTime * Mth.PI) * 1.8F;
         }
-        if (state.combat && state.props.arms() == TTGolemParts.ARMS_DARTS.get()) {
-            rightArm.xRot = leftArm.xRot = -Mth.HALF_PI + state.pitch * Mth.DEG_TO_RAD;
-            rightArm.yRot = leftArm.yRot = rightArm.zRot = leftArm.zRot = 0;
+        aimArms(state, state.props.head());
+        aimArms(state, state.props.arms());
+        aimArms(state, state.props.legs());
+        aimArms(state, state.props.addon());
+    }
+
+    private void aimArms(GolemRenderState state, GolemPart part) {
+        for (GolemPartModel model : part.models()) {
+            GolemPartRenderHook hook = GolemPartRenderHooks.hookFor(model);
+            aimArm(hook, state, rightArm, GolemPartModel.LimbSide.RIGHT);
+            aimArm(hook, state, leftArm, GolemPartModel.LimbSide.LEFT);
         }
+    }
+
+    private static void aimArm(
+            GolemPartRenderHook hook, GolemRenderState state, ModelPart arm, GolemPartModel.LimbSide side) {
+        arm.xRot = hook.aimArmPitch(state, side, arm.xRot);
+        arm.yRot = hook.aimArmYaw(state, side, arm.yRot);
+        arm.zRot = hook.aimArmRoll(state, side, arm.zRot);
     }
 
     public static LayerDefinition createBodyLayer() {

@@ -18,35 +18,48 @@ import org.junit.jupiter.api.Test;
 
 class RobeAtlasPortTest {
     @Test
-    void allArmorLayerRootsBakeWithCompleteSharedTailChains() {
+    void allRobeLayersBakeWithTheirAuthoredPartChainsAndPropPoses() {
         ModelPart head = RobeArmorModel.createHead().bakeRoot();
         assertNotNull(new RobeArmorModel(head));
         assertNotNull(head.getChild("head").getChild("hood_peak_upper"));
+        assertNotNull(head.getChild("head").getChild("hood_peak_lower"));
 
         ModelPart chest = RobeArmorModel.createChest().bakeRoot();
         assertNotNull(new RobeArmorModel(chest));
         ModelPart body = chest.getChild("body");
+        assertNotNull(body.getChild("sash"));
         assertNotNull(body.getChild("tail_right_upper").getChild("tail_right_lower"));
         assertNotNull(body.getChild("tail_left_upper").getChild("tail_left_lower"));
-        assertEquals(-5.75F, body.getChild("void_tome").x);
-        assertEquals(12.6F, body.getChild("void_tome").y);
-        assertEquals(0.25F, body.getChild("void_tome").z);
-        assertEquals(1.5707964F, body.getChild("void_tome").xRot, 0.0001F);
-        assertEquals(1.3507963F, body.getChild("void_tome").yRot, 0.0001F);
-        assertEquals(1.6907964F, body.getChild("void_tome").zRot, 0.0001F);
+        assertNotNull(chest.getChild("left_arm").getChild("pauldron_lame_left2"));
+
+        ModelPart scroll = body.getChild("back_scroll");
+        assertEquals(8.75F, scroll.y, 0.0001F);
+        assertEquals(4.3F, scroll.z, 0.0001F);
+        assertEquals(-0.19F, scroll.zRot, 0.0001F);
+        ModelPart tome = body.getChild("void_tome");
+        assertEquals(-5.75F, tome.x, 0.0001F);
+        assertEquals(12.6F, tome.y, 0.0001F);
+        assertEquals(0.25F, tome.z, 0.0001F);
+        assertEquals(1.5707964F, tome.xRot, 0.0001F);
+        assertEquals(1.3507963F, tome.yRot, 0.0001F);
+        assertEquals(1.6907964F, tome.zRot, 0.0001F);
 
         ModelPart legs = RobeArmorModel.createLegs().bakeRoot();
         assertNotNull(new RobeArmorModel(legs));
+        assertNotNull(legs.getChild("right_leg"));
+        assertNotNull(legs.getChild("left_leg"));
     }
 
     @Test
-    void sourceLayerImagesAndBakedRobeUvMatchTheirAtlasDimensions() throws Exception {
+    void robeAtlasesAndBakedHoodUvMatchTheirNativeMaterialLayouts() throws Exception {
         Path resources =
                 Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets/thaumaturge/textures/models/armor");
         BufferedImage cultist =
                 ImageIO.read(resources.resolve("cultist_robe_layer_1.png").toFile());
         BufferedImage cultistLeggings =
                 ImageIO.read(resources.resolve("cultist_robe_layer_2.png").toFile());
+        BufferedImage robes =
+                ImageIO.read(resources.resolve("robes_layer_1.png").toFile());
         BufferedImage voidRobe =
                 ImageIO.read(resources.resolve("void_robe_layer_1.png").toFile());
         BufferedImage voidRobeLeggings =
@@ -59,6 +72,8 @@ class RobeAtlasPortTest {
         assertEquals(128, cultist.getHeight());
         assertEquals(128, cultistLeggings.getWidth());
         assertEquals(128, cultistLeggings.getHeight());
+        assertEquals(64, robes.getWidth());
+        assertEquals(32, robes.getHeight());
         assertEquals(256, voidRobe.getWidth());
         assertEquals(256, voidRobe.getHeight());
         assertEquals(256, voidRobeLeggings.getWidth());
@@ -71,15 +86,17 @@ class RobeAtlasPortTest {
         assertEquals(0xFF080611, voidRobe.getRGB(22, 40));
         assertEquals(0xFF989EAE, voidOverlay.getRGB(20, 2));
 
-        ModelPart head = RobeArmorModel.createHead().bakeRoot().getChild("head");
-        UvBounds uv = uvBounds(cubeAt(head, 0));
+        ModelPart hood = RobeArmorModel.createHead().bakeRoot().getChild("head");
+        Object hoodCube = firstCube(hood);
+        UvBounds uv = uvBounds(hoodCube);
         assertEquals(1.0F / 128.0F, uv.minU, 0.0001F);
         assertEquals(38.0F / 128.0F, uv.maxU, 0.0001F);
         assertEquals(1.0F / 128.0F, uv.minV, 0.0001F);
         assertEquals(19.0F / 128.0F, uv.maxV, 0.0001F);
-        assertEquals(5, polygonCount(cubeAt(head, 2)));
+        assertEquals(5, polygonCount(cubeAt(hood, 2)));
         cultist.flush();
         cultistLeggings.flush();
+        robes.flush();
         voidRobe.flush();
         voidRobeLeggings.flush();
         voidOverlay.flush();
@@ -149,6 +166,10 @@ class RobeAtlasPortTest {
         assertEquals(expectedHem, hem.xRot, 0.0001F);
     }
 
+    private static Object firstCube(ModelPart part) throws Exception {
+        return cubeAt(part, 0);
+    }
+
     private static Object cubeAt(ModelPart part, int index) throws Exception {
         Field cubesField = ModelPart.class.getDeclaredField("cubes");
         cubesField.setAccessible(true);
@@ -180,12 +201,10 @@ class RobeAtlasPortTest {
                 Field vField = vertex.getClass().getDeclaredField("v");
                 uField.setAccessible(true);
                 vField.setAccessible(true);
-                float u = uField.getFloat(vertex);
-                float v = vField.getFloat(vertex);
-                minU = Math.min(minU, u);
-                maxU = Math.max(maxU, u);
-                minV = Math.min(minV, v);
-                maxV = Math.max(maxV, v);
+                minU = Math.min(minU, uField.getFloat(vertex));
+                maxU = Math.max(maxU, uField.getFloat(vertex));
+                minV = Math.min(minV, vField.getFloat(vertex));
+                maxV = Math.max(maxV, vField.getFloat(vertex));
             }
         }
         return new UvBounds(minU, maxU, minV, maxV);

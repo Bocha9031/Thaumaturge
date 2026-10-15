@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.spell.delivery;
 
 import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
-import com.leclowndu93150.thaumaturge.api.items.IArchitect;
+import com.leclowndu93150.thaumaturge.api.items.AreaPreviewer;
 import com.leclowndu93150.thaumaturge.api.spell.Spell;
 import com.leclowndu93150.thaumaturge.api.spell.SpellNode;
 import com.leclowndu93150.thaumaturge.api.spell.Spells;
@@ -38,7 +38,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public record ArchitectDelivery(double range) implements SpellBehavior, IArchitect {
+public record ArchitectDelivery(double range) implements SpellBehavior, AreaPreviewer {
     public static final MapCodec<ArchitectDelivery> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
                     Codec.doubleRange(1.0, 64.0).optionalFieldOf("range", 16.0).forGetter(ArchitectDelivery::range))
             .apply(i, ArchitectDelivery::new));
@@ -85,24 +85,24 @@ public record ArchitectDelivery(double range) implements SpellBehavior, IArchite
     }
 
     @Override
-    public @Nullable HitResult aim(ItemStack stack, Level level, LivingEntity caster) {
+    public @Nullable HitResult traceAnchor(ItemStack stack, Level level, LivingEntity caster) {
         Vec3 eyes = caster.getEyePosition();
         return SpellRayTrace.clipBlocks(
                 level, caster, eyes, eyes.add(caster.getLookAngle().scale(range)));
     }
 
     @Override
-    public boolean replacesBlockHighlight(ItemStack stack) {
+    public boolean hidesBlockOutline(ItemStack stack) {
         return false;
     }
 
     @Override
-    public List<BlockPos> previewBlocks(ItemStack stack, Level level, BlockPos pos, Direction side, Player player) {
+    public List<BlockPos> previewArea(ItemStack stack, Level level, BlockPos pos, Direction side, Player player) {
         return collect(stack, level, pos, side, methodOf(stack, level));
     }
 
     @Override
-    public boolean showsAxis(ItemStack stack, Level level, Player player, Direction side, Direction.Axis axis) {
+    public boolean showsAxisArrows(ItemStack stack, Level level, Player player, Direction side, Direction.Axis axis) {
         if (stack.isEmpty()) {
             return false;
         }
