@@ -12,6 +12,7 @@ import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -266,6 +267,31 @@ public final class InfusionEnchantmentEvents {
         }
         addRareNugget(event, level, state);
 
+        boolean sneaking = player.isShiftKeyDown();
+        if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.COLLECTOR) && !sneaking) {
+            List<ItemEntity> followers = new ArrayList<>(event.getDrops().size());
+            for (ItemEntity drop : event.getDrops()) {
+                EntityFollowingItem follow = new EntityFollowingItem(
+                        level,
+                        drop.getX(),
+                        drop.getY(),
+                        drop.getZ(),
+                        drop.getItem().copy(),
+                        player);
+                follow.setDeltaMovement(drop.getDeltaMovement());
+                follow.setDefaultPickUpDelay();
+                followers.add(follow);
+            }
+            event.getDrops().clear();
+            event.getDrops().addAll(followers);
+        }
+
+        if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.LAMPLIGHT) && !sneaking) {
+            if (level.isEmptyBlock(pos) && settledLight(level, pos) < GLIMMER_LIGHT_THRESHOLD) {
+                level.setBlock(pos, TTBlocks.EFFECT_GLIMMER.get().defaultBlockState(), Block.UPDATE_ALL);
+            }
+        }
+
         if (!DESTRUCTIVE_RECURSION.get()
                 && InfusionEnchantmentHelper.has(held, InfusionEnchantment.DESTRUCTIVE)
                 && !player.isShiftKeyDown()
@@ -308,28 +334,6 @@ public final class InfusionEnchantmentEvents {
                 }
             } finally {
                 DESTRUCTIVE_RECURSION.set(false);
-            }
-        }
-
-        if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.COLLECTOR) && !player.isShiftKeyDown()) {
-            for (ItemEntity drop : event.getDrops()) {
-                EntityFollowingItem follow = new EntityFollowingItem(
-                        level,
-                        drop.getX(),
-                        drop.getY(),
-                        drop.getZ(),
-                        drop.getItem().copy(),
-                        player);
-                follow.setDeltaMovement(drop.getDeltaMovement());
-                follow.setDefaultPickUpDelay();
-                level.addFreshEntity(follow);
-            }
-            event.getDrops().clear();
-        }
-
-        if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.LAMPLIGHT) && !player.isShiftKeyDown()) {
-            if (level.isEmptyBlock(pos) && settledLight(level, pos) < GLIMMER_LIGHT_THRESHOLD) {
-                level.setBlock(pos, TTBlocks.EFFECT_GLIMMER.get().defaultBlockState(), Block.UPDATE_ALL);
             }
         }
     }
