@@ -1,0 +1,14 @@
+Additional asset credits (supplements CREDITS.md)
+
+Zombie plate armor textures: Atomizate, credited as ordeaux in the source
+asset audit.
+
+Copied unchanged from Thaumaturge main commit
+ee2abf2915fc86c28663737bb4c621ccc5f46bb4, whose CREDITS.md attributes
+these textures to Atomizate:
+  assets/thaumaturge/textures/entity/equipment/humanoid/zombie_plate.png
+  assets/thaumaturge/textures/entity/equipment/humanoid_leggings/zombie_plate.png
+
+The same images are used at the native 1.21.1 armor paths:
+  assets/thaumaturge/textures/models/armor/zombie_plate_layer_1.png
+  assets/thaumaturge/textures/models/armor/zombie_plate_layer_2.png
