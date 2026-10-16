@@ -101,8 +101,9 @@ public final class MobTraits {
     }
 
     /**
-     * Returns whether a mob belongs to the taint: either a native taint creature implementing
-     * {@link ITaintedMob} or a mob carrying a trait whose {@link MobTrait#isTaint()} is true.
+     * Returns whether a mob belongs to the taint: either its entity type is in the
+     * {@link ThaumaturgeEntityTypeTags#TAINTED} tag or it carries a trait whose
+     * {@link MobTrait#isTaint()} is true.
      *
      * @param mob the mob
      * @return {@code true} for tainted mobs

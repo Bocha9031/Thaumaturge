@@ -6,6 +6,7 @@ import java.util.Set;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * An enchantment applied through infusion crafting rather than the vanilla enchanting table.
@@ -13,7 +14,7 @@ import net.minecraft.util.StringRepresentable;
  * <p>Each value declares the tool classes it may be applied to and the maximum level it may
  * reach. Levels are stored per stack in the {@code thaumaturge:infusion_enchantments} data
  * component. Applicability is tested against an item's tool classes, weapon status, armor slot,
- * or {@link IRechargable} nature.
+ * or {@link RechargeAccess#isRechargeable(ItemStack) rechargeable} status.
  *
  * @since 1.0.0
  */

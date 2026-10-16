@@ -7,15 +7,18 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * A complete spell as stored on a focus: the cast style and the node tree, rooted at the
  * {@link #ORIGIN} part.
  *
  * <p>Spells are plain data. Whether one is castable depends on the parts loaded from datapacks, the
- * focus it sits in and the caster's research; {@link Spells#validate} answers that.
+ * focus it sits in and the caster's research; {@link Spells#analyze(Spell, FocusTier,
+ * HolderLookup.Provider, Player)} answers that.
  *
  * @param style the cast style
  * @param root  the origin node; everything else hangs below it
