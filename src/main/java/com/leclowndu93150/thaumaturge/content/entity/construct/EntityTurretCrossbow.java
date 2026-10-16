@@ -5,6 +5,7 @@ import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -36,6 +37,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 
 public class EntityTurretCrossbow extends EntityOwnedConstruct implements RangedAttackMob {
+    private static final String RAIL_SWITCHED_KEY = "rail_switched";
     private static final int HEAL_INTERVAL = 80;
     private static final int SWING_TICKS = 6;
     private static final int LOAD_TICKS = 10;
@@ -50,6 +52,7 @@ public class EntityTurretCrossbow extends EntityOwnedConstruct implements Ranged
     private boolean swingInProgress;
     private int loadProgressInt;
     private boolean loadInProgress;
+    private boolean railSwitched;
     private float loadProgress;
     private float prevLoadProgress;
     public float swingAnim;
@@ -171,13 +174,36 @@ public class EntityTurretCrossbow extends EntityOwnedConstruct implements Ranged
             if (tickCount % HEAL_INTERVAL == 0) {
                 heal(1.0F);
             }
-            BlockState rail = railStateBelow();
-            if (rail != null && rail.is(TTBlocks.ACTIVATOR_RAIL.get())) {
-                setNoAi(rail.getValue(BlockStateProperties.POWERED));
-            }
+            followActivatorRail();
         } else {
             updateArmSwingProgress();
         }
+    }
+
+    private void followActivatorRail() {
+        BlockState rail = railStateBelow();
+        if (rail == null || !rail.is(TTBlocks.ACTIVATOR_RAIL.get())) {
+            if (railSwitched) {
+                railSwitched = false;
+                setNoAi(false);
+            }
+            return;
+        }
+        boolean powered = rail.getValue(BlockStateProperties.POWERED);
+        setNoAi(powered);
+        railSwitched = powered;
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag output) {
+        super.addAdditionalSaveData(output);
+        output.putBoolean(RAIL_SWITCHED_KEY, railSwitched);
+    }
+
+    @Override
+    public void readAdditionalSaveData(CompoundTag input) {
+        super.readAdditionalSaveData(input);
+        railSwitched = input.getBoolean(RAIL_SWITCHED_KEY);
     }
 
     protected BlockState railStateBelow() {
