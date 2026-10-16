@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -68,6 +69,46 @@ class ResearchTableInkwellPortTest {
         assertEquals(64, texture.getWidth());
         assertEquals(32, texture.getHeight());
         texture.flush();
+    }
+
+    @Test
+    void brassRimAndLidHaveOutwardWindingWithOpaqueTextureCoverage() throws Exception {
+        TTMesh mesh = loadMesh();
+        TTMeshPart brass = mesh.parts().stream()
+                .filter(part -> part.name().equals("brass"))
+                .findFirst()
+                .orElseThrow();
+        Path texturePath = Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets")
+                .resolve(TEXTURE_ID.getNamespace())
+                .resolve(TEXTURE_ID.getPath());
+        BufferedImage texture = ImageIO.read(texturePath.toFile());
+        try {
+            for (int quad = 0; quad < brass.quadCount(); quad++) {
+                int position = quad * 12;
+                Vector3f first = new Vector3f(
+                        brass.positions()[position], brass.positions()[position + 1], brass.positions()[position + 2]);
+                Vector3f second = new Vector3f(
+                        brass.positions()[position + 3],
+                        brass.positions()[position + 4],
+                        brass.positions()[position + 5]);
+                Vector3f third = new Vector3f(
+                        brass.positions()[position + 6],
+                        brass.positions()[position + 7],
+                        brass.positions()[position + 8]);
+                Vector3f outward = new Vector3f(
+                        brass.normals()[position], brass.normals()[position + 1], brass.normals()[position + 2]);
+                Vector3f face = second.sub(first).cross(third.sub(first));
+                assertTrue(face.dot(outward) > 0.0F, "Brass face points inward: " + quad);
+
+                int uv = quad * 8;
+                float u = (brass.uvs()[uv] + brass.uvs()[uv + 2] + brass.uvs()[uv + 4]) / 3.0F;
+                float v = (brass.uvs()[uv + 1] + brass.uvs()[uv + 3] + brass.uvs()[uv + 5]) / 3.0F;
+                int pixel = texture.getRGB((int) (u * texture.getWidth()), (int) ((1.0F - v) * texture.getHeight()));
+                assertEquals(255, pixel >>> 24, "Brass face samples a transparent texel: " + quad);
+            }
+        } finally {
+            texture.flush();
+        }
     }
 
     @Test
