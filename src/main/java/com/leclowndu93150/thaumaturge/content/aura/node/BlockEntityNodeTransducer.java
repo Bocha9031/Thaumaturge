@@ -14,6 +14,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -39,6 +40,9 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
     private int status = STATUS_IDLE;
     private int syncedCount = NOT_SYNCED;
     private int syncedStatus = NOT_SYNCED;
+    private float animationFromCount;
+    private long animationStartTick;
+    private boolean animationInitialized;
 
     public BlockEntityNodeTransducer(BlockPos pos, BlockState state) {
         super(TTBlockEntities.NODE_TRANSDUCER.get(), pos, state);
@@ -50,6 +54,15 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
 
     public int getStatus() {
         return status;
+    }
+
+    public float getRenderCount(float partialTick) {
+        if (level == null || !level.isClientSide() || !animationInitialized) {
+            return getCount();
+        }
+        float progress =
+                Mth.clamp((level.getGameTime() - animationStartTick + partialTick) / SYNC_INTERVAL, 0.0F, 1.0F);
+        return Mth.lerp(progress, animationFromCount, getCount());
     }
 
     public void serverTick(Level level, BlockPos pos) {
@@ -211,8 +224,14 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
 
     @Override
     protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
+        float previousRenderCount = getRenderCount(0.0F);
         super.loadAdditional(input, registries);
         count = input.contains("Count") ? input.getInt("Count") : -1;
         status = input.getInt("Status");
+        if (level != null && level.isClientSide()) {
+            animationFromCount = animationInitialized ? previousRenderCount : getCount();
+            animationStartTick = level.getGameTime();
+            animationInitialized = true;
+        }
     }
 }

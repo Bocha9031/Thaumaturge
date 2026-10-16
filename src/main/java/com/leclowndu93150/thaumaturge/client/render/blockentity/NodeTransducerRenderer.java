@@ -26,7 +26,7 @@ public final class NodeTransducerRenderer implements BlockEntityRenderer<BlockEn
         poseStack.translate(0.5F, 1.0F, 0.5F);
         poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
         NodeStabilizerRenderer.submitTransducerParts(
-                transducer.getCount(), transducer.getStatus(), ticks, poseStack, buffers, light);
+                transducer.getRenderCount(partialTick), transducer.getStatus(), ticks, poseStack, buffers, light);
         poseStack.popPose();
     }
 }

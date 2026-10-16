@@ -155,7 +155,7 @@ public final class NodeStabilizerRenderer implements BlockEntityRenderer<BlockEn
     }
 
     public static void submitTransducerParts(
-            int count, int status, float ticks, PoseStack poseStack, MultiBufferSource buffers, int light) {
+            float count, int status, float ticks, PoseStack poseStack, MultiBufferSource buffers, int light) {
         TTMesh mesh = GolemMeshes.get(MODEL);
         TTMeshPart lock = findPart(mesh, PART_LOCK);
         TTMeshPart piston = findPart(mesh, PART_PISTON);
