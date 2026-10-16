@@ -249,10 +249,9 @@ final class ShowcaseBuilder {
                 state = stateTarget.state();
             }
             BlockPos offset = cell.offset();
-            set(center.offset(
-                    offset.getX() - rotated.width() / 2,
-                    offset.getY(),
-                    offset.getZ() - rotated.depth() / 2),
+            set(
+                    center.offset(
+                            offset.getX() - rotated.width() / 2, offset.getY(), offset.getZ() - rotated.depth() / 2),
                     state);
         }
         return true;
