@@ -16,6 +16,7 @@ public abstract class SeekerParticle extends TTParticle {
     private static final double FRICTION_VERTICAL = 0.95;
     private static final double SPAWN_JITTER = 0.01;
     private static final double LIFETIME_PER_BLOCK = 10.0;
+    private static final double MIN_DISTANCE = 1.0E-4;
 
     public static final int NO_ENTITY = -1;
 
@@ -69,20 +70,19 @@ public abstract class SeekerParticle extends TTParticle {
 
     @Override
     public void tick() {
-        this.xo = this.x;
-        this.yo = this.y;
-        this.zo = this.z;
+        super.tick();
+        if (this.removed || delayed()) {
+            return;
+        }
         refreshTarget();
-        if (this.age++ >= this.lifetime || arrived()) {
+        if (arrived()) {
             remove();
             return;
         }
-        move(this.xd, this.yd, this.zd);
         this.xd *= FRICTION_HORIZONTAL;
         this.yd *= FRICTION_VERTICAL;
         this.zd *= FRICTION_HORIZONTAL;
         steer();
-        update();
     }
 
     private void refreshTarget() {
@@ -104,16 +104,14 @@ public abstract class SeekerParticle extends TTParticle {
 
     private void steer() {
         Vec3 toTarget = this.target.subtract(this.x, this.y, this.z);
-        double distance = toTarget.length();
+        double distance = Math.max(MIN_DISTANCE, toTarget.length());
         double pull = Math.min(APPROACH_CAP, distance / APPROACH_RANGE);
         if (distance < SHRINK_DISTANCE) {
             this.quadSize *= SHRINK_FACTOR;
         }
-        if (distance > 1.0E-6) {
-            toTarget = toTarget.scale(1.0 / distance);
-        }
-        this.xd = Mth.clamp(this.xd + toTarget.x * pull, -pull, pull) + this.random.nextGaussian() * this.driftStrength;
-        this.yd = Mth.clamp(this.yd + toTarget.y * pull, -pull, pull) + this.random.nextGaussian() * this.driftStrength;
-        this.zd = Mth.clamp(this.zd + toTarget.z * pull, -pull, pull) + this.random.nextGaussian() * this.driftStrength;
+        this.xd = Mth.clamp(this.xd + toTarget.x / distance * pull, -pull, pull);
+        this.yd = Mth.clamp(this.yd + toTarget.y / distance * pull, -pull, pull);
+        this.zd = Mth.clamp(this.zd + toTarget.z / distance * pull, -pull, pull);
+        drift(this.driftStrength, this.driftStrength, this.driftStrength);
     }
 }
