@@ -62,6 +62,21 @@ public final class AspectTagWorldRenderer {
             float tagScale,
             float alpha,
             Predicate<Holder<IAspect>> discovered) {
+        renderTagCloud(poseStack, mc, x, y, z, aspects, dir, tagScale, alpha, discovered, true);
+    }
+
+    public static void renderTagCloud(
+            PoseStack poseStack,
+            Minecraft mc,
+            double x,
+            double y,
+            double z,
+            AspectList aspects,
+            @Nullable Direction dir,
+            float tagScale,
+            float alpha,
+            Predicate<Holder<IAspect>> discovered,
+            boolean showAmounts) {
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
@@ -118,35 +133,37 @@ public final class AspectTagWorldRenderer {
                     LightTexture.FULL_BRIGHT);
             poseStack.popPose();
 
-            String amount = Integer.toString(entry.amount());
-            int width = font.width(amount);
-            poseStack.pushPose();
-            poseStack.scale(tagScale * TEXT_SCALE, -tagScale * TEXT_SCALE, tagScale * TEXT_SCALE);
-            poseStack.translate(0.0, 6.0, -0.1);
-            font.drawInBatch(
-                    amount,
-                    14 - width,
-                    1,
-                    TEXT_SHADOW_COLOR,
-                    false,
-                    poseStack.last().pose(),
-                    effectBuffers,
-                    Font.DisplayMode.NORMAL,
-                    0,
-                    LightTexture.FULL_BRIGHT);
-            poseStack.translate(0.0, 0.0, -0.1);
-            font.drawInBatch(
-                    amount,
-                    13 - width,
-                    0,
-                    TEXT_COLOR,
-                    false,
-                    poseStack.last().pose(),
-                    effectBuffers,
-                    Font.DisplayMode.NORMAL,
-                    0,
-                    LightTexture.FULL_BRIGHT);
-            poseStack.popPose();
+            if (showAmounts) {
+                String amount = Integer.toString(entry.amount());
+                int width = font.width(amount);
+                poseStack.pushPose();
+                poseStack.scale(tagScale * TEXT_SCALE, -tagScale * TEXT_SCALE, tagScale * TEXT_SCALE);
+                poseStack.translate(0.0, 6.0, -0.1);
+                font.drawInBatch(
+                        amount,
+                        14 - width,
+                        1,
+                        TEXT_SHADOW_COLOR,
+                        false,
+                        poseStack.last().pose(),
+                        effectBuffers,
+                        Font.DisplayMode.NORMAL,
+                        0,
+                        LightTexture.FULL_BRIGHT);
+                poseStack.translate(0.0, 0.0, -0.1);
+                font.drawInBatch(
+                        amount,
+                        13 - width,
+                        0,
+                        TEXT_COLOR,
+                        false,
+                        poseStack.last().pose(),
+                        effectBuffers,
+                        Font.DisplayMode.NORMAL,
+                        0,
+                        LightTexture.FULL_BRIGHT);
+                poseStack.popPose();
+            }
 
             poseStack.popPose();
             current++;

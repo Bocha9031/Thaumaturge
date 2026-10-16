@@ -18,6 +18,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -37,6 +38,8 @@ public final class GogglesWorldOverlay {
 
     private static float tagScale;
     private static @Nullable BlockPos lastTarget;
+
+    record AspectReadout(AspectList aspects, boolean showAmounts) {}
 
     private GogglesWorldOverlay() {}
 
@@ -68,17 +71,8 @@ public final class GogglesWorldOverlay {
             resetAnimation();
             return;
         }
-        AspectList aspects;
-        if (be instanceof BlockEntityInfusionMatrix matrix) {
-            aspects = matrix.remainingEssentia();
-        } else {
-            IAspectContainer container = mc.level.getCapability(AspectCapabilities.CONTAINER, pos, null);
-            IAspectQuery query =
-                    container == null ? mc.level.getCapability(EssentiaCapabilities.ASPECT_QUERY, pos, null) : null;
-            aspects = container != null
-                    ? container.getAspects()
-                    : query != null ? query.queryAspects() : AspectList.EMPTY;
-        }
+        AspectReadout readout = readAspects(mc.level, be, pos, hit.getDirection());
+        AspectList aspects = readout.aspects();
         if (aspects.isEmpty()) {
             resetAnimation();
             return;
@@ -94,7 +88,21 @@ public final class GogglesWorldOverlay {
         boolean spaceAbove = mc.level.getBlockState(pos.above()).isAir();
         Direction dir = spaceAbove ? Direction.UP : mc.player.getDirection().getOpposite();
         double y = pos.getY() + (spaceAbove ? SPACE_ABOVE_LIFT : 0.0F);
-        drawTags(event.getPoseStack(), mc, pos.getX(), y, pos.getZ(), aspects, dir);
+        drawTags(event.getPoseStack(), mc, pos.getX(), y, pos.getZ(), aspects, dir, readout.showAmounts());
+    }
+
+    static AspectReadout readAspects(Level level, @Nullable BlockEntity blockEntity, BlockPos pos, Direction side) {
+        if (blockEntity instanceof BlockEntityInfusionMatrix matrix) {
+            return new AspectReadout(matrix.remainingEssentia(), true);
+        }
+        IAspectContainer container = level.getCapability(AspectCapabilities.CONTAINER, pos, side);
+        if (container != null) {
+            return new AspectReadout(container.getAspects(), true);
+        }
+        IAspectQuery query = level.getCapability(EssentiaCapabilities.ASPECT_QUERY, pos, side);
+        return query == null
+                ? new AspectReadout(AspectList.EMPTY, false)
+                : new AspectReadout(query.queryAspects(), false);
     }
 
     private static boolean holdsThaumometer(Player player) {
@@ -108,7 +116,15 @@ public final class GogglesWorldOverlay {
     }
 
     private static void drawTags(
-            PoseStack poseStack, Minecraft mc, double x, double y, double z, AspectList aspects, Direction dir) {
-        AspectTagWorldRenderer.renderTagCloud(poseStack, mc, x, y, z, aspects, dir, tagScale, TAG_ALPHA);
+            PoseStack poseStack,
+            Minecraft mc,
+            double x,
+            double y,
+            double z,
+            AspectList aspects,
+            Direction dir,
+            boolean showAmounts) {
+        AspectTagWorldRenderer.renderTagCloud(
+                poseStack, mc, x, y, z, aspects, dir, tagScale, TAG_ALPHA, aspect -> true, showAmounts);
     }
 }
