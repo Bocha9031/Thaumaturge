@@ -75,7 +75,7 @@ class VisRelayTransactionTest {
         Registry.register(aspects, TTAspects.AER, aspectValue);
         RegistryAccess registryAccess = new RegistryAccess.ImmutableRegistryAccess(List.of(aspects)).freeze();
         when(level.registryAccess()).thenReturn(registryAccess);
-        var aspect = aspects.getHolderOrThrow(TTAspects.AER);
+        Holder<IAspect> aspect = aspects.getHolderOrThrow(TTAspects.AER);
 
         JournaledSource source = new JournaledSource(100);
         when(relay.resolveSource(level)).thenReturn(new LinkedRelaySource(relayPos, source));
