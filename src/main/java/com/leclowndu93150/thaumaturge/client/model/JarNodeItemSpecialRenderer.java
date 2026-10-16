@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.model;
 
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
+import com.leclowndu93150.thaumaturge.client.render.NodeAnimation;
 import com.leclowndu93150.thaumaturge.client.render.blockentity.NodeRenderState;
 import com.leclowndu93150.thaumaturge.client.render.blockentity.NodeRenderer;
 import com.leclowndu93150.thaumaturge.content.aura.node.NodeData;
@@ -12,7 +13,6 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 
@@ -51,15 +51,7 @@ public final class JarNodeItemSpecialRenderer extends BlockEntityWithoutLevelRen
         state.size = NODE_SIZE;
         state.ticks = (Util.getMillis() % (long) TICKS_WRAP) / 50.0F;
         state.frameSeed = 1;
-        float alpha = BASE_ALPHA;
-        if (state.modifier != null) {
-            alpha = switch (state.modifier) {
-                case BRIGHT -> alpha * 1.5F;
-                case PALE -> alpha * 0.66F;
-                case FADING -> alpha * (Mth.sin(state.ticks / 3.0F) * 0.25F + 0.33F);
-            };
-        }
-        state.alpha = Math.min(alpha, 1.0F);
+        state.alpha = NodeAnimation.opacity(BASE_ALPHA, state.modifier, state.ticks);
         for (AspectInstance entry : data.aspects().entries()) {
             NodeRenderState.AspectLayer layer = new NodeRenderState.AspectLayer();
             layer.color = entry.aspect().value().color();

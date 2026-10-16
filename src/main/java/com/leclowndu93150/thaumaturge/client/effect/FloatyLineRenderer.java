@@ -17,17 +17,10 @@ public final class FloatyLineRenderer {
 
     private static final RenderType WISPY_LINE = TTFlatRenderTypes.entityAdditiveFlat(WISPY_TEXTURE);
 
-    private static final float SEGMENTS_PER_BLOCK = 2.0F;
+    private static final float SEGMENTS_PER_BLOCK = 3.0F;
     private static final float TIME_UNITS_PER_TICK = 50.0F / 30.0F;
     private static final int EMISSIVE_LIGHT = 0x00F000F0;
     private static final float MIN_SPAN = 0.1F;
-    private static final float WAVE_AMPLITUDE = 0.5F;
-    private static final float WAVE_PERIOD_X = 4.0F;
-    private static final float WAVE_PERIOD_Y = 3.0F;
-    private static final float WAVE_PERIOD_Z = 2.0F;
-    private static final float PHASE_TIME_DIVISOR = 5.0F;
-    private static final float END_ATTACH_START = 0.7F;
-    private static final float END_ATTACH_ALPHA = 0.8F;
 
     private FloatyLineRenderer() {}
 
@@ -61,65 +54,70 @@ public final class FloatyLineRenderer {
             float distanceFraction,
             float width) {
         float span = (float) fromRelative.length();
-        if (span < MIN_SPAN) {
+        float progress = Mth.clamp(distanceFraction, 0.0F, 1.0F);
+        if (span < MIN_SPAN || progress <= 0.0F) {
             return;
         }
-        float steps = Math.max(2.0F, Math.round(span) * SEGMENTS_PER_BLOCK);
-        int samples = (int) (steps * distanceFraction) + 1;
-        float[] xs = new float[samples];
-        float[] ys = new float[samples];
-        float[] zs = new float[samples];
-        float[] us = new float[samples];
-        float[] alphas = new float[samples];
-        for (int i = 0; i < samples; i++) {
-            float t = i / steps;
-            float taper = 1.0F - Math.abs(t - 0.5F) * 2.0F;
-            float phase = span * (1.0F - t) * SEGMENTS_PER_BLOCK - time / PHASE_TIME_DIVISOR;
-            float sway = WAVE_AMPLITUDE * taper;
-            xs[i] = ((float) fromRelative.x + Mth.sin(phase / WAVE_PERIOD_X) * sway) * t;
-            ys[i] = ((float) fromRelative.y + Mth.sin(phase / WAVE_PERIOD_Y) * sway) * t;
-            zs[i] = ((float) fromRelative.z + Mth.sin(phase / WAVE_PERIOD_Z) * sway) * t;
-            us[i] = (1.0F - t) * span - time * speed;
-            float alpha = Math.max(0.0F, taper);
-            if (t > END_ATTACH_START) {
-                alpha = Math.max(alpha, (t - END_ATTACH_START) / (1.0F - END_ATTACH_START) * END_ATTACH_ALPHA);
-            }
-            alphas[i] = alpha;
+        Vec3 direction = fromRelative.scale(1.0 / span);
+        Vec3 reference = Math.abs(direction.y) > 0.9 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+        Vec3 side = direction.cross(reference).normalize();
+        Vec3 up = direction.cross(side);
+        Vec3 sideWidth = side.scale(width);
+        Vec3 upWidth = up.scale(width);
+        int segments = Math.max(2, Mth.ceil(span * SEGMENTS_PER_BLOCK));
+        int visibleSegments = Mth.ceil(segments * progress);
+        float radius = Math.min(0.36F, span * 0.08F);
+        Vec3 previous = Vec3.ZERO;
+        float previousU = span - time * speed;
+        int previousTint = ARGB32.color(0, color);
+        for (int sample = 1; sample <= visibleSegments; sample++) {
+            float t = Math.min(progress, sample / (float) segments);
+            float envelope = 4.0F * t * (1.0F - t);
+            float phase = t * Mth.TWO_PI * 1.4F - time * 0.17F;
+            float across = Mth.cos(phase) * radius * envelope;
+            float lift = Mth.sin(phase) * radius * envelope;
+            Vec3 point = new Vec3(
+                    fromRelative.x * t + side.x * across + up.x * lift,
+                    fromRelative.y * t + side.y * across + up.y * lift,
+                    fromRelative.z * t + side.z * across + up.z * lift);
+            float u = span * (1.0F - t) - time * speed;
+            float opacity = Math.min(1.0F, t * 6.0F) * (1.0F - 0.2F * t * t);
+            int tint = ARGB32.color(Math.round(opacity * 255.0F), color);
+            ribbon(pose, buffer, previous, point, sideWidth, previousU, u, previousTint, tint);
+            ribbon(pose, buffer, previous, point, upWidth, previousU, u, previousTint, tint);
+            previous = point;
+            previousU = u;
+            previousTint = tint;
         }
-        float red = ((color >> 16) & 0xFF) / 255.0F;
-        float green = ((color >> 8) & 0xFF) / 255.0F;
-        float blue = (color & 0xFF) / 255.0F;
-        ribbon(pose, buffer, xs, ys, zs, us, alphas, 0.0F, width, red, green, blue);
-        ribbon(pose, buffer, xs, ys, zs, us, alphas, width, 0.0F, red, green, blue);
     }
 
     private static void ribbon(
             PoseStack.Pose pose,
             VertexConsumer buffer,
-            float[] xs,
-            float[] ys,
-            float[] zs,
-            float[] us,
-            float[] alphas,
-            float halfX,
-            float halfY,
-            float red,
-            float green,
-            float blue) {
-        for (int i = 1; i < xs.length; i++) {
-            int prev = i - 1;
-            int c0 = ARGB32.colorFromFloat(alphas[prev], red, green, blue);
-            int c1 = ARGB32.colorFromFloat(alphas[i], red, green, blue);
-            edge(pose, buffer, xs[prev] + halfX, ys[prev] - halfY, zs[prev], us[prev], 1.0F, c0);
-            edge(pose, buffer, xs[prev] - halfX, ys[prev] + halfY, zs[prev], us[prev], 0.0F, c0);
-            edge(pose, buffer, xs[i] - halfX, ys[i] + halfY, zs[i], us[i], 0.0F, c1);
-            edge(pose, buffer, xs[i] + halfX, ys[i] - halfY, zs[i], us[i], 1.0F, c1);
-        }
+            Vec3 start,
+            Vec3 end,
+            Vec3 across,
+            float startU,
+            float endU,
+            int startTint,
+            int endTint) {
+        edge(pose, buffer, start, across, 1.0F, startU, 0.0F, startTint);
+        edge(pose, buffer, start, across, -1.0F, startU, 1.0F, startTint);
+        edge(pose, buffer, end, across, -1.0F, endU, 1.0F, endTint);
+        edge(pose, buffer, end, across, 1.0F, endU, 0.0F, endTint);
     }
 
     private static void edge(
-            PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float z, float u, float v, int color) {
-        buffer.addVertex(pose, x, y, z)
+            PoseStack.Pose pose,
+            VertexConsumer buffer,
+            Vec3 center,
+            Vec3 across,
+            float sign,
+            float u,
+            float v,
+            int color) {
+        buffer.addVertex(pose, (float) (center.x + across.x * sign), (float) (center.y + across.y * sign), (float)
+                        (center.z + across.z * sign))
                 .setColor(color)
                 .setUv(u, v)
                 .setOverlay(OverlayTexture.NO_OVERLAY)

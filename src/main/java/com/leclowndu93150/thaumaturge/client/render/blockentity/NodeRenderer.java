@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
 import com.leclowndu93150.thaumaturge.client.casters.WandTipTracker;
 import com.leclowndu93150.thaumaturge.client.effect.FloatyLineRenderer;
 import com.leclowndu93150.thaumaturge.client.effect.LateWorldRenderQueue;
+import com.leclowndu93150.thaumaturge.client.render.NodeAnimation;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import com.leclowndu93150.thaumaturge.compat.sable.SableClientCompat;
@@ -25,6 +26,8 @@ import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -41,8 +44,6 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
     private static final int GRID = 32;
     private static final double VIEW_DISTANCE = 64.0;
     private static final double THAUMOMETER_VIEW_DISTANCE = 48.0;
-    private static final float BASE_LAYER_SCALE = 0.25F;
-    private static final int MAX_RENDERED_ASPECT_AMOUNT = 50;
     private static final float FAINT_ALPHA = 0.0066F;
     // Iris routes this through its translucent particle program instead of the normal additive
     // path, so it needs a stronger source alpha to retain the same faint, unaided visibility.
@@ -59,12 +60,8 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
     private static final int STRIP_UNSTABLE = 6;
     private static final int EMISSIVE_LIGHT = 0x00F000F0;
     private static final float FRAME_ADVANCE_PER_TICK = 1.25F;
-    private static final float TICKS_TO_CLOCK_UNITS = 10.0F;
-    private static final float LAYER_PERIOD_BASE = 5000.0F;
-    private static final float LAYER_PERIOD_STEP = 500.0F;
     private static final int TRANSLUCENT_BLEND = 771;
     private static final float TRANSLUCENT_ALPHA_BOOST = 1.5F;
-    private static final float WHITE_ALPHA_CLAMP = 1.0F;
     private static final float HIDDEN_BRIGHTNESS_MULTIPLIER = 0.10F;
     private static final float REVEALED_BRIGHTNESS_MULTIPLIER = 0.5F;
     private static final float DRAIN_LINE_SPEED = -0.02F;
@@ -176,16 +173,8 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
         if (distance > viewDistance) {
             state.visible = false;
         }
-        float alpha = (float) ((viewDistance - distance) / viewDistance);
-        if (state.modifier != null) {
-            alpha = switch (state.modifier) {
-                case BRIGHT -> alpha * 1.5F;
-                case PALE -> alpha * 0.66F;
-                case FADING -> alpha * (Mth.sin((player.tickCount + partialTicks) / 3.0F) * 0.25F + 0.33F);
-            };
-        }
-        state.alpha = Math.min(alpha, WHITE_ALPHA_CLAMP);
         state.ticks = player.tickCount + partialTicks;
+        state.alpha = NodeAnimation.opacity(1.0F - (float) (distance / viewDistance), state.modifier, state.ticks);
         state.time = player.level().getGameTime();
         state.frameSeed = node.getBlockPos().getX();
         state.draining = false;
@@ -193,36 +182,18 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
                 && player.level().getPlayerByUUID(node.getDrainPlayer()) instanceof Player drainer
                 && drainer.isUsingItem()) {
             float useTicks = drainer.getTicksUsingItem() + partialTicks;
-            float wave = Mth.sin(useTicks / 10.0F) * 10.0F;
-            float pitch = Mth.lerp(partialTicks, drainer.xRotO, drainer.getXRot());
-            float yaw = Mth.lerp(partialTicks, drainer.yRotO, drainer.getYRot());
-            Vec3 offset = new Vec3(-0.1, -0.1, 0.5)
-                    .xRot(-pitch * Mth.DEG_TO_RAD)
-                    .yRot(-yaw * Mth.DEG_TO_RAD)
-                    .yRot(-wave * 0.01F)
-                    .xRot(-wave * 0.015F);
-            Vec3 hand = new Vec3(
-                            Mth.lerp(partialTicks, drainer.xo, drainer.getX()),
-                            Mth.lerp(partialTicks, drainer.yo, drainer.getY()) + drainer.getEyeHeight(),
-                            Mth.lerp(partialTicks, drainer.zo, drainer.getZ()))
-                    .add(offset);
-            if (drainer == player
-                    && Minecraft.getInstance().options.getCameraType().isFirstPerson()) {
-                Vec3 tip = WandTipTracker.firstPersonTip();
-                if (tip != null) {
-                    hand = tip;
-                }
-            }
+            Vec3 hand = drainHand(drainer, player, partialTicks);
             Vec3 nodeCenter = SableClientCompat.renderPosition(node.getLevel(), Vec3.atCenterOf(node.getBlockPos()));
             state.draining = true;
             state.drainFromX = hand.x - nodeCenter.x;
             state.drainFromY = hand.y - nodeCenter.y;
             state.drainFromZ = hand.z - nodeCenter.z;
-            state.drainTime = Math.min(drainer.getTicksUsingItem() + partialTicks, 10.0F) / 10.0F;
-            node.clientDrainRed = (((node.getDrainColor() >> 16) & 0xFF) + node.clientDrainRed * 4) / 5;
-            node.clientDrainGreen = (((node.getDrainColor() >> 8) & 0xFF) + node.clientDrainGreen * 4) / 5;
-            node.clientDrainBlue = ((node.getDrainColor() & 0xFF) + node.clientDrainBlue * 4) / 5;
-            state.drainColor = (node.clientDrainRed << 16) | (node.clientDrainGreen << 8) | node.clientDrainBlue;
+            state.drainTime = Mth.clamp(useTicks / 10.0F, 0.0F, 1.0F);
+            node.clientDrainRed = Math.round(Mth.lerp(0.2F, node.clientDrainRed, ARGB32.red(node.getDrainColor())));
+            node.clientDrainGreen =
+                    Math.round(Mth.lerp(0.2F, node.clientDrainGreen, ARGB32.green(node.getDrainColor())));
+            node.clientDrainBlue = Math.round(Mth.lerp(0.2F, node.clientDrainBlue, ARGB32.blue(node.getDrainColor())));
+            state.drainColor = ARGB32.color(255, node.clientDrainRed, node.clientDrainGreen, node.clientDrainBlue);
         }
         for (AspectInstance entry : node.getAspects().entries()) {
             NodeRenderState.AspectLayer layer = new NodeRenderState.AspectLayer();
@@ -232,6 +203,24 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
             state.layers.add(layer);
         }
         return state;
+    }
+
+    private static Vec3 drainHand(Player drainer, LocalPlayer viewer, float partialTicks) {
+        if (drainer == viewer && Minecraft.getInstance().options.getCameraType().isFirstPerson()) {
+            Vec3 tip = WandTipTracker.firstPersonTip();
+            if (tip != null) {
+                return tip;
+            }
+        }
+        HumanoidArm arm = drainer.getUsedItemHand() == InteractionHand.MAIN_HAND
+                ? drainer.getMainArm()
+                : drainer.getMainArm().getOpposite();
+        float yaw = Mth.rotLerp(partialTicks, drainer.yRotO, drainer.getYRot());
+        Vec3 side = Vec3.directionFromRotation(0.0F, yaw + 90.0F).scale(arm == HumanoidArm.RIGHT ? 0.23 : -0.23);
+        return drainer.getEyePosition(partialTicks)
+                .add(drainer.getViewVector(partialTicks).scale(0.56))
+                .add(side)
+                .add(0.0, -0.18, 0.0);
     }
 
     public static void drawLayers(NodeRenderState state, PoseStack poseStack, MultiBufferSource buffers) {
@@ -249,44 +238,36 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
     }
 
     public static void forEachLayer(NodeRenderState state, LayerSink sink) {
-        int frame = (int) ((state.ticks * FRAME_ADVANCE_PER_TICK + state.frameSeed) % GRID + GRID) % GRID;
+        int frame = Math.floorMod(Mth.floor(state.ticks * FRAME_ADVANCE_PER_TICK) + state.frameSeed, GRID);
         if (!state.visible || state.layers.isEmpty()) {
             float faintAlpha = IrisCompat.shadersActive() ? IRIS_FAINT_ALPHA : FAINT_ALPHA;
             sink.layer(0, NODE_ADDITIVE, 0.0F, FAINT_SCALE, faintAlpha, 0xFFFFFF, STRIP_NORMAL, frame);
             return;
         }
-        float average = 0.0F;
-        int count = 0;
-        float layerAlpha = state.alpha / Math.max(1.0F, state.layers.size() / 2.0F);
+        int count = state.layers.size();
+        float layerAlpha = state.alpha * Math.min(1.0F, 2.0F / count);
         RenderType aspectType = state.depthIgnore ? NODE_ADDITIVE_NO_DEPTH : NODE_ADDITIVE;
         RenderType translucentType = state.depthIgnore ? NODE_TRANSLUCENT_NO_DEPTH : NODE_TRANSLUCENT;
-        float clock = state.ticks * TICKS_TO_CLOCK_UNITS * (state.energized ? ENERGIZED_SPIN_FACTOR : 1.0F);
-        float layerContraction = state.energized ? ENERGIZED_LAYER_CONTRACTION : 1.0F;
-        float angle = 0.0F;
-        for (NodeRenderState.AspectLayer layer : state.layers) {
-            int displayAmount = Math.min(layer.amount, MAX_RENDERED_ASPECT_AMOUNT);
-            average += displayAmount;
-            float scale = Mth.sin(state.ticks / (14.0F - count)) * BASE_LAYER_SCALE + BASE_LAYER_SCALE * 2.0F;
-            scale = (0.2F + scale * (displayAmount / (float) MAX_RENDERED_ASPECT_AMOUNT))
-                    * state.size
-                    * layerContraction;
-            float period = LAYER_PERIOD_BASE + LAYER_PERIOD_STEP * count;
-            angle = (clock % period) / period * Mth.TWO_PI;
+        float animationTicks = state.ticks * (state.energized ? ENERGIZED_SPIN_FACTOR : 1.0F);
+        float shellSize = state.size * (state.energized ? ENERGIZED_LAYER_CONTRACTION : 1.0F);
+        float totalCharge = 0.0F;
+        for (int index = 0; index < count; index++) {
+            NodeRenderState.AspectLayer layer = state.layers.get(index);
+            float charge = NodeAnimation.charge(layer.amount);
+            totalCharge += charge;
             boolean translucent = layer.blend == TRANSLUCENT_BLEND;
             sink.layer(
-                    count,
+                    index,
                     translucent ? translucentType : aspectType,
-                    angle,
-                    scale,
+                    NodeAnimation.shellAngle(animationTicks, index),
+                    NodeAnimation.shellRadius(charge, state.ticks, index) * shellSize,
                     layerAlpha * (translucent ? TRANSLUCENT_ALPHA_BOOST : 1.0F),
                     layer.color,
                     STRIP_ASPECT,
                     frame);
-            count++;
         }
-        average /= state.layers.size();
-        float coreScale = (0.1F + average / 150.0F) * state.size;
-        float coreAngle = angle;
+        float coreScale = NodeAnimation.coreRadius(totalCharge / count) * state.size;
+        float coreAngle = NodeAnimation.shellAngle(animationTicks, count);
         int strip =
                 switch (state.type) {
                     case NORMAL -> STRIP_NORMAL;
