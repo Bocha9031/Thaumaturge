@@ -1631,7 +1631,7 @@ public final class TTModelProvider implements DataProvider {
         });
         ResourceLocation bloomModel = ModelTemplates.CROSS.create(
                 TTBlocks.ETHEREAL_BLOOM.get(),
-                TextureMapping.cross(TTBlocks.PLANT_SHIMMERLEAF.get()),
+                TextureMapping.cross(TTBlocks.ETHEREAL_BLOOM.get()),
                 (id, json) -> modelOutput.accept(id, () -> {
                     JsonElement element = json.get();
                     element.getAsJsonObject().addProperty("render_type", "minecraft:cutout");
@@ -1640,7 +1640,7 @@ public final class TTModelProvider implements DataProvider {
         simpleBlock(TTBlocks.ETHEREAL_BLOOM.get(), bloomModel);
         ModelTemplates.FLAT_ITEM.create(
                 ModelLocationUtils.getModelLocation(TTItems.ETHEREAL_BLOOM.get()),
-                TextureMapping.layer0(TextureMapping.getBlockTexture(TTBlocks.PLANT_SHIMMERLEAF.get())),
+                TextureMapping.layer0(TextureMapping.getBlockTexture(TTBlocks.ETHEREAL_BLOOM.get())),
                 modelOutput);
 
         simpleBlock(TTBlocks.GRASS_AMBIENT.get(), grassModel);
