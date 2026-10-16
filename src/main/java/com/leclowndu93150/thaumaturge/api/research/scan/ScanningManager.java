@@ -7,6 +7,8 @@ import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -15,6 +17,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -197,7 +202,22 @@ public final class ScanningManager {
         if (BINDING.get().hidesItemForm(state)) {
             return ItemStack.EMPTY;
         }
-        ItemStack stack = state.getCloneItemStack(null, player.level(), pos, player);
+        return blockStack(player, pos, state);
+    }
+
+    static ItemStack blockStack(Player player, BlockPos pos, BlockState state) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 end = eye.add(player.getViewVector(1.0F).scale(player.blockInteractionRange()));
+        BlockHitResult hit = player.level()
+                .clipWithInteractionOverride(
+                        eye, end, pos, state.getShape(player.level(), pos, CollisionContext.of(player)), state);
+        if (hit == null) {
+            // Position-only API targets can be outside the player's current view or have no outline.
+            Vec3 center = Vec3.atCenterOf(pos);
+            Direction face = Direction.getNearest(eye.x - center.x, eye.y - center.y, eye.z - center.z);
+            hit = new BlockHitResult(center, face, pos, false);
+        }
+        ItemStack stack = state.getCloneItemStack(hit, player.level(), pos, player);
         FluidState fluid = state.getFluidState();
         return stack.isEmpty() && !fluid.isEmpty()
                 ? new ItemStack(fluid.getType().getBucket())
