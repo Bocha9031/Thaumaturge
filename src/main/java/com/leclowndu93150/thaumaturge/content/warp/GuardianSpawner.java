@@ -26,19 +26,18 @@ public final class GuardianSpawner {
     private static void spawnGuardian(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         RandomSource rand = player.getRandom();
+        EntityEldritchGuardian guardian = TTEntities.ELDRITCH_GUARDIAN.get().create(level);
+        if (guardian == null) {
+            return;
+        }
         BlockPos origin = player.blockPosition();
         for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
             BlockPos pos = SpawnSpots.ringCell(origin, rand);
             if (!level.getBlockState(pos.below()).isCollisionShapeFullBlock(level, pos.below())) {
                 continue;
             }
-            EntityEldritchGuardian guardian = TTEntities.ELDRITCH_GUARDIAN.get().create(level);
-            if (guardian == null) {
-                return;
-            }
             guardian.moveTo(pos.getX(), pos.getY(), pos.getZ(), rand.nextFloat() * 360.0F, 0.0F);
             if (!canPlace(level, guardian)) {
-                guardian.discard();
                 continue;
             }
             if (level.addFreshEntity(guardian)) {
@@ -51,20 +50,19 @@ public final class GuardianSpawner {
     public static void spawnPortal(ServerPlayer player) {
         ServerLevel level = (ServerLevel) player.level();
         RandomSource rand = player.getRandom();
+        EntityCultistPortalLesser portal =
+                TTEntities.CULTIST_PORTAL_LESSER.get().create(level);
+        if (portal == null) {
+            return;
+        }
         BlockPos origin = player.blockPosition();
         for (int attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
             BlockPos pos = SpawnSpots.ringCell(origin, rand);
             if (!level.getBlockState(pos.below()).isSolidRender(level, pos.below())) {
                 continue;
             }
-            EntityCultistPortalLesser portal =
-                    TTEntities.CULTIST_PORTAL_LESSER.get().create(level);
-            if (portal == null) {
-                return;
-            }
             portal.moveTo(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5, 0.0F, 0.0F);
             if (!canPlace(level, portal)) {
-                portal.discard();
                 continue;
             }
             EventHooks.finalizeMobSpawn(

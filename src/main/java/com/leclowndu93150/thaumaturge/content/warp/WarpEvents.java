@@ -283,12 +283,13 @@ public final class WarpEvents {
                 double x = player.getX() + rand.nextInt(15) - rand.nextInt(15);
                 double y = player.getY() + rand.nextInt(5) - rand.nextInt(5);
                 double z = player.getZ() + rand.nextInt(15) - rand.nextInt(15);
+                float yaw = rand.nextFloat() * 360.0F;
                 BlockPos cell = BlockPos.containing(x, y, z);
                 BlockPos below = cell.below();
                 if (!level.getBlockState(below).isCollisionShapeFullBlock(level, below)) {
                     continue;
                 }
-                spider.moveTo(x, y, z, rand.nextFloat() * 360.0F, 0.0F);
+                spider.moveTo(x, y, z, yaw, 0.0F);
                 if (!level.noCollision(spider) || level.containsAnyLiquid(spider.getBoundingBox())) {
                     continue;
                 }
