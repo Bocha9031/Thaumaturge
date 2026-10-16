@@ -1557,8 +1557,8 @@ public final class TTModelProvider implements DataProvider {
     }
 
     private void treeModels() {
-        simpleFromExisting(TTBlocks.SAPLING_GREATWOOD.get(), "sapling_greatwood");
-        simpleFromExisting(TTBlocks.SAPLING_SILVERWOOD.get(), "sapling_silverwood");
+        cross(TTBlocks.SAPLING_GREATWOOD.get());
+        cross(TTBlocks.SAPLING_SILVERWOOD.get());
         flowerPotCross(TTBlocks.POTTED_SAPLING_GREATWOOD.get(), TTBlocks.SAPLING_GREATWOOD.get());
         flowerPotCross(TTBlocks.POTTED_SAPLING_SILVERWOOD.get(), TTBlocks.SAPLING_SILVERWOOD.get());
         flatItemFromBlock(TTItems.SAPLING_GREATWOOD.get(), TTBlocks.SAPLING_GREATWOOD.get());
@@ -1771,6 +1771,22 @@ public final class TTModelProvider implements DataProvider {
 
     private void registerTaintFibre() {
         ResourceLocation fibre = TTIds.rl("block/taint_fibre");
+        for (int growth = 1; growth <= 4; growth++) {
+            if (growth == 3) {
+                continue;
+            }
+            int stage = growth;
+            ResourceLocation model = TTIds.rl("block/taint_growth_" + stage);
+            modelOutput.accept(model, () -> {
+                JsonObject json = new JsonObject();
+                json.addProperty("parent", "minecraft:block/cross");
+                json.addProperty("render_type", "minecraft:cutout");
+                JsonObject textures = new JsonObject();
+                textures.addProperty("cross", "thaumaturge:block/taint_growth_" + stage);
+                json.add("textures", textures);
+                return json;
+            });
+        }
         MultiPartGenerator generator = MultiPartGenerator.multiPart(TTBlocks.TAINT_FIBRE.get())
                 .with(Condition.condition().term(BlockTaintFibre.NORTH, true), v(fibre))
                 .with(
