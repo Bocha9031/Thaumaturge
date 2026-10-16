@@ -30,12 +30,14 @@ public final class LateWorldRenderQueue {
 
     private static final List<Entry> QUEUE = new ArrayList<>();
     private static final List<Entry> AFTER_BLOCK_ENTITIES = new ArrayList<>();
+    private static final List<Entry> AFTER_LEVEL = new ArrayList<>();
 
     private LateWorldRenderQueue() {}
 
     public static void clear() {
         QUEUE.clear();
         AFTER_BLOCK_ENTITIES.clear();
+        AFTER_LEVEL.clear();
     }
 
     public static void enqueue(Vec3 origin, LateDraw draw) {
@@ -55,12 +57,16 @@ public final class LateWorldRenderQueue {
     }
 
     public static void enqueueBlockEntityOverlay(Vec3 origin, LateDraw draw) {
-        List<Entry> queue = IrisCompat.shadersActive() ? QUEUE : AFTER_BLOCK_ENTITIES;
+        List<Entry> queue = IrisCompat.shadersActive() ? QUEUE : AFTER_LEVEL;
         queue.add(new Entry(origin, Source.BLOCK_ENTITY_OVERLAY, draw));
     }
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            render(event, AFTER_LEVEL);
+            return;
+        }
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
             if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
                 render(event, AFTER_BLOCK_ENTITIES);
@@ -77,12 +83,15 @@ public final class LateWorldRenderQueue {
         }
         Minecraft mc = Minecraft.getInstance();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
-            // Banner cloth and other fixed buffers must finish before the see-through overlay.
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES
+                || event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
             buffers.endBatch();
         }
+        if (event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            mc.getMainRenderTarget().bindWrite(false);
+        }
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
-        PoseStack poseStack = event.getPoseStack();
+        PoseStack poseStack = renderPose(event);
         for (Entry entry : queue) {
             poseStack.pushPose();
             Vec3 origin = SableClientCompat.renderPosition(mc.level, entry.origin);
@@ -95,5 +104,15 @@ public final class LateWorldRenderQueue {
         }
         queue.clear();
         buffers.endBatch();
+    }
+
+    static PoseStack renderPose(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            return event.getPoseStack();
+        }
+        // AFTER_LEVEL has an empty pose stack and no longer has the world's model-view state.
+        PoseStack poseStack = new PoseStack();
+        poseStack.mulPose(event.getModelViewMatrix());
+        return poseStack;
     }
 }
