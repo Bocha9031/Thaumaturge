@@ -2482,6 +2482,8 @@ public final class EntryDetailScreen extends AbstractTTScreen {
         if (!history.isEmpty()) {
             playSound(TTSounds.PAGE.get(), 0.66F, 1.0F);
             shownRecipe = history.pop();
+        } else if (showingAspects || showingKnowledge) {
+            closeInsert();
         } else {
             shownRecipe = null;
         }
