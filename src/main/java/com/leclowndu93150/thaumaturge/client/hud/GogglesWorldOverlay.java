@@ -17,6 +17,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -30,14 +31,13 @@ import org.jspecify.annotations.Nullable;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class GogglesWorldOverlay {
-    private static final float TAG_SCALE_CAP = 0.3F;
-    private static final float TAG_SCALE_GROWTH = 0.031F;
-    private static final float TAG_SCALE_DECAY_DIVISOR = 10.0F;
+    private static final float TAG_SCALE_CAP = 0.5F;
+    private static final double TAG_SCALE_GROW_TICKS = 10.0D;
     private static final float SPACE_ABOVE_LIFT = 0.4F;
     private static final float TAG_ALPHA = 0.75F;
 
-    private static float tagScale;
     private static @Nullable BlockPos lastTarget;
+    private static double animationStartTime;
 
     record AspectReadout(AspectList aspects, boolean showAmounts) {}
 
@@ -45,7 +45,7 @@ public final class GogglesWorldOverlay {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) {
             return;
         }
         Minecraft mc = Minecraft.getInstance();
@@ -77,18 +77,13 @@ public final class GogglesWorldOverlay {
             resetAnimation();
             return;
         }
-        if (!pos.equals(lastTarget)) {
-            tagScale = 0.0F;
-            lastTarget = pos.immutable();
-        }
-        if (tagScale < TAG_SCALE_CAP) {
-            tagScale = tagScale + (TAG_SCALE_GROWTH - tagScale / TAG_SCALE_DECAY_DIVISOR);
-        }
+        double now = mc.level.getGameTime() + event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        float scale = advanceAnimation(pos, now);
 
         boolean spaceAbove = mc.level.getBlockState(pos.above()).isAir();
         Direction dir = spaceAbove ? Direction.UP : mc.player.getDirection().getOpposite();
         double y = pos.getY() + (spaceAbove ? SPACE_ABOVE_LIFT : 0.0F);
-        drawTags(event.getPoseStack(), mc, pos.getX(), y, pos.getZ(), aspects, dir, readout.showAmounts());
+        drawTags(event.getPoseStack(), mc, pos.getX(), y, pos.getZ(), aspects, dir, scale, readout.showAmounts());
     }
 
     static AspectReadout readAspects(Level level, @Nullable BlockEntity blockEntity, BlockPos pos, Direction side) {
@@ -105,14 +100,24 @@ public final class GogglesWorldOverlay {
                 : new AspectReadout(query.queryAspects(), false);
     }
 
+    static float advanceAnimation(BlockPos target, double now) {
+        if (!target.equals(lastTarget)) {
+            lastTarget = target.immutable();
+            animationStartTime = now;
+        }
+        float progress = (float) Mth.clamp((now - animationStartTime) / TAG_SCALE_GROW_TICKS, 0.0D, 1.0D);
+        float remainder = 1.0F - progress;
+        return TAG_SCALE_CAP * (1.0F - remainder * remainder * remainder);
+    }
+
     private static boolean holdsThaumometer(Player player) {
         return player.getMainHandItem().is(TTItems.THAUMOMETER.get())
                 || player.getOffhandItem().is(TTItems.THAUMOMETER.get());
     }
 
     private static void resetAnimation() {
-        tagScale = 0.0F;
         lastTarget = null;
+        animationStartTime = 0.0D;
     }
 
     private static void drawTags(
@@ -123,8 +128,9 @@ public final class GogglesWorldOverlay {
             double z,
             AspectList aspects,
             Direction dir,
+            float scale,
             boolean showAmounts) {
         AspectTagWorldRenderer.renderTagCloud(
-                poseStack, mc, x, y, z, aspects, dir, tagScale, TAG_ALPHA, aspect -> true, showAmounts);
+                poseStack, mc, x, y, z, aspects, dir, scale, TAG_ALPHA, aspect -> true, showAmounts);
     }
 }
