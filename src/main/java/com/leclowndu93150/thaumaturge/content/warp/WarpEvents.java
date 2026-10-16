@@ -9,6 +9,7 @@ import com.leclowndu93150.thaumaturge.content.entity.EntityMindSpider;
 import com.leclowndu93150.thaumaturge.content.equipment.FortressArmorItem;
 import com.leclowndu93150.thaumaturge.content.research.ResearchManager;
 import com.leclowndu93150.thaumaturge.network.ClientboundWarpFXPayload;
+import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import java.util.List;
@@ -42,6 +43,8 @@ public final class WarpEvents {
     private static final int MAX_GUARDIANS = 8;
     private static final int MAX_SPIDERS = 50;
     private static final int SPAWN_ATTEMPTS = 50;
+    private static final int WARP_CHANCE_PERCENT = 100;
+    private static final int MAX_EFFECTIVE_WARP = 100;
 
     private static final int BATH_SALTS_WARP_THRESHOLD = 10;
     private static final int ELDRITCH_MINOR_WARP_THRESHOLD = 25;
@@ -146,28 +149,32 @@ public final class WarpEvents {
         int tw = wc.get(WarpType.TEMPORARY);
         int nw = wc.get(WarpType.NORMAL);
         int pw = wc.get(WarpType.PERMANENT);
-        int warp = tw + nw + pw;
         int gearWarp = WarpManager.getWarpFromGear(player);
-        warp += gearWarp;
+        long rawWarp = (long) tw + nw + pw + gearWarp;
         int warpCounter = wc.getCounter();
         RandomSource rand = player.getRandom();
-        int r = rand.nextInt(100);
-        if (warpCounter <= 0 || warp <= 0 || r > Math.sqrt(warpCounter)) {
-            return;
+        if (warpCounter > 0 && rawWarp > 0) {
+            double fireChance = Math.min(1.0, (Math.floor(Math.sqrt(warpCounter)) + 1.0) / WARP_CHANCE_PERCENT);
+            if (rand.nextDouble() < fireChance) {
+                long weightedWarp = Math.floorDiv(2L * rawWarp + warpCounter, 3L);
+                int effectiveWarp = (int) Math.min(MAX_EFFECTIVE_WARP, weightedWarp);
+                int eff = rand.nextInt(effectiveWarp) + gearWarp;
+                ItemStack helm = player.getItemBySlot(EquipmentSlot.HEAD);
+                if (helm.getItem() instanceof FortressArmorItem
+                        && FortressArmorItem.mask(helm) == GRINNING_DEVIL_MASK) {
+                    eff -= GRINNING_DEVIL_BASE_REDUCTION + rand.nextInt(GRINNING_DEVIL_RANDOM_REDUCTION);
+                }
+                int counterAfterEvent =
+                        (int) Math.min(warpCounter - 5.0, warpCounter - 2.0 * Math.sqrt(warpCounter) + 2.0 * gearWarp);
+                PacketDistributor.sendToPlayer(player, ClientboundWarpFXPayload.heartbeat());
+                wc.setCounter(counterAfterEvent);
+                if (eff > 0) {
+                    dispatchEvent(player, eff, new Roll(effectiveWarp, nw, rand));
+                }
+                checkWarpMilestones(player, nw + pw);
+            }
         }
-        warp = Math.min(100, (warp + warp + warpCounter) / 3);
-        warpCounter = (int) (warpCounter - Math.max(5.0, Math.sqrt(warpCounter) * 2.0 - gearWarp * 2));
-        wc.setCounter(warpCounter);
-        int eff = rand.nextInt(warp) + gearWarp;
-        ItemStack helm = player.getItemBySlot(EquipmentSlot.HEAD);
-        if (helm.getItem() instanceof FortressArmorItem && FortressArmorItem.mask(helm) == GRINNING_DEVIL_MASK) {
-            eff -= GRINNING_DEVIL_BASE_REDUCTION + rand.nextInt(GRINNING_DEVIL_RANDOM_REDUCTION);
-        }
-        PacketDistributor.sendToPlayer(player, ClientboundWarpFXPayload.heartbeat());
-        if (eff > 0) {
-            dispatchEvent(player, eff, new Roll(warp, nw, rand));
-        }
-        checkWarpMilestones(player, nw + pw);
+        player.syncData(TTAttachments.WARP);
     }
 
     private static void dispatchEvent(ServerPlayer player, int eff, Roll roll) {
