@@ -1,5 +1,6 @@
 {
  "parent": "block/block",
+ "render_type": "minecraft:translucent",
  "textures": {
   "metal": "thaumaturge:block/base_metal",
   "brass": "thaumaturge:block/metal_brass",
