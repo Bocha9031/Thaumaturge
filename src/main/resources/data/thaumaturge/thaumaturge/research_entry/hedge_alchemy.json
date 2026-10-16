@@ -98,7 +98,9 @@
         "thaumaturge:crucible/cobweb",
         "thaumaturge:crucible/lava_bucket",
         "thaumaturge:crucible/mossy_cobblestone",
-        "thaumaturge:crucible/mossy_stone_bricks"
+        "thaumaturge:crucible/mossy_stone_bricks",
+        "thaumaturge:crucible/ice",
+        "thaumaturge:crucible/bone_meal"
       ],
       "craft": [
         {
@@ -149,7 +151,9 @@
         "thaumaturge:crucible/cobweb",
         "thaumaturge:crucible/lava_bucket",
         "thaumaturge:crucible/mossy_cobblestone",
-        "thaumaturge:crucible/mossy_stone_bricks"
+        "thaumaturge:crucible/mossy_stone_bricks",
+        "thaumaturge:crucible/ice",
+        "thaumaturge:crucible/bone_meal"
       ]
     }
   ],
