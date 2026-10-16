@@ -88,10 +88,14 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         if (meta >= SMALL_SLIME_META_MIN
                 && meta < SMALL_SLIME_META_MAX
                 && airAbove
-                && rand.nextInt(SLIME_SPAWN_CHANCE) == 0) {
-            spawnSlime(level, pos, 1);
-        } else if (meta >= SMALL_SLIME_META_MAX && airAbove && rand.nextInt(SLIME_SPAWN_CHANCE) == 0) {
-            spawnSlime(level, pos, 2);
+                && rand.nextInt(SLIME_SPAWN_CHANCE) == 0
+                && spawnSlime(level, pos, 1)) {
+            return;
+        } else if (meta >= SMALL_SLIME_META_MAX
+                && airAbove
+                && rand.nextInt(SLIME_SPAWN_CHANCE) == 0
+                && spawnSlime(level, pos, 2)) {
+            return;
         } else if (meta >= SMALL_SLIME_META_MAX && airAbove && tryFester(level, pos, rand)) {
             AuraHelper.polluteAura(level, pos, POLLUTE_AMOUNT, true);
         } else if (rand.nextInt(DECAY_ROLL_CHANCE) == 0) {
@@ -372,16 +376,17 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         }
     }
 
-    private static void spawnSlime(ServerLevel level, BlockPos pos, int size) {
-        level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+    private static boolean spawnSlime(ServerLevel level, BlockPos pos, int size) {
         ThaumicSlime slime = TTEntities.THAUMIC_SLIME.get().create(level);
         if (slime == null) {
-            return;
+            return false;
         }
         slime.setSize(size, true);
-        slime.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        slime.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         level.addFreshEntity(slime);
         level.playSound(null, pos, TTSounds.GORE.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
+        return true;
     }
 
     public static final class Source extends FluxGooFluid {
