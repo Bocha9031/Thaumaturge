@@ -6,6 +6,8 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanKeys;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanTarget;
+import com.leclowndu93150.thaumaturge.api.research.scan.ScannedBlock;
+import com.leclowndu93150.thaumaturge.api.research.scan.ScannedEntity;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanningManager;
 import com.leclowndu93150.thaumaturge.client.render.TTFlatRenderTypes;
 import com.leclowndu93150.thaumaturge.client.render.aspect.AspectTagWorldRenderer;
@@ -52,14 +54,12 @@ public final class ThaumometerLensRenderer {
         if (mc.level == null) {
             return;
         }
-        Object target = ThaumometerItem.resolveTarget(mc.level, player);
-        if (target == null) {
-            return;
-        }
+        ScanTarget target = ThaumometerItem.resolveTarget(mc.level, player);
         Component name = null;
         Component nodeLine = null;
         AspectList aspects = null;
-        if (target instanceof BlockPos pos) {
+        if (target instanceof ScannedBlock scannedBlock) {
+            BlockPos pos = scannedBlock.pos();
             if (mc.level.getBlockEntity(pos) instanceof BlockEntityNode node) {
                 name = Component.translatable(
                         node.isEnergized()
@@ -87,13 +87,15 @@ public final class ThaumometerLensRenderer {
                     aspects = AspectIndexAccess.index().of(pick);
                 }
             }
-        } else if (target instanceof ItemEntity itemEntity) {
+        } else if (target instanceof ScannedEntity scannedEntity
+                && scannedEntity.entity() instanceof ItemEntity itemEntity) {
             ItemStack stack = itemEntity.getItem();
             name = stack.getHoverName();
-            if (PlayerResearchAccess.of(player).knows(ScanKeys.item(stack.getItem()))) {
+            if (!stack.isEmpty() && PlayerResearchAccess.of(player).knows(ScanKeys.item(stack.getItem()))) {
                 aspects = AspectIndexAccess.index().of(stack);
             }
-        } else if (target instanceof Entity entity) {
+        } else if (target instanceof ScannedEntity scannedEntity) {
+            Entity entity = scannedEntity.entity();
             name = entity.getName();
             if (PlayerResearchAccess.of(player).knows(ScanKeys.entity(entity.getType()))) {
                 aspects = EntityAspects.of(entity);
