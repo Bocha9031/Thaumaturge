@@ -97,7 +97,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
                 && spawnSlime(level, pos, 2)) {
             return;
         } else if (meta >= SMALL_SLIME_META_MAX && airAbove && tryFester(level, pos, rand)) {
-            AuraHelper.polluteAura(level, pos, POLLUTE_AMOUNT, true);
+            return;
         } else if (rand.nextInt(DECAY_ROLL_CHANCE) == 0) {
             boolean pollutes = !PhysicalFluxAuraFloor.isEnabled();
             if (meta == 0) {
@@ -133,6 +133,7 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
         if (!TaintBiomeManager.isTainted(level, pos) && !TaintBiomeManager.taintColumn(level, pos)) {
             return false;
         }
+        AuraHelper.polluteAura(level, pos, POLLUTE_AMOUNT, true);
         TaintHelper.establishFoothold(level, pos, FESTER_PRESSURE, FESTER_SPREAD_ATTEMPTS);
         return true;
     }
