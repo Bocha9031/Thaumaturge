@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.api.aura;
 
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -162,6 +163,11 @@ public final class AuraHelper {
         return bindingOrThrow().drainVis(level, pos, amount, simulate);
     }
 
+    /** Drains vis as part of a transaction; the change is restored if the scope rolls back. */
+    public static float drainVis(Level level, BlockPos pos, float amount, TransactionContext transaction) {
+        return bindingOrThrow().drainVis(level, pos, amount, transaction);
+    }
+
     /**
      * Drains up to {@code amount} flux from the chunk.
      *
@@ -265,6 +271,8 @@ public final class AuraHelper {
         void addFlux(Level level, BlockPos pos, float amount);
 
         float drainVis(Level level, BlockPos pos, float amount, boolean simulate);
+
+        float drainVis(Level level, BlockPos pos, float amount, TransactionContext transaction);
 
         float drainFlux(Level level, BlockPos pos, float amount, boolean simulate);
 

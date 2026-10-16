@@ -10,19 +10,18 @@ import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.aura.IVisRelaySource;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.wands.EntityAspectOrb;
 import com.leclowndu93150.thaumaturge.content.wands.WandChargingEvents;
-import com.leclowndu93150.thaumaturge.content.wands.WandEconomy;
 import com.leclowndu93150.thaumaturge.data.worldgen.biome.TTBiomes;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,7 +32,6 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
@@ -321,23 +319,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
     }
 
-    private static final int CV_BUFFER_CAP_SECONDS = 10;
-    private static final int TICKS_PER_SECOND = 20;
-
-    private final Map<ResourceLocation, Integer> cvAllowance = new HashMap<>();
-    private final Map<ResourceLocation, Integer> cvCredit = new HashMap<>();
-
-    private void accrueCentivis() {
-        for (AspectInstance entry : aspectsBase.entries()) {
-            ResourceLocation id = entry.aspect().unwrapKey().orElseThrow().location();
-            int rate = entry.amount();
-            int cap = rate * TICKS_PER_SECOND * CV_BUFFER_CAP_SECONDS;
-            int allowance = cvAllowance.getOrDefault(id, 0);
-            if (allowance < cap) {
-                cvAllowance.put(id, Math.min(cap, allowance + rate));
-            }
-        }
-    }
+    private final NodeCentivis centivis = new NodeCentivis(this);
 
     public int centivisRate(Holder<IAspect> aspect) {
         return energized ? aspectsBase.amountOf(aspect) : 0;
@@ -351,28 +333,15 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         if (!energized) {
             return 0;
         }
-        ResourceLocation id = aspect.unwrapKey().orElseThrow().location();
-        int stored = aspects.amountOf(aspect) * WandEconomy.CENTIVIS_PER_VIS + cvCredit.getOrDefault(id, 0);
-        return Math.min(cvAllowance.getOrDefault(id, 0), stored);
+        return centivis.available(aspect);
     }
 
-    public int drainCentivis(Holder<IAspect> aspect, int amount) {
-        if (!energized || amount <= 0) {
-            return 0;
-        }
-        ResourceLocation id = aspect.unwrapKey().orElseThrow().location();
-        int allowance = Math.min(cvAllowance.getOrDefault(id, 0), amount);
-        if (allowance <= 0) {
-            return 0;
-        }
-        int credit = cvCredit.getOrDefault(id, 0);
-        while (credit < allowance && drain(aspect, 1)) {
-            credit += WandEconomy.CENTIVIS_PER_VIS;
-        }
-        int taken = Math.min(allowance, credit);
-        cvCredit.put(id, credit - taken);
-        cvAllowance.put(id, cvAllowance.getOrDefault(id, 0) - taken);
-        return taken;
+    public int drainCentivis(Holder<IAspect> aspect, int amount, TransactionContext transaction) {
+        return energized ? centivis.drain(aspect, amount, transaction) : 0;
+    }
+
+    void changed() {
+        setChangedAndSync();
     }
 
     public void serverTick(Level tickLevel, BlockPos pos) {
@@ -385,7 +354,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             if (NodeEnergy.refillDue(serverLevel) && NodeEnergy.refill(this, serverLevel, pos)) {
                 changed = true;
             }
-            accrueCentivis();
+            centivis.accrue();
             if (drainTicks > 0 && --drainTicks == 0) {
                 drainPlayer = null;
                 changed = true;

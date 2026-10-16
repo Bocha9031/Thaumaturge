@@ -5,6 +5,7 @@ import com.leclowndu93150.thaumaturge.api.aura.VisRelayHelper;
 import com.leclowndu93150.thaumaturge.api.recipe.ArcaneWorkbenchContext;
 import com.leclowndu93150.thaumaturge.api.recipe.IArcaneWorkbench;
 import com.leclowndu93150.thaumaturge.api.recipe.IWorkbenchVisSource;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -16,12 +17,12 @@ public final class VisRelayWorkbenchSource implements IWorkbenchVisSource {
             IArcaneWorkbench workbench,
             Holder<IAspect> aspect,
             int need,
-            boolean simulate) {
+            TransactionContext transaction) {
         return VisRelayHelper.drainCentivis(
                 context.level(),
                 context.blockPosition().orElseGet(player::blockPosition),
                 aspect.unwrapKey().orElseThrow(),
                 need,
-                simulate);
+                transaction);
     }
 }

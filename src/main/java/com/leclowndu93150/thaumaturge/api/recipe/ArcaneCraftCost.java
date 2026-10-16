@@ -44,7 +44,7 @@ public record ArcaneCraftCost(
      * Computes the cost of crafting {@code recipe} at {@code workbench} for {@code player}.
      *
      * <p>{@link IWorkbenchVisSource}s are consulted only when a context is given and the player is
-     * a server player, and only with simulated calls. Affordability here covers the wand, sources
+     * a server player. Their tentative resource changes are rolled back. Affordability here covers the wand, sources
      * and crystals; {@link ArcaneCraftingTransaction#preview} also checks the aura.
      *
      * @param recipe    the arcane recipe

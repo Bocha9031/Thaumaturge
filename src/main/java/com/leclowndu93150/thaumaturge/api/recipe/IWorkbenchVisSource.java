@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.api.recipe;
 
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -10,9 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
  * that an addon (for example a networked storage system near the workbench) can pay a primal's
  * share of a craft instead of a crystal.
  *
- * <p>The planner sizes a craft with simulated calls, and a craft simulates every payment before it
- * pays anything. A simulated call must not change any state. A real call must supply exactly what
- * the matching simulated call reported when nothing changed in between; the craft fails otherwise.
+ * <p>Supplies are made in the caller's transaction. A caller may use a child transaction to test
+ * availability and close it uncommitted to restore tentative changes.
  * Sources are only consulted on the server, when the craft has an {@link ArcaneWorkbenchContext}.
  *
  * <p>Register sources through {@link RegisterWorkbenchVisSourcesEvent}.
@@ -29,7 +29,7 @@ public interface IWorkbenchVisSource {
      * @param workbench the workbench inventory
      * @param aspect    the primal aspect required
      * @param need      the centivis still required for this aspect
-     * @param simulate  true to report what would be supplied without changing anything
+     * @param transaction the transaction that owns resource changes
      * @return the centivis supplied, never more than {@code need}; larger or negative values are
      *         clamped by the caller
      */
@@ -39,5 +39,5 @@ public interface IWorkbenchVisSource {
             IArcaneWorkbench workbench,
             Holder<IAspect> aspect,
             int need,
-            boolean simulate);
+            TransactionContext transaction);
 }

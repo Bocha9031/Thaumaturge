@@ -6,6 +6,8 @@ import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.recipe.ArcaneCraftingTransaction;
 import com.leclowndu93150.thaumaturge.api.recipe.ArcaneWorkbenchContext;
 import com.leclowndu93150.thaumaturge.api.recipe.IArcaneCraftingStore;
+import com.leclowndu93150.thaumaturge.api.transaction.RootCommitJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
 import com.leclowndu93150.thaumaturge.content.misc.TTActionBar;
 import com.leclowndu93150.thaumaturge.content.recipe.workbench.ArcaneCraftingInput;
 import com.leclowndu93150.thaumaturge.content.research.ResearchProgressionEvents;
@@ -250,12 +252,16 @@ public final class MenuArcaneWorkbench extends AbstractContainerMenu {
                 input.items(), recipe.getRemainingItems(input), AspectList.EMPTY, craftingInventory.wandStack());
         ItemStack output = recipe.assemble(input, level.registryAccess());
         if (!ItemStack.matches(output, expected)) return ItemStack.EMPTY;
-        if (!store.consume(consumption, false)) {
-            return ItemStack.EMPTY;
+        try (Transaction transaction = Transaction.openRoot()) {
+            if (!store.consume(consumption, transaction)) {
+                return ItemStack.EMPTY;
+            }
+            ItemStack crafted = output.copy();
+            new RootCommitJournal(() -> ResearchProgressionEvents.recordCrafted(serverPlayer, crafted))
+                    .updateSnapshots(transaction);
+            transaction.commit();
+            return output;
         }
-        ItemStack crafted = output.copy();
-        ResearchProgressionEvents.recordCrafted(serverPlayer, crafted);
-        return output;
     }
 
     private ArcaneWorkbenchContext context(ServerPlayer serverPlayer) {

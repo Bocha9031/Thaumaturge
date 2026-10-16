@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.leclowndu93150.thaumaturge.api.aura.IAuraChunk;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
+import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
 import com.leclowndu93150.thaumaturge.content.aura.pressure.FluxPressureEvents;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFluxAuraFloor;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFluxOutbreaks;
@@ -188,6 +189,30 @@ class AuraCompatibilityTest {
         AuraManager.creditVis(level, BlockPos.ZERO, 50000);
         assertEquals(32766.0F, data.getVis());
         verify(chunk, times(3)).setUnsaved(true);
+    }
+
+    @Test
+    void transactionalVisWithdrawalRestoresAuraOnAbortAndMarksChunkDirtyAtRootCommit() {
+        AuraData data = new AuraData((short) 100, 10, 5);
+        LevelChunk chunk = attach(new ChunkPos(0, 0), data);
+
+        try (Transaction root = Transaction.openRoot()) {
+            assertEquals(4.0F, AuraManager.withdrawVis(level, BlockPos.ZERO, 4.0F, root));
+            assertEquals(6.0F, data.getVis());
+            verify(chunk, never()).setUnsaved(anyBoolean());
+        }
+
+        assertEquals(10.0F, data.getVis());
+        verify(chunk, never()).setUnsaved(anyBoolean());
+
+        try (Transaction root = Transaction.openRoot()) {
+            assertEquals(4.0F, AuraManager.withdrawVis(level, BlockPos.ZERO, 4.0F, root));
+            verify(chunk, never()).setUnsaved(anyBoolean());
+            root.commit();
+        }
+
+        assertEquals(6.0F, data.getVis());
+        verify(chunk).setUnsaved(true);
     }
 
     @Test

@@ -2,6 +2,9 @@ package com.leclowndu93150.thaumaturge.content.aura;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
+import com.leclowndu93150.thaumaturge.api.transaction.RootCommitJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import com.leclowndu93150.thaumaturge.network.effect.ClientboundSpawnParticlePayload;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import com.leclowndu93150.thaumaturge.registry.TTParticles;
@@ -68,7 +71,29 @@ public final class AuraManager {
     }
 
     public static float withdrawVis(Level level, BlockPos pos, float amount, boolean simulate) {
-        return Pool.VIS.drain(level, pos, amount, simulate);
+        if (amount <= 0.0F) {
+            return 0.0F;
+        }
+        try (Transaction transaction = Transaction.openRoot()) {
+            float drained = withdrawVis(level, pos, amount, transaction);
+            if (!simulate) {
+                transaction.commit();
+            }
+            return drained;
+        }
+    }
+
+    public static float withdrawVis(Level level, BlockPos pos, float amount, TransactionContext transaction) {
+        AuraData data = chunkAt(level, pos);
+        if (data == null || amount <= 0.0F) {
+            return 0.0F;
+        }
+        float taken = Math.min(amount, data.getVis());
+        if (taken > 0.0F) {
+            data.setVis(data.getVis() - taken, transaction);
+            new RootCommitJournal(() -> markChunkDirty(level, pos)).updateSnapshots(transaction);
+        }
+        return taken;
     }
 
     public static void creditFlux(Level level, BlockPos pos, float amount) {

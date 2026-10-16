@@ -378,6 +378,10 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
 
     private static boolean spawnSlime(ServerLevel level, BlockPos pos, int size) {
         ThaumicSlime slime = TTEntities.THAUMIC_SLIME.get().create(level);
+        return spawnSlime(level, pos, size, slime);
+    }
+
+    static boolean spawnSlime(ServerLevel level, BlockPos pos, int size, ThaumicSlime slime) {
         if (slime == null) {
             return false;
         }

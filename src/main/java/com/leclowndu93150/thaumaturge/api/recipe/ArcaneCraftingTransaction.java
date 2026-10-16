@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.api.recipe;
 
 import com.leclowndu93150.thaumaturge.api.ApiBinding;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.resources.ResourceKey;
@@ -14,8 +15,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Runs arcane crafts for workbenches other than Thaumaturge's own, such as crafting terminals and
  * autocrafters. A craft pays wand vis, external vis sources, crystals and aura, and consumes the
- * grid. Every part is checked with a simulated pass before anything is changed, so a craft that
- * cannot complete changes nothing.
+ * grid. Mutations are tentative in a caller-owned transaction; closing it without committing rolls
+ * back supported participants.
  *
  * <p>All methods are server side and must run on the server thread. The implementation is bound
  * at mod init by Thaumaturge via {@link #bind(Bindings)}; addons must not call {@code bind}.
@@ -29,7 +30,8 @@ public final class ArcaneCraftingTransaction {
 
     /**
      * Reports whether the input can be crafted right now and at what cost, without changing
-     * anything. The payment is simulated but not made, and no store is consulted.
+     * anything. A temporary transaction checks resource availability and is rolled back before
+     * this method returns; no store is consulted.
      *
      * @param context where and for whom the craft runs
      * @param player  the crafting player
@@ -61,21 +63,18 @@ public final class ArcaneCraftingTransaction {
     }
 
     /**
-     * Crafts the input, or checks that it could be crafted.
+     * Crafts the input as part of the supplied transaction.
      *
-     * <p>The recipe is matched against {@code input}, the cost is planned, and {@code store} is asked
-     * whether it can consume the grid, crystals and wand vis. With {@code simulate} true nothing is
-     * changed and the result reports whether the craft would succeed. With {@code simulate} false
-     * the payment and the store's consumption are both simulated first; only when both succeed is
-     * the cost paid and the store told to consume, so a failed craft changes nothing. The caller is
-     * responsible for placing {@link Result#output()}; check that it fits with a simulated craft
-     * before crafting for real.
+     * <p>Every payment and store mutation joins {@code transaction}. The caller decides whether to
+     * commit it; closing the owning transaction without commit rolls back the craft. The caller is
+     * responsible for placing {@link Result#output()} as part of the same transaction when that
+     * placement can fail.
      *
      * @param context  where and for whom the craft runs
      * @param player   the crafting player
      * @param input    the grid, crystals and wand to craft from, read from {@code store}
      * @param store    the storage the input was read from
-     * @param simulate true to check the craft without changing anything
+     * @param transaction the transaction that owns the craft
      * @return the outcome; {@link Result#output()} holds the crafted item on success
      * @throws IllegalStateException when called before the implementation has bound the facade
      */
@@ -84,9 +83,10 @@ public final class ArcaneCraftingTransaction {
             ServerPlayer player,
             IArcaneCraftingInput input,
             IArcaneCraftingStore store,
-            boolean simulate) {
+            TransactionContext transaction) {
         Objects.requireNonNull(store, "store");
-        return BINDING.get().craft(context, player, input, store, simulate);
+        Objects.requireNonNull(transaction, "transaction");
+        return BINDING.get().craft(context, player, input, store, transaction);
     }
 
     /**
@@ -324,7 +324,7 @@ public final class ArcaneCraftingTransaction {
          * @param player   the crafting player
          * @param input    the grid, crystals and wand to craft from
          * @param store    the storage the input was read from
-         * @param simulate true to check the craft without changing anything
+         * @param transaction the transaction that owns the craft
          * @return the outcome
          */
         Result craft(
@@ -332,6 +332,6 @@ public final class ArcaneCraftingTransaction {
                 ServerPlayer player,
                 IArcaneCraftingInput input,
                 IArcaneCraftingStore store,
-                boolean simulate);
+                TransactionContext transaction);
     }
 }

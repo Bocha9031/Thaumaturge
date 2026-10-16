@@ -1,5 +1,9 @@
 package com.leclowndu93150.thaumaturge.api.items;
 
+import com.leclowndu93150.thaumaturge.api.transaction.SnapshotJournal;
+import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
@@ -11,6 +15,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -269,40 +274,7 @@ public final class InvHelper {
 
     /** Removes the requested amount from the player's main inventory, or makes no change. */
     public static boolean takeFromPlayer(Player player, ItemStack wanted, boolean byTag) {
-        if (wanted.isEmpty() || !playerHolds(player, wanted, byTag)) {
-            return false;
-        }
-        ItemMatch match = ItemMatch.ITEM_OR_TAG
-                .byTag(byTag)
-                .ignoringComponents(wanted.isComponentsPatchEmpty())
-                .withComponentSubset(true);
-        List<ItemStack> items = player.getInventory().items;
-        int remaining = wanted.getCount();
-        for (int slot = 0; slot < items.size() && remaining > 0; slot++) {
-            ItemStack held = items.get(slot);
-            if (!held.isEmpty() && match.test(wanted, held)) {
-                remaining -= Math.min(remaining, held.getCount());
-            }
-        }
-        if (remaining > 0) {
-            return false;
-        }
-        remaining = wanted.getCount();
-        for (int slot = 0; slot < items.size() && remaining > 0; slot++) {
-            ItemStack held = items.get(slot);
-            if (held.isEmpty() || !match.test(wanted, held)) {
-                continue;
-            }
-            int amount = Math.min(remaining, held.getCount());
-            if (amount == held.getCount()) {
-                items.set(slot, ItemStack.EMPTY);
-            } else {
-                held.shrink(amount);
-            }
-            remaining -= amount;
-        }
-        player.getInventory().setChanged();
-        return true;
+        return drainPlayer(player, wanted, byTag, false);
     }
 
     /** Finds the first accepted candidate using modern immutable match rules. */
@@ -737,29 +709,90 @@ public final class InvHelper {
      * @return whether the full amount was consumed
      */
     public static boolean consumePlayerItem(Player player, ItemStack stack, boolean skipCheck, boolean useTags) {
-        if (!skipCheck && !isPlayerCarryingAmount(player, stack, useTags)) {
+        return drainPlayer(player, stack, useTags, skipCheck);
+    }
+
+    private static boolean drainPlayer(Player player, ItemStack wanted, boolean byTag, boolean keepPartial) {
+        if (wanted.isEmpty()) {
             return false;
         }
-        int remaining = stack.getCount();
-        InvFilter filter = new InvFilter(false, stack.isComponentsPatchEmpty(), useTags, false).setRelaxedComponents();
-        List<ItemStack> items = player.getInventory().items;
-        for (int slot = 0; slot < items.size(); slot++) {
-            ItemStack held = items.get(slot);
-            if (!areItemStacksEqual(held, stack, filter)) {
-                continue;
+        ItemMatch match = playerMatch(wanted, byTag);
+        PlayerInventoryJournal journal = new PlayerInventoryJournal(player.getInventory());
+        try (Transaction transaction = Transaction.openRoot()) {
+            int removed = journal.drain(wanted, match, wanted.getCount(), transaction);
+            boolean complete = removed == wanted.getCount();
+            if (complete || keepPartial) {
+                transaction.commit();
             }
-            if (held.getCount() > remaining) {
-                held.shrink(remaining);
-                remaining = 0;
-            } else {
-                remaining -= held.getCount();
-                items.set(slot, ItemStack.EMPTY);
+            return complete;
+        }
+    }
+
+    private static ItemMatch playerMatch(ItemStack wanted, boolean byTag) {
+        return ItemMatch.EXACT
+                .byTag(byTag)
+                .ignoringComponents(wanted.isComponentsPatchEmpty())
+                .withComponentSubset(true);
+    }
+
+    /** One reusable inventory participant for all player drains in an outer transaction. */
+    static final class PlayerInventoryJournal extends SnapshotJournal<PlayerInventoryJournal.InventorySnapshot> {
+        private final Inventory inventory;
+
+        PlayerInventoryJournal(Inventory inventory) {
+            this.inventory = inventory;
+        }
+
+        int drain(ItemStack wanted, ItemMatch match, int amount, TransactionContext transaction) {
+            int remaining = amount;
+            List<ItemStack> items = inventory.items;
+            for (int slot = 0; slot < items.size(); slot++) {
+                if (remaining <= 0) {
+                    break;
+                }
+                ItemStack held = items.get(slot);
+                if (held.isEmpty() || !match.test(wanted, held)) {
+                    continue;
+                }
+                int taken = Math.min(remaining, held.getCount());
+                updateSnapshots(transaction);
+                if (taken == held.getCount()) {
+                    items.set(slot, ItemStack.EMPTY);
+                } else {
+                    items.set(slot, held.copyWithCount(held.getCount() - taken));
+                }
+                remaining -= taken;
             }
-            if (remaining <= 0) {
-                return true;
+            return amount - remaining;
+        }
+
+        @Override
+        protected InventorySnapshot createSnapshot() {
+            List<ItemStack> stacks = new ArrayList<>(inventory.items);
+            int[] counts = new int[stacks.size()];
+            for (int slot = 0; slot < stacks.size(); slot++) {
+                counts[slot] = stacks.get(slot).getCount();
+            }
+            return new InventorySnapshot(stacks, counts);
+        }
+
+        @Override
+        protected void revertToSnapshot(InventorySnapshot snapshot) {
+            for (int slot = 0; slot < snapshot.stacks().size(); slot++) {
+                ItemStack original = snapshot.stacks().get(slot);
+                if (!original.isEmpty()) {
+                    original.setCount(snapshot.counts()[slot]);
+                }
+                inventory.items.set(slot, original);
             }
         }
-        return false;
+
+        @Override
+        protected void onRootCommit(InventorySnapshot original) {
+            inventory.setChanged();
+        }
+
+        private record InventorySnapshot(List<ItemStack> stacks, int[] counts) {}
     }
 
     /**
