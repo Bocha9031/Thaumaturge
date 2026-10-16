@@ -2,7 +2,9 @@ package com.leclowndu93150.thaumaturge.api.aura;
 
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * A block that feeds primal vis into the vis relay network. Thaumaturge's energized aura nodes are
@@ -22,6 +24,11 @@ import net.minecraft.resources.ResourceKey;
  * @since 1.0.0
  */
 public interface IVisRelaySource {
+    /** Relay beam endpoint; defaults to the source block center. */
+    default Vec3 beamTarget(BlockPos sourcePos) {
+        return Vec3.atCenterOf(sourcePos);
+    }
+
     /**
      * Whether relays may link to and drain this source now, for example because it is powered.
      *

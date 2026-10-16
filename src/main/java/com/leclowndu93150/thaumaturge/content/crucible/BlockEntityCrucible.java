@@ -19,6 +19,7 @@ import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
 import java.awt.*;
+import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -418,6 +419,17 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
     }
 
     public ItemStack attemptSmelt(ItemStack stack, Player owner) {
+        return attemptSmelt(stack, owner, null, false);
+    }
+
+    /** Native Crucible crafting for automation, with output capture and optional effect deferral. */
+    public ItemStack attemptSmeltForAutomation(
+            ItemStack stack, Player owner, Consumer<ItemStack> outputSink, boolean deferCompletionEffect) {
+        return attemptSmelt(stack, owner, outputSink, deferCompletionEffect);
+    }
+
+    private ItemStack attemptSmelt(
+            ItemStack stack, Player owner, @Nullable Consumer<ItemStack> outputSink, boolean deferCompletionEffect) {
         if (level == null || level.isClientSide()) return stack;
         if (owner == null || owner.isDeadOrDying()) return stack;
         if (tank.getFluidAmount() <= 0) return stack;
@@ -434,7 +446,11 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                 {
                     tank.drain(50, IFluidHandler.FluidAction.EXECUTE);
                 }
-                ejectItem(out.copy());
+                if (outputSink == null) {
+                    ejectItem(out.copy());
+                } else {
+                    outputSink.accept(out.copy());
+                }
                 NeoForge.EVENT_BUS.post(new CrucibleEvent.Crafted(
                         owner, getBlockPos(), getBlockState(), this, out.copy(), recipe.aspects()));
                 craftDone = true;
@@ -471,7 +487,9 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
 
         if (craftDone) {
             syncToClient();
-            level.blockEvent(getBlockPos(), getBlockState().getBlock(), 99, 0);
+            if (!deferCompletionEffect) {
+                level.blockEvent(getBlockPos(), getBlockState().getBlock(), 99, 0);
+            }
         }
 
         setChanged();

@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.api.aspect;
 
+import net.minecraft.world.phys.Vec3;
+
 /**
  * An aspect container that devices such as the infusion matrix may drain essentia from or fill
  * with essentia.
@@ -21,6 +23,11 @@ package com.leclowndu93150.thaumaturge.api.aspect;
  * @since 1.0.0
  */
 public interface IAspectSource extends IAspectContainer {
+    /** Offset for essentia drain effects; defaults to zero. */
+    default Vec3 drainEffectOffset() {
+        return Vec3.ZERO;
+    }
+
     /**
      * This source's preference in automated essentia selection. Higher values are tried first;
      * equal priorities retain the native selection order.

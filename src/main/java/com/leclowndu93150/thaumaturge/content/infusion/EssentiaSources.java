@@ -79,7 +79,12 @@ public final class EssentiaSources {
             }
             markChanged(level, candidate.pos());
             Vec3 target = drainTarget != null ? drainTarget : Vec3.atCenterOf(owner.below());
-            stream(level, Vec3.atCenterOf(candidate.pos()), target, aspect, extend);
+            stream(
+                    level,
+                    Vec3.atCenterOf(candidate.pos()).add(candidate.source().drainEffectOffset()),
+                    target,
+                    aspect,
+                    extend);
             return true;
         }
         return fail(now);

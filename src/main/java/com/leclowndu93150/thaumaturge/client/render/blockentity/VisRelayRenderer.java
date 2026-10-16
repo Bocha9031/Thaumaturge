@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
+import com.leclowndu93150.thaumaturge.api.aura.VisRelayCapabilities;
 import com.leclowndu93150.thaumaturge.api.items.GogglesAccess;
 import com.leclowndu93150.thaumaturge.client.effect.LateWorldRenderQueue;
 import com.leclowndu93150.thaumaturge.client.effect.rendertype.VisRelayBeamRenderTypes;
@@ -56,9 +57,13 @@ public final class VisRelayRenderer implements BlockEntityRenderer<BlockEntityVi
         }
         Vec3 own = BlockVisRelay.crystalPosition(relay.getBlockPos(), relay.getBlockState());
         BlockState parentState = relay.getLevel().getBlockState(parent);
-        Vec3 target = parentState.getBlock() instanceof BlockVisRelay
-                ? BlockVisRelay.crystalPosition(parent, parentState)
-                : Vec3.atCenterOf(parent);
+        Vec3 target;
+        if (parentState.getBlock() instanceof BlockVisRelay) {
+            target = BlockVisRelay.crystalPosition(parent, parentState);
+        } else {
+            var source = relay.getLevel().getCapability(VisRelayCapabilities.SOURCE, parent, null);
+            target = source == null ? Vec3.atCenterOf(parent) : source.beamTarget(parent);
+        }
         Vec3 start = target.subtract(own);
         long now = relay.getLevel().getGameTime();
         float sincePulse = now - relay.pulseStart() + partialTick;

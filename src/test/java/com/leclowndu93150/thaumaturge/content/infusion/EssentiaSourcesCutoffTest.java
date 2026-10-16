@@ -59,6 +59,7 @@ class EssentiaSourcesCutoffTest {
 
     private IAspectSource source(BlockPos pos, int priority, boolean empty, int suction) {
         IAspectSource source = mock(IAspectSource.class);
+        when(source.drainEffectOffset()).thenReturn(Vec3.ZERO);
         when(source.getSourcePriority()).thenReturn(priority);
         when(source.getAspects()).thenReturn(empty ? AspectList.EMPTY : AspectList.EMPTY.add(aspect, 1));
         when(source.drain(aspect, 1)).thenReturn(true);
@@ -93,6 +94,26 @@ class EssentiaSourcesCutoffTest {
                 20,
                 0.0));
         effects.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void drainUsesSourceVisualOffsetWithoutChangingItsBlockPosition() {
+        var source = source(BlockPos.ZERO.east(), 0, false, 0);
+        when(source.drainEffectOffset()).thenReturn(new Vec3(0, 5.0 / 16.0, 0));
+
+        assertTrue(new EssentiaSources(BlockPos.ZERO, 2).drain(level, aspect, 10));
+
+        verify(source).drain(aspect, 1);
+        effects.verify(() -> EffectDispatch.spawnEssentiaStream(
+                level,
+                Vec3.atCenterOf(BlockPos.ZERO.east()).add(0, 5.0 / 16.0, 0),
+                Vec3.atCenterOf(BlockPos.ZERO.below()),
+                0x123456,
+                0,
+                0,
+                0.1F,
+                10,
+                0.0));
     }
 
     @Test
