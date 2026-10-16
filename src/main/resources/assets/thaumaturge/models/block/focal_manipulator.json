@@ -1,5 +1,6 @@
 {
  "parent": "block/block",
+ "render_type": "minecraft:cutout",
  "textures": {
   "top": "thaumaturge:block/wand_workbench_top",
   "side": "thaumaturge:block/wand_workbench_side",
