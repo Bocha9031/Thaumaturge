@@ -14,6 +14,7 @@ import com.leclowndu93150.thaumaturge.content.essentia.reservoir.BlockEntityEsse
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntityAlembic;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntitySmelter;
 import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.BlockEntityThaumatorium;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.BlockEntityThaumatoriumTop;
 import com.leclowndu93150.thaumaturge.content.essentia.tube.BlockEntityTube;
 import com.leclowndu93150.thaumaturge.content.essentia.tube.BlockEntityTubeBuffer;
 import com.leclowndu93150.thaumaturge.content.essentia.tube.BlockEntityTubeFilter;
@@ -104,6 +105,8 @@ final class JadeBlockProviderHolder {
     private JadeBlockProviderHolder() {}
 
     static @Nullable BlockEntity resolve(BlockAccessor accessor) {
+        BlockEntityThaumatorium thaumatorium = resolveThaumatorium(accessor);
+        if (thaumatorium != null) return thaumatorium;
         BlockEntityAdvancedAlchemicalFurnace furnace = AdvancedFurnaceJadeAccess.resolve(accessor);
         if (furnace != null) return furnace;
         BlockEntity direct = accessor.getBlockEntity();
@@ -118,5 +121,22 @@ final class JadeBlockProviderHolder {
             if (type.isInstance(entity)) return entity;
         }
         return null;
+    }
+
+    static @Nullable BlockEntityThaumatorium resolveThaumatorium(BlockAccessor accessor) {
+        BlockEntity direct = accessor.getBlockEntity();
+        if (direct instanceof BlockEntityThaumatorium machine) return machine;
+        BlockPos controller;
+        if (direct instanceof BlockEntityThaumatoriumTop) {
+            controller = accessor.getPosition().below();
+        } else if (direct instanceof BlockEntityCrucible) {
+            controller = accessor.getPosition().above();
+        } else {
+            return null;
+        }
+        if (!accessor.getLevel().hasChunkAt(controller)) return null;
+        return accessor.getLevel().getBlockEntity(controller) instanceof BlockEntityThaumatorium machine
+                ? machine
+                : null;
     }
 }

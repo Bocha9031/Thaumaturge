@@ -1,7 +1,12 @@
 package com.leclowndu93150.thaumaturge.compat.jade;
 
+import com.leclowndu93150.thaumaturge.content.essentia.advancedfurnace.BlockEntityAdvancedAlchemicalFurnace;
+import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.BlockEntityThaumatorium;
 import com.leclowndu93150.thaumaturge.content.golem.EntityThaumaturgeGolem;
+import com.leclowndu93150.thaumaturge.content.golem.press.BlockEntityGolemBuilder;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaCommonRegistration;
@@ -21,15 +26,23 @@ public final class ThaumaturgeJadePlugin implements IWailaPlugin {
         JadeConfig.register(registration);
         registration.addRayTraceCallback((hit, accessor, original) -> {
             if (accessor instanceof BlockAccessor blockAccessor) {
-                var furnace = AdvancedFurnaceJadeAccess.resolve(blockAccessor);
-                if (furnace != null && furnace.isAssembled()) {
-                    return registration
+                BlockEntity controller = JadeBlockProviderHolder.resolve(blockAccessor);
+                boolean fullPreview =
+                        controller instanceof BlockEntityGolemBuilder || controller instanceof BlockEntityThaumatorium;
+                if (fullPreview
+                        || controller instanceof BlockEntityAdvancedAlchemicalFurnace furnace
+                                && furnace.isAssembled()) {
+                    BlockAccessor.Builder builder = registration
                             .blockAccessor()
                             .from(blockAccessor)
-                            .hit(blockAccessor.getHitResult().withPosition(furnace.getBlockPos()))
-                            .blockState(furnace.getBlockState())
-                            .blockEntity(furnace)
-                            .build();
+                            .hit(blockAccessor.getHitResult().withPosition(controller.getBlockPos()))
+                            .blockState(controller.getBlockState())
+                            .blockEntity(controller);
+                    if (fullPreview) {
+                        builder.fakeBlock(
+                                new ItemStack(controller.getBlockState().getBlock()));
+                    }
+                    return builder.build();
                 }
             }
             return accessor;

@@ -101,6 +101,7 @@ prism {
                     add("testImplementation", platform("org.junit:junit-bom:5.11.4"))
                     add("testImplementation", "org.junit.jupiter:junit-jupiter")
                     add("testImplementation", "org.mockito:mockito-core:5.15.2")
+                    add("testImplementation", "maven.modrinth:jade:${prop("jade_version")}")
                     add("testImplementation", "mezz.jei:jei-$minecraftVersion-common-api:${prop("jei_version")}")
                     add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
                 }
