@@ -119,7 +119,9 @@ public final class TTMaterials {
             2.0F,
             0.0F,
             () -> Ingredient.of(TTItemTags.INGOTS_VOID_METAL),
-            true);
+            List.of(
+                    new ArmorMaterial.Layer(TTIds.rl("void_robe"), "_over", true),
+                    new ArmorMaterial.Layer(TTIds.rl("void_robe"), "", false)));
     public static final Holder<ArmorMaterial> ARMOR_FORTRESS = register(
             "fortress",
             defense(3, 6, 7, 3),
@@ -190,6 +192,19 @@ public final class TTMaterials {
                         new ArmorMaterial.Layer(TTIds.rl(name), "", true),
                         new ArmorMaterial.Layer(TTIds.rl(name), "_over", false))
                 : List.of(new ArmorMaterial.Layer(TTIds.rl(name)));
+        return register(
+                name, defense, enchantmentValue, equipSound, toughness, knockbackResistance, repairIngredient, layers);
+    }
+
+    private static Holder<ArmorMaterial> register(
+            String name,
+            Map<ArmorItem.Type, Integer> defense,
+            int enchantmentValue,
+            Holder<SoundEvent> equipSound,
+            float toughness,
+            float knockbackResistance,
+            Supplier<Ingredient> repairIngredient,
+            List<ArmorMaterial.Layer> layers) {
         return ARMOR_MATERIALS.register(
                 name,
                 () -> new ArmorMaterial(

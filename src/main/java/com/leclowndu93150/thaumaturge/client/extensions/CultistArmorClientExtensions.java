@@ -68,7 +68,8 @@ public final class CultistArmorClientExtensions {
                         RobeArmorModel::new,
                         TTModelLayers.ROBE_ARMOR_HEAD,
                         TTModelLayers.ROBE_ARMOR_CHEST,
-                        TTModelLayers.ROBE_ARMOR_LEGS),
+                        TTModelLayers.ROBE_ARMOR_LEGS,
+                        true),
                 TTItems.VOID_ROBE_HELM.get(),
                 TTItems.VOID_ROBE_CHEST.get(),
                 TTItems.VOID_ROBE_LEGS.get());
@@ -81,6 +82,11 @@ public final class CultistArmorClientExtensions {
                 TTItems.FORTRESS_HELM.get(),
                 TTItems.FORTRESS_CHEST.get(),
                 TTItems.FORTRESS_LEGS.get());
+        event.registerItem(
+                new RobeArmorClientExtension(),
+                TTItems.CLOTH_CHEST.get(),
+                TTItems.CLOTH_LEGS.get(),
+                TTItems.CLOTH_BOOTS.get());
     }
 
     private static final class CustomArmorExtension implements IClientItemExtensions {
@@ -88,6 +94,7 @@ public final class CultistArmorClientExtensions {
         private final ModelLayerLocation headLayer;
         private final ModelLayerLocation chestLayer;
         private final ModelLayerLocation legsLayer;
+        private final boolean robeDyeable;
         private HumanoidModel<LivingEntity> head;
         private HumanoidModel<LivingEntity> chest;
         private HumanoidModel<LivingEntity> legs;
@@ -96,11 +103,21 @@ public final class CultistArmorClientExtensions {
                 Function<ModelPart, HumanoidModel<LivingEntity>> factory,
                 ModelLayerLocation headLayer,
                 ModelLayerLocation chestLayer,
-                ModelLayerLocation legsLayer) {
+                ModelLayerLocation legsLayer,
+                boolean robeDyeable) {
             this.factory = factory;
             this.headLayer = headLayer;
             this.chestLayer = chestLayer;
             this.legsLayer = legsLayer;
+            this.robeDyeable = robeDyeable;
+        }
+
+        private CustomArmorExtension(
+                Function<ModelPart, HumanoidModel<LivingEntity>> factory,
+                ModelLayerLocation headLayer,
+                ModelLayerLocation chestLayer,
+                ModelLayerLocation legsLayer) {
+            this(factory, headLayer, chestLayer, legsLayer, false);
         }
 
         @Override
@@ -122,6 +139,13 @@ public final class CultistArmorClientExtensions {
                 chest = bake(chestLayer);
             }
             return chest;
+        }
+
+        @Override
+        public int getDefaultDyeColor(ItemStack stack) {
+            return robeDyeable
+                    ? RobeArmorClientExtension.DEFAULT_DYE_COLOR
+                    : IClientItemExtensions.super.getDefaultDyeColor(stack);
         }
 
         @Override
