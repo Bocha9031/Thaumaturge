@@ -57,13 +57,16 @@ public final class WarpData implements IPlayerWarp {
 
     @Override
     public int add(WarpType type, int amount) {
-        warp[type.ordinal()] = Mth.clamp(warp[type.ordinal()] + amount, 0, MAX_WARP);
+        long next = (long) warp[type.ordinal()] + amount;
+        warp[type.ordinal()] = (int) Mth.clamp(next, 0L, MAX_WARP);
         return warp[type.ordinal()];
     }
 
     @Override
     public int reduce(WarpType type, int amount) {
-        return add(type, -amount);
+        long next = (long) warp[type.ordinal()] - amount;
+        warp[type.ordinal()] = (int) Mth.clamp(next, 0L, MAX_WARP);
+        return warp[type.ordinal()];
     }
 
     @Override
