@@ -174,6 +174,7 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
     private final List<EntryNode> allEntries = new ArrayList<>();
     private final List<SearchResult> searchResults = new ArrayList<>();
     private final Set<ResourceLocation> invisibleEntries = new HashSet<>();
+    private final Set<ResourceLocation> visibilityInProgress = new HashSet<>();
 
     private Holder.@Nullable Reference<IResearchCategory> activeCategory;
     private double curMouseX;
@@ -391,17 +392,22 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
     private boolean isVisible(PlayerResearch knowledge, EntryNode node) {
         if (knowledge.knows(node.id)) return true;
         if (invisibleEntries.contains(node.id)) return false;
-        boolean hidden = node.entry.hasMeta(ResearchEntryMeta.HIDDEN);
-        if (hidden && !canUnlockResearch(knowledge, node)) return false;
-        if (node.entry.parents().isEmpty() && hidden) return false;
-        for (ResearchParent parent : node.entry.parents()) {
-            EntryNode parentNode = findGlobalNode(parent.id());
-            if (parentNode != null && !isVisible(knowledge, parentNode)) {
-                invisibleEntries.add(parent.id());
-                return false;
+        if (!visibilityInProgress.add(node.id)) return true;
+        try {
+            boolean hidden = node.entry.hasMeta(ResearchEntryMeta.HIDDEN);
+            if (hidden && !canUnlockResearch(knowledge, node)) return false;
+            if (node.entry.parents().isEmpty() && hidden) return false;
+            for (ResearchParent parent : node.entry.parents()) {
+                EntryNode parentNode = findGlobalNode(parent.id());
+                if (parentNode != null && !isVisible(knowledge, parentNode)) {
+                    invisibleEntries.add(parent.id());
+                    return false;
+                }
             }
+            return true;
+        } finally {
+            visibilityInProgress.remove(node.id);
         }
-        return true;
     }
 
     private boolean conditionsPass(PlayerResearch knowledge, EntryNode node) {
