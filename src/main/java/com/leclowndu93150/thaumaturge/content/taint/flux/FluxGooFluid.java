@@ -102,10 +102,10 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
             boolean pollutes = !PhysicalFluxAuraFloor.isEnabled();
             if (meta == 0) {
                 if (rand.nextBoolean()) {
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                     if (pollutes) {
                         AuraHelper.polluteAura(level, pos, POLLUTE_AMOUNT, true);
                     }
-                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 } else if (!TaintHelper.placeFibreFromFlux(level, pos)) {
                     level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 }
