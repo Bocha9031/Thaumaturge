@@ -1,7 +1,9 @@
 {
   "family": "thaumaturge:greatwood",
-  "tapering": 0.3,
+  "tapering": 0.55,
   "signal_energy": 20.0,
+  "max_branch_radius": 24,
+  "lowest_branch_height": 6,
   "growth_rate": 0.7,
   "leaves_properties": "thaumaturge:greatwood",
   "preferred_climate": "temperate",

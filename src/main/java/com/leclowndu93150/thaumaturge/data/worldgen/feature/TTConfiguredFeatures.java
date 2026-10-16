@@ -30,7 +30,6 @@ import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.data.worldgen.features.TreeFeatures;
 import net.minecraft.data.worldgen.features.VegetationFeatures;
 import net.minecraft.data.worldgen.placement.PlacementUtils;
-import net.minecraft.data.worldgen.placement.TreePlacements;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.valueproviders.ConstantInt;
@@ -67,6 +66,7 @@ public final class TTConfiguredFeatures {
             TTTreeGrowers.SILVERWOOD_TREE_GROWN;
     public static final ResourceKey<ConfiguredFeature<?, ?>> SILVERWOOD_TREE_CAVE = key("silverwood_tree_cave");
     public static final ResourceKey<ConfiguredFeature<?, ?>> BIG_MAGIC_TREE = key("big_magic_tree");
+    public static final ResourceKey<ConfiguredFeature<?, ?>> OAK_TREE = key("oak_tree");
     public static final ResourceKey<ConfiguredFeature<?, ?>> MAGIC_FOREST_TREES = key("magic_forest_trees");
     public static final ResourceKey<ConfiguredFeature<?, ?>> TAINTED_LANDS_TREES = key("tainted_lands_trees");
     public static final ResourceKey<ConfiguredFeature<?, ?>> MAGIC_FOREST_FLORA = key("magic_forest_flora");
@@ -226,10 +226,19 @@ public final class TTConfiguredFeatures {
                 true);
         List<TreeDecorator> greatwoodNest = List.of(new SpiderNestDecorator(
                 GREATWOOD_SPIDER_CHANCE, TTBlocks.LOG_GREATWOOD.get(), TTBlocks.LEAVES_GREATWOOD.get()));
+        TreeConfiguration oakConfiguration = new TreeConfiguration.TreeConfigurationBuilder(
+                        BlockStateProvider.simple(Blocks.OAK_LOG),
+                        new StraightTrunkPlacer(4, 2, 0),
+                        BlockStateProvider.simple(Blocks.OAK_LEAVES),
+                        new BlobFoliagePlacer(ConstantInt.of(2), ConstantInt.of(0), 3),
+                        new TwoLayersFeatureSize(1, 0, 1))
+                .ignoreVines()
+                .build();
+        context.register(OAK_TREE, new ConfiguredFeature<>(TTFeatures.COMPAT_TREE.get(), oakConfiguration));
         context.register(
                 GREATWOOD_TREE,
                 new ConfiguredFeature<>(
-                        Feature.TREE,
+                        TTFeatures.COMPAT_TREE.get(),
                         crownTree(
                                 TTBlocks.LOG_GREATWOOD.get(),
                                 TTBlocks.LEAVES_GREATWOOD.get(),
@@ -253,7 +262,7 @@ public final class TTConfiguredFeatures {
         context.register(
                 BIG_MAGIC_TREE,
                 new ConfiguredFeature<>(
-                        Feature.TREE,
+                        TTFeatures.COMPAT_TREE.get(),
                         crownTree(
                                 Blocks.OAK_LOG,
                                 Blocks.OAK_LEAVES,
@@ -264,7 +273,7 @@ public final class TTConfiguredFeatures {
         context.register(
                 SILVERWOOD_TREE,
                 new ConfiguredFeature<>(
-                        Feature.TREE,
+                        TTFeatures.COMPAT_TREE.get(),
                         silverwoodTree(
                                 SILVERWOOD_NATURAL_MIN_HEIGHT,
                                 SILVERWOOD_NATURAL_EXTRA_HEIGHT,
@@ -332,7 +341,7 @@ public final class TTConfiguredFeatures {
                                 List.of(new WeightedPlacedFeature(
                                         placed.getOrThrow(TTPlacedFeatures.BIG_MAGIC_CHECKED),
                                         TAINTED_LANDS_BIG_TREE_CHANCE)),
-                                placed.getOrThrow(TreePlacements.OAK_CHECKED))));
+                                placed.getOrThrow(TTPlacedFeatures.OAK_CHECKED))));
 
         context.register(
                 MAGIC_FOREST_BROWN_MUSHROOM,
@@ -425,7 +434,7 @@ public final class TTConfiguredFeatures {
                                                         configured.getOrThrow(MAGICAL_CAVE_GREATWOOD_TREE)),
                                                 MAGICAL_CAVE_GREATWOOD_CHANCE),
                                         new WeightedPlacedFeature(
-                                                PlacementUtils.inlinePlaced(configured.getOrThrow(TreeFeatures.OAK)),
+                                                PlacementUtils.inlinePlaced(configured.getOrThrow(OAK_TREE)),
                                                 MAGICAL_CAVE_OAK_TREE_CHANCE)),
                                 PlacementUtils.inlinePlaced(configured.getOrThrow(MAGICAL_CAVE_BUSH)))));
         context.register(

@@ -15,6 +15,7 @@ import com.leclowndu93150.thaumaturge.content.world.plant.MagicForestFloraConfig
 import com.leclowndu93150.thaumaturge.content.world.plant.MagicForestFloraFeature;
 import com.leclowndu93150.thaumaturge.content.world.taint.TaintBiomeConfig;
 import com.leclowndu93150.thaumaturge.content.world.taint.TaintBiomeFeature;
+import com.leclowndu93150.thaumaturge.content.world.tree.OptionalDynamicTreeFeature;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
@@ -25,6 +26,9 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class TTFeatures {
     public static final DeferredRegister<Feature<?>> FEATURES =
             DeferredRegister.create(Registries.FEATURE, TTIds.MODID);
+
+    public static final DeferredHolder<Feature<?>, OptionalDynamicTreeFeature> COMPAT_TREE =
+            FEATURES.register("compat_tree", OptionalDynamicTreeFeature::new);
 
     public static final DeferredHolder<Feature<?>, CrystalClusterFeature> CRYSTAL_CLUSTER =
             FEATURES.register("crystal_cluster", () -> new CrystalClusterFeature(CrystalClusterConfig.CODEC));

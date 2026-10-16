@@ -16,6 +16,7 @@ import net.minecraft.data.worldgen.placement.PlacementUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.valueproviders.ConstantInt;
 import net.minecraft.util.valueproviders.UniformInt;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.VerticalAnchor;
 import net.minecraft.world.level.levelgen.blockpredicates.BlockPredicate;
@@ -37,6 +38,7 @@ public final class TTPlacedFeatures {
     public static final ResourceKey<PlacedFeature> GREATWOOD_CHECKED = key("greatwood_checked");
     public static final ResourceKey<PlacedFeature> SILVERWOOD_CHECKED = key("silverwood_checked");
     public static final ResourceKey<PlacedFeature> BIG_MAGIC_CHECKED = key("big_magic_checked");
+    public static final ResourceKey<PlacedFeature> OAK_CHECKED = key("oak_checked");
     public static final ResourceKey<PlacedFeature> TREES_MAGIC_FOREST = key("trees_magic_forest");
     public static final ResourceKey<PlacedFeature> TREES_TAINTED_LANDS = key("trees_tainted_lands");
     public static final ResourceKey<PlacedFeature> GRASS_TAINTED_LANDS = key("grass_tainted_lands");
@@ -136,6 +138,11 @@ public final class TTPlacedFeatures {
                 new PlacedFeature(
                         configured.getOrThrow(TTConfiguredFeatures.BIG_MAGIC_TREE),
                         List.of(PlacementUtils.filteredByBlockSurvival(TTBlocks.SAPLING_GREATWOOD.get()))));
+        context.register(
+                OAK_CHECKED,
+                new PlacedFeature(
+                        configured.getOrThrow(TTConfiguredFeatures.OAK_TREE),
+                        List.of(PlacementUtils.filteredByBlockSurvival(Blocks.OAK_SAPLING))));
 
         context.register(
                 TREES_MAGIC_FOREST,

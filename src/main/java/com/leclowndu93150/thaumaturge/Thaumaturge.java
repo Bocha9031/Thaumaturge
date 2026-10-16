@@ -96,7 +96,6 @@ public final class Thaumaturge {
         TTMobEffects.register(modBus);
         TTAttributes.register(modBus);
         TTChunkGenerators.register(modBus);
-        TTBiomeModifierSerializers.register(modBus);
         TTPlacementModifiers.register(modBus);
         TTGolemTraits.register(modBus);
         TTMobTraits.register(modBus);
