@@ -25,6 +25,14 @@
       "text": "research.thaumaturge.unlock_auromancy.stage_1",
       "recipes": [
         "thaumaturge:wand/assembly/iron_wood"
+      ],
+      "craft": [
+        {
+          "items": [
+            "thaumaturge:wand"
+          ],
+          "amount": 1
+        }
       ]
     },
     {
