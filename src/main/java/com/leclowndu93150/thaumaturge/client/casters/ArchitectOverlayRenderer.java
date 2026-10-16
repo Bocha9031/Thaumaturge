@@ -62,7 +62,7 @@ public final class ArchitectOverlayRenderer {
     private static final float AXIS_G_PERIOD = 3.0F;
     private static final float AXIS_B_PERIOD = 2.0F;
 
-    private static int lastArcHash;
+    private static final PreviewCache PREVIEW_CACHE = new PreviewCache();
     private static List<BlockPos> architectBlocks = new ArrayList<>();
     private static final Set<BlockPos> architectSet = new HashSet<>();
     private static final Map<BlockPos, boolean[]> bmCache = new HashMap<>();
@@ -88,11 +88,8 @@ public final class ArchitectOverlayRenderer {
             return;
         }
         BlockPos anchor = hit.getBlockPos();
-        int hash = (anchor.getX() + "" + anchor.getY() + "" + anchor.getZ() + "" + hit.getDirection() + ""
-                        + player.tickCount / HASH_TICK_STEP)
-                .hashCode();
-        if (hash != lastArcHash) {
-            lastArcHash = hash;
+        int bucket = player.tickCount / HASH_TICK_STEP;
+        if (PREVIEW_CACHE.update(anchor, hit.getDirection(), bucket)) {
             bmCache.clear();
             architectBlocks = architect.previewArea(stack, mc.level, anchor, hit.getDirection(), player);
             architectSet.clear();
@@ -259,5 +256,21 @@ public final class ArchitectOverlayRenderer {
         buffer.addVertex(pose, HALF, HALF, 0.0F).setUv(1.0F, 0.0F).setColor(color);
         buffer.addVertex(pose, HALF, -HALF, 0.0F).setUv(0.0F, 0.0F).setColor(color);
         buffer.addVertex(pose, -HALF, -HALF, 0.0F).setUv(0.0F, 1.0F).setColor(color);
+    }
+
+    static final class PreviewCache {
+        private BlockPos anchor;
+        private Direction face;
+        private int bucket;
+
+        boolean update(BlockPos nextAnchor, Direction nextFace, int nextBucket) {
+            if (nextAnchor.equals(anchor) && nextFace == face && nextBucket == bucket) {
+                return false;
+            }
+            anchor = nextAnchor.immutable();
+            face = nextFace;
+            bucket = nextBucket;
+            return true;
+        }
     }
 }
