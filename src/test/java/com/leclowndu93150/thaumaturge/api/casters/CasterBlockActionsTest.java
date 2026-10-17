@@ -17,32 +17,27 @@ import org.junit.jupiter.api.Test;
 
 class CasterBlockActionsTest {
     @Test
-    void legacyAndCurrentRegistrationsShareOneOrderedRegistry() {
+    void stateActionsShareOneOrderedRegistry() {
         BlockState state = mock(BlockState.class);
         List<Integer> seen = new ArrayList<>();
         CasterBlockActions.onState(state, "first", use -> {
             seen.add(1);
             return false;
         });
-        CasterTriggerRegistry.registerCasterBlockTrigger(
-                (level, stack, player, pos, side, event) -> {
-                    seen.add(event);
-                    return false;
-                },
-                2,
-                state,
-                "second");
+        CasterBlockActions.onState(state, "second", use -> {
+            seen.add(2);
+            return false;
+        });
         CasterBlockActions.onState(state, "third", use -> {
             seen.add(3);
             return true;
         });
-        assertTrue(CasterTriggerRegistry.hasTrigger(state, "first"));
+        assertTrue(CasterBlockActions.hasAction(state, "first"));
         assertTrue(CasterBlockActions.hasAction(state, "second"));
         assertTrue(CasterBlockActions.dispatch(use(state)));
         assertEquals(List.of(1, 2, 3), seen);
         seen.clear();
-        assertTrue(
-                CasterTriggerRegistry.performTrigger(null, ItemStack.EMPTY, null, BlockPos.ZERO, Direction.UP, state));
+        assertTrue(CasterBlockActions.dispatch(use(state)));
         assertEquals(List.of(1, 2, 3), seen);
     }
 
@@ -82,6 +77,7 @@ class CasterBlockActionsTest {
         CasterBlockActions.onState(state, use -> fail("Must stop after successful action"));
         CasterBlockUse click = use(state);
         assertTrue(CasterBlockActions.hasAction(state, CasterBlockActions.DEFAULT_GROUP));
+        assertTrue(CasterBlockActions.hasAction(state, "thaumaturge"));
         assertTrue(CasterBlockActions.dispatch(click));
         assertEquals(List.of(click, click), seen);
         assertSame(click, seen.get(0));

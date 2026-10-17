@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.content.item.LabelItem;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
-import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class LabelTargetCompatibilityTest {
+class LabelTargetTest {
     private Level level;
     private Player player;
     private UseOnContext context;
@@ -52,23 +51,6 @@ class LabelTargetCompatibilityTest {
         when(target.attachLabel(level, BlockPos.ZERO, Direction.EAST, player, labels))
                 .thenReturn(accepted);
         return target;
-    }
-
-    @Test
-    void legacyInterfaceForwardsArgumentsAndBothReturnValuesThroughItsDefault() {
-        AtomicInteger calls = new AtomicInteger();
-        ILabelable legacy = (actualPlayer, pos, face, label) -> {
-            assertSame(player, actualPlayer);
-            assertEquals(BlockPos.ZERO, pos);
-            assertEquals(Direction.EAST, face);
-            assertSame(labels, label);
-            return calls.incrementAndGet() == 1;
-        };
-        LabelTarget target = legacy;
-        assertTrue(target.attachLabel(level, BlockPos.ZERO, Direction.EAST, player, labels));
-        assertFalse(target.attachLabel(level, BlockPos.ZERO, Direction.EAST, player, labels));
-        assertEquals(2, calls.get());
-        verifyNoInteractions(level, player);
     }
 
     @ParameterizedTest

@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
-import com.leclowndu93150.thaumaturge.api.infusion.IInfusionStabiliser;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import net.minecraft.core.BlockPos;
@@ -96,51 +95,5 @@ final class InfusionStabilitySurveyPortTest {
 
         assertEquals(-0.3F, result.stabilityReplenish(), 0.0001F);
         verify(stabiliser).penalisesPairWith(level, west, east);
-    }
-
-    @Test
-    void legacyStabiliserRemainsAnAltarStabiliser() {
-        assertTrue(AltarStabiliser.class.isAssignableFrom(IInfusionStabiliser.class));
-        assertEquals(AltarStabiliser.STANDARD_PAIR_VALUE, IInfusionStabiliser.DEFAULT_STABILIZATION);
-        assertEquals(AltarStabiliser.NO_PENALTY, IInfusionStabiliser.NO_SYMMETRY_PENALTY);
-    }
-
-    @Test
-    void legacyHooksForwardThroughModernAltarContract() {
-        Level level = mock(Level.class);
-        BlockPos pos = new BlockPos(2, 64, 3);
-        BlockPos mirror = new BlockPos(-2, 64, -3);
-        IInfusionStabiliser legacy = new IInfusionStabiliser() {
-            @Override
-            public boolean canStabiliseInfusion(Level checkedLevel, BlockPos checkedPos) {
-                return true;
-            }
-
-            @Override
-            public float getStabilizationAmount(Level checkedLevel, BlockPos checkedPos) {
-                return 0.3F;
-            }
-
-            @Override
-            public Block stabiliserIdentity(Level checkedLevel, BlockPos checkedPos) {
-                return Blocks.GOLD_BLOCK;
-            }
-
-            @Override
-            public boolean hasSymmetryPenalty(Level checkedLevel, BlockPos checkedPos, BlockPos checkedMirror) {
-                return checkedMirror.equals(mirror);
-            }
-
-            @Override
-            public float getSymmetryPenalty(Level checkedLevel, BlockPos checkedPos) {
-                return 0.2F;
-            }
-        };
-
-        assertTrue(legacy.stabilisesNow(level, pos));
-        assertEquals(0.3F, legacy.pairValue(level, pos));
-        assertEquals(Blocks.GOLD_BLOCK, legacy.countsAs(level, pos));
-        assertTrue(legacy.penalisesPairWith(level, pos, mirror));
-        assertEquals(0.2F, legacy.penaltyValue(level, pos));
     }
 }

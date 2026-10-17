@@ -3,13 +3,10 @@ package com.leclowndu93150.thaumaturge.api.research;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
 import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import java.util.List;
 import net.minecraft.network.chat.Component;
@@ -19,22 +16,21 @@ import org.junit.jupiter.api.Test;
 
 final class ResearchUnlockConditionsPortTest {
     @Test
-    void modernAndLegacyRequirementsShareOrderedPassAndMessageStorage() {
-        ResourceLocation entry = ResourceLocation.parse("thaumaturge:modern_legacy_port_test");
-        ResourceLocation prerequisite = ResourceLocation.parse("thaumaturge:legacy_prerequisite_port_test");
+    void requirementsShareOrderedPassAndMessageStorage() {
+        ResourceLocation entry = ResourceLocation.parse("thaumaturge:requirements_port_test");
+        ResourceLocation prerequisite = ResourceLocation.parse("thaumaturge:prerequisite_port_test");
         Player player = mock(Player.class);
         PlayerResearch research = mock(PlayerResearch.class);
-        Component modernMessage = Component.literal("modern");
-        Component legacyMessage = Component.literal("legacy");
+        Component customMessage = Component.literal("custom");
+        Component prerequisiteMessage = Component.literal("prerequisite");
         when(research.hasCompleted(prerequisite)).thenReturn(false);
 
-        ResearchUnlockConditions.require(entry, (checkedPlayer, checkedResearch) -> false, modernMessage);
-        ResearchUnlockConditions.register(
-                entry, ResearchUnlockConditions.Condition.requiresComplete(prerequisite), legacyMessage);
+        ResearchUnlockConditions.require(entry, (checkedPlayer, checkedResearch) -> false, customMessage);
+        ResearchUnlockConditions.require(entry, UnlockRequirement.completed(prerequisite), prerequisiteMessage);
 
         assertFalse(ResearchUnlockConditions.passes(player, research, entry));
         assertEquals(
-                List.of(modernMessage, legacyMessage),
+                List.of(customMessage, prerequisiteMessage),
                 ResearchUnlockConditions.lockedMessages(player, research, entry));
     }
 
@@ -73,21 +69,6 @@ final class ResearchUnlockConditionsPortTest {
 
         assertThrows(NullPointerException.class, () -> ResearchUnlockConditions.require(null, requirement, null));
         assertThrows(NullPointerException.class, () -> ResearchUnlockConditions.require(entry, null, null));
-        assertThrows(NullPointerException.class, () -> ResearchUnlockConditions.register(entry, null, null));
-    }
-
-    @Test
-    void legacyOverloadsStillAcceptTheKnowledgeView() {
-        ResourceLocation entry = ResourceLocation.parse("thaumaturge:legacy_view_port_test");
-        ResourceLocation prerequisite = ResourceLocation.parse("thaumaturge:legacy_view_prerequisite_port_test");
-        Player player = mock(Player.class);
-        IPlayerKnowledge knowledge = mock(IPlayerKnowledge.class);
-        when(knowledge.isResearchComplete(prerequisite)).thenReturn(true);
-        ResearchUnlockConditions.register(
-                entry, ResearchUnlockConditions.Condition.requiresComplete(prerequisite), null);
-
-        assertTrue(ResearchUnlockConditions.passes(player, knowledge, entry));
-        verify(knowledge).isResearchComplete(prerequisite);
-        verify(knowledge, never()).hasCompleted(prerequisite);
+        assertThrows(NullPointerException.class, () -> ResearchUnlockConditions.require(entry, null, null));
     }
 }

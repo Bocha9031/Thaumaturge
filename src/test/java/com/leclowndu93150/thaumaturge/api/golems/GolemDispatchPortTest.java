@@ -87,8 +87,7 @@ class GolemDispatchPortTest {
                 .orElseThrow();
 
         assertSame(first, duplicate);
-        assertTrue(first instanceof ProvisionRequest);
-        assertSame(GolemDispatch.supplyQueue(level), GolemHelper.getProvisionRequests(level));
+        assertSame(first, GolemDispatch.supplyQueue(level).getFirst());
         assertEquals(2, first.wanted().getCount());
         assertEquals(4, GolemDispatch.supplyQueue(level).size());
         assertFalse(first.equals(separateBatch));

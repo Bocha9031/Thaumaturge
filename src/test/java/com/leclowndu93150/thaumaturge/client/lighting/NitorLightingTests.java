@@ -1,7 +1,5 @@
 package com.leclowndu93150.thaumaturge.client.lighting;
 
-import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.Thaumaturge;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import net.minecraft.core.BlockPos;
@@ -16,22 +14,15 @@ import net.minecraft.world.level.chunk.LightChunkGetter;
 import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraft.world.level.lighting.ChunkSkyLightSources;
 import net.minecraft.world.level.material.FluidState;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
+import org.junit.jupiter.api.Test;
 
-@EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
-public final class NitorLightingTests {
+final class NitorLightingTests {
     private static final BlockPos SOURCE = new BlockPos(0, 8, 0);
 
     private NitorLightingTests() {}
 
-    @SubscribeEvent
-    public static void onGatherData(GatherDataEvent event) {
-        if (!Boolean.getBoolean("thaumaturge.testNitorLighting")) {
-            return;
-        }
+    @Test
+    void dynamicSourcesPropagateMoveOverlapOccludeAndReset() {
         try {
             BlockLightEngine engine = createEngine(false, false);
             update(engine, Map.of(SOURCE.asLong(), 15));
@@ -77,8 +68,6 @@ public final class NitorLightingTests {
             update(engine, Map.of());
             expect(engine, SOURCE, 14);
             expect(engine, SOURCE.east(), 13);
-            Thaumaturge.LOGGER.info(
-                    "Nitor lighting tests passed: propagation, movement, removal, overlap, occlusion, engine isolation, reset and existing light");
         } finally {
             NitorDynamicLights.clear();
         }
