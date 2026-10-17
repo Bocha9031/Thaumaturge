@@ -5,12 +5,15 @@ import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecorator;
 import net.minecraft.world.level.levelgen.feature.treedecorators.TreeDecoratorType;
 
@@ -42,20 +45,33 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
         if (context.logs().isEmpty()) {
             return;
         }
-        BlockPos foot = trunkFoot(context);
-        RandomSource random = context.random();
+        placeAround(
+                trunkFoot(context),
+                context.random(),
+                context::isAir,
+                spot -> context.level().isStateAtPosition(spot.below(), ScatteredFlowersDecorator::isValidSoil),
+                spot -> context.setBlock(spot, flower.defaultBlockState()));
+    }
+
+    public static void placeAround(
+            BlockPos foot,
+            RandomSource random,
+            Predicate<BlockPos> isAir,
+            Predicate<BlockPos> hasSoil,
+            Consumer<BlockPos> placeFlower) {
         for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
             BlockPos spot = foot.offset(
                     random.nextInt(SPREAD) - random.nextInt(SPREAD),
                     random.nextInt(RISE) - random.nextInt(RISE),
                     random.nextInt(SPREAD) - random.nextInt(SPREAD));
-            if (context.isAir(spot)
-                    && context.level()
-                            .isStateAtPosition(
-                                    spot.below(), state -> state.is(Blocks.GRASS_BLOCK) || state.is(BlockTags.SAND))) {
-                context.setBlock(spot, flower.defaultBlockState());
+            if (isAir.test(spot) && hasSoil.test(spot)) {
+                placeFlower.accept(spot);
             }
         }
+    }
+
+    public static boolean isValidSoil(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK) || state.is(BlockTags.SAND);
     }
 
     private static BlockPos trunkFoot(TreeDecorator.Context context) {

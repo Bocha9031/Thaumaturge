@@ -487,32 +487,91 @@ public final class TTModelProvider implements DataProvider {
     private void registerManaPod() {
         Block pod = TTBlocks.MANA_POD.get();
         ResourceLocation[] stems = new ResourceLocation[3];
+        ResourceLocation[][] dynamicTreeStems = new ResourceLocation[5][3];
+        int[] dynamicTreeLifts = {0, 4, 5, 6, 8};
         for (int i = 0; i < 3; i++) {
+            TextureMapping texture = TextureMapping.cross(TextureMapping.getBlockTexture(pod, "_stem_" + i));
             stems[i] = ModelTemplates.CROSS.createWithSuffix(
                     pod,
                     "_stage" + i,
-                    TextureMapping.cross(TextureMapping.getBlockTexture(pod, "_stem_" + i)),
+                    texture,
                     (id, json) -> modelOutput.accept(id, () -> {
                         JsonElement element = json.get();
                         element.getAsJsonObject().addProperty("render_type", "minecraft:cutout");
                         return element;
                     }));
+            for (int lift = 1; lift < dynamicTreeLifts.length; lift++) {
+                int pixels = dynamicTreeLifts[lift];
+                dynamicTreeStems[lift][i] = ModelTemplates.CROSS.createWithSuffix(
+                        pod,
+                        "_stage" + i + "_dynamic_tree_" + pixels,
+                        texture,
+                        (id, json) -> modelOutput.accept(id, () -> {
+                            JsonObject model = raisedCrossModel(json.get().getAsJsonObject(), pixels);
+                            model.addProperty("render_type", "minecraft:cutout");
+                            return model;
+                        }));
+            }
         }
-        PropertyDispatch ages = PropertyDispatch.property(BlockManaPod.AGE)
-                .select(0, v(stems[0]))
-                .select(1, v(stems[1]))
-                .select(2, v(stems[2]))
-                .select(3, v(stems[2]))
-                .select(4, v(stems[2]))
-                .select(5, v(stems[2]))
-                .select(6, v(stems[2]))
-                .select(7, v(stems[2]));
+        PropertyDispatch.C2<Integer, Integer> ages =
+                PropertyDispatch.properties(BlockManaPod.AGE, BlockManaPod.DYNAMIC_TREE_LIFT);
+        for (int age = 0; age <= 7; age++) {
+            int stage = Math.min(age, 2);
+            ages.select(age, 0, v(stems[stage]));
+            for (int lift = 1; lift < dynamicTreeLifts.length; lift++) {
+                ages.select(age, lift, v(dynamicTreeStems[lift][stage]));
+            }
+        }
         blockStateOutput.accept(MultiVariantGenerator.multiVariant(pod).with(ages));
 
         ModelTemplates.FLAT_ITEM.create(
                 ModelLocationUtils.getModelLocation(TTItems.MANA_BEAN.get()),
                 TextureMapping.layer0(TTIds.rl("item/mana_bean")),
                 modelOutput);
+    }
+
+    private static JsonObject raisedCrossModel(JsonObject template, int pixels) {
+        JsonObject model = new JsonObject();
+        model.addProperty("parent", BLOCK_PARENT.toString());
+        model.add("textures", template.getAsJsonObject("textures"));
+        JsonArray elements = new JsonArray();
+        elements.add(crossPlane(0, pixels, 8, 16, pixels + 16, 8, "north", "south"));
+        elements.add(crossPlane(8, pixels, 0, 8, pixels + 16, 16, "west", "east"));
+        model.add("elements", elements);
+        return model;
+    }
+
+    private static JsonObject crossPlane(
+            int fromX, int fromY, int fromZ, int toX, int toY, int toZ, String faceA, String faceB) {
+        JsonObject plane = new JsonObject();
+        plane.add("from", vector(fromX, fromY, fromZ));
+        plane.add("to", vector(toX, toY, toZ));
+        plane.addProperty("shade", false);
+        JsonObject faces = new JsonObject();
+        faces.add(faceA, crossFace());
+        faces.add(faceB, crossFace());
+        plane.add("faces", faces);
+        return plane;
+    }
+
+    private static JsonObject crossFace() {
+        JsonObject face = new JsonObject();
+        JsonArray uv = new JsonArray();
+        uv.add(0);
+        uv.add(0);
+        uv.add(16);
+        uv.add(16);
+        face.add("uv", uv);
+        face.addProperty("texture", "#cross");
+        return face;
+    }
+
+    private static JsonArray vector(int x, int y, int z) {
+        JsonArray vector = new JsonArray();
+        vector.add(x);
+        vector.add(y);
+        vector.add(z);
+        return vector;
     }
 
     private static Variant v(ResourceLocation model) {

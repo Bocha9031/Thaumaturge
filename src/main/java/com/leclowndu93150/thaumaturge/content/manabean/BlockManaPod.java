@@ -1,8 +1,11 @@
 package com.leclowndu93150.thaumaturge.content.manabean;
 
+import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.compat.dynamictrees.DynamicTreesPlacement;
 import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.mojang.serialization.MapCodec;
@@ -28,11 +31,13 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.fml.ModList;
 import org.jspecify.annotations.Nullable;
 
 public final class BlockManaPod extends BaseEntityBlock {
     public static final MapCodec<BlockManaPod> CODEC = simpleCodec(BlockManaPod::new);
     public static final IntegerProperty AGE = BlockStateProperties.AGE_7;
+    public static final IntegerProperty DYNAMIC_TREE_LIFT = IntegerProperty.create("dynamic_tree_lift", 0, 4);
 
     private static final int GROWTH_CHANCE = 30;
     private static final int MAX_HARDNESS_STEPS = 8;
@@ -49,7 +54,7 @@ public final class BlockManaPod extends BaseEntityBlock {
 
     public BlockManaPod(Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(AGE, 0));
+        registerDefaultState(stateDefinition.any().setValue(AGE, 0).setValue(DYNAMIC_TREE_LIFT, 0));
     }
 
     @Override
@@ -59,7 +64,7 @@ public final class BlockManaPod extends BaseEntityBlock {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(AGE);
+        builder.add(AGE, DYNAMIC_TREE_LIFT);
     }
 
     @Override
@@ -73,8 +78,27 @@ public final class BlockManaPod extends BaseEntityBlock {
     }
 
     public static boolean canGrowAt(LevelReader level, BlockPos pos) {
-        return level.getBiome(pos).is(TTBiomeTags.IS_MAGICAL)
-                && level.getBlockState(pos.above()).is(BlockTags.LOGS);
+        if (!level.getBiome(pos).is(TTBiomeTags.IS_MAGICAL)) {
+            return false;
+        }
+        BlockPos support = pos.above();
+        BlockState supportState = level.getBlockState(support);
+        if (supportState.is(BlockTags.LOGS)) {
+            return true;
+        }
+        if (ModList.get().isLoaded(TTIds.DYNAMIC_TREES)) {
+            return DynamicTreesPlacement.supportsManaPod(level, support);
+        }
+        return false;
+    }
+
+    public static BlockState placementState(LevelReader level, BlockPos pos) {
+        BlockPos support = pos.above();
+        int dynamicTreeLift =
+                ModList.get().isLoaded(TTIds.DYNAMIC_TREES) && DynamicTreesPlacement.supportsManaPod(level, support)
+                        ? DynamicTreesPlacement.manaPodLift(level, support)
+                        : 0;
+        return TTBlocks.MANA_POD.get().defaultBlockState().setValue(DYNAMIC_TREE_LIFT, dynamicTreeLift);
     }
 
     @Override

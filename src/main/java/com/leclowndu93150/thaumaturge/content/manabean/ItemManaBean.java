@@ -3,7 +3,6 @@ package com.leclowndu93150.thaumaturge.content.manabean;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.content.research.pool.AspectPools;
-import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.registry.TTEffectTags;
 import java.util.List;
@@ -13,7 +12,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.effect.MobEffect;
@@ -96,15 +94,13 @@ public final class ItemManaBean extends Item {
         }
         BlockPos logPos = context.getClickedPos();
         BlockPos podPos = logPos.below();
-        if (!level.getBlockState(logPos).is(BlockTags.LOGS)
-                || !level.getBlockState(podPos).isAir()
-                || !BlockManaPod.canGrowAt(level, podPos)) {
+        if (!level.getBlockState(podPos).isAir() || !BlockManaPod.canGrowAt(level, podPos)) {
             return InteractionResult.PASS;
         }
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
-        level.setBlock(podPos, TTBlocks.MANA_POD.get().defaultBlockState(), 3);
+        level.setBlock(podPos, BlockManaPod.placementState(level, podPos), 3);
         if (level.getBlockEntity(podPos) instanceof BlockEntityManaPod pod) {
             Holder<IAspect> aspect = aspectOf(context.getItemInHand());
             if (aspect != null) {

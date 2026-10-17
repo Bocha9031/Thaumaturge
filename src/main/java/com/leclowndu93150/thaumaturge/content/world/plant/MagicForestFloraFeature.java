@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.world.plant;
 
+import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.compat.dynamictrees.DynamicTreesPlacement;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderSet;
@@ -16,12 +18,14 @@ import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import net.neoforged.fml.ModList;
 import org.jspecify.annotations.Nullable;
 
 public final class MagicForestFloraFeature extends Feature<MagicForestFloraConfig> {
     private static final int GRASS_MIN_Y = 30;
     private static final int VISHROOM_MIN_Y = 50;
     private static final int PLACE_FLAGS = 19;
+    private static final int DYNAMIC_TREES_VISHROOM_ATTEMPT_MULTIPLIER = 4;
     private static final double FLOWER_NOISE_SCALE = 48.0;
     private static final double MAX_FLOWER_SAMPLE = 0.9999;
 
@@ -82,7 +86,11 @@ public final class MagicForestFloraFeature extends Feature<MagicForestFloraConfi
                 any |= level.setBlock(grass, config.ambientGrass().defaultBlockState(), PLACE_FLAGS);
             }
         }
-        for (int attempt = 0; attempt < config.vishroomAttempts(); attempt++) {
+        int vishroomAttempts = config.vishroomAttempts();
+        if (ModList.get().isLoaded(TTIds.DYNAMIC_TREES)) {
+            vishroomAttempts *= DYNAMIC_TREES_VISHROOM_ATTEMPT_MULTIPLIER;
+        }
+        for (int attempt = 0; attempt < vishroomAttempts; attempt++) {
             BlockPos grass = findGrass(
                     level,
                     chunkOrigin.getX() + random.nextInt(16),
@@ -142,8 +150,13 @@ public final class MagicForestFloraFeature extends Feature<MagicForestFloraConfi
     }
 
     private static boolean isAdjacentToWood(WorldGenLevel level, BlockPos pos) {
+        boolean dynamicTreesLoaded = ModList.get().isLoaded(TTIds.DYNAMIC_TREES);
         for (BlockPos adjacent : BlockPos.betweenClosed(pos.offset(-1, -1, -1), pos.offset(1, 1, 1))) {
-            if (!adjacent.equals(pos) && level.getBlockState(adjacent).is(BlockTags.LOGS)) {
+            if (adjacent.equals(pos)) {
+                continue;
+            }
+            BlockState state = level.getBlockState(adjacent);
+            if (state.is(BlockTags.LOGS) || (dynamicTreesLoaded && DynamicTreesPlacement.isDynamicBranch(state))) {
                 return true;
             }
         }
