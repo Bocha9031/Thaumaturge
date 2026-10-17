@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.mixin.jei.gui.ingredients;
 
 import mezz.jei.api.helpers.IModIdHelper;
+import mezz.jei.common.config.IIngredientFilterConfig;
 import mezz.jei.gui.ingredients.IngredientFilter;
 import mezz.jei.gui.search.IElementSearch;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,4 +14,7 @@ public interface IngredientFilterAccessor {
 
     @Accessor("modIdHelper")
     IModIdHelper thaumaturge$modIdHelper();
+
+    @Accessor("config")
+    IIngredientFilterConfig thaumaturge$config();
 }

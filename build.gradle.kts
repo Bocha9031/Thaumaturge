@@ -63,7 +63,6 @@ prism {
                 compileOnly("mezz.jei:jei-$minecraftVersion-common-api:${prop("jei_version")}")
                 compileOnly("mezz.jei:jei-$minecraftVersion-neoforge-api:${prop("jei_version")}")
                 compileOnly("mezz.jei:jei-$minecraftVersion-neoforge:${prop("jei_version")}")
-                runtimeOnly("mezz.jei:jei-$minecraftVersion-neoforge:${prop("jei_version")}")
 
                 compileOnly("top.theillusivec4.curios:curios-neoforge:${prop("curios_version")}+$minecraftVersion:api")
                 runtimeOnly("top.theillusivec4.curios:curios-neoforge:${prop("curios_version")}+$minecraftVersion")
@@ -94,6 +93,10 @@ prism {
                     options.compilerArgs.addAll(listOf("-Xmaxerrs", "2000"))
                 }
                 dependencies {
+                    add(
+                        "clientAdditionalRuntimeClasspath",
+                        "mezz.jei:jei-$minecraftVersion-neoforge:${prop("jei_version")}",
+                    )
                     add("compileOnly", "org.jspecify:jspecify:1.0.0")
                     add("compileOnly", "dev.ftb.mods:ftb-library-neoforge:${prop("ftb_library_version")}") {
                         (this as ExternalModuleDependency).isTransitive = false
@@ -103,6 +106,7 @@ prism {
                     add("testImplementation", "org.mockito:mockito-core:5.15.2")
                     add("testImplementation", "maven.modrinth:jade:${prop("jade_version")}")
                     add("testImplementation", "mezz.jei:jei-$minecraftVersion-common-api:${prop("jei_version")}")
+                    add("testRuntimeOnly", "mezz.jei:jei-$minecraftVersion-neoforge:${prop("jei_version")}")
                     add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
                 }
                 tasks.withType<Test>().configureEach {
