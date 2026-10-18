@@ -13,12 +13,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -30,11 +30,24 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public final class BlockCrystal extends Block {
-    public static final IntegerProperty SIZE = IntegerProperty.create("size", 0, 3);
-    public static final IntegerProperty GENERATION = IntegerProperty.create("gen", 1, 4);
+    private static final int MAX_SIZE = 3;
+    private static final int MAX_GENERATION = 4;
 
-    private static final int VIS_THRESHOLD = 10;
+    public static final IntegerProperty SIZE = IntegerProperty.create("size", 0, MAX_SIZE);
+    public static final IntegerProperty GENERATION = IntegerProperty.create("gen", 1, MAX_GENERATION);
 
+    private static final int TICK_CHANCE_BASE = 3;
+    private static final int SPREAD_ONE_IN = 16;
+    private static final int KEEP_GENERATION_ONE_IN = 6;
+    private static final int SPREAD_REACH = 1;
+    private static final int SPREAD_SPAN = SPREAD_REACH * 2 + 1;
+    private static final int CEILING_BASE = 5;
+    private static final int CEILING_VARIANTS = 3;
+    private static final float AURA_BAND = 10.0F;
+    private static final float AURA_EXCHANGE = 10.0F;
+    private static final float DECAY_FLUX = 1.0F;
+    private static final float FLUX_CONVERSION_DIVISOR = 2.0F;
+    private static final float DRAIN_TOLERANCE = 0.001F;
     private static final double[][][] SHARD_BOXES = {
         {{6.0, 0.0, 5.5, 10.0, 7.5, 9.0}, {7.0, 0.0, 9.0, 9.5, 6.0, 10.0}, {7.0, 6.5, 7.0, 9.0, 8.0, 8.5}},
         {{12.0, 0.0, 5.5, 15.0, 4.5, 7.5}, {13.0, 0.0, 7.5, 14.0, 3.5, 8.0}, {13.0, 2.0, 5.0, 13.5, 3.0, 5.5}},
@@ -213,85 +226,108 @@ public final class BlockCrystal extends Block {
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (random.nextInt(3 + generation(state)) != 0) {
+        if (random.nextInt(TICK_CHANCE_BASE + generation(state)) != 0) {
             return;
         }
-        int growth = growth(state);
-        int generation = generation(state);
+        float stock = currentStock(level, pos);
+        float base = AuraHelper.getAuraBase(level, pos);
         if (!flux) {
-            float vis = AuraHelper.getVis(level, pos);
-            if (vis <= VIS_THRESHOLD) {
-                if (growth > 0) {
-                    level.setBlockAndUpdate(pos, state.setValue(SIZE, growth - 1));
-                    AuraHelper.addVis(level, pos, VIS_THRESHOLD);
-                } else if (touchingSameCrystal(level, pos)) {
-                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                    AuraHelper.addVis(level, pos, VIS_THRESHOLD);
-                    AuraHelper.addFlux(level, pos, 1.0F);
-                }
-            } else if (vis > AuraHelper.getAuraBase(level, pos) + VIS_THRESHOLD) {
-                if (growth < 3 && growth < 5 - generation + Math.floorMod(pos.asLong(), 3L)) {
-                    if (AuraHelper.drainVis(level, pos, VIS_THRESHOLD, false) > 0.0F) {
-                        level.setBlockAndUpdate(pos, state.setValue(SIZE, growth + 1));
-                    }
-                } else if (generation < 4) {
-                    BlockPos spreadTo = spreadCrystal(level, pos, random);
-                    if (spreadTo != null && AuraHelper.drainVis(level, pos, VIS_THRESHOLD, false) > 0.0F) {
-                        int childGeneration = generation;
-                        if (random.nextInt(6) == 0) {
-                            childGeneration--;
-                        }
-                        level.setBlockAndUpdate(
-                                spreadTo, defaultBlockState().setValue(GENERATION, childGeneration + 1));
-                    }
-                }
-            } else {
-                float ambientFlux = AuraHelper.getFlux(level, pos);
-                float base = AuraHelper.getAuraBase(level, pos);
-                int conversionCost = growth + 1;
-                if (ambientFlux > vis
-                        && ambientFlux > base / 2.0F
-                        && AuraHelper.drainFlux(level, pos, conversionCost, false) >= conversionCost - 0.001F) {
-                    level.setBlockAndUpdate(
-                            pos,
-                            TTBlocks.CRYSTAL_VITIUM
-                                    .get()
-                                    .defaultBlockState()
-                                    .setValue(SIZE, growth)
-                                    .setValue(GENERATION, generation));
-                }
+            convertToFlux(state, level, pos, stock, base);
+            if (!level.getBlockState(pos).is(this)) {
+                return;
             }
-        } else {
-            float flux = AuraHelper.getFlux(level, pos);
-            if (flux <= VIS_THRESHOLD) {
-                if (growth > 0) {
-                    level.setBlockAndUpdate(pos, state.setValue(SIZE, growth - 1));
-                    AuraHelper.addFlux(level, pos, VIS_THRESHOLD);
-                } else if (touchingSameCrystal(level, pos)) {
-                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
-                    AuraHelper.addFlux(level, pos, VIS_THRESHOLD);
-                }
-            } else if (flux > AuraHelper.getAuraBase(level, pos) + VIS_THRESHOLD) {
-                if (growth < 3 && growth < 5 - generation + Math.floorMod(pos.asLong(), 3L)) {
-                    if (AuraHelper.drainFlux(level, pos, VIS_THRESHOLD, false) > 0.0F) {
-                        level.setBlockAndUpdate(pos, state.setValue(SIZE, growth + 1));
-                    }
-                } else if (generation < 4) {
-                    BlockPos spreadTo = spreadCrystal(level, pos, random);
-                    if (spreadTo != null && AuraHelper.drainFlux(level, pos, VIS_THRESHOLD, false) > 0.0F) {
-                        int childGeneration = generation;
-                        if (random.nextInt(6) == 0) {
-                            childGeneration--;
-                        }
-                        level.setBlockAndUpdate(
-                                spreadTo, defaultBlockState().setValue(GENERATION, childGeneration + 1));
-                    }
-                }
+        }
+        switch (bandFor(stock, base)) {
+            case STARVED -> wither(state, level, pos);
+            case RICH -> flourish(state, level, pos, random);
+            case MIDDLE -> {
             }
         }
     }
 
-    private boolean touchingSameCrystal(LevelReader level, BlockPos pos) {
+    private static AuraBand bandFor(float stock, float base) {
+        if (stock <= AURA_BAND) {
+            return AuraBand.STARVED;
+        }
+        return stock > base + AURA_BAND ? AuraBand.RICH : AuraBand.MIDDLE;
+    }
+
+    private void wither(BlockState state, ServerLevel level, BlockPos pos) {
+        int size = growth(state);
+        if (size > 0) {
+            level.setBlock(pos, state.setValue(SIZE, size - 1), 3);
+        } else if (hasSameCrystalBeside(level, pos)) {
+            level.removeBlock(pos, false);
+        } else {
+            return;
+        }
+        returnToAura(level, pos);
+        if (!flux) {
+            AuraHelper.addFlux(level, pos, DECAY_FLUX);
+        }
+    }
+
+    private void flourish(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        int size = growth(state);
+        if (size < sizeCeiling(state, pos)) {
+            if (drain(level, pos, AURA_EXCHANGE) > 0.0F) {
+                level.setBlock(pos, state.setValue(SIZE, size + 1), 3);
+            }
+            return;
+        }
+        if (generation(state) < MAX_GENERATION) {
+            seed(state, level, pos, random);
+        }
+    }
+
+    static int sizeCeiling(BlockState state, BlockPos pos) {
+        int growthBonus = Math.floorMod(Mth.getSeed(pos), CEILING_VARIANTS);
+        return Math.min(MAX_SIZE, CEILING_BASE - state.getValue(GENERATION) + growthBonus);
+    }
+
+    private void seed(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        BlockPos target = neighbourWithin(pos, random);
+        if (random.nextInt(SPREAD_ONE_IN) != 0 || !canHost(level, target)) {
+            return;
+        }
+        if (drain(level, pos, AURA_EXCHANGE) <= 0.0F) {
+            return;
+        }
+        int parentGeneration = generation(state);
+        int childGeneration = childGeneration(parentGeneration, random);
+        level.setBlock(
+                target,
+                defaultBlockState().setValue(SIZE, 0).setValue(GENERATION, childGeneration),
+                3);
+    }
+
+    static BlockPos neighbourWithin(BlockPos pos, RandomSource random) {
+        int cellCount = SPREAD_SPAN * SPREAD_SPAN * SPREAD_SPAN;
+        int centreCell = cellCount / 2;
+        int cell = random.nextInt(cellCount - 1);
+        if (cell >= centreCell) {
+            cell++;
+        }
+        int dx = cell % SPREAD_SPAN - SPREAD_REACH;
+        int dy = cell / SPREAD_SPAN % SPREAD_SPAN - SPREAD_REACH;
+        int dz = cell / (SPREAD_SPAN * SPREAD_SPAN) - SPREAD_REACH;
+        return pos.offset(dx, dy, dz);
+    }
+
+    static int childGeneration(int parentGeneration, RandomSource random) {
+        return random.nextInt(KEEP_GENERATION_ONE_IN) == 0
+                ? parentGeneration
+                : Math.min(parentGeneration + 1, MAX_GENERATION);
+    }
+
+    private static boolean canHost(ServerLevel level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return state.getFluidState().isEmpty()
+                && (state.isAir() || state.canBeReplaced())
+                && hasSturdyNeighbour(level, pos);
+    }
+
+    private boolean hasSameCrystalBeside(ServerLevel level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
             if (level.getBlockState(pos.relative(direction)).is(this)) {
                 return true;
@@ -300,35 +336,50 @@ public final class BlockCrystal extends Block {
         return false;
     }
 
+    private float currentStock(ServerLevel level, BlockPos pos) {
+        return flux ? AuraHelper.getFlux(level, pos) : AuraHelper.getVis(level, pos);
+    }
+
+    private void convertToFlux(BlockState state, ServerLevel level, BlockPos pos, float vis, float base) {
+        float fluxStock = AuraHelper.getFlux(level, pos);
+        if (fluxStock <= vis || fluxStock <= base / FLUX_CONVERSION_DIVISOR) {
+            return;
+        }
+        float cost = growth(state) + 1;
+        if (AuraHelper.drainFlux(level, pos, cost, false) < cost - DRAIN_TOLERANCE) {
+            return;
+        }
+        BlockState tainted = TTBlocks.CRYSTAL_VITIUM.get().defaultBlockState()
+                .setValue(SIZE, growth(state))
+                .setValue(GENERATION, generation(state));
+        level.setBlock(pos, tainted, 3);
+    }
+
+    private float drain(ServerLevel level, BlockPos pos, float amount) {
+        return flux ? AuraHelper.drainFlux(level, pos, amount, false) : AuraHelper.drainVis(level, pos, amount, false);
+    }
+
+    private void returnToAura(ServerLevel level, BlockPos pos) {
+        if (flux) {
+            AuraHelper.addFlux(level, pos, AURA_EXCHANGE);
+        } else {
+            AuraHelper.addVis(level, pos, AURA_EXCHANGE);
+        }
+    }
+
     private static boolean hasSturdyNeighbour(LevelReader level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
             BlockPos neighbour = pos.relative(direction);
-            BlockState neighbourState = level.getBlockState(neighbour);
-            if (neighbourState.isFaceSturdy(level, neighbour, direction.getOpposite())) {
+            if (level.getBlockState(neighbour).isFaceSturdy(level, neighbour, direction.getOpposite())) {
                 return true;
             }
         }
         return false;
     }
 
-    private BlockPos spreadCrystal(ServerLevel level, BlockPos pos, RandomSource random) {
-        int xx = pos.getX() + random.nextInt(3) - 1;
-        int yy = pos.getY() + random.nextInt(3) - 1;
-        int zz = pos.getZ() + random.nextInt(3) - 1;
-        BlockPos target = new BlockPos(xx, yy, zz);
-        if (target.equals(pos)) {
-            return null;
-        }
-        BlockState targetState = level.getBlockState(target);
-        if (targetState.liquid()) {
-            return null;
-        }
-        if (!targetState.isAir() && !targetState.canBeReplaced()) {
-            return null;
-        }
-        if (random.nextInt(16) != 0) {
-            return null;
-        }
-        return hasSturdyNeighbour(level, target) ? target : null;
+    private enum AuraBand {
+        STARVED,
+        RICH,
+        MIDDLE
     }
 }
