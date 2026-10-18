@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.client.golem;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.client.golems.GolemAccessoryRenderContext;
 import com.leclowndu93150.thaumaturge.client.model.mesh.TTMeshPart;
+import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -37,9 +38,11 @@ public final class GolemEquipmentRenderer {
     private static void render(ResourceLocation mesh, PoseStack pose, MultiBufferSource buffers, int light, int color) {
         for (TTMeshPart part : GolemMeshes.get(mesh).parts()) {
             ResourceLocation texture = GolemMeshes.texture(part, WHITE_WOOL);
-            RenderType type = ARGB32.alpha(color) < 255 || texture.getPath().contains("glass")
-                    ? RenderType.entityTranslucent(texture)
-                    : RenderType.entityCutout(texture);
+            RenderType type = ARGB32.alpha(color) < 255
+                    ? TTRenderTypes.entityTranslucentNoDepthWrite(texture)
+                    : texture.getPath().contains("glass")
+                            ? RenderType.entityTranslucent(texture)
+                            : RenderType.entityCutout(texture);
             GolemMeshes.renderPart(part, pose.last(), buffers.getBuffer(type), light, color);
         }
     }

@@ -145,16 +145,14 @@ public final class GolemRenderer extends EntityRenderer<EntityThaumaturgeGolem> 
             int color) {
         ResourceLocation material = state.props.material().texture();
         ResourceLocation skin = GolemSkins.forMaterial(material);
-        RenderType type = xray
-                ? TTRenderTypes.entityTranslucentNoDepth(skin)
-                : ARGB32.alpha(color) < 255 ? RenderType.entityTranslucent(skin) : RenderType.entityCutout(skin);
+        RenderType type = renderType(skin, xray, color);
         model.renderToBuffer(pose, buffers.getBuffer(type), state.lightCoords, OverlayTexture.NO_OVERLAY, color);
         if (!xray) {
             model.renderToBuffer(
                     pose,
                     buffers.getBuffer(
                             ARGB32.alpha(color) < 255
-                                    ? RenderType.entityTranslucent(GolemSkins.EYES)
+                                    ? TTRenderTypes.entityTranslucentNoDepthWrite(GolemSkins.EYES)
                                     : RenderType.eyes(GolemSkins.EYES)),
                     state.lightCoords,
                     OverlayTexture.NO_OVERLAY,
@@ -256,10 +254,17 @@ public final class GolemRenderer extends EntityRenderer<EntityThaumaturgeGolem> 
             boolean xray,
             int color,
             int light) {
-        RenderType type = xray
-                ? TTRenderTypes.entityTranslucentNoDepth(texture)
-                : ARGB32.alpha(color) < 255 ? RenderType.entityTranslucent(texture) : RenderType.entityCutout(texture);
+        RenderType type = renderType(texture, xray, color);
         VertexConsumer buffer = buffers.getBuffer(type);
         GolemMeshes.renderPart(part, poseStack.last(), buffer, light, color);
+    }
+
+    static RenderType renderType(ResourceLocation texture, boolean xray, int color) {
+        if (xray) {
+            return TTRenderTypes.entityTranslucentNoDepth(texture);
+        }
+        return ARGB32.alpha(color) < 255
+                ? TTRenderTypes.entityTranslucentNoDepthWrite(texture)
+                : RenderType.entityCutout(texture);
     }
 }

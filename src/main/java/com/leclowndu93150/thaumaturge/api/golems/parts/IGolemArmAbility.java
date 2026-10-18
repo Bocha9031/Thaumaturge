@@ -38,6 +38,9 @@ public interface IGolemArmAbility extends IGolemPartAbility {
      *
      * @param mob the golem
      * @return the goal, or null when these arms cannot attack at range
+     * @apiNote This goal has higher priority than the golem's melee goal. To let melee take over, it should return
+     *     false from {@link Goal#canUse()} or {@link Goal#canContinueToUse()} when the target cannot be shot, such as
+     *     when it is out of range or line of sight.
      */
     default @Nullable Goal createRangedGoal(RangedAttackMob mob) {
         return null;
