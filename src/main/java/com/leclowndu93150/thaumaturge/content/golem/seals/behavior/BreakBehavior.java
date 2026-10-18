@@ -15,7 +15,8 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 
 public final class BreakBehavior extends CellWorkBehavior {
-    public static final SealSetting SILK_TOUCH = new SealSetting("psilk", "gui.thaumaturge.seal.setting.silk", false);
+    public static final SealSetting SILK_TOUCH =
+            new SealSetting("silk_touch", "gui.thaumaturge.seal.setting.silk", false).readingAlso("psilk");
 
     private static final int STAGGER = 42;
     private static final float HARDNESS_SCALE = 10.0F;

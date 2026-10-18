@@ -9,7 +9,9 @@ import com.mojang.serialization.MapLike;
 import com.mojang.serialization.RecordBuilder;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 public final class SealSettingValues {
     private final SealType type;
@@ -51,11 +53,15 @@ public final class SealSettingValues {
             SealSettingValues decoded = new SealSettingValues(type);
             for (SealSetting setting : type.settings()) {
                 T stored = input.get(setting.key());
-                if (stored != null) {
-                    ops.getBooleanValue(stored).result().ifPresent(value -> decoded.values.put(setting.key(), value));
-                }
+                Optional<Boolean> value = readBoolean(ops, stored)
+                        .or(() -> setting.former().flatMap(key -> readBoolean(ops, input.get(key))));
+                value.ifPresent(found -> decoded.values.put(setting.key(), found));
             }
             return DataResult.success(decoded);
+        }
+
+        private static <T> Optional<Boolean> readBoolean(DynamicOps<T> ops, @Nullable T value) {
+            return value == null ? Optional.empty() : ops.getBooleanValue(value).result();
         }
 
         @Override
