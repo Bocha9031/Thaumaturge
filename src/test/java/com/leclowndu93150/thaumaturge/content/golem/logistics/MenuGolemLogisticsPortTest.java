@@ -25,4 +25,11 @@ class MenuGolemLogisticsPortTest {
         assertEquals(0, MenuGolemLogistics.lastPageForItemCount(81));
         assertEquals(1, MenuGolemLogistics.lastPageForItemCount(82));
     }
+
+    @Test
+    void refreshClampsPageWhenTheResultSetShrinks() {
+        assertEquals(1, MenuGolemLogistics.clampPage(3, 82));
+        assertEquals(0, MenuGolemLogistics.clampPage(3, 81));
+        assertEquals(0, MenuGolemLogistics.clampPage(-1, 82));
+    }
 }

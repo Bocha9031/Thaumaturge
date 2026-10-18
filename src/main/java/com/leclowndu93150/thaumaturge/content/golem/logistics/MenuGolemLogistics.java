@@ -154,6 +154,10 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
         return Math.max(0, Math.ceilDiv(itemCount, COLUMNS) - ROWS);
     }
 
+    static int clampPage(int page, int itemCount) {
+        return Math.min(Math.max(page, 0), lastPageForItemCount(itemCount));
+    }
+
     static boolean shouldCollectStock(boolean hasCollected, long now, long collectedAt) {
         return !hasCollected || now - collectedAt >= COLLECT_INTERVAL_TICKS;
     }
@@ -177,6 +181,7 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
             }
             sortByDisplayName(items);
         }
+        start.set(clampPage(start.get(), items.size()));
         display.clearContent();
         int skipped = 0;
         int slot = 0;
