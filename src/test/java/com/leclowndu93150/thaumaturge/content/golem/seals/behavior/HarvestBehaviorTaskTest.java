@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,5 +38,20 @@ class HarvestBehaviorTaskTest {
         site.assign(7);
 
         assertFalse(HarvestBehavior.isReplantTask(task, site));
+    }
+
+    @Test
+    void cocoaSupportUsesTheSolidSideWhenStoredFacingPointsIntoAir() {
+        assertEquals(Direction.EAST, HarvestBehavior.resolveSupport(Direction.WEST, true, false));
+    }
+
+    @Test
+    void cocoaSupportKeepsStoredFacingWhenItIsAlreadySolid() {
+        assertEquals(Direction.WEST, HarvestBehavior.resolveSupport(Direction.WEST, false, true));
+    }
+
+    @Test
+    void verticalPlantSupportIsNormalizedToTheBlockBelow() {
+        assertEquals(Direction.DOWN, HarvestBehavior.resolveSupport(Direction.UP, false, false));
     }
 }
