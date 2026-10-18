@@ -154,6 +154,14 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         }
     }
 
+    void collapse(ServerLevel serverLevel, BlockPos pos) {
+        if (getBlockState().getBlock() instanceof NodeHostBlock) {
+            removeDepleted(serverLevel, pos);
+        } else {
+            serverLevel.destroyBlock(pos, true);
+        }
+    }
+
     void recordDrain(UUID player, int color) {
         drainPlayer = player;
         drainColor = color;
@@ -608,13 +616,10 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         if (nodeModifier == NodeModifier.PALE && random.nextBoolean()) {
             return change;
         }
-        int x = random.nextInt(DISCHARGE_RANGE + 1) - random.nextInt(DISCHARGE_RANGE + 1);
-        int y = random.nextInt(DISCHARGE_RANGE + 1) - random.nextInt(DISCHARGE_RANGE + 1);
-        int z = random.nextInt(DISCHARGE_RANGE + 1) - random.nextInt(DISCHARGE_RANGE + 1);
-        if (x == 0 && y == 0 && z == 0) {
+        BlockPos otherPos = NodeScatter.around(pos, DISCHARGE_RANGE, random);
+        if (otherPos.equals(pos)) {
             return change;
         }
-        BlockPos otherPos = pos.offset(x, y, z);
         if (!isGenerated(serverLevel, otherPos)) {
             return change;
         }
@@ -652,6 +657,9 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             other.wait = other.refillInterval() / 2;
             other.setChanged();
             serverLevel.sendBlockUpdated(otherPos, other.getBlockState(), other.getBlockState(), 3);
+            if (other.aspects.isEmpty() && !other.isEnergized()) {
+                other.collapse(serverLevel, otherPos);
+            }
             serverLevel.playSound(
                     null, otherPos, TTSounds.ZAP.get(), SoundSource.BLOCKS, 0.1F, 1.0F + random.nextFloat() * 0.2F);
             Effects.arcBolt(serverLevel, Vec3.atCenterOf(otherPos))

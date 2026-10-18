@@ -14,6 +14,7 @@ import java.lang.reflect.Method;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,9 +58,18 @@ class NodeDevicePortTest {
         catastrophe.setAccessible(true);
         try (MockedStatic<AuraHelper> aura = org.mockito.Mockito.mockStatic(AuraHelper.class)) {
             catastrophe.invoke(null, level, nodePos);
+            aura.verify(() -> AuraHelper.addFlux(level, nodePos, 32.0F));
         }
 
         verify(level).setBlock(nodePos, depletedState, Block.UPDATE_ALL);
+        verify(level)
+                .explode(
+                        null,
+                        nodePos.getX() + 0.5,
+                        nodePos.getY() + 0.5,
+                        nodePos.getZ() + 0.5,
+                        3.0F,
+                        Level.ExplosionInteraction.BLOCK);
         verify(level, never()).removeBlock(nodePos, false);
     }
 }

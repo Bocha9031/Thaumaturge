@@ -17,7 +17,6 @@ import com.mojang.serialization.Lifecycle;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.MappedRegistry;
@@ -28,7 +27,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,12 @@ class NodeUpkeepPortTest {
                 "handleDischarge", ServerLevel.class, BlockPos.class, boolean.class);
         method.setAccessible(true);
         method.invoke(node, level, BlockPos.ZERO, false);
+    }
+
+    private static void invokeCollapse(BlockEntityNode node, ServerLevel level, BlockPos pos) throws Exception {
+        Method method = BlockEntityNode.class.getDeclaredMethod("collapse", ServerLevel.class, BlockPos.class);
+        method.setAccessible(true);
+        method.invoke(node, level, pos);
     }
 
     private static void setInt(BlockEntityNode node, String name, int value) throws Exception {
@@ -71,14 +78,8 @@ class NodeUpkeepPortTest {
     @Test
     void advancedLockedReceiverCanDischargeAndDonorShrinkClipsHeldVisAndRefreshesWait() throws Exception {
         RandomSource random = mock(RandomSource.class);
-        AtomicInteger coordinateRoll = new AtomicInteger();
-        when(random.nextInt(anyInt())).thenAnswer(invocation -> {
-            int bound = invocation.getArgument(0);
-            if (bound == 5) {
-                return coordinateRoll.getAndIncrement() == 0 ? 1 : 0;
-            }
-            return 0;
-        });
+        when(random.nextFloat()).thenReturn(0.5F, 0.0F, 0.0F);
+        when(random.nextBoolean()).thenReturn(true);
         ServerLevel level = generatedLevel(random);
         BlockEntityNode receiver = node();
         BlockEntityNode donor = node();
@@ -188,14 +189,9 @@ class NodeUpkeepPortTest {
     @Test
     void lateDonorWithInvalidRefillCacheGetsARecomputedCooldownWithoutShrinking() throws Exception {
         RandomSource random = mock(RandomSource.class);
-        AtomicInteger coordinateRoll = new AtomicInteger();
-        when(random.nextInt(anyInt())).thenAnswer(invocation -> {
-            int bound = invocation.getArgument(0);
-            if (bound == 5) {
-                return coordinateRoll.getAndIncrement() == 0 ? 1 : 0;
-            }
-            return bound == 1 ? 0 : 1;
-        });
+        when(random.nextFloat()).thenReturn(0.5F, 0.0F, 0.0F);
+        when(random.nextBoolean()).thenReturn(true);
+        when(random.nextInt(anyInt())).thenAnswer(invocation -> invocation.<Integer>getArgument(0) == 1 ? 0 : 1);
         ServerLevel level = generatedLevel(random);
         BlockEntityNode receiver = node();
         BlockEntityNode donor = node();
@@ -221,6 +217,50 @@ class NodeUpkeepPortTest {
         assertEquals(300, getInt(donor, "wait"));
         assertEquals(600, getInt(donor, "regeneration"));
         assertEquals(2, donor.aspectsBase.amountOf(aspect));
+    }
+
+    @Test
+    void emptyDischargeDonorCollapsesInsteadOfRemainingAsAnEmptyNode() throws Exception {
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextFloat()).thenReturn(0.5F, 0.0F, 0.0F);
+        when(random.nextBoolean()).thenReturn(true);
+        ServerLevel level = generatedLevel(random);
+        BlockPos donorPos = new BlockPos(1, 0, 0);
+        BlockEntityNode receiver = node();
+        BlockEntityNode donor = node();
+        Holder<IAspect> donorAspect = Holder.direct(mock(IAspect.class));
+        Holder<IAspect> receiverAspect = Holder.direct(mock(IAspect.class));
+        donor.aspectsBase = AspectList.ofEntries(List.of(new AspectInstance(donorAspect, 1)));
+        donor.aspects = donor.aspectsBase;
+        receiver.aspectsBase = AspectList.ofEntries(List.of(new AspectInstance(receiverAspect, 10)));
+        receiver.aspects = receiver.aspectsBase;
+        when(level.getBlockEntity(donorPos)).thenReturn(donor);
+        Effects.ArcBolt bolt = mock(Effects.ArcBolt.class);
+        when(bolt.to(any(Vec3.class))).thenReturn(bolt);
+        when(bolt.width(anyFloat())).thenReturn(bolt);
+        try (MockedStatic<Effects> effects = mockStatic(Effects.class)) {
+            effects.when(() -> Effects.arcBolt(level, Vec3.atCenterOf(donorPos)))
+                    .thenReturn(bolt);
+
+            invokeDischarge(receiver, level);
+        }
+
+        assertTrue(donor.aspects.isEmpty());
+        verify(level).destroyBlock(donorPos, true);
+    }
+
+    @Test
+    void collapsingNodeHostLeavesItsDepletedHostBlockInPlace() throws Exception {
+        BlockPos pos = BlockPos.ZERO;
+        BlockState hostState = TTBlocks.SILVERWOOD_NODE_LOG.get().defaultBlockState();
+        NodeHostBlock host = (NodeHostBlock) hostState.getBlock();
+        ServerLevel level = mock(ServerLevel.class);
+        when(level.getBlockState(pos)).thenReturn(hostState);
+
+        invokeCollapse(new BlockEntityNode(pos, hostState), level, pos);
+
+        verify(level).setBlock(pos, host.depletedState(hostState), Block.UPDATE_ALL);
+        verify(level, never()).destroyBlock(any(BlockPos.class), anyBoolean());
     }
 
     @Test

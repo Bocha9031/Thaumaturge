@@ -34,8 +34,10 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
@@ -81,6 +83,17 @@ class NodeHungerPortTest {
         field.setInt(node, value);
     }
 
+    private static void setCenter(Entity entity, Vec3 center) {
+        when(entity.getBoundingBox())
+                .thenReturn(new AABB(
+                        center.x - 0.25,
+                        center.y - 0.25,
+                        center.z - 0.25,
+                        center.x + 0.25,
+                        center.y + 0.25,
+                        center.z + 0.25));
+    }
+
     private static void invokeFeed(NodeHunger hunger, ServerLevel level, AspectList source, RandomSource random)
             throws Exception {
         Method method =
@@ -98,7 +111,7 @@ class NodeHungerPortTest {
         Entity entity = mock(Entity.class);
         when(entity.isAlive()).thenReturn(true);
         when(entity.level()).thenReturn(level);
-        when(entity.position()).thenReturn(new Vec3(2.0, 0.5, 0.5));
+        setCenter(entity, new Vec3(2.0, 0.5, 0.5));
         when(level.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any())).thenReturn(List.of(entity));
 
         hunger.tick(level, BlockPos.ZERO, 10);
@@ -160,7 +173,7 @@ class NodeHungerPortTest {
         Entity entity = mock(Entity.class);
         when(entity.isAlive()).thenReturn(true);
         when(entity.level()).thenReturn(firstLevel);
-        when(entity.position()).thenReturn(new Vec3(5.0, 0.5, 0.5));
+        setCenter(entity, new Vec3(5.0, 0.5, 0.5));
         when(firstLevel.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any()))
                 .thenReturn(List.of(entity));
 
@@ -189,7 +202,7 @@ class NodeHungerPortTest {
         Entity entity = mock(Entity.class);
         when(entity.isAlive()).thenReturn(true, true, false, false);
         when(entity.level()).thenReturn(level);
-        when(entity.position()).thenReturn(new Vec3(1.0, 0.5, 0.5));
+        setCenter(entity, new Vec3(1.0, 0.5, 0.5));
         when(level.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any())).thenReturn(List.of(entity));
         AtomicInteger eventOrder = new AtomicInteger();
         AtomicInteger refillOrder = new AtomicInteger();
@@ -225,7 +238,7 @@ class NodeHungerPortTest {
         Entity entity = mock(Entity.class);
         when(entity.isAlive()).thenReturn(true);
         when(entity.level()).thenReturn(level);
-        when(entity.position()).thenReturn(new Vec3(5.0, 0.5, 0.5));
+        setCenter(entity, new Vec3(5.0, 0.5, 0.5));
         when(level.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any())).thenReturn(List.of(entity));
         Method behavior =
                 BlockEntityNode.class.getDeclaredMethod("handleTypeBehavior", ServerLevel.class, BlockPos.class);
@@ -239,6 +252,48 @@ class NodeHungerPortTest {
         behavior.invoke(node, level, BlockPos.ZERO);
 
         verify(level).getEntitiesOfClass(eq(Entity.class), any(AABB.class), any());
+    }
+
+    @Test
+    void entitiesOutsideTheSphericalPullRangeAreNotDragged() {
+        RandomSource random = mock(RandomSource.class);
+        ServerLevel level = level(random);
+        NodeHunger hunger = new NodeHunger(node());
+        Entity entity = mock(Entity.class);
+        when(entity.isAlive()).thenReturn(true);
+        when(entity.level()).thenReturn(level);
+        setCenter(entity, new Vec3(14.0, 14.0, 0.5));
+        when(level.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any())).thenReturn(List.of(entity));
+
+        hunger.tick(level, BlockPos.ZERO, 10);
+
+        verify(entity, never()).push(anyDouble(), anyDouble(), anyDouble());
+        verify(entity, never()).hurt(any(DamageSource.class), anyFloat());
+    }
+
+    @Test
+    void playerCanBePulledButDoesNotFeedAspectEssenceToTheNode() throws Exception {
+        NodeHunger hunger = new NodeHunger(node());
+        Player player = mock(Player.class);
+        Method method = NodeHunger.class.getDeclaredMethod("essenceOf", Entity.class);
+        method.setAccessible(true);
+
+        assertEquals(AspectList.EMPTY, method.invoke(hunger, player));
+    }
+
+    @Test
+    void blockTargetSamplingDoesNotInspectOrLoadAnUnloadedChunk() {
+        Level level = mock(Level.class);
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextFloat()).thenReturn(0.5F);
+        when(random.nextBoolean()).thenReturn(true);
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(false);
+
+        assertNull(NodeHunger.findTarget(level, BlockPos.ZERO, null, random));
+
+        verify(level).hasChunkAt(any(BlockPos.class));
+        verify(level, never()).getHeight(any(), anyInt(), anyInt());
+        verify(level, never()).clip(any());
     }
 
     private static ResourceKeyHolder registeredIgnis() {

@@ -23,7 +23,6 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public final class BlockEntityNodeTransducer extends BlockEntity {
-    private static final float CATASTROPHIC_FAILURE_FLUX_POLLUTION = 32.0F;
     public static final int CHARGE_TARGET = 1000;
     public static final int REVERT_THRESHOLD = 50;
 
@@ -181,24 +180,15 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
     }
 
     private static void catastrophicFailure(ServerLevel level, BlockPos nodePos) {
-        AuraHelper.polluteAura(level, nodePos, CATASTROPHIC_FAILURE_FLUX_POLLUTION, true);
         if (level.getBlockEntity(nodePos) instanceof BlockEntityNode node) {
             node.removeDepleted(level, nodePos);
         }
-        level.explode(
-                null,
-                nodePos.getX() + 0.5,
-                nodePos.getY() + 0.5,
-                nodePos.getZ() + 0.5,
-                3.0F,
-                Level.ExplosionInteraction.NONE);
+        Vec3 centre = Vec3.atCenterOf(nodePos);
+        level.explode(null, centre.x, centre.y, centre.z, 3.0F, Level.ExplosionInteraction.BLOCK);
         RandomSource random = level.getRandom();
-        for (int i = 0; i < 50; i++) {
-            BlockPos target = nodePos.offset(
-                    random.nextInt(8) - random.nextInt(8),
-                    random.nextInt(8) - random.nextInt(8),
-                    random.nextInt(8) - random.nextInt(8));
-            if (!level.hasChunkAt(target)) {
+        for (int attempt = 0; attempt < 50; attempt++) {
+            BlockPos target = NodeScatter.around(nodePos, 7, random);
+            if (!level.hasChunkAt(target) || !level.isEmptyBlock(target)) {
                 continue;
             }
             if (target.getY() < nodePos.getY()) {
@@ -207,6 +197,7 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
                 PhysicalFlux.placeGas(level, target, PhysicalFlux.MAX_QUANTA);
             }
         }
+        AuraHelper.addFlux(level, nodePos, 32.0F);
     }
 
     private static boolean hasStabilizer(Level level, BlockPos pos) {
