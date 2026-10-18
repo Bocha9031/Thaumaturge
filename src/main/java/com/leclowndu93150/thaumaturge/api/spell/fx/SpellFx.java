@@ -48,4 +48,18 @@ public interface SpellFx {
      * @param ticks how long the beam lingers
      */
     void beam(Vec3 from, Vec3 to, int color, int ticks);
+
+    /**
+     * A beam between two points with an optional brief endpoint flare when it struck something.
+     * Existing effect sinks remain compatible and may ignore the hit indication.
+     *
+     * @param from  the start
+     * @param to    the end
+     * @param color the packed {@code 0xRRGGBB} tint
+     * @param ticks how long the beam lingers
+     * @param hit   whether the beam struck a block or entity at {@code to}
+     */
+    default void beam(Vec3 from, Vec3 to, int color, int ticks, boolean hit) {
+        beam(from, to, color, ticks);
+    }
 }

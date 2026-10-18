@@ -19,6 +19,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.util.FastColor.ARGB32;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -31,6 +32,8 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
     private static final List<BeamInstance> BEAMS = new ArrayList<>();
     private static final float ARC_SIZE = 0.125F;
     private static final float SOURCE_QUAD_SIZE = 0.33F;
+    private static final float HIT_QUAD_SIZE = 0.3F;
+    private static final float HIT_WHITE_MIX = 0.5F;
 
     private BeamManager() {}
 
@@ -138,29 +141,42 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
 
         if (beam.withSource()) {
             VertexConsumer node = bufSource.getBuffer(BeamRenderType.NODE_TYPE);
-            int partFrame = beam.age() % 32;
-            float u0 = partFrame / 32.0F;
-            float u1 = u0 + 0.03125F;
-            float v0 = 0.09375F;
-            float v1 = v0 + 0.03125F;
             float sourceOp = 0.8F;
             if (beam.maxAge() - beam.age() <= 4) {
                 sourceOp = 0.8F - (4 - (beam.maxAge() - beam.age())) * 0.2F;
             }
             int sourceColor = ARGB32.colorFromFloat(sourceOp, beam.colorR(), beam.colorG(), beam.colorB());
-            float halfSize = SOURCE_QUAD_SIZE;
-            poseStack.pushPose();
-            poseStack.translate(source.x - camPos.x, source.y - camPos.y, source.z - camPos.z);
-            Quaternionf cameraRot = new Quaternionf();
-            Minecraft.getInstance().gameRenderer.getMainCamera().rotation().normalize(cameraRot);
-            poseStack.mulPose(cameraRot);
-            Matrix4f sm = poseStack.last().pose();
-            node.addVertex(sm, -halfSize, -halfSize, 0.0F).setColor(sourceColor).setUv(u1, v1);
-            node.addVertex(sm, -halfSize, halfSize, 0.0F).setColor(sourceColor).setUv(u1, v0);
-            node.addVertex(sm, halfSize, halfSize, 0.0F).setColor(sourceColor).setUv(u0, v0);
-            node.addVertex(sm, halfSize, -halfSize, 0.0F).setColor(sourceColor).setUv(u0, v1);
-            poseStack.popPose();
+            drawNodeQuad(poseStack, node, camPos, source, beam.age(), SOURCE_QUAD_SIZE, sourceColor);
         }
+        if (beam.hit()) {
+            VertexConsumer node = bufSource.getBuffer(BeamRenderType.NODE_TYPE);
+            int flareColor = ARGB32.colorFromFloat(
+                    1.0F,
+                    Mth.lerp(HIT_WHITE_MIX, beam.colorR(), 1.0F),
+                    Mth.lerp(HIT_WHITE_MIX, beam.colorG(), 1.0F),
+                    Mth.lerp(HIT_WHITE_MIX, beam.colorB(), 1.0F));
+            float halfSize = HIT_QUAD_SIZE * beam.hitFactor(partialTick);
+            drawNodeQuad(poseStack, node, camPos, target, beam.age(), halfSize, flareColor);
+        }
+    }
+
+    private static void drawNodeQuad(
+            PoseStack poseStack, VertexConsumer node, Vec3 camPos, Vec3 at, int age, float halfSize, int color) {
+        float u0 = (age % 32) / 32.0F;
+        float u1 = u0 + 0.03125F;
+        float v0 = 0.09375F;
+        float v1 = v0 + 0.03125F;
+        poseStack.pushPose();
+        poseStack.translate(at.x - camPos.x, at.y - camPos.y, at.z - camPos.z);
+        Quaternionf cameraRot = new Quaternionf();
+        Minecraft.getInstance().gameRenderer.getMainCamera().rotation().normalize(cameraRot);
+        poseStack.mulPose(cameraRot);
+        Matrix4f matrix = poseStack.last().pose();
+        node.addVertex(matrix, -halfSize, -halfSize, 0.0F).setColor(color).setUv(u1, v1);
+        node.addVertex(matrix, -halfSize, halfSize, 0.0F).setColor(color).setUv(u1, v0);
+        node.addVertex(matrix, halfSize, halfSize, 0.0F).setColor(color).setUv(u0, v0);
+        node.addVertex(matrix, halfSize, -halfSize, 0.0F).setColor(color).setUv(u0, v1);
+        poseStack.popPose();
     }
 
     private static void beamVertex(

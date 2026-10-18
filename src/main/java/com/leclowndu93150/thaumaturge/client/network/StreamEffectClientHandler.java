@@ -55,7 +55,8 @@ public final class StreamEffectClientHandler {
                         p.extraFloat(),
                         p.hasFlag(ClientboundStreamEffectPayload.FLAG_REVERSE),
                         p.entityId(),
-                        p.hasFlag(ClientboundStreamEffectPayload.FLAG_WITH_SOURCE)));
+                        p.hasFlag(ClientboundStreamEffectPayload.FLAG_WITH_SOURCE),
+                        p.hasFlag(ClientboundStreamEffectPayload.FLAG_HIT)));
             case ESSENTIA ->
                 EssentiaStreamManager.spawn(
                         p.sx(),

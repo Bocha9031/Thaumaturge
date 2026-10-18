@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 
 public final class BeamInstance implements IFXInstance {
+    private static final int HIT_DURATION = 6;
     private static final double HAND_SIDE_X = 0.066;
     private static final double HAND_DROP = 0.06;
     private static final double HAND_SIDE_Z = 0.04;
@@ -47,6 +48,7 @@ public final class BeamInstance implements IFXInstance {
     private float prevYaw;
     private float prevPitch;
     private int age;
+    private int hitTicks;
     private final int maxAge;
     private float prevSize;
     private boolean expired;
@@ -65,6 +67,24 @@ public final class BeamInstance implements IFXInstance {
             boolean reverse,
             int sourceEntityId,
             boolean withSource) {
+        this(sx, sy, sz, tx, ty, tz, color, age, beamType, endMod, reverse, sourceEntityId, withSource, false);
+    }
+
+    public BeamInstance(
+            double sx,
+            double sy,
+            double sz,
+            double tx,
+            double ty,
+            double tz,
+            int color,
+            int age,
+            int beamType,
+            float endMod,
+            boolean reverse,
+            int sourceEntityId,
+            boolean withSource,
+            boolean hit) {
         this.colorR = ((color >> 16) & 0xFF) / 255.0F;
         this.colorG = ((color >> 8) & 0xFF) / 255.0F;
         this.colorB = (color & 0xFF) / 255.0F;
@@ -91,6 +111,7 @@ public final class BeamInstance implements IFXInstance {
         refreshGeometry();
         this.prevYaw = this.rotYaw;
         this.prevPitch = this.rotPitch;
+        this.hitTicks = hit ? HIT_DURATION : 0;
     }
 
     @Override
@@ -109,9 +130,13 @@ public final class BeamInstance implements IFXInstance {
         }
         refreshGeometry();
         unwindAngles();
-        if (this.age++ >= this.maxAge) {
+        if (this.hitTicks > 0) {
+            this.hitTicks--;
+        }
+        if (this.age >= this.maxAge && this.hitTicks <= 0) {
             this.expired = true;
         }
+        if (this.age < this.maxAge) this.age++;
     }
 
     private Entity resolveAnchor() {
@@ -190,6 +215,14 @@ public final class BeamInstance implements IFXInstance {
 
     public boolean withSource() {
         return this.withSource;
+    }
+
+    public boolean hit() {
+        return this.hitTicks > 0;
+    }
+
+    public float hitFactor(float partial) {
+        return Mth.clamp((this.hitTicks - partial) / (float) HIT_DURATION, 0.0F, 1.0F);
     }
 
     public Vec3 sourcePos(float partial) {

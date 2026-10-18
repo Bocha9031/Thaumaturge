@@ -759,6 +759,7 @@ public final class Effects {
         private int beamType = 0;
         private float endMod = 1.0F;
         private boolean reverse = false;
+        private boolean hit = false;
 
         BeamWand(ServerLevel level, LivingEntity source) {
             this.level = level;
@@ -795,6 +796,11 @@ public final class Effects {
             return this;
         }
 
+        public BeamWand hit(boolean hit) {
+            this.hit = hit;
+            return this;
+        }
+
         public void send() {
             if (target == null) return;
             ClientboundStreamEffectPayload payload = ClientboundStreamEffectPayload.beam(
@@ -810,7 +816,8 @@ public final class Effects {
                     endMod,
                     reverse,
                     source.getId(),
-                    false);
+                    false,
+                    hit);
             PacketDistributor.sendToPlayersNear(
                     level, null, source.getX(), source.getY(), source.getZ(), DEFAULT_RADIUS, payload);
         }
@@ -825,6 +832,7 @@ public final class Effects {
         private int beamType = 0;
         private float endMod = 1.0F;
         private boolean reverse = false;
+        private boolean hit = false;
 
         BeamBore(ServerLevel level, Vec3 source) {
             this.level = level;
@@ -861,6 +869,11 @@ public final class Effects {
             return this;
         }
 
+        public BeamBore hit(boolean hit) {
+            this.hit = hit;
+            return this;
+        }
+
         public void send() {
             if (target == null) return;
             ClientboundStreamEffectPayload payload = ClientboundStreamEffectPayload.beam(
@@ -876,7 +889,8 @@ public final class Effects {
                     endMod,
                     reverse,
                     BeamPayloadIds.NO_ENTITY,
-                    true);
+                    true,
+                    hit);
             PacketDistributor.sendToPlayersNear(level, null, source.x, source.y, source.z, DEFAULT_RADIUS, payload);
         }
     }

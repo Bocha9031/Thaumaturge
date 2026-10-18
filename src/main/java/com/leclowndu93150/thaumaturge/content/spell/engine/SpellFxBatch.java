@@ -53,11 +53,17 @@ final class SpellFxBatch implements SpellFx {
 
     @Override
     public void beam(Vec3 from, Vec3 to, int color, int ticks) {
+        beam(from, to, color, ticks, false);
+    }
+
+    @Override
+    public void beam(Vec3 from, Vec3 to, int color, int ticks, boolean hit) {
         if (arcs++ < MAX_ARCS) {
             Effects.beamBore(level, SableCompat.worldPosition(level, from))
                     .to(SableCompat.worldPosition(level, to))
                     .color(color)
                     .age(ticks)
+                    .hit(hit)
                     .send();
         }
     }
