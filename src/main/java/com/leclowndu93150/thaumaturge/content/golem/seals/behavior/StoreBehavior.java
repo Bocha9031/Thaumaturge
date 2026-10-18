@@ -23,7 +23,7 @@ public final class StoreBehavior implements ISealBehavior {
     public static final SealSetting ONLY_EXISTING =
             new SealSetting("only_existing", "gui.thaumaturge.seal.setting.exist", false).readingAlso("pexist");
 
-    private static final int STAGGER = 50;
+    private static final int STAGGER = 47;
     private static final int SCAN_PERIOD = 20;
     private static final double NEARBY_RANGE = 1.5;
     private static final double TOSS_SPREAD = 0.02;

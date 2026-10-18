@@ -52,7 +52,7 @@ public final class HarvestBehavior implements ISealBehavior {
 
     private static final int HARVEST_JOB = 0;
     static final int REPLANT_JOB = 1;
-    private static final int STAGGER = 33;
+    private static final int STAGGER = 41;
     private static final int SCAN_PERIOD = 5;
     private static final int TIDY_PERIOD = 100;
     private static final int BREAK_EFFECT = 2001;
