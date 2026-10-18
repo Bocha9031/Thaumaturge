@@ -27,11 +27,14 @@ abstract class CellWorkBehavior implements ISealBehavior {
 
     @Override
     public void tick(ServerLevel level, ISealEntity seal) {
-        if (clock.at(TIDY_PERIOD)) {
+        int step = clock.advance();
+        if (step % TIDY_PERIOD == 0) {
             claimed.dropFinished(level);
         }
-        clock.advance();
-        BlockPos cell = SealArea.cell(seal, clock.now());
+        BlockPos cell = SealArea.cell(seal, step);
+        if (!level.hasChunkAt(cell)) {
+            return;
+        }
         if (!claimed.tracks(cell.asLong()) && isWorkable(level, seal, cell)) {
             Task task = Task.atBlock(seal.pos(), cell);
             task.setPriority(seal.priority());
@@ -47,6 +50,12 @@ abstract class CellWorkBehavior implements ISealBehavior {
 
     protected void release(Task task) {
         claimed.forget(task);
+    }
+
+    protected boolean retire(Task task) {
+        release(task);
+        task.end();
+        return true;
     }
 
     protected static void keepAlive(Task task) {
