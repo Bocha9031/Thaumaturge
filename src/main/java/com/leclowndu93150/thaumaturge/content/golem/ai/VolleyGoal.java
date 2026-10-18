@@ -35,12 +35,17 @@ public final class VolleyGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return liveTarget() != null;
+        LivingEntity target = liveTarget();
+        return target != null && canShootAt(target);
     }
 
     @Override
     public boolean canContinueToUse() {
-        return liveTarget() != null || !shooter.getNavigation().isDone();
+        LivingEntity target = liveTarget();
+        if (target == null) {
+            return !shooter.getNavigation().isDone();
+        }
+        return canShootAt(target);
     }
 
     @Override

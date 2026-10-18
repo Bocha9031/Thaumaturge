@@ -45,6 +45,28 @@ class VolleyGoalPortTest {
     }
 
     @Test
+    void rangedGoalYieldsToMeleeWhenTargetIsOutOfRangeOrObscured() {
+        GoalFixture fixture = new GoalFixture((RANGE + 1.0D) * (RANGE + 1.0D));
+
+        assertFalse(fixture.goal.canUse());
+        assertFalse(fixture.goal.canContinueToUse());
+
+        when(fixture.shooter.distanceToSqr(fixture.target)).thenReturn(0.0D);
+        when(fixture.sensing.hasLineOfSight(fixture.target)).thenReturn(false);
+
+        assertFalse(fixture.goal.canUse());
+        assertFalse(fixture.goal.canContinueToUse());
+    }
+
+    @Test
+    void rangedGoalStartsAndContinuesWhenTargetIsShootable() {
+        GoalFixture fixture = new GoalFixture(0.0D);
+
+        assertTrue(fixture.goal.canUse());
+        assertTrue(fixture.goal.canContinueToUse());
+    }
+
+    @Test
     void startResetsTheShotCountdownAndFiresOnTheConfiguredMinimumCadence() {
         GoalFixture fixture = new GoalFixture(0.0D);
         fixture.goal.start();
