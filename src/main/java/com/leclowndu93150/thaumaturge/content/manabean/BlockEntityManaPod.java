@@ -75,6 +75,11 @@ public final class BlockEntityManaPod extends AbstractSyncedBlockEntity {
         settleAspect(level, stage, level.getRandom());
     }
 
+    public void rollSpawnAspect(LevelReader level, RandomSource random) {
+        aspect = random.nextInt(HERBA_ONE_IN) == 0 ? TTAspects.HERBA : pickPrimal(level.registryAccess(), random);
+        setChanged();
+    }
+
     public void settleAspect(LevelReader level, int stage, RandomSource random) {
         if (stage < BLEND_STAGE) {
             return;
@@ -114,7 +119,9 @@ public final class BlockEntityManaPod extends AbstractSyncedBlockEntity {
 
         Map<ResourceKey<IAspect>, Integer> weights = new LinkedHashMap<>();
         present.forEach(key -> weights.put(key, MEMBER_WEIGHT));
-        level.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY).listElements()
+        level.registryAccess()
+                .lookupOrThrow(IAspect.REGISTRY_KEY)
+                .listElements()
                 .filter(holder -> bredFrom(holder.value(), present))
                 .forEach(holder -> weights.merge(holder.key(), OFFSPRING_WEIGHT, Integer::sum));
         aspect = pickByWeight(weights, random);
@@ -135,7 +142,8 @@ public final class BlockEntityManaPod extends AbstractSyncedBlockEntity {
     }
 
     private static ResourceKey<IAspect> pickByWeight(Map<ResourceKey<IAspect>, Integer> weights, RandomSource random) {
-        int roll = random.nextInt(weights.values().stream().mapToInt(Integer::intValue).sum());
+        int roll = random.nextInt(
+                weights.values().stream().mapToInt(Integer::intValue).sum());
         for (Map.Entry<ResourceKey<IAspect>, Integer> entry : weights.entrySet()) {
             roll -= entry.getValue();
             if (roll < 0) {
@@ -146,7 +154,9 @@ public final class BlockEntityManaPod extends AbstractSyncedBlockEntity {
     }
 
     private static ResourceKey<IAspect> pickPrimal(HolderLookup.Provider registries, RandomSource random) {
-        List<ResourceKey<IAspect>> primals = registries.lookupOrThrow(IAspect.REGISTRY_KEY).listElements()
+        List<ResourceKey<IAspect>> primals = registries
+                .lookupOrThrow(IAspect.REGISTRY_KEY)
+                .listElements()
                 .filter(holder -> holder.value().isPrimal())
                 .map(Holder.Reference::key)
                 .toList();
