@@ -20,9 +20,6 @@ final class ConfigLangEn {
             new ConfigFile(ThaumaturgeCommonConfig.SPEC, "common", "Common"),
             new ConfigFile(ThaumaturgeServerConfig.SPEC, "server", "Server"));
     private static final Map<String, String> LABELS = Map.ofEntries(
-            Map.entry("liquid_death", "Liquid Death"),
-            Map.entry("liquid_death.dropRateBound1", "Minimum Aspect Drop Rate"),
-            Map.entry("liquid_death.dropRateBound2", "Maximum Aspect Drop Rate"),
             Map.entry("tooltip", "Tooltips"),
             Map.entry("tooltip.show_aspects_by_default", "Show Aspects by Default"),
             Map.entry("graphics", "Graphics"),

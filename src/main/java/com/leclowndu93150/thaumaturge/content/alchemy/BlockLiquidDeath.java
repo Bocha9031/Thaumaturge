@@ -13,19 +13,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 
 public class BlockLiquidDeath extends LiquidBlock {
-    private static final int BUBBLE_CHANCE = 20;
-    private static final int POP_CHANCE = 50;
-    private static final float SURFACE_BASE = 0.1F;
-    private static final float SURFACE_PER_LEVEL = 0.225F;
-    private static final int LEVELS_PER_TC_LEVEL = 2;
-    private static final float BUBBLE_ALPHA = 0.8F;
-    private static final float BUBBLE_SCALE_BASE = 0.075F;
-    private static final int BUBBLE_AGE_BASE = 15;
-    private static final int BUBBLE_AGE_SPREAD = 5;
-    private static final float RED_BASE = 0.3F;
-    private static final float RED_SPREAD = 0.1F;
-    private static final float BLUE_BASE = 0.4F;
-    private static final float BLUE_SPREAD = 0.1F;
+    private static final int BUBBLE_ODDS = 6;
+    private static final int POP_ODDS = 60;
+    private static final int BUBBLE_COLOR = ARGB32.color(0x5A, 0x14, 0x78);
+    private static final float BUBBLE_ALPHA = 0.75F;
+    private static final float BUBBLE_MIN_SCALE = 0.12F;
+    private static final float BUBBLE_SCALE_SPREAD = 0.1F;
+    private static final int BUBBLE_MIN_AGE = 12;
+    private static final int BUBBLE_AGE_SPREAD = 6;
+    private static final double POP_HEIGHT = 0.6;
+    private static final float POP_MIN_VOLUME = 0.1F;
+    private static final float POP_VOLUME_SPREAD = 0.1F;
+    private static final float POP_MIN_PITCH = 0.75F;
+    private static final float POP_PITCH_SPREAD = 0.2F;
 
     public BlockLiquidDeath(FlowingFluid fluid, Properties properties) {
         super(fluid, properties);
@@ -38,36 +38,25 @@ public class BlockLiquidDeath extends LiquidBlock {
 
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        if (random.nextInt(BUBBLE_CHANCE) == 0) {
-            int amount = level.getFluidState(pos).getAmount();
-            int color = ARGB32.colorFromFloat(
-                    1.0F,
-                    RED_BASE - random.nextFloat() * RED_SPREAD,
-                    0.0F,
-                    BLUE_BASE + random.nextFloat() * BLUE_SPREAD);
-            SlimyBubbleParticleOptions bubble = new SlimyBubbleParticleOptions(
-                    color,
-                    BUBBLE_ALPHA,
-                    BUBBLE_SCALE_BASE + random.nextFloat() * BUBBLE_SCALE_BASE,
-                    BUBBLE_AGE_BASE + random.nextInt(BUBBLE_AGE_SPREAD));
+        if (random.nextInt(BUBBLE_ODDS) == 0) {
+            double surface = pos.getY() + state.getFluidState().getHeight(level, pos);
+            float scale = BUBBLE_MIN_SCALE + random.nextFloat() * BUBBLE_SCALE_SPREAD;
+            int age = BUBBLE_MIN_AGE + random.nextInt(BUBBLE_AGE_SPREAD);
+            SlimyBubbleParticleOptions bubble = new SlimyBubbleParticleOptions(BUBBLE_COLOR, BUBBLE_ALPHA, scale, age);
             level.addParticle(
-                    bubble,
-                    pos.getX() + random.nextFloat(),
-                    pos.getY() + SURFACE_BASE + SURFACE_PER_LEVEL * (amount / (float) LEVELS_PER_TC_LEVEL),
-                    pos.getZ() + random.nextFloat(),
-                    0.0,
-                    0.0,
-                    0.0);
+                    bubble, pos.getX() + random.nextDouble(), surface, pos.getZ() + random.nextDouble(), 0.0, 0.0, 0.0);
         }
-        if (random.nextInt(POP_CHANCE) == 0) {
+        if (random.nextInt(POP_ODDS) == 0) {
+            float volume = POP_MIN_VOLUME + random.nextFloat() * POP_VOLUME_SPREAD;
+            float pitch = POP_MIN_PITCH + random.nextFloat() * POP_PITCH_SPREAD;
             level.playLocalSound(
-                    pos.getX() + random.nextFloat(),
-                    pos.getY() + 0.5,
-                    pos.getZ() + random.nextFloat(),
+                    pos.getX() + random.nextDouble(),
+                    pos.getY() + POP_HEIGHT,
+                    pos.getZ() + random.nextDouble(),
                     SoundEvents.LAVA_POP,
                     SoundSource.BLOCKS,
-                    0.1F + random.nextFloat() * 0.1F,
-                    0.9F + random.nextFloat() * 0.15F,
+                    volume,
+                    pitch,
                     false);
         }
     }

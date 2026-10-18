@@ -1,14 +1,11 @@
 package com.leclowndu93150.thaumaturge.content.alchemy;
 
 import com.leclowndu93150.thaumaturge.TTIds;
-import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.damagesource.TTDamageTypes;
-import com.leclowndu93150.thaumaturge.config.ThaumaturgeServerConfig;
 import com.leclowndu93150.thaumaturge.content.aspect.EntityAspects;
 import com.leclowndu93150.thaumaturge.content.taint.item.EssentiaCrystalFactory;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -18,6 +15,8 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 
 @EventBusSubscriber(modid = TTIds.MODID)
 public final class LiquidDeathEvents {
+    private static final int POINTS_PER_EXTRA_CRYSTAL = 10;
+
     private LiquidDeathEvents() {}
 
     @SubscribeEvent
@@ -32,23 +31,22 @@ public final class LiquidDeathEvents {
             return;
         }
 
-        double b = ThaumaturgeServerConfig.LD_DROP_RATE_BOUND_1.get();
-        double b2 = ThaumaturgeServerConfig.LD_DROP_RATE_BOUND_2.get();
-        double min = Math.min(b, b2);
-        double max = Math.max(b, b2);
         RandomSource random = entity.getRandom();
-        for (AspectInstance instance : aspects.entries()) {
-            int count = Mth.floor(Mth.nextDouble(random, min, max) * instance.amount());
-            if (count > 0) {
-                // Drop at ~chest height
-                event.getDrops()
-                        .add(new ItemEntity(
-                                level,
-                                entity.getX(),
-                                entity.getY() + entity.getBbHeight() / 2.0,
-                                entity.getZ(),
-                                EssentiaCrystalFactory.of(instance.aspect(), count)));
-            }
+        int crystalCount = rollCrystalCount(aspects.totalAmount(), random);
+        for (int i = 0; i < crystalCount; i++) {
+            var aspect = aspects.entries().get(random.nextInt(aspects.size())).aspect();
+            ItemEntity drop = new ItemEntity(
+                    level, entity.getX(), entity.getEyeY(), entity.getZ(), EssentiaCrystalFactory.of(aspect));
+            drop.setDefaultPickUpDelay();
+            event.getDrops().add(drop);
         }
+    }
+
+    static int rollCrystalCount(int totalAspectPoints, RandomSource random) {
+        if (totalAspectPoints <= 0) {
+            return 0;
+        }
+        int extras = totalAspectPoints / POINTS_PER_EXTRA_CRYSTAL;
+        return 1 + random.nextInt(extras + 1);
     }
 }
