@@ -26,8 +26,12 @@ class HungryNodeWardTest {
         ServerLevel level = mock(ServerLevel.class);
         RandomSource random = mock(RandomSource.class);
         BlockPos target = new BlockPos(1, 0, 0);
-        when(level.hasChunk(anyInt(), anyInt())).thenReturn(true);
-        when(level.getHeight(eq(Heightmap.Types.MOTION_BLOCKING), anyInt(), anyInt()))
+        when(random.nextFloat()).thenReturn(
+                0.25F, 0.0F, 0.0F, 0.25F, 0.0F, 0.0F, 0.25F, 0.0F, 0.0F, 0.25F, 0.0F, 0.0F);
+        when(random.nextBoolean()).thenReturn(
+                true, false, false, true, false, false, true, false, false, true, false, false);
+        when(level.hasChunkAt(target)).thenReturn(true);
+        when(level.getHeight(eq(Heightmap.Types.WORLD_SURFACE), anyInt(), anyInt()))
                 .thenReturn(10);
         when(level.clip(any(ClipContext.class)))
                 .thenReturn(new BlockHitResult(Vec3.atCenterOf(target), Direction.WEST, target, false));
