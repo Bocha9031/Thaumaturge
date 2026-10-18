@@ -13,9 +13,11 @@ import com.leclowndu93150.thaumaturge.content.golem.GolemInteractionHelper;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import com.leclowndu93150.thaumaturge.server.TTFakePlayer;
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -39,10 +41,14 @@ public final class HarvestBehavior implements ISealBehavior {
             new SealSetting("replant_crops", "gui.thaumaturge.seal.setting.replant", true).readingAlso("prep");
     public static final SealSetting REQUEST_SEEDS =
             new SealSetting("request_seeds", "gui.thaumaturge.seal.setting.provision", false).readingAlso("ppro");
-    public static final MapCodec<HarvestBehavior> CODEC = ReplantSite.CODEC
-            .listOf()
-            .optionalFieldOf("replant", List.of())
-            .xmap(HarvestBehavior::new, behavior -> List.copyOf(behavior.sites.values()));
+    private static final String SITES_KEY = "replant_sites";
+    private static final String LEGACY_SITES_KEY = "replant";
+    public static final MapCodec<HarvestBehavior> CODEC = RecordCodecBuilder.mapCodec(instance -> instance
+            .group(
+                    ReplantSite.CODEC.listOf().optionalFieldOf(SITES_KEY).forGetter(HarvestBehavior::storedSites),
+                    ReplantSite.LEGACY_CODEC.listOf().lenientOptionalFieldOf(LEGACY_SITES_KEY)
+                            .forGetter(behavior -> Optional.empty()))
+            .apply(instance, HarvestBehavior::restore));
 
     private static final int STAGGER = 33;
     private static final int SCAN_PERIOD = 5;
@@ -58,6 +64,14 @@ public final class HarvestBehavior implements ISealBehavior {
 
     private HarvestBehavior(List<ReplantSite> saved) {
         saved.forEach(site -> sites.put(site.pos().asLong(), site));
+    }
+
+    private static HarvestBehavior restore(Optional<List<ReplantSite>> current, Optional<List<ReplantSite>> legacy) {
+        return new HarvestBehavior(current.or(() -> legacy).orElse(List.of()));
+    }
+
+    private Optional<List<ReplantSite>> storedSites() {
+        return sites.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(sites.values()));
     }
 
     @Override

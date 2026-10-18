@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
+import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
@@ -7,9 +8,28 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
 
 final class ReplantSite {
+    private static final long DEFAULT_POS = 0L;
+    private static final byte DEFAULT_FACE = 0;
+
     static final Codec<ReplantSite> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-                    Codec.LONG.optionalFieldOf("taskloc", 0L).forGetter(site -> site.pos.asLong()),
-                    Codec.BYTE.optionalFieldOf("taskface", (byte) 0).forGetter(site ->
+                    Codec.LONG.optionalFieldOf("pos", DEFAULT_POS).forGetter(site -> site.pos.asLong()),
+                    Codec.BYTE.optionalFieldOf("face", DEFAULT_FACE).forGetter(site ->
+                            (byte) site.face.get3DDataValue()),
+                    Codec.BOOL.optionalFieldOf("tilled", false).forGetter(site -> site.tilled),
+                    ItemStack.OPTIONAL_CODEC
+                            .optionalFieldOf("seed", ItemStack.EMPTY)
+                            .forGetter(site -> site.seed))
+            .apply(
+                    instance,
+                    (pos, face, tilled, seed) ->
+                            new ReplantSite(BlockPos.of(pos), Direction.from3DDataValue(face), seed, tilled)));
+
+    static final Codec<ReplantSite> LEGACY_CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                    Codec.either(Codec.LONG, BlockPos.CODEC)
+                            .xmap(either -> either.map(value -> value, BlockPos::asLong), Either::left)
+                            .optionalFieldOf("taskloc", DEFAULT_POS)
+                            .forGetter(site -> site.pos.asLong()),
+                    Codec.BYTE.optionalFieldOf("taskface", DEFAULT_FACE).forGetter(site ->
                             (byte) site.face.get3DDataValue()),
                     Codec.BOOL.optionalFieldOf("farmland", false).forGetter(site -> site.tilled),
                     ItemStack.OPTIONAL_CODEC
