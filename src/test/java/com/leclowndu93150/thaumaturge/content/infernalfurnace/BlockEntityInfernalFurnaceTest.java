@@ -2,15 +2,22 @@ package com.leclowndu93150.thaumaturge.content.infernalfurnace;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class BlockEntityInfernalFurnaceTest {
     private final ServerLevel level = mock(ServerLevel.class);
@@ -56,6 +63,22 @@ class BlockEntityInfernalFurnaceTest {
             int reward = BlockEntityInfernalFurnace.rollExperiencePoints(2.5F, random);
             assertTrue(reward == 2 || reward == 3, "Fractional XP should round to an adjacent integer");
         }
+    }
+
+    @Test
+    void removingFurnaceDropsAndClearsInventoryOnTheServer() {
+        CountingFurnace furnace = createFurnace();
+        furnace.inventory().setStackInSlot(0, new ItemStack(Items.RAW_IRON, 2));
+        when(level.getBlockEntity(BlockPos.ZERO)).thenReturn(furnace);
+        BlockInfernalFurnace block = (BlockInfernalFurnace) TTBlocks.INFERNAL_FURNACE.get();
+
+        try (MockedStatic<Containers> drops = mockStatic(Containers.class)) {
+            block.onRemove(block.defaultBlockState(), level, BlockPos.ZERO, Blocks.AIR.defaultBlockState(), false);
+
+            drops.verify(() -> Containers.dropItemStack(eq(level), eq(0.5), eq(0.5), eq(0.5), any(ItemStack.class)));
+        }
+
+        assertTrue(furnace.inventory().getStackInSlot(0).isEmpty());
     }
 
     private CountingFurnace createFurnace() {

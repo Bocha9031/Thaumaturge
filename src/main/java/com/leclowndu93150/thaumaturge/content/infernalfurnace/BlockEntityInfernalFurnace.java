@@ -324,25 +324,6 @@ public class BlockEntityInfernalFurnace extends AbstractSyncedBlockEntity {
         return whole;
     }
 
-    @Override
-    public void setRemoved() {
-        super.setRemoved();
-        if (level == null || level.isClientSide()) return;
-        BlockPos pos = getBlockPos();
-        for (int slot = 0; slot < inventory.getSlots(); slot++) {
-            Direction direction =
-                    getBlockState().getValue(BlockInfernalFurnace.FACING).getOpposite();
-            ItemEntity entity = new ItemEntity(
-                    level,
-                    pos.getX() + direction.getStepX(),
-                    (float) pos.getY() + direction.getStepY(),
-                    pos.getZ() + direction.getStepZ(),
-                    inventory.getStackInSlot(slot).copy());
-            entity.setDeltaMovement(0.3 * direction.getStepX(), 0.3 * direction.getStepY(), 0.3 * direction.getStepZ());
-            level.addFreshEntity(entity);
-        }
-    }
-
     private ItemStack[] getSmeltingBonus(ItemStack in) {
         if (level == null) return new ItemStack[0];
         List<InfernalBonus> bonuses = in.getItemHolder().getData(InfernalBonus.DATA_MAP);

@@ -37,13 +37,13 @@ import org.jspecify.annotations.Nullable;
 public class BlockInfernalFurnace extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
+        if (!level.isClientSide() && !state.is(newState.getBlock())) {
             if (level.getBlockEntity(pos) instanceof BlockEntityInfernalFurnace furnace) {
                 for (int i = 0; i < furnace.inventory().getSlots(); i++) {
-                    ItemStack resource = furnace.inventory().getStackInSlot(i);
-                    if (!resource.isEmpty()) {
-                        Containers.dropItemStack(
-                                level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, resource.copy());
+                    ItemStack contents = furnace.inventory().getStackInSlot(i);
+                    if (!contents.isEmpty()) {
+                        furnace.inventory().setStackInSlot(i, ItemStack.EMPTY);
+                        Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, contents);
                     }
                 }
             }
