@@ -62,7 +62,11 @@ public final class BlockVisBattery extends Block {
         float aura = AuraHelper.getVis(level, pos);
         int base = AuraHelper.getAuraBase(level, pos);
         if (charge < MAX_CHARGE && aura > base * CHARGE_AURA_FRACTION && aura > 1.0F) {
-            AuraHelper.drainVis(level, pos, TRANSFER_AMOUNT, false);
+            float drained = AuraHelper.drainVis(level, pos, TRANSFER_AMOUNT, false);
+            if (drained < TRANSFER_AMOUNT) {
+                AuraHelper.addVis(level, pos, drained);
+                return;
+            }
             level.setBlockAndUpdate(pos, state.setValue(CHARGE, charge + 1));
             level.scheduleTick(pos, this, CHARGE_DELAY_BASE + random.nextInt(CHARGE_DELAY_BASE));
         } else if (charge > 0 && aura < base * DISCHARGE_AURA_FRACTION) {
