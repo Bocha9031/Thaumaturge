@@ -39,6 +39,7 @@ public final class TTFluidTypes {
                     .descriptionId("fluid_type.thaumaturge.purifying")
                     .lightLevel(5)
                     .canSwim(true)
+                    .fallDistanceModifier(0.0F)
                     .canConvertToSource(false)
                     .sound(SoundActions.BUCKET_FILL, SoundEvents.BUCKET_FILL)
                     .sound(SoundActions.BUCKET_EMPTY, SoundEvents.BUCKET_EMPTY)
