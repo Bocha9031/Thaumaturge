@@ -942,6 +942,8 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     }
 
     static final class GolemFlyingMoveControl extends MoveControl {
+        private static final double ARRIVAL_DAMPING = 0.2D;
+
         private final EntityThaumaturgeGolem golem;
 
         GolemFlyingMoveControl(EntityThaumaturgeGolem golem) {
@@ -960,13 +962,11 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (dist < golem.getBoundingBox().getSize()) {
                 operation = Operation.WAIT;
-                golem.setDeltaMovement(golem.getDeltaMovement().scale(0.5));
+                golem.setDeltaMovement(golem.getDeltaMovement().scale(ARRIVAL_DAMPING));
             } else {
                 Vec3 motion = golem.getDeltaMovement();
-                golem.setDeltaMovement(motion.add(
-                        dx / dist * 0.033 * speedModifier,
-                        dy / dist * 0.0125 * speedModifier,
-                        dz / dist * 0.033 * speedModifier));
+                golem.setDeltaMovement(
+                        motion.add(GolemFlightSteering.desiredDelta(new Vec3(dx, dy, dz), speedModifier)));
                 if (golem.getTarget() == null) {
                     golem.setYRot(-((float) Mth.atan2(golem.getDeltaMovement().x, golem.getDeltaMovement().z))
                             * (180.0F / (float) Math.PI));
