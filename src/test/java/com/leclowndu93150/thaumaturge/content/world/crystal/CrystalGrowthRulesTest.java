@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.world.crystal;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -8,7 +9,6 @@ import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import java.util.HashSet;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ class CrystalGrowthRulesTest {
     void sizeCeilingUsesPositionVariationAndGeneration() {
         BlockState defaultState = TTBlocks.CRYSTAL_AER.get().defaultBlockState();
         BlockPos pos = new BlockPos(17, 63, -29);
-        int bonus = Math.floorMod(Mth.getSeed(pos), 3);
+        int bonus = (int) Math.floorMod(pos.asLong(), 3L);
 
         for (int generation = 1; generation <= 4; generation++) {
             BlockState state = defaultState.setValue(BlockCrystal.GENERATION, generation);
@@ -27,22 +27,24 @@ class CrystalGrowthRulesTest {
     }
 
     @Test
-    void spreadTargetSelectsEachAdjacentCellWithoutSelectingItsOwnPosition() {
+    void spreadTargetSelectsEachCellInItsLocalCubeIncludingItsOwnPosition() {
         RandomSource random = mock(RandomSource.class);
         BlockPos origin = BlockPos.ZERO;
         Set<BlockPos> targets = new HashSet<>();
 
-        for (int index = 0; index < 26; index++) {
-            when(random.nextInt(26)).thenReturn(index);
-            BlockPos target = BlockCrystal.neighbourWithin(origin, random);
-            assertNotEquals(origin, target);
-            assertTrue(Math.abs(target.getX()) <= 1);
-            assertTrue(Math.abs(target.getY()) <= 1);
-            assertTrue(Math.abs(target.getZ()) <= 1);
-            targets.add(target);
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    doReturn(dx + 1, dy + 1, dz + 1).when(random).nextInt(3);
+                    BlockPos target = BlockCrystal.neighbourWithin(origin, random);
+                    assertEquals(new BlockPos(dx, dy, dz), target);
+                    targets.add(target);
+                }
+            }
         }
 
-        assertEquals(26, targets.size());
+        assertEquals(27, targets.size());
+        assertTrue(targets.contains(origin));
     }
 
     @Test
