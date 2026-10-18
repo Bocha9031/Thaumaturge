@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.MappedRegistry;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
@@ -68,6 +69,7 @@ class AuraCompatibilityTest {
         MappedRegistry<Biome> biomes = new MappedRegistry<>(Registries.BIOME, Lifecycle.stable());
         Registry.register(biomes, Biomes.PLAINS, mock(Biome.class));
         when(level.getBiome(any(BlockPos.class))).thenReturn(biomes.getHolderOrThrow(Biomes.PLAINS));
+        when(level.getNoiseBiome(anyInt(), anyInt(), anyInt())).thenReturn(biomes.getHolderOrThrow(Biomes.PLAINS));
     }
 
     @AfterEach
@@ -292,8 +294,8 @@ class AuraCompatibilityTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"-2,3,241", "3,-2,279", "-7,-9,233", "7,9,250"})
-    void initializationUsesMainSeedFormulaAndSamplesFiveBiomes(int chunkX, int chunkZ, int expectedBase) {
+    @CsvSource({"-2,3,226", "3,-2,264", "-7,-9,257", "7,9,257"})
+    void initializationUsesStableSeedFormulaAndSamplesFiveBiomes(int chunkX, int chunkZ, int expectedBase) {
         ChunkPos pos = new ChunkPos(chunkX, chunkZ);
         AuraData data = new AuraData();
         LevelChunk chunk = attach(pos, data);
@@ -302,17 +304,31 @@ class AuraCompatibilityTest {
         assertEquals(expectedBase, data.getBase());
         assertEquals(data.getBase(), data.getVis());
         assertEquals(pos, data.getChunkPos());
-        ArgumentCaptor<BlockPos> probeCaptor = ArgumentCaptor.forClass(BlockPos.class);
-        verify(level, times(5)).getBiome(probeCaptor.capture());
-        List<BlockPos> expectedProbes = List.of(
-                new BlockPos(pos.getMiddleBlockX(), 50, pos.getMiddleBlockZ()),
-                new BlockPos(pos.getMiddleBlockX(), 50, new ChunkPos(chunkX, chunkZ + 1).getMiddleBlockZ()),
-                new BlockPos(new ChunkPos(chunkX - 1, chunkZ).getMiddleBlockX(), 50, pos.getMiddleBlockZ()),
-                new BlockPos(pos.getMiddleBlockX(), 50, new ChunkPos(chunkX, chunkZ - 1).getMiddleBlockZ()),
-                new BlockPos(new ChunkPos(chunkX + 1, chunkZ).getMiddleBlockX(), 50, pos.getMiddleBlockZ()));
-        assertEquals(expectedProbes, probeCaptor.getAllValues());
+        ArgumentCaptor<Integer> probeCaptor = ArgumentCaptor.forClass(Integer.class);
+        verify(level, times(5)).getNoiseBiome(probeCaptor.capture(), probeCaptor.capture(), probeCaptor.capture());
+        int centreX = QuartPos.fromBlock(pos.getMiddleBlockX());
+        int centreY = QuartPos.fromBlock(64);
+        int centreZ = QuartPos.fromBlock(pos.getMiddleBlockZ());
+        assertEquals(
+                List.of(
+                        centreX,
+                        centreY,
+                        centreZ,
+                        QuartPos.fromBlock(new ChunkPos(chunkX + 1, chunkZ).getMiddleBlockX()),
+                        centreY,
+                        centreZ,
+                        QuartPos.fromBlock(new ChunkPos(chunkX - 1, chunkZ).getMiddleBlockX()),
+                        centreY,
+                        centreZ,
+                        centreX,
+                        centreY,
+                        QuartPos.fromBlock(new ChunkPos(chunkX, chunkZ + 1).getMiddleBlockZ()),
+                        centreX,
+                        centreY,
+                        QuartPos.fromBlock(new ChunkPos(chunkX, chunkZ - 1).getMiddleBlockZ())),
+                probeCaptor.getAllValues());
         AuraGenHandler.initializeIfNeeded(level, chunk, data);
-        verify(level, times(5)).getBiome(any(BlockPos.class));
+        verify(level, times(5)).getNoiseBiome(anyInt(), anyInt(), anyInt());
         verify(chunk, times(1)).setUnsaved(true);
         AuraData partial = new AuraData((short) 0, 12, 4);
         AuraGenHandler.initializeIfNeeded(level, chunk, partial);
