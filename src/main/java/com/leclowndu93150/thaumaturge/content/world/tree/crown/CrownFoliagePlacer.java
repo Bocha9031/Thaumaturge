@@ -23,10 +23,9 @@ public final class CrownFoliagePlacer extends FoliagePlacer {
                     .apply(instance, CrownFoliagePlacer::new));
 
     private static final int CLUSTER_LAYERS = 4;
-    private static final float RIM_RADIUS = 2.0F;
-    private static final float BELLY_RADIUS = 3.0F;
-    private static final double RADIUS_SLACK = 0.618;
-    private static final double CELL_CENTER = 0.5;
+    private static final int LAST_LAYER = CLUSTER_LAYERS - 1;
+    private static final int SQUARE_RADIUS = 2;
+    private static final int EDGE_REACH = 1;
 
     private final boolean absorbForeignLeaves;
 
@@ -54,26 +53,36 @@ public final class CrownFoliagePlacer extends FoliagePlacer {
         if (!(reader instanceof WorldGenLevel level)) {
             return;
         }
-        BlockPos center = foliageAttachment.pos();
-        BlockState leaves = config.foliageProvider.getState(random, center);
+        BlockPos anchor = foliageAttachment.pos();
+        BlockState leaves = config.foliageProvider.getState(random, anchor);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int layer = 0; layer < CLUSTER_LAYERS; layer++) {
-            float radius = layer == 0 || layer == CLUSTER_LAYERS - 1 ? RIM_RADIUS : BELLY_RADIUS;
-            int span = (int) (radius + RADIUS_SLACK);
-            for (int dx = -span; dx <= span; dx++) {
-                for (int dz = -span; dz <= span; dz++) {
-                    if (Math.pow(Math.abs(dx) + CELL_CENTER, 2.0) + Math.pow(Math.abs(dz) + CELL_CENTER, 2.0)
-                            <= radius * radius) {
-                        cursor.setWithOffset(center, dx, layer, dz);
-                        settleLeaf(level, foliageSetter, cursor, leaves);
+            boolean plus = layer == 0 || layer == LAST_LAYER;
+            for (int dx = -SQUARE_RADIUS; dx <= SQUARE_RADIUS; dx++) {
+                for (int dz = -SQUARE_RADIUS; dz <= SQUARE_RADIUS; dz++) {
+                    if (inLayer(plus, dx, dz)) {
+                        cursor.setWithOffset(anchor, dx, layer, dz);
+                        placeLeaf(level, foliageSetter, cursor, leaves);
                     }
                 }
             }
         }
     }
 
-    private void settleLeaf(
+    static boolean inLayer(boolean plus, int dx, int dz) {
+        int absX = Math.abs(dx);
+        int absZ = Math.abs(dz);
+        if (plus) {
+            return absX + absZ <= EDGE_REACH;
+        }
+        return !(absX == SQUARE_RADIUS && absZ == SQUARE_RADIUS);
+    }
+
+    private void placeLeaf(
             WorldGenLevel level, FoliagePlacer.FoliageSetter foliageSetter, BlockPos pos, BlockState leaves) {
+        if (level.isOutsideBuildHeight(pos)) {
+            return;
+        }
         BlockState present = level.getBlockState(pos);
         if (present.isAir()) {
             foliageSetter.set(pos, leaves);
