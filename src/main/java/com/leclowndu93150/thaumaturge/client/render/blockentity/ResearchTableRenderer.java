@@ -97,15 +97,9 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
 
         poseStack.pushPose();
         poseStack.translate(0.5F, 1.0F, 0.5F);
+        BlockFacingPose.northBased(poseStack, facing);
+        poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
         poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
-        float yaw =
-                switch (facing) {
-                    case NORTH -> 270.0F;
-                    case SOUTH -> 90.0F;
-                    case WEST -> 180.0F;
-                    default -> 0.0F;
-                };
-        poseStack.mulPose(Axis.YP.rotationDegrees(yaw));
 
         renderInkwell(hasTools, poseStack, buffers, light);
         if (hasTools) {
