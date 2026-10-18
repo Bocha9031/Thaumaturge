@@ -48,16 +48,17 @@ public final class ThaumaturgeCommonConfig {
 
         builder.push("world");
 
-        WUSS_MODE = builder.comment("Disables Warp, Taint spread, and similar mechanics. You wuss.")
+        WUSS_MODE = builder.comment(
+                        "Turns off the harsher side of the mod. While on: no warp is gained from any source and warp events stop; taint fibres, taint seeds and taint creatures stop spreading, the Tainted Lands biome and its landmarks stop spreading, and mobs are no longer infected; wild nodes never generate tainted, even in the Tainted Lands; flux pressure events stop and Flux Rifts are not started by their triggers; Flux Goo no longer festers into taint and physical flux cannot start a taint outbreak.")
                 .define("wussMode", false);
         TAINT_SPREAD_RATE = builder.comment(
-                        "The % chance of taint fibres spreading on a block tick. Setting this to 0 will effectively stop taint fibre spread.")
+                        "Percentage chance, from 0 to 100, that a taint fibre goes ahead with a spread attempt when it gets a block tick. Forced spreads skip this roll. 0 stops ordinary fibre spread.")
                 .defineInRange("taintSpreadRate", 100.0, 0.0, 100.0);
         TAINT_FRONTIER_RATE = builder.comment(
                         "How quickly the Tainted Lands biome spreads outward. Fibrous taint tries to take over a neighbouring column with a chance of 1 in (taintFrontierRate * 5) per random tick, and only with at least two adjacent taint blocks. Higher is slower. 0 stops the biome from spreading while existing taint stays active.")
                 .defineInRange("taintFrontierRate", 200, 0, 100000);
         TAINT_SPREAD_AREA = builder.comment(
-                        "Taint Seed influence radius in blocks. Seeds accelerate outbreaks but are not required for ordinary taint spread.")
+                        "Base radius in blocks around a taint seed that its taint may spread into. Other seeds inside this radius count as crowding it. The local flux level adjusts the radius further.")
                 .defineInRange("taintSpreadArea", 32, 1, 128);
         TAINT_FROM_FLUX = builder.comment(
                         "Allows deep, exposed Flux Goo to develop into Fibrous Taint and Tainted Lands.")
@@ -140,7 +141,8 @@ public final class ThaumaturgeCommonConfig {
                         "Aura Vis consumed per point of runic shielding restored. 0 makes recharging free.")
                 .defineInRange("shieldCost", 1.0, 0.0, 100.0);
         ALLOW_CHAMPION_MOBS = builder.comment("Allows champion mobs to spawn.").define("allowChampionMobs", true);
-        NO_SLEEP = builder.comment("Unlocks the Salis Mundus recipe without sleeping first.")
+        NO_SLEEP = builder.comment(
+                        "If true, a player gets the Dream Journal and its research as soon as they pick up their first vis crystal, without having to sleep for the first dream.")
                 .define("noSleep", false);
 
         builder.pop();
@@ -153,7 +155,7 @@ public final class ThaumaturgeCommonConfig {
         builder.push("golems");
 
         SHOW_GOLEM_EMOTES = builder.comment(
-                        "Displays golem emote particles when receiving orders or encountering problems.")
+                        "Whether golems show small emote particles when they take an order or run into a problem.")
                 .define("showGolemEmotes", true);
 
         builder.pop();
