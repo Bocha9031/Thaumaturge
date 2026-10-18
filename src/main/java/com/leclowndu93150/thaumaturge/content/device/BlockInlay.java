@@ -4,6 +4,7 @@ import com.leclowndu93150.thaumaturge.api.infusion.AltarStabiliser;
 import com.leclowndu93150.thaumaturge.content.infusion.BlockPedestal;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.mojang.serialization.MapCodec;
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
@@ -129,7 +130,8 @@ public final class BlockInlay extends Block implements AltarStabiliser {
 
             for (Direction direction : Direction.Plane.HORIZONTAL) {
                 BlockPos neighbour = pos.relative(direction);
-                if (level.getBlockState(neighbour).is(this)) {
+                if (level.hasChunkAt(neighbour)
+                        && level.getBlockState(neighbour).is(this)) {
                     updateNetwork(level, neighbour);
                 }
             }
@@ -164,18 +166,23 @@ public final class BlockInlay extends Block implements AltarStabiliser {
 
     public static int sourceStrengthAt(Level level, BlockPos pos) {
         if (isSourceBlock(level, pos) && level.getBlockEntity(pos) instanceof BlockEntityStabilizer stabilizer) {
-            return stabilizer.getEnergy();
+            return stabilizer.charge();
         }
         return 0;
     }
 
     public static void updateNetwork(Level level, BlockPos origin) {
-        Set<BlockPos> pending = new HashSet<>();
-        pending.add(origin.immutable());
-        int guard = 0;
-        while (!pending.isEmpty() && guard++ < 4096) {
-            BlockPos pos = pending.iterator().next();
-            pending.remove(pos);
+        ArrayDeque<BlockPos> pending = new ArrayDeque<>();
+        Set<BlockPos> queued = new HashSet<>();
+        pending.add(origin);
+        queued.add(origin);
+        int iterations = 0;
+        while (!pending.isEmpty() && iterations++ < 4096) {
+            BlockPos pos = pending.removeFirst();
+            queued.remove(pos);
+            if (!level.hasChunkAt(pos)) {
+                continue;
+            }
             BlockState state = level.getBlockState(pos);
             int current;
             IntegerProperty property;
@@ -188,24 +195,24 @@ public final class BlockInlay extends Block implements AltarStabiliser {
             } else {
                 continue;
             }
-            int best = 0;
+            int target = 0;
             for (Direction direction : Direction.Plane.HORIZONTAL) {
                 BlockPos neighbourPos = pos.relative(direction);
-                int source = sourceStrengthAt(level, neighbourPos);
-                if (source > best) {
-                    best = source;
+                if (!level.hasChunkAt(neighbourPos)) {
+                    continue;
                 }
+                target = Math.max(target, sourceStrengthAt(level, neighbourPos));
                 int neighbour = chargeAt(level, neighbourPos);
-                if (neighbour - 1 > best) {
-                    best = neighbour - 1;
-                }
+                target = Math.max(target, neighbour - 1);
             }
-            if (best != current) {
-                level.setBlock(pos, state.setValue(property, best), 2);
+            if (target != current) {
+                level.setBlock(pos, state.setValue(property, target), Block.UPDATE_CLIENTS);
                 for (Direction direction : Direction.Plane.HORIZONTAL) {
                     BlockPos neighbourPos = pos.relative(direction);
-                    if (chargeAt(level, neighbourPos) >= 0) {
-                        pending.add(neighbourPos.immutable());
+                    if (level.hasChunkAt(neighbourPos)
+                            && chargeAt(level, neighbourPos) >= 0
+                            && queued.add(neighbourPos)) {
+                        pending.addLast(neighbourPos);
                     }
                 }
             }

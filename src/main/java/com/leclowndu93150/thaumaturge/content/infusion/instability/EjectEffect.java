@@ -68,7 +68,7 @@ public record EjectEffect(
             BlockPos mitigatorPos = pedestal.findInstabilityMitigator();
             if (mitigatorPos != null
                     && level.getBlockEntity(mitigatorPos) instanceof BlockEntityStabilizer stabilizer
-                    && stabilizer.mitigate(mitigation.sample(random))) {
+                    && stabilizer.spendForShield(mitigation.sample(random))) {
                 return;
             }
             if (!consume) {

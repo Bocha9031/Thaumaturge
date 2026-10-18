@@ -53,7 +53,7 @@ public final class BlockStabilizer extends BaseEntityBlock {
 
     @Override
     protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
-        return level.getBlockEntity(pos) instanceof BlockEntityStabilizer stabilizer ? stabilizer.getEnergy() : 0;
+        return level.getBlockEntity(pos) instanceof BlockEntityStabilizer stabilizer ? stabilizer.charge() : 0;
     }
 
     @Override

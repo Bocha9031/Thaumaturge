@@ -1,78 +1,105 @@
 package com.leclowndu93150.thaumaturge.content.device;
 
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
+import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.content.entity.EntityFluxRift;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
-import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
-public final class BlockEntityStabilizer extends BlockEntity {
-    private static final int CAPACITY = 15;
+public final class BlockEntityStabilizer extends AbstractSyncedBlockEntity {
+    public static final int MAX_CHARGE = 15;
+
     private static final int CHARGE_INTERVAL = 20;
-    private static final int WORK_INTERVAL = 5;
-    private static final float POLLUTION_PER_CHARGE = 0.25F;
-    private static final double RIFT_RANGE = 8.0;
-    private static final int WORK_DELAY = 5;
+    private static final int PULSE_INTERVAL = 5;
+    private static final float FLUX_PER_CHARGE = 0.25F;
+    private static final double REACH = 8.0;
+    private static final int COOLDOWN_PER_RIFT = 5;
+    private static final String CHARGE_KEY = "energy";
 
     private int ticks;
-    private int delay;
-    private int energy;
+    private int cooldown;
+    private int charge;
 
     public BlockEntityStabilizer(BlockPos pos, BlockState state) {
         super(TTBlockEntities.STABILIZER.get(), pos, state);
     }
 
-    public int getEnergy() {
-        return energy;
+    public int charge() {
+        return charge;
     }
 
-    public boolean mitigate(int amount) {
-        if (energy >= amount) {
-            energy -= amount;
-            setChanged();
-            if (level != null) {
-                level.updateNeighbourForOutputSignal(
-                        getBlockPos(), getBlockState().getBlock());
-            }
+    public boolean spendForShield(int cost) {
+        if (cost <= 0) {
             return true;
         }
-        return false;
+        if (charge < cost) {
+            return false;
+        }
+        changeCharge(charge - cost);
+        return true;
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityStabilizer stabilizer) {
-        stabilizer.ticks++;
-        if (stabilizer.energy < CAPACITY && stabilizer.ticks % CHARGE_INTERVAL == 0) {
-            stabilizer.energy++;
-            AuraHelper.polluteAura(level, pos, POLLUTION_PER_CHARGE, true);
-            stabilizer.setChanged();
-            level.updateNeighbourForOutputSignal(pos, state.getBlock());
+        stabilizer.work(level);
+    }
+
+    private void work(Level level) {
+        ticks++;
+        if (cooldown > 0) {
+            cooldown--;
         }
-        if (stabilizer.energy > 0 && stabilizer.delay <= 0 && stabilizer.ticks % WORK_INTERVAL == 0) {
-            stabilizer.tryAddStability(level, pos);
+        if (ticks % CHARGE_INTERVAL == 0 && charge < MAX_CHARGE) {
+            changeCharge(charge + 1);
+            AuraHelper.polluteAura(level, worldPosition, FLUX_PER_CHARGE, true);
         }
-        if (stabilizer.delay > 0) {
-            stabilizer.delay--;
+        if (ticks % PULSE_INTERVAL == 0 && charge > 0 && cooldown <= 0) {
+            steadyRifts(level);
         }
     }
 
-    private void tryAddStability(Level level, BlockPos pos) {
-        List<EntityFluxRift> rifts = level.getEntitiesOfClass(
-                EntityFluxRift.class,
-                new AABB(pos.getX(), pos.getY(), pos.getZ(), pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1)
-                        .inflate(RIFT_RANGE));
-        for (EntityFluxRift rift : rifts) {
-            if (!rift.isRemoved() && rift.stabilityTier() != EntityFluxRift.Stability.VERY_STABLE && mitigate(1)) {
-                rift.nudgeStability();
-                delay += WORK_DELAY;
-                if (energy <= 0) {
-                    return;
-                }
+    private void steadyRifts(Level level) {
+        AABB reach = new AABB(worldPosition).inflate(REACH);
+        int remaining = charge;
+        for (EntityFluxRift rift : level.getEntitiesOfClass(EntityFluxRift.class, reach)) {
+            if (remaining <= 0) {
+                break;
+            }
+            if (rift.stabilityTier() == EntityFluxRift.Stability.VERY_STABLE) {
+                continue;
+            }
+            remaining--;
+            rift.nudgeStability();
+            cooldown += COOLDOWN_PER_RIFT;
+        }
+        if (remaining != charge) {
+            changeCharge(remaining);
+        }
+    }
+
+    private void changeCharge(int next) {
+        int clamped = Math.clamp(next, 0, MAX_CHARGE);
+        if (clamped == charge) {
+            return;
+        }
+        charge = clamped;
+        setChangedAndSync();
+        if (level != null && !level.isClientSide()) {
+            level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
+            refreshInlays(level);
+        }
+    }
+
+    private void refreshInlays(Level level) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            BlockPos neighbour = worldPosition.relative(side);
+            if (level.hasChunkAt(neighbour) && BlockInlay.chargeAt(level, neighbour) >= 0) {
+                BlockInlay.updateNetwork(level, neighbour);
             }
         }
     }
@@ -80,12 +107,12 @@ public final class BlockEntityStabilizer extends BlockEntity {
     @Override
     protected void loadAdditional(CompoundTag input, HolderLookup.Provider registries) {
         super.loadAdditional(input, registries);
-        energy = Math.min(input.getInt("energy"), CAPACITY);
+        charge = Math.clamp(input.getInt(CHARGE_KEY), 0, MAX_CHARGE);
     }
 
     @Override
     protected void saveAdditional(CompoundTag output, HolderLookup.Provider registries) {
         super.saveAdditional(output, registries);
-        output.putInt("energy", energy);
+        output.putInt(CHARGE_KEY, charge);
     }
 }
