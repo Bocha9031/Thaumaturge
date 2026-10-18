@@ -10,42 +10,42 @@ import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskHandoff;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import org.jspecify.annotations.Nullable;
 
 public final class CollectBehavior implements ISealBehavior {
-    private static final int STAGGER = 100;
+    private static final int STAGGER = 53;
     private static final int SCAN_PERIOD = 5;
+    private static final int PURGE_PERIOD = 100;
 
     private final SealClock clock = new SealClock(STAGGER);
-    private final TaskLedger<Integer> claimedItems = new TaskLedger<>();
+    private final TaskLedger<UUID> claimedItems = new TaskLedger<>();
 
     @Override
     public void tick(ServerLevel level, ISealEntity seal) {
-        if (clock.advance() % SCAN_PERIOD != 0) {
+        int now = clock.advance();
+        if (now % PURGE_PERIOD == 0) {
+            claimedItems.dropFinished(level);
+        }
+        if (now % SCAN_PERIOD != 0) {
             return;
         }
         for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, SealArea.bounds(seal))) {
-            if (isLoose(item) && !claimedItems.tracks(item.getId()) && wanted(seal, item.getItem())) {
+            if (isLoose(item) && !claimedItems.tracks(item.getUUID()) && wanted(seal, item.getItem())) {
                 Task task = Task.onEntity(seal.pos(), item);
                 task.setPriority(seal.priority());
                 GolemDispatch.postTask(level, task);
-                claimedItems.record(task, item.getId());
+                claimedItems.record(task, item.getUUID());
                 break;
             }
         }
-        claimedItems.dropValues(id -> {
-            Entity entity = level.getEntity(id);
-            return entity == null || !entity.isAlive();
-        });
     }
 
     private static boolean isLoose(ItemEntity item) {
-        return item.onGround() && !item.hasPickUpDelay() && !item.getItem().isEmpty();
+        return item.isAlive() && item.onGround() && !item.hasPickUpDelay() && !item.getItem().isEmpty();
     }
 
     private static boolean wanted(ISealEntity seal, ItemStack stack) {
@@ -61,7 +61,7 @@ public final class CollectBehavior implements ISealBehavior {
 
     @Override
     public boolean completeTask(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task) {
-        ItemEntity item = claimedItem(level, task);
+        ItemEntity item = claimedItem(task);
         if (item != null && !item.getItem().isEmpty() && wanted(seal, item.getItem())) {
             ItemStack leftover = golem.hands().hold(item.getItem());
             if (leftover.isEmpty()) {
@@ -74,19 +74,25 @@ public final class CollectBehavior implements ISealBehavior {
         }
         task.end();
         claimedItems.forget(task);
-        TaskHandoff.continueWith(level, golem, claimedItems::has);
+        TaskHandoff.continueWith(level, golem, candidate -> seal.pos().equals(candidate.origin()));
         return true;
     }
 
-    private @Nullable ItemEntity claimedItem(Level level, Task task) {
-        Integer id = claimedItems.get(task);
-        return id != null && level.getEntity(id) instanceof ItemEntity item ? item : null;
+    @Override
+    public void onTaskSuspended(ServerLevel level, ISealEntity seal, Task task) {
+        claimedItems.forget(task);
+    }
+
+    private @Nullable ItemEntity claimedItem(Task task) {
+        UUID claimedId = claimedItems.get(task);
+        return task.entity() instanceof ItemEntity item && item.getUUID().equals(claimedId) ? item : null;
     }
 
     @Override
     public boolean canPerform(ISealEntity seal, IGolemAPI golem, Task task) {
-        ItemEntity item = claimedItem(golem.level(), task);
+        ItemEntity item = claimedItem(task);
         if (item == null || item.getItem().isEmpty()) {
+            task.end();
             return false;
         }
         if (!item.isAlive()) {
