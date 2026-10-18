@@ -31,6 +31,7 @@ public final class DioptraRenderer implements BlockEntityRenderer<BlockEntityDio
     private static final float RIPPLE_BASE = 200.0F;
     private static final float RIPPLE_AMPLITUDE = 15.0F;
     private static final float RIPPLE_NORMALIZER = 255.0F;
+    private final byte[] gridSnapshot = new byte[BlockEntityDioptra.GRID_LENGTH];
 
     public DioptraRenderer(BlockEntityRendererProvider.Context context) {}
 
@@ -47,7 +48,7 @@ public final class DioptraRenderer implements BlockEntityRenderer<BlockEntityDio
         float rc = Mth.sin(t / 12.0F) * 0.05F + 0.85F;
         float gc = Mth.sin(t / 11.0F) * 0.05F + (enabled ? 0.9F : 0.45F);
         float bc = Mth.sin(t / 10.0F) * 0.05F + 0.95F;
-        byte[] grid = dioptra.grid();
+        dioptra.copyGrid(gridSnapshot);
 
         poseStack.pushPose();
         poseStack.translate(0.005F, 1.001F, 0.005F);
@@ -67,10 +68,10 @@ public final class DioptraRenderer implements BlockEntityRenderer<BlockEntityDio
                     float x1 = (a + 1) / (float) CELLS;
                     float z0 = b / (float) CELLS;
                     float z1 = (b + 1) / (float) CELLS;
-                    float h00 = grid[a + b * 13] / HEIGHT_SCALE;
-                    float h10 = grid[a + 1 + b * 13] / HEIGHT_SCALE;
-                    float h11 = grid[a + 1 + (b + 1) * 13] / HEIGHT_SCALE;
-                    float h01 = grid[a + (b + 1) * 13] / HEIGHT_SCALE;
+                    float h00 = gridSnapshot[a + b * 13] / HEIGHT_SCALE;
+                    float h10 = gridSnapshot[a + 1 + b * 13] / HEIGHT_SCALE;
+                    float h11 = gridSnapshot[a + 1 + (b + 1) * 13] / HEIGHT_SCALE;
+                    float h01 = gridSnapshot[a + (b + 1) * 13] / HEIGHT_SCALE;
                     vertex(buffer, pose, x0, h01, z1, 0.0F, 0.0F, color);
                     vertex(buffer, pose, x1, h11, z1, 1.0F, 0.0F, color);
                     vertex(buffer, pose, x1, h10, z0, 1.0F, 1.0F, color);

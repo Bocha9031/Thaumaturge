@@ -23,8 +23,9 @@ import org.jspecify.annotations.Nullable;
 public final class BlockDioptra extends BaseEntityBlock {
     public static final MapCodec<BlockDioptra> CODEC = simpleCodec(BlockDioptra::new);
 
-    private static final int GRID_CENTER_INDEX = 84;
-    private static final float GRID_MAX = 64.0F;
+    private static final int GRID_CENTER_INDEX = BlockEntityDioptra.GRID_SIZE * (BlockEntityDioptra.GRID_SIZE / 2)
+            + BlockEntityDioptra.GRID_SIZE / 2;
+    private static final float SIGNAL_SPAN = 14.0F;
 
     public BlockDioptra(BlockBehaviour.Properties properties) {
         super(properties);
@@ -64,8 +65,8 @@ public final class BlockDioptra extends BaseEntityBlock {
         if (!(level.getBlockEntity(pos) instanceof BlockEntityDioptra dioptra)) {
             return 0;
         }
-        float ratio = dioptra.gridValue(GRID_CENTER_INDEX) / GRID_MAX;
-        return Mth.floor(ratio * 14.0F) + (ratio > 0.0F ? 1 : 0);
+        float ratio = dioptra.gridValue(GRID_CENTER_INDEX) / (float) BlockEntityDioptra.STEPS;
+        return ratio > 0.0F ? Mth.floor(ratio * SIGNAL_SPAN) + 1 : 0;
     }
 
     @Override
