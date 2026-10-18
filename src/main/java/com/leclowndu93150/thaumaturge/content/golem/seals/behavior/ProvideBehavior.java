@@ -157,7 +157,7 @@ public final class ProvideBehavior implements ISealBehavior {
             if (task.data() == LEG_COLLECT) {
                 collect(level, seal, golem, task, request);
             } else {
-                deliver(level, golem, request);
+                deliver(level, seal, golem, request);
             }
         }
         task.end();
@@ -205,29 +205,36 @@ public final class ProvideBehavior implements ISealBehavior {
         post(level, delivery, request);
     }
 
-    private static void deliver(ServerLevel level, IGolemAPI golem, SupplyOrder request) {
+    private static void deliver(ServerLevel level, ISealEntity seal, IGolemAPI golem, SupplyOrder request) {
         ItemStack wanted = request.wanted();
         ItemStack given = golem.hands().release(wanted);
         int shortfall = wanted.getCount() - given.getCount();
         Entity receiver = request.recipient();
+        BlockPos destination = request.destinationBlock();
+        Direction face = request.destinationFace();
         if (shortfall > 0) {
             if (receiver != null) {
                 GolemDispatch.orderSupply(level, receiver, wanted.copyWithCount(shortfall));
-            } else if (request.destinationBlock() != null && request.destinationFace() != null) {
-                GolemDispatch.orderSupply(
-                        level, request.destinationBlock(), request.destinationFace(), wanted.copyWithCount(shortfall));
+            } else if (destination != null && face != null) {
+                GolemDispatch.orderSupply(level, destination, face, wanted.copyWithCount(shortfall));
             }
         }
         if (!given.isEmpty()) {
-            if (receiver != null) {
+            if (!hasDeliveryTarget(receiver, destination, face)) {
+                ItemStack spill = golem.hands().hold(given);
+                if (!spill.isEmpty()) {
+                    SealPos provider = seal.pos();
+                    dropToward(level, provider.pos(), provider.face(), spill);
+                }
+            } else if (receiver != null) {
                 level.addFreshEntity(new ItemEntity(
                         level,
                         receiver.getX(),
                         receiver.getY() + receiver.getEyeHeight() * HALF,
                         receiver.getZ(),
                         given));
-            } else if (request.destinationBlock() != null && request.destinationFace() != null) {
-                handOver(level, golem, request.destinationBlock(), request.destinationFace(), given);
+            } else if (destination != null && face != null) {
+                handOver(level, golem, destination, face, given);
             }
         }
         HandlingSound.play(golem, HandlingSound.LOW);
@@ -254,6 +261,10 @@ public final class ProvideBehavior implements ISealBehavior {
         item.setDeltaMovement(
                 Vec3.atLowerCornerOf(face.getOpposite().getNormal()).scale(DROP_PUSH));
         level.addFreshEntity(item);
+    }
+
+    static boolean hasDeliveryTarget(@Nullable Entity receiver, @Nullable BlockPos destination, @Nullable Direction face) {
+        return receiver != null || destination != null && face != null;
     }
 
     @Override
