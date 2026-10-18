@@ -11,6 +11,7 @@ import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -25,8 +26,10 @@ public final class StoreBehavior implements ISealBehavior {
     private static final int STAGGER = 50;
     private static final int SCAN_PERIOD = 20;
     private static final double NEARBY_RANGE = 1.5;
-    private static final double DROP_DRAG_XZ = 0.2;
-    private static final double DROP_DRAG_Y = 0.5;
+    private static final double TOSS_DRAW = 0.1;
+    private static final double TOSS_HORIZONTAL_FACTOR = 0.2;
+    private static final double TOSS_BASE_Y = 0.2;
+    private static final double TOSS_VERTICAL_FACTOR = 0.5;
 
     private final SealClock clock = new SealClock(STAGGER);
     private int pendingTask = Integer.MIN_VALUE;
@@ -71,31 +74,56 @@ public final class StoreBehavior implements ISealBehavior {
                 amount = Math.max(0, carried.sizeLimit() - present);
             }
             if (amount > 0) {
-                deliver(
+                ItemStack load = golem.hands().release(carried.stack().copyWithCount(amount));
+                int delivered = deliver(
                         level,
                         golem,
                         at,
                         inventory,
-                        golem.hands().release(carried.stack().copyWithCount(amount)));
-                golem.addRankXp(1);
-                golem.swingArm();
+                        load);
+                if (delivered > 0) {
+                    HandlingSound.play(golem, HandlingSound.LOW);
+                    golem.addRankXp(1);
+                    golem.swingArm();
+                }
             }
         }
         task.end();
         return true;
     }
 
-    private static void deliver(
+    private static int deliver(
             Level level, IGolemAPI golem, SealPos at, @Nullable IItemHandler inventory, ItemStack load) {
+        if (load.isEmpty()) {
+            return 0;
+        }
         if (inventory == null) {
             Vec3 spot = Vec3.atCenterOf(at.pos()).relative(at.face(), 1.0);
             ItemEntity dropped = new ItemEntity(level, spot.x, spot.y, spot.z, load);
-            dropped.setDeltaMovement(dropped.getDeltaMovement().multiply(DROP_DRAG_XZ, DROP_DRAG_Y, DROP_DRAG_XZ));
-            level.addFreshEntity(dropped);
-        } else {
-            golem.hands().hold(InvHelper.insertStack(inventory, load, false));
+            RandomSource random = level.getRandom();
+            dropped.setDeltaMovement(
+                    tossDraw(random) * TOSS_HORIZONTAL_FACTOR,
+                    TOSS_BASE_Y * TOSS_VERTICAL_FACTOR,
+                    tossDraw(random) * TOSS_HORIZONTAL_FACTOR);
+            if (level.addFreshEntity(dropped)) {
+                return load.getCount();
+            }
+            golem.hands().hold(load);
+            return 0;
         }
-        HandlingSound.play(golem, HandlingSound.LOW);
+        int offered = load.getCount();
+        ItemStack refused = InvHelper.insertStack(inventory, load, false);
+        int delivered = placedCount(offered, refused);
+        golem.hands().hold(refused);
+        return delivered;
+    }
+
+    static int placedCount(int offered, ItemStack refused) {
+        return Math.max(0, offered - (refused.isEmpty() ? 0 : refused.getCount()));
+    }
+
+    private static double tossDraw(RandomSource random) {
+        return random.nextDouble() * 2 * TOSS_DRAW - TOSS_DRAW;
     }
 
     private static InvHelper.FilterMatch carriedMatch(ISealEntity seal, IGolemAPI golem, InvHelper.InvFilter matching) {
