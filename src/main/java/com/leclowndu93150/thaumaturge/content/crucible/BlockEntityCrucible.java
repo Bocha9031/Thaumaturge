@@ -45,6 +45,19 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
 
     public static final int TANK_CAPACITY = 1000;
     public static final int MAX_ASPECT = 100;
+    private static final int BOIL_HEAT = 150;
+
+    private static final int LEAK_THRESHOLD = 100;
+    private static final int LEAK_DELAY_AFTER_DISSOLVE = 250;
+    private static final int LEAK_DELAY_AFTER_CRAFT = 350;
+    private static final int DISSOLVE_LEAK_RESET = LEAK_THRESHOLD - LEAK_DELAY_AFTER_DISSOLVE;
+    private static final int CRAFT_LEAK_RESET = LEAK_THRESHOLD - LEAK_DELAY_AFTER_CRAFT;
+    private static final int OVERFLOW_INTERVAL = 5;
+
+    private static final float SURFACE_FLOOR = 0.25F;
+    private static final float SURFACE_WATER_RISE = 0.5F;
+    private static final float SURFACE_ESSENTIA_RISE = 0.2F;
+    private static final float SURFACE_OVERFULL = 1.01F;
 
     private final FluidTank tank = new FluidTank(TANK_CAPACITY) {
         @Override
@@ -56,7 +69,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
     };
     private AspectList aspects = AspectList.EMPTY;
     private short heat = 0;
-    private long counter = -100;
+    private int leakCounter = 0;
 
     // FX Infos
     int prevcolor = 0;
@@ -71,7 +84,6 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
 
     private void tick() {
         if (level == null) return;
-        counter++;
         int prevHeat = heat;
         if (!level.isClientSide()) {
             if (tank.getFluidAmount() > 0) {
@@ -96,11 +108,16 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                 heat--;
             }
 
-            if (aspects.totalAmount() > MAX_ASPECT && counter % 5L == 0L) spillOverflow();
+            ServerLevel serverLevel = (ServerLevel) level;
+            if (aspects.totalAmount() > MAX_ASPECT
+                    && serverLevel.getGameTime() % OVERFLOW_INTERVAL == 0L) {
+                spillOverflow();
+            }
 
-            if (counter >= 100L) {
-                spillRandom();
-                counter = 0L;
+            leakCounter++;
+            if (leakCounter >= LEAK_THRESHOLD) {
+                leakCounter = 0;
+                if (!aspects.isEmpty()) spillRandom();
             }
 
             if (tank.getFluidAmount() > 0) {
@@ -242,17 +259,22 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
     }
 
     public float getFluidHeight() {
-        float base = 0.3F + 0.5F * ((float) this.tank.getFluidAmount() / TANK_CAPACITY);
-        float out = base + (float) this.aspects.totalAmount() / MAX_ASPECT * (1.0F - base);
-        if (out > 1.0F) {
-            out = 1.001F;
-        }
+        return fluidSurfaceHeight(tank.getFluidAmount(), aspects.totalAmount());
+    }
 
-        if (out == 1.0F) {
-            out = 0.9999F;
-        }
+    static float fluidSurfaceHeight(int waterAmount, int aspectAmount) {
+        if (aspectAmount > MAX_ASPECT) return SURFACE_OVERFULL;
+        float water = (float) waterAmount / TANK_CAPACITY;
+        float essentia = (float) aspectAmount / MAX_ASPECT;
+        return SURFACE_FLOOR + water * SURFACE_WATER_RISE + essentia * SURFACE_ESSENTIA_RISE;
+    }
 
-        return out;
+    boolean isBoiling() {
+        return isBoiling(heat, tank.getFluidAmount());
+    }
+
+    static boolean isBoiling(int heat, int waterAmount) {
+        return heat > BOIL_HEAT && waterAmount > 0;
     }
 
     public void spillRemnants() {
@@ -306,15 +328,19 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                     .get(level.getRandom().nextInt(aspects.size()))
                     .aspect();
             aspects = aspects.reduce(randAspect, 1);
-            // Slow neglect should first look like a leak. Only an actual physical leak adds a
-            // very small Aura consequence; blocked leak attempts do not become free Flux.
-            if (level.getRandom().nextInt(4) != 0
-                    && PhysicalFlux.spill((ServerLevel) level, getBlockPos(), level.getRandom())) {
+            // Boiling leaks vent physical Flux; cold neglect only pollutes the local aura.
+            if (ventsPhysicalFlux(heat)) {
+                PhysicalFlux.spill((ServerLevel) level, getBlockPos(), level.getRandom());
+            } else {
                 AuraHelper.polluteAura(level, getBlockPos(), 0.25F, true);
             }
         }
         setChanged();
         syncToClient();
+    }
+
+    static boolean ventsPhysicalFlux(int heat) {
+        return heat > BOIL_HEAT;
     }
 
     public short getHeat() {
@@ -456,7 +482,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                         owner, getBlockPos(), getBlockState(), this, out.copy(), recipe.aspects()));
                 craftDone = true;
                 count--;
-                this.counter = -250L;
+                this.leakCounter = CRAFT_LEAK_RESET;
             } else {
                 AspectList aspects = AspectIndexAccess.index().of(stack);
                 CrucibleEvent.Dissolve event =
@@ -469,7 +495,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                     }
                     bubble = true;
                     count--;
-                    this.counter = -150L;
+                    this.leakCounter = DISSOLVE_LEAK_RESET;
                 }
             }
         }

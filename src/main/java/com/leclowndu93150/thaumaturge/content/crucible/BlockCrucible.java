@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
@@ -35,6 +36,12 @@ import org.jspecify.annotations.Nullable;
 
 public class BlockCrucible extends BaseEntityBlock {
     private static final int LAVA_HURT_INTERVAL = 10;
+    private static final int AMBIENT_POP_ODDS = 8;
+    private static final double AMBIENT_POP_HEIGHT = 0.7;
+    private static final float AMBIENT_POP_VOLUME = 0.15F;
+    private static final float AMBIENT_POP_PITCH = 0.8F;
+    private static final float AMBIENT_POP_PITCH_JITTER = 0.3F;
+    private static final double BLOCK_CENTER = 0.5;
     private static final int SIGNAL_STEPS = 14;
     private static final int MAX_SIGNAL = 15;
 
@@ -101,9 +108,7 @@ public class BlockCrucible extends BaseEntityBlock {
             }
         } else if (!player.isCrouching() && hitResult.getDirection() == Direction.UP) {
             ItemStack input = itemStack.copyWithCount(1);
-            if (crucible.getHeat() > 150
-                    && crucible.getTank().getFluidAmount() > 0
-                    && crucible.attemptSmelt(input, player) == null) {
+            if (crucible.isBoiling() && crucible.attemptSmelt(input, player) == null) {
                 itemStack.shrink(1);
                 return ItemInteractionResult.CONSUME;
             }
@@ -156,14 +161,13 @@ public class BlockCrucible extends BaseEntityBlock {
     protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level.isClientSide()) return;
         if (!(level.getBlockEntity(pos) instanceof BlockEntityCrucible crucible)) return;
-        if (crucible.getHeat() <= 150 || crucible.getTank().getFluidAmount() <= 0) return;
+        if (!crucible.isBoiling()) return;
         if (entity instanceof ItemEntity it && !(it instanceof EntitySpecialItem)) {
             crucible.attemptSmelt(it);
         } else {
             if (entity.tickCount % LAVA_HURT_INTERVAL != 0) return;
             if (entity instanceof LivingEntity e
-                    && !e.isInvulnerableTo(level.damageSources().lava())) {
-                entity.lavaHurt();
+                    && e.hurt(level.damageSources().inFire(), 1.0F)) {
                 entity.clearFire();
                 entity.setTicksFrozen(0);
                 level.playSound(
@@ -171,7 +175,7 @@ public class BlockCrucible extends BaseEntityBlock {
                         pos.getX() + 0.5F,
                         pos.getY() + 0.5F,
                         pos.getZ() + 0.5F,
-                        SoundEvents.LAVA_EXTINGUISH,
+                        SoundEvents.FIRE_EXTINGUISH,
                         SoundSource.BLOCKS,
                         0.4F,
                         2.0F + level.getRandom().nextFloat() * 0.4F);
@@ -179,6 +183,25 @@ public class BlockCrucible extends BaseEntityBlock {
         }
 
         super.entityInside(state, level, pos, entity);
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        if (random.nextInt(AMBIENT_POP_ODDS) != 0
+                || !(level.getBlockEntity(pos) instanceof BlockEntityCrucible crucible)
+                || !crucible.isBoiling()) {
+            return;
+        }
+        float pitch = AMBIENT_POP_PITCH + random.nextFloat() * AMBIENT_POP_PITCH_JITTER;
+        level.playLocalSound(
+                pos.getX() + BLOCK_CENTER,
+                pos.getY() + AMBIENT_POP_HEIGHT,
+                pos.getZ() + BLOCK_CENTER,
+                SoundEvents.LAVA_POP,
+                SoundSource.BLOCKS,
+                AMBIENT_POP_VOLUME,
+                pitch,
+                false);
     }
 
     @Override
