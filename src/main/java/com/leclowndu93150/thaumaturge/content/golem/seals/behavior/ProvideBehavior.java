@@ -142,7 +142,7 @@ public final class ProvideBehavior implements ISealBehavior {
             return false;
         }
         ItemStack wanted = request.wanted();
-        if (task.data() != LEG_COLLECT) {
+        if (legOf(task.data()) != LEG_COLLECT) {
             return golem.hands().holds(wanted);
         }
         return SealAccess.allows(request.requestingSeal(), golem)
@@ -154,7 +154,7 @@ public final class ProvideBehavior implements ISealBehavior {
     public boolean completeTask(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task) {
         SupplyOrder request = task.servedOrder();
         if (request != null) {
-            if (task.data() == LEG_COLLECT) {
+            if (legOf(task.data()) == LEG_COLLECT) {
                 collect(level, seal, golem, task, request);
             } else {
                 deliver(level, seal, golem, request);
@@ -162,6 +162,10 @@ public final class ProvideBehavior implements ISealBehavior {
         }
         task.end();
         return true;
+    }
+
+    static int legOf(int data) {
+        return data >= LEG_COLLECT && data <= LEG_TO_BLOCK ? data : LEG_COLLECT;
     }
 
     private static void collect(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task, SupplyOrder request) {
