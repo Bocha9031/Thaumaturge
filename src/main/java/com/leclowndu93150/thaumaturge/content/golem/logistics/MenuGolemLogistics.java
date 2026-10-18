@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.content.golem.seals.SealHandler;
 import com.leclowndu93150.thaumaturge.content.golem.seals.behavior.ProvideBehavior;
 import com.leclowndu93150.thaumaturge.registry.TTMenus;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -173,6 +174,7 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
                     items.add(stack);
                 }
             }
+            sortByDisplayName(items);
         }
         display.clearContent();
         int skipped = 0;
@@ -223,6 +225,11 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
     private static boolean matchesSearch(ItemStack stack, String filter) {
         return filter.isEmpty()
                 || stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(filter);
+    }
+
+    static void sortByDisplayName(List<ItemStack> stacks) {
+        stacks.sort(Comparator.comparing(
+                stack -> stack.getHoverName().getString(), String.CASE_INSENSITIVE_ORDER));
     }
 
     private static ItemStack sum(ItemStack existing, ItemStack addition) {
