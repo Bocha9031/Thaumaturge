@@ -25,8 +25,12 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public final class ItemGolemBell extends Item implements ISealDisplayer {
-    private static final double AIM_RANGE = 5.0;
-    private static final double AIM_STEP = 0.1;
+    private static final double AIM_LENGTH = 5.0;
+    private static final double AIM_STEP = 0.05;
+    static final int AIM_SAMPLES = (int) Math.round(AIM_LENGTH / AIM_STEP);
+    private static final float CHIME_VOLUME = 0.5F;
+    private static final float CHIME_PITCH_SPREAD = 0.2F;
+    private static final float ZAP_VOLUME = 0.4F;
 
     public ItemGolemBell(Properties properties) {
         super(properties);
@@ -38,8 +42,8 @@ public final class ItemGolemBell extends Item implements ISealDisplayer {
         if (level.isClientSide()) {
             player.playSound(
                     SoundEvents.NOTE_BLOCK_BELL.value(),
-                    0.6F,
-                    1.0F + level.getRandom().nextFloat() * 0.1F);
+                    CHIME_VOLUME,
+                    1.0F + level.getRandom().nextFloat() * CHIME_PITCH_SPREAD);
             return InteractionResultHolder.success(player.getItemInHand(hand));
         }
         ISealEntity seal = getAimedSeal(player);
@@ -87,18 +91,16 @@ public final class ItemGolemBell extends Item implements ISealDisplayer {
             SealGuiOpener.open(player, seal);
         } else if (SealAccess.mayEdit(player, seal)) {
             SealHandler.removeSealEntity(level, seal.pos(), false);
-            level.playSound(null, seal.pos().pos(), TTSounds.ZAP.get(), SoundSource.BLOCKS, 0.5F, 1.0F);
+            level.playSound(null, seal.pos().pos(), TTSounds.ZAP.get(), SoundSource.BLOCKS, ZAP_VOLUME, 1.0F);
         }
     }
 
     public static @Nullable ISealEntity getAimedSeal(Player player) {
         Vec3 start = player.getEyePosition();
-        Vec3 look = player.getLookAngle().scale(AIM_RANGE);
-        Vec3 step = look.scale(AIM_STEP);
-        Vec3 probe = start.add(step);
+        Vec3 look = player.getLookAngle();
         BlockPos previous = BlockPos.containing(start);
-        for (int i = 0; i < (int) (look.length() * 10.0); i++) {
-            BlockPos cell = BlockPos.containing(probe);
+        for (int i = 1; i <= AIM_SAMPLES; i++) {
+            BlockPos cell = BlockPos.containing(aimPoint(start, look, i));
             if (!cell.equals(previous)) {
                 BlockPos delta = cell.subtract(previous);
                 ISealEntity seal = sealOnEntryFace(player, cell, delta);
@@ -113,9 +115,12 @@ public final class ItemGolemBell extends Item implements ISealDisplayer {
                 }
                 previous = cell;
             }
-            probe = probe.add(step);
         }
         return null;
+    }
+
+    static Vec3 aimPoint(Vec3 origin, Vec3 look, int sample) {
+        return origin.add(look.scale(sample * AIM_STEP));
     }
 
     private static @Nullable ISealEntity sealOnEntryFace(Player player, BlockPos cell, BlockPos delta) {
