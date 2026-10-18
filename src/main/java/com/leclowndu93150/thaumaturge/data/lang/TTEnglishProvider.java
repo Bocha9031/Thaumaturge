@@ -1754,6 +1754,7 @@ public final class TTEnglishProvider extends LanguageProvider {
         addJadeMode("smelters", "Essentia Smelters");
         addJadeMode("advanced_alchemical_furnaces", "Advanced Alchemical Furnaces");
         addJadeMode("jars", "Essentia Jars and Tanks");
+        addJadeMode("brain_jars", "Brains in Jars");
         addJadeMode("alembics", "Alembics");
         addJadeMode("crucibles", "Crucibles");
         addJadeMode("tubes", "Essentia Tubes");
@@ -1814,6 +1815,7 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("jade.thaumaturge.focal.no_focus", "No focus inserted");
         add("jade.thaumaturge.relay.linked", "Linked");
         add("jade.thaumaturge.golem.xp", "Experience: %s / %s");
+        add("jade.thaumaturge.brain_jar.experience", "Experience: %s / %s");
         add("jade.thaumaturge.aspect_amount", "%s x%s");
         add("jade.thaumaturge.aspect_separator", ", ");
         add("jade.thaumaturge.node.type.normal", "Aura Node");

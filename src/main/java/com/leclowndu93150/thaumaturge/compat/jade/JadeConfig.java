@@ -19,6 +19,7 @@ final class JadeConfig {
     static final ResourceLocation SMELTERS = option("smelters");
     static final ResourceLocation ADVANCED_ALCHEMICAL_FURNACES = option("advanced_alchemical_furnaces");
     static final ResourceLocation JARS = option("jars");
+    static final ResourceLocation BRAIN_JARS = option("brain_jars");
     static final ResourceLocation ALEMBICS = option("alembics");
     static final ResourceLocation CRUCIBLES = option("crucibles");
     static final ResourceLocation TUBES = option("tubes");
@@ -48,6 +49,7 @@ final class JadeConfig {
             SMELTERS,
             ADVANCED_ALCHEMICAL_FURNACES,
             JARS,
+            BRAIN_JARS,
             ALEMBICS,
             CRUCIBLES,
             TUBES,
