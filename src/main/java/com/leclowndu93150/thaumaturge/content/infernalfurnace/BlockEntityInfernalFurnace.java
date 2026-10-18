@@ -33,11 +33,13 @@ import net.neoforged.neoforge.items.ItemHandlerHelper;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class BlockEntityInfernalFurnace extends AbstractSyncedBlockEntity {
+    private boolean contentsDirty = true;
 
     private final ItemStackHandler inventory = new ItemStackHandler(32) {
         @Override
         protected void onContentsChanged(int slot) {
             super.onContentsChanged(slot);
+            contentsDirty = true;
             setChanged();
         }
 
@@ -168,19 +170,14 @@ public class BlockEntityInfernalFurnace extends AbstractSyncedBlockEntity {
                                         inventory.getStackInSlot(slot).getCount() - 1));
                         break;
                     }
-
-                    // Destroy item if no recipe
-                    inventory.setStackInSlot(
-                            slot,
-                            inputStack.copyWithCount(
-                                    inventory.getStackInSlot(slot).getCount() - 1));
                 }
             }
         }
 
         if (speedyTime <= 0) this.speedyTime = (int) AuraHelper.drainVis(level, getBlockPos(), 20, false);
 
-        if (this.furnaceCookTime == 0 && !cooking) {
+        if (this.furnaceCookTime == 0 && !cooking && contentsDirty) {
+            contentsDirty = false;
             for (int slot = 0; slot < inventory.getSlots(); slot++) {
                 if (inventory.getStackInSlot(slot).getCount() > 0) {
                     ItemStack inputStack = inventory.getStackInSlot(slot).copy();
