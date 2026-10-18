@@ -11,7 +11,8 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 
 public final class FellBehavior extends CellWorkBehavior {
-    private static final int STAGGER = 33;
+    private static final int STAGGER = 59;
+    private static final int CHOP_XP = 1;
 
     public FellBehavior() {
         super(STAGGER);
@@ -24,20 +25,19 @@ public final class FellBehavior extends CellWorkBehavior {
 
     @Override
     public boolean completeTask(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task) {
-        if (stillMine(level, seal, task)) {
-            golem.swingArm();
-            if (EnchantMining.breakFurthest(
-                    level,
-                    task.pos(),
-                    level.getBlockState(task.pos()),
-                    TTFakePlayer.GOLEM.at(level, golem.asEntity()))) {
-                keepAlive(task);
-                golem.addRankXp(1);
-                return false;
-            }
-            release(task);
+        if (!stillMine(level, seal, task)) {
+            return retire(task);
         }
-        task.end();
-        return true;
+        golem.swingArm();
+        if (!EnchantMining.breakFurthest(
+                level,
+                task.pos(),
+                level.getBlockState(task.pos()),
+                TTFakePlayer.GOLEM.at(level, golem.asEntity()))) {
+            return retire(task);
+        }
+        keepAlive(task);
+        golem.addRankXp(CHOP_XP);
+        return false;
     }
 }
