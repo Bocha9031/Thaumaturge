@@ -21,8 +21,8 @@ public abstract class TaskGoal extends Goal {
     private static final int GIVE_UP_AFTER = 1000;
     private static final int REPATH_EVERY = 5;
     private static final int RETRY_DELAY = 10;
-    private static final int DETOUR_RANGE = 6;
-    private static final int DETOUR_HEIGHT = 4;
+    private static final int DETOUR_RANGE = 4;
+    private static final int DETOUR_HEIGHT = 2;
     private static final double DETOUR_OFFSET = 0.5;
     private static final double BLOCK_REACH_SQR = 4.0;
 
