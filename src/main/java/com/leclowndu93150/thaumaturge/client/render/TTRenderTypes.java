@@ -194,6 +194,14 @@ public final class TTRenderTypes {
                     RenderStateShard.NO_DEPTH_TEST,
                     RenderStateShard.COLOR_WRITE,
                     true));
+    private static final Function<ResourceLocation, RenderType> ENTITY_TRANSLUCENT_NO_DEPTH_WRITE =
+            Util.memoize(texture -> flat(
+                    "tt_entity_translucent_no_depth_write",
+                    texture,
+                    RenderStateShard.TRANSLUCENT_TRANSPARENCY,
+                    RenderStateShard.LEQUAL_DEPTH_TEST,
+                    RenderStateShard.COLOR_WRITE,
+                    true));
     private static final Function<ResourceLocation, RenderType> TAINTED_SWIRL_NO_DEPTH = Util.memoize(texture -> flat(
             "tt_tainted_swirl_no_depth",
             texture,
@@ -303,6 +311,10 @@ public final class TTRenderTypes {
 
     public static RenderType entityTranslucentNoDepth(ResourceLocation texture) {
         return ENTITY_TRANSLUCENT_NO_DEPTH.apply(texture);
+    }
+
+    public static RenderType entityTranslucentNoDepthWrite(ResourceLocation texture) {
+        return ENTITY_TRANSLUCENT_NO_DEPTH_WRITE.apply(texture);
     }
 
     public static RenderType taintedSwirlNoDepth(ResourceLocation texture) {
