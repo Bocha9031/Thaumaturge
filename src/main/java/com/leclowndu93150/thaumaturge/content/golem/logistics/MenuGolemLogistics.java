@@ -12,10 +12,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import net.minecraft.core.NonNullList;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -43,7 +44,7 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
     private static final char KEY_SEPARATOR = '|';
     private static final int MAX_REQUEST_STACKS = 16;
 
-    private final SimpleContainer display = new SimpleContainer(SIZE);
+    private final DisplayContainer display = new DisplayContainer();
     private final List<ItemStack> items = new ArrayList<>();
     private final List<ItemStack> stock = new ArrayList<>();
     private long collectedAt = Long.MIN_VALUE;
@@ -255,8 +256,65 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
         return clicker == player;
     }
 
+    static final class DisplayContainer implements Container {
+        private final NonNullList<ItemStack> items = NonNullList.withSize(SIZE, ItemStack.EMPTY);
+
+        @Override
+        public int getContainerSize() {
+            return SIZE;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            for (ItemStack stack : items) {
+                if (!stack.isEmpty()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public ItemStack getItem(int slot) {
+            return items.get(slot);
+        }
+
+        @Override
+        public ItemStack removeItem(int slot, int amount) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public ItemStack removeItemNoUpdate(int slot) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public void setItem(int slot, ItemStack stack) {
+            items.set(slot, stack);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public void setChanged() {}
+
+        @Override
+        public boolean stillValid(Player player) {
+            return true;
+        }
+
+        @Override
+        public void clearContent() {
+            items.replaceAll(ignored -> ItemStack.EMPTY);
+        }
+    }
+
     private static final class DisplaySlot extends Slot {
-        private DisplaySlot(SimpleContainer container, int index, int x, int y) {
+        private DisplaySlot(Container container, int index, int x, int y) {
             super(container, index, x, y);
         }
 
