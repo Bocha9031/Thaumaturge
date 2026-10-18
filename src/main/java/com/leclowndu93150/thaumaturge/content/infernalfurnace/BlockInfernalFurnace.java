@@ -188,6 +188,9 @@ public class BlockInfernalFurnace extends BaseEntityBlock {
             return;
         }
         if (item.onGround() && level.getBlockEntity(pos) instanceof BlockEntityInfernalFurnace furnace) {
+            if (furnace.isOwnThrow(item)) {
+                return;
+            }
             ItemStack remainder = furnace.addItemsToInventory(item.getItem());
             if (remainder.isEmpty()) {
                 item.discard();

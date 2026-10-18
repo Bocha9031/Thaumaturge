@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,18 @@ class BlockEntityInfernalFurnaceTest {
         assertEquals(1, furnace.changes, "Real insertion must mark the furnace changed immediately");
         furnace.inventory().setStackInSlot(0, iron.copyWithCount(1));
         assertEquals(2, furnace.changes, "Consuming an item must mark the furnace changed");
+    }
+
+    @Test
+    void experienceRewardsRoundFractionalRecipesWithoutGlobalRandomness() {
+        RandomSource random = RandomSource.create(0L);
+        assertEquals(0, BlockEntityInfernalFurnace.rollExperiencePoints(0.0F, random));
+        assertEquals(2, BlockEntityInfernalFurnace.rollExperiencePoints(2.0F, random));
+
+        for (int i = 0; i < 100; i++) {
+            int reward = BlockEntityInfernalFurnace.rollExperiencePoints(2.5F, random);
+            assertTrue(reward == 2 || reward == 3, "Fractional XP should round to an adjacent integer");
+        }
     }
 
     private CountingFurnace createFurnace() {
