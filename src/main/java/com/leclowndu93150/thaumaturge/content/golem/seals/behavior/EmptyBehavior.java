@@ -20,7 +20,7 @@ public final class EmptyBehavior implements ISealBehavior {
     public static final SealSetting LEAVE_ONE =
             new SealSetting("leave_one", "gui.thaumaturge.seal.setting.leave", false).readingAlso("pleave");
 
-    private static final int STAGGER = 30;
+    private static final int STAGGER = 43;
     private static final int SCAN_PERIOD = 20;
     private static final int TIDY_PERIOD = 100;
     private static final int TASK_LIFESPAN = 5;
@@ -31,10 +31,11 @@ public final class EmptyBehavior implements ISealBehavior {
 
     @Override
     public void tick(ServerLevel level, ISealEntity seal) {
-        if (clock.at(TIDY_PERIOD)) {
+        int now = clock.advance();
+        if (now % TIDY_PERIOD == 0) {
             takings.dropFinished(level);
         }
-        if (clock.advance() % SCAN_PERIOD != 0) {
+        if (now % SCAN_PERIOD != 0) {
             return;
         }
         IItemHandler source =
@@ -64,7 +65,11 @@ public final class EmptyBehavior implements ISealBehavior {
         }
         List<ItemStack> listed =
                 filter.stacks().stream().filter(stack -> !stack.isEmpty()).toList();
-        return listed.isEmpty() ? filter.stacks() : List.of(listed.get(Math.abs(turn % listed.size())));
+        return listed.isEmpty() ? filter.stacks() : List.of(listed.get(cycleIndex(turn, listed.size())));
+    }
+
+    static int cycleIndex(int turn, int size) {
+        return Math.floorMod(turn, size);
     }
 
     @Override
