@@ -8,4 +8,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface ExperienceOrbAccessor {
     @Accessor("value")
     void thaumaturge$setValue(int value);
+
+    @Accessor("count")
+    int thaumaturge$getCount();
 }

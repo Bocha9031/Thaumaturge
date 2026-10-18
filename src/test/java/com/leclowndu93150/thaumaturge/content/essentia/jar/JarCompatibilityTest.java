@@ -181,6 +181,14 @@ class JarCompatibilityTest {
     }
 
     @Test
+    void brainJarAccountsForMergedOrbsAndNeverComputesNegativeExperience() {
+        assertEquals(21, BlockEntityJarBrain.orbXp(7, 3));
+        assertEquals(7, BlockEntityJarBrain.orbXp(7, 0));
+        assertEquals(0, BlockEntityJarBrain.orbXp(-7, 3));
+        assertEquals(Integer.MAX_VALUE, BlockEntityJarBrain.orbXp(Integer.MAX_VALUE, Integer.MAX_VALUE));
+    }
+
+    @Test
     void jarBlocksStillUseTheirModelsOnOneTwentyOne() {
         BlockJar jar = (BlockJar) TTBlocks.JAR_NORMAL.get();
         BlockJarBrain brain = (BlockJarBrain) TTBlocks.JAR_BRAIN.get();
