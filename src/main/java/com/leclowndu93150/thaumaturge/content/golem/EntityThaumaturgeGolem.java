@@ -931,7 +931,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
         HolderLookup.Provider registries = registryAccess();
         super.readAdditionalSaveData(input);
         TTNbt.read(input, "props", GolemProperties.CODEC, registries).ifPresent(this::setProperties);
-        restrictTo(TTNbt.read(input, "homepos", BlockPos.CODEC, registries).orElse(BlockPos.ZERO), HOME_RANGE);
+        restrictTo(TTNbt.read(input, "homepos", BlockPos.CODEC, registries).orElse(blockPosition()), HOME_RANGE);
         entityData.set(FLAGS, (input.contains("gflags") ? input.getByte("gflags") : (byte) 0));
         rankXp = (input.contains("rankXP") ? input.getInt("rankXP") : 0);
         setGolemColor((input.contains("color") ? input.getByte("color") : (byte) 0));
