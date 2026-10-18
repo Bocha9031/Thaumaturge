@@ -2,8 +2,8 @@ package com.leclowndu93150.thaumaturge.content.golem.ai;
 
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.golem.EntityThaumaturgeGolem;
+import com.leclowndu93150.thaumaturge.content.golem.GolemEvent;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealAccess;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealHandler;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
@@ -24,7 +24,6 @@ public abstract class TaskGoal extends Goal {
     private static final int DETOUR_RANGE = 6;
     private static final int DETOUR_HEIGHT = 4;
     private static final double DETOUR_OFFSET = 0.5;
-    private static final byte GIVE_UP_EMOTE = 6;
     private static final double BLOCK_REACH_SQR = 4.0;
 
     protected final EntityThaumaturgeGolem golem;
@@ -155,8 +154,8 @@ public abstract class TaskGoal extends Goal {
         if (task == null) {
             return;
         }
-        if (!task.isCompleted() && task.isClaimed() && ThaumaturgeCommonConfig.SHOW_GOLEM_EMOTES.get()) {
-            golem.level().broadcastEntityEvent(golem, GIVE_UP_EMOTE);
+        if (!task.isCompleted() && task.isClaimed()) {
+            GolemEvent.TASK_FAILED.broadcast(golem);
         }
         if (task.isCompleted() && !task.isEnded()) {
             task.end();

@@ -2,23 +2,19 @@ package com.leclowndu93150.thaumaturge.content.golem.tasks;
 
 import com.leclowndu93150.thaumaturge.api.golems.IGolemAPI;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.golem.EntityThaumaturgeGolem;
+import com.leclowndu93150.thaumaturge.content.golem.GolemEvent;
 import java.util.function.Predicate;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
 public final class TaskHandoff {
-    private static final byte CLAIM_EMOTE = 5;
-
     private TaskHandoff() {}
 
     public static void assign(EntityThaumaturgeGolem golem, Task task) {
         golem.setTask(task);
         task.claim();
-        if (ThaumaturgeCommonConfig.SHOW_GOLEM_EMOTES.get()) {
-            golem.level().broadcastEntityEvent(golem, CLAIM_EMOTE);
-        }
+        GolemEvent.TASK_CLAIMED.broadcast(golem);
     }
 
     public static void continueWith(ServerLevel level, IGolemAPI golem, Predicate<Task> follows) {
