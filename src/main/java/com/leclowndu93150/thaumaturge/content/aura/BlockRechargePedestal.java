@@ -31,6 +31,11 @@ import org.jspecify.annotations.Nullable;
 public final class BlockRechargePedestal extends BaseEntityBlock {
     public static final MapCodec<BlockRechargePedestal> CODEC = simpleCodec(BlockRechargePedestal::new);
 
+    private static final float POP_VOLUME = 0.25F;
+    private static final float TAKE_PITCH = 1.45F;
+    private static final float PLACE_PITCH = 1.7F;
+    private static final float PITCH_WOBBLE = 0.12F;
+
     private static final VoxelShape SHAPE = Shapes.or(
             Block.box(1.0, 0.0, 1.0, 15.0, 2.0, 15.0),
             Block.box(2.0, 2.0, 2.0, 14.0, 4.0, 14.0),
@@ -96,36 +101,35 @@ public final class BlockRechargePedestal extends BaseEntityBlock {
         }
         ItemStack held = player.getItemInHand(hand);
         ItemStack current = pedestal.getItem();
-        if (current.isEmpty() && !(RechargeAccess.isRechargeable(held)) && !(held.getItem() instanceof ItemWand)) {
+        boolean taking = !current.isEmpty();
+        if (!taking && !(RechargeAccess.isRechargeable(held)) && !(held.getItem() instanceof ItemWand)) {
             return InteractionResult.PASS;
         }
         if (level.isClientSide()) {
             return InteractionResult.SUCCESS;
         }
-        if (current.isEmpty()) {
+        if (taking) {
+            pedestal.setItem(ItemStack.EMPTY);
+            returnToPlayer(player, current);
+            playPop(level, pos, TAKE_PITCH);
+        } else {
             pedestal.setItem(held.copyWithCount(1));
             held.consume(1, player);
-            level.playSound(
-                    null,
-                    pos,
-                    SoundEvents.ITEM_PICKUP,
-                    SoundSource.BLOCKS,
-                    0.2F,
-                    ((level.getRandom().nextFloat() - level.getRandom().nextFloat()) * 0.7F + 1.0F) * 1.6F);
-        } else {
-            if (!player.getInventory().add(current)) {
-                player.drop(current, false);
-            }
-            pedestal.setItem(ItemStack.EMPTY);
-            level.playSound(
-                    null,
-                    pos,
-                    SoundEvents.ITEM_PICKUP,
-                    SoundSource.BLOCKS,
-                    0.2F,
-                    ((level.getRandom().nextFloat() - level.getRandom().nextFloat()) * 0.7F + 1.0F) * 1.5F);
+            playPop(level, pos, PLACE_PITCH);
         }
         return InteractionResult.SUCCESS;
+    }
+
+    private static void returnToPlayer(Player player, ItemStack stack) {
+        boolean stored = player.getInventory().add(stack);
+        if (!stored || !stack.isEmpty()) {
+            player.drop(stack, false);
+        }
+    }
+
+    private static void playPop(Level level, BlockPos pos, float pitch) {
+        float wobble = (level.getRandom().nextFloat() - level.getRandom().nextFloat()) * PITCH_WOBBLE;
+        level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, POP_VOLUME, pitch + wobble);
     }
 
     @Override
