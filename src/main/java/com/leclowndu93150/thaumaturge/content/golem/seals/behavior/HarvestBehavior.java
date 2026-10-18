@@ -35,9 +35,10 @@ import net.neoforged.neoforge.common.util.FakePlayer;
 import org.jspecify.annotations.Nullable;
 
 public final class HarvestBehavior implements ISealBehavior {
-    public static final SealSetting REPLANT = new SealSetting("prep", "gui.thaumaturge.seal.setting.replant", true);
+    public static final SealSetting REPLANT =
+            new SealSetting("replant_crops", "gui.thaumaturge.seal.setting.replant", true).readingAlso("prep");
     public static final SealSetting REQUEST_SEEDS =
-            new SealSetting("ppro", "gui.thaumaturge.seal.setting.provision", false);
+            new SealSetting("request_seeds", "gui.thaumaturge.seal.setting.provision", false).readingAlso("ppro");
     public static final MapCodec<HarvestBehavior> CODEC = ReplantSite.CODEC
             .listOf()
             .optionalFieldOf("replant", List.of())

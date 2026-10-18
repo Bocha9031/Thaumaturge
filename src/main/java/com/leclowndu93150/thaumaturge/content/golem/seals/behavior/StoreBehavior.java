@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 public final class StoreBehavior implements ISealBehavior {
     public static final SealSetting ONLY_EXISTING =
-            new SealSetting("pexist", "gui.thaumaturge.seal.setting.exist", false);
+            new SealSetting("only_existing", "gui.thaumaturge.seal.setting.exist", false).readingAlso("pexist");
 
     private static final int STAGGER = 50;
     private static final int SCAN_PERIOD = 20;

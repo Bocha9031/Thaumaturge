@@ -15,8 +15,10 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
 
 public final class EmptyBehavior implements ISealBehavior {
-    public static final SealSetting CYCLE = new SealSetting("pcycle", "gui.thaumaturge.seal.setting.cycle", false);
-    public static final SealSetting LEAVE_ONE = new SealSetting("pleave", "gui.thaumaturge.seal.setting.leave", false);
+    public static final SealSetting CYCLE =
+            new SealSetting("cycle_whitelist", "gui.thaumaturge.seal.setting.cycle", false).readingAlso("pcycle");
+    public static final SealSetting LEAVE_ONE =
+            new SealSetting("leave_one", "gui.thaumaturge.seal.setting.leave", false).readingAlso("pleave");
 
     private static final int STAGGER = 30;
     private static final int SCAN_PERIOD = 20;
