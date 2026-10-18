@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.device;
 
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
+import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.entity.EntityFluxRift;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
@@ -9,6 +10,8 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -23,6 +26,9 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
     public static final int PROGRESS_REQUIRED = 2000;
     private static final int WORK_INTERVAL = 20;
+    private static final int STREAK_INTERVAL = 40;
+    private static final int STREAK_VARIANTS = 8;
+    private static final float STREAK_SCALE = 0.12F;
     private static final double RIFT_RANGE = 8.0;
     private static final int SHRINK_CHANCE = 33;
 
@@ -62,13 +68,18 @@ public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
             return;
         }
         if (siphon.hasOutputRoom()) {
-            for (EntityFluxRift rift : siphon.getValidRifts(level, pos)) {
+            List<EntityFluxRift> drained = siphon.getValidRifts(level, pos);
+            for (EntityFluxRift rift : drained) {
                 double d = Math.sqrt(rift.currentSize());
                 siphon.progress += (int) d;
                 rift.adjustStability((float) (-d / 15.0));
                 if (level.getRandom().nextInt(SHRINK_CHANCE) == 0) {
                     rift.resize(rift.currentSize() - 1);
                 }
+            }
+            if (level instanceof ServerLevel server && siphon.counter % STREAK_INTERVAL == 0) {
+                Vec3 top = new Vec3(pos.getX() + 0.5, pos.getY() + 1.01, pos.getZ() + 0.5);
+                drained.forEach(rift -> showStreak(server, rift, top));
             }
         }
         boolean changed = false;
@@ -90,6 +101,19 @@ public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
     private boolean hasOutputRoom() {
         ItemStack stack = output.getStackInSlot(0).copy();
         return stack.isEmpty() || stack.is(TTItems.VOID_SEED.get()) && stack.getCount() < stack.getMaxStackSize();
+    }
+
+    private static void showStreak(ServerLevel level, EntityFluxRift rift, Vec3 target) {
+        RandomSource random = level.getRandom();
+        Vec3 from = rift.position();
+        if (!rift.outline.isEmpty()) {
+            from = from.add(rift.outline.get(random.nextInt(rift.outline.size())));
+        }
+        Effects.voidStream(level, from)
+                .to(target)
+                .seed(random.nextInt(STREAK_VARIANTS))
+                .scale(STREAK_SCALE)
+                .send();
     }
 
     private List<EntityFluxRift> getValidRifts(Level level, BlockPos pos) {
