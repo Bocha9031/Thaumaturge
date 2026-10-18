@@ -4,16 +4,18 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
-import com.leclowndu93150.thaumaturge.content.aspect.AspectCombinations;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.content.legacy.LegacyIds;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
 import com.mojang.serialization.Codec;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -24,13 +26,17 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jspecify.annotations.Nullable;
 
 public final class BlockEntityManaPod extends AbstractSyncedBlockEntity {
     public static final int MAX_AGE = 7;
-    private static final int ASPECT_STAGE = 3;
-    private static final int HERBA_CHANCE = 8;
+    private static final int BLEND_STAGE = 3;
+    private static final int HERBA_ONE_IN = 8;
+    private static final int MEMBER_WEIGHT = 1;
+    private static final int OFFSPRING_WEIGHT = 4;
+    private static final int PARENT_COUNT = 2;
     private static final Codec<ResourceKey<IAspect>> ASPECT_KEY_CODEC = LegacyIds.ASPECT_KEY_CODEC;
 
     private @Nullable ResourceKey<IAspect> aspect;
@@ -64,63 +70,94 @@ public final class BlockEntityManaPod extends AbstractSyncedBlockEntity {
             return;
         }
         BlockState state = getBlockState();
-        int age = state.getValue(BlockManaPod.AGE);
-        if (age < MAX_AGE) {
-            age++;
-            level.setBlock(getBlockPos(), state.setValue(BlockManaPod.AGE, age), 3);
-        }
-        if (age <= ASPECT_STAGE - 1) {
+        int stage = Math.min(state.getValue(BlockManaPod.AGE) + 1, MAX_AGE);
+        level.setBlock(getBlockPos(), state.setValue(BlockManaPod.AGE, stage), 3);
+        settleAspect(level, stage, level.getRandom());
+    }
+
+    public void settleAspect(LevelReader level, int stage, RandomSource random) {
+        if (stage < BLEND_STAGE) {
             return;
         }
-        RandomSource random = level.getRandom();
-        if (age == ASPECT_STAGE) {
-            Set<ResourceKey<IAspect>> nearby = new LinkedHashSet<>();
-            if (aspect != null) {
-                nearby.add(aspect);
-            }
-            for (Direction dir : Direction.Plane.HORIZONTAL) {
-                if (level.getBlockEntity(getBlockPos().relative(dir)) instanceof BlockEntityManaPod pod
-                        && pod.aspect != null) {
-                    nearby.add(pod.aspect);
-                }
-            }
-            if (nearby.size() > 1) {
-                List<ResourceKey<IAspect>> keys = new ArrayList<>(nearby);
-                List<ResourceKey<IAspect>> outlist = new ArrayList<>();
-                for (int i = 0; i < keys.size(); i++) {
-                    outlist.add(keys.get(i));
-                    for (int j = 0; j < keys.size(); j++) {
-                        if (i == j) {
-                            continue;
-                        }
-                        Holder<IAspect> first = Aspects.resolve(level.registryAccess(), keys.get(i));
-                        Holder<IAspect> second = Aspects.resolve(level.registryAccess(), keys.get(j));
-                        if (first == null || second == null) {
-                            continue;
-                        }
-                        Holder<IAspect> combo = AspectCombinations.result(level.registryAccess(), first, second);
-                        if (combo == null || combo.getKey() == null) {
-                            continue;
-                        }
-                        outlist.add(combo.getKey());
-                        outlist.add(combo.getKey());
-                    }
-                }
-                if (!outlist.isEmpty()) {
-                    setAspect(outlist.get(random.nextInt(outlist.size())));
-                }
-            } else if (!nearby.isEmpty() && aspect == null) {
-                setAspect(nearby.iterator().next());
-            }
+        ResourceKey<IAspect> before = aspect;
+        if (stage == BLEND_STAGE) {
+            blendWithNeighbours(level, random);
         }
         if (aspect == null) {
-            assignWildAspect(level.registryAccess(), random);
-            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            aspect = random.nextInt(HERBA_ONE_IN) == 0 ? TTAspects.HERBA : pickPrimal(level.registryAccess(), random);
+        }
+        if (!Objects.equals(before, aspect)) {
+            setAspect(aspect);
         }
     }
 
+    private void blendWithNeighbours(LevelReader level, RandomSource random) {
+        Set<ResourceKey<IAspect>> present = new LinkedHashSet<>();
+        if (aspect != null) {
+            present.add(aspect);
+        }
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            if (level.getBlockEntity(getBlockPos().relative(side)) instanceof BlockEntityManaPod neighbor
+                    && neighbor.aspect != null) {
+                present.add(neighbor.aspect);
+            }
+        }
+        if (present.size() == 1) {
+            if (aspect == null) {
+                aspect = present.iterator().next();
+            }
+            return;
+        }
+        if (present.isEmpty()) {
+            return;
+        }
+
+        Map<ResourceKey<IAspect>, Integer> weights = new LinkedHashMap<>();
+        present.forEach(key -> weights.put(key, MEMBER_WEIGHT));
+        level.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY).listElements()
+                .filter(holder -> bredFrom(holder.value(), present))
+                .forEach(holder -> weights.merge(holder.key(), OFFSPRING_WEIGHT, Integer::sum));
+        aspect = pickByWeight(weights, random);
+    }
+
+    private static boolean bredFrom(IAspect candidate, Set<ResourceKey<IAspect>> present) {
+        List<Holder<IAspect>> parents = candidate.components();
+        if (parents.size() != PARENT_COUNT) {
+            return false;
+        }
+        Optional<ResourceKey<IAspect>> first = parents.get(0).unwrapKey();
+        Optional<ResourceKey<IAspect>> second = parents.get(1).unwrapKey();
+        return first.isPresent()
+                && second.isPresent()
+                && !first.equals(second)
+                && present.contains(first.get())
+                && present.contains(second.get());
+    }
+
+    private static ResourceKey<IAspect> pickByWeight(Map<ResourceKey<IAspect>, Integer> weights, RandomSource random) {
+        int roll = random.nextInt(weights.values().stream().mapToInt(Integer::intValue).sum());
+        for (Map.Entry<ResourceKey<IAspect>, Integer> entry : weights.entrySet()) {
+            roll -= entry.getValue();
+            if (roll < 0) {
+                return entry.getKey();
+            }
+        }
+        throw new IllegalStateException("Weighted aspect selection exceeded its candidates");
+    }
+
+    private static ResourceKey<IAspect> pickPrimal(HolderLookup.Provider registries, RandomSource random) {
+        List<ResourceKey<IAspect>> primals = registries.lookupOrThrow(IAspect.REGISTRY_KEY).listElements()
+                .filter(holder -> holder.value().isPrimal())
+                .map(Holder.Reference::key)
+                .toList();
+        if (primals.isEmpty()) {
+            throw new IllegalStateException("Aspect registry contains no primal aspects");
+        }
+        return primals.get(random.nextInt(primals.size()));
+    }
+
     public void assignWildAspect(HolderLookup.Provider registries, RandomSource random) {
-        if (random.nextInt(HERBA_CHANCE) == 0) {
+        if (random.nextInt(HERBA_ONE_IN) == 0) {
             aspect = TTAspects.HERBA;
         } else {
             List<ResourceKey<IAspect>> primals = registries
