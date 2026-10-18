@@ -5,14 +5,21 @@ import com.leclowndu93150.thaumaturge.api.golems.parts.IGolemPartAbility;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 
 public final class GolemLegWheels implements IGolemPartAbility {
-    private static final double MIN_TRAVEL_FOR_DUST = 0.25;
+    private static final double BRISK_SPEED = 0.25;
+    private static final double BRISK_SPEED_SQR = BRISK_SPEED * BRISK_SPEED;
+    private static final double GROUND_PROBE = 0.05;
+    private static final double BASE_LIFT = 0.1;
+    private static final double CENTER = 0.5;
+    private static final double BACKWARD_FLING = 3.0;
+    private static final double UPWARD_FLING = 1.2;
 
     @Override
     public void tick(IGolemAPI golem) {
@@ -20,23 +27,29 @@ public final class GolemLegWheels implements IGolemPartAbility {
         if (!level.isClientSide()) {
             return;
         }
-        LivingEntity entity = golem.asEntity();
-        double dist = Math.sqrt(entity.distanceToSqr(entity.xOld, entity.yOld, entity.zOld));
-        if (!entity.onGround() || entity.isInWater() || dist <= MIN_TRAVEL_FOR_DUST) {
+        LivingEntity body = golem.asEntity();
+        if (!body.onGround() || body.isInWater()) {
             return;
         }
-        BlockPos below =
-                new BlockPos(Mth.floor(entity.getX()), Mth.floor(entity.getY() - 0.2F), Mth.floor(entity.getZ()));
-        BlockState state = level.getBlockState(below);
-        if (state.getRenderShape() != RenderShape.INVISIBLE) {
-            level.addParticle(
-                    new BlockParticleOption(ParticleTypes.BLOCK, state),
-                    entity.getX() + (level.getRandom().nextFloat() - 0.5) * entity.getBbWidth(),
-                    entity.getBoundingBox().minY + 0.1,
-                    entity.getZ() + (level.getRandom().nextFloat() - 0.5) * entity.getBbWidth(),
-                    -entity.getDeltaMovement().x * 4.0,
-                    1.5,
-                    -entity.getDeltaMovement().z * 4.0);
+        double movedX = body.getX() - body.xo;
+        double movedZ = body.getZ() - body.zo;
+        if (!isBrisk(movedX, movedZ)) {
+            return;
         }
+        AABB box = body.getBoundingBox();
+        BlockPos under = BlockPos.containing(body.getX(), box.minY - GROUND_PROBE, body.getZ());
+        BlockState ground = level.getBlockState(under);
+        if (ground.isAir() || ground.getRenderShape() == RenderShape.INVISIBLE) {
+            return;
+        }
+        RandomSource random = level.getRandom();
+        double x = body.getX() + (random.nextDouble() - CENTER) * box.getXsize();
+        double z = body.getZ() + (random.nextDouble() - CENTER) * box.getZsize();
+        BlockParticleOption grit = new BlockParticleOption(ParticleTypes.BLOCK, ground);
+        level.addParticle(grit, x, box.minY + BASE_LIFT, z, -movedX * BACKWARD_FLING, UPWARD_FLING, -movedZ * BACKWARD_FLING);
+    }
+
+    static boolean isBrisk(double movedX, double movedZ) {
+        return movedX * movedX + movedZ * movedZ > BRISK_SPEED_SQR;
     }
 }
