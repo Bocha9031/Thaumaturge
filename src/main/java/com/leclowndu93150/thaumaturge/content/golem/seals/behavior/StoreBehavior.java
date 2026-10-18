@@ -26,10 +26,7 @@ public final class StoreBehavior implements ISealBehavior {
     private static final int STAGGER = 50;
     private static final int SCAN_PERIOD = 20;
     private static final double NEARBY_RANGE = 1.5;
-    private static final double TOSS_DRAW = 0.1;
-    private static final double TOSS_HORIZONTAL_FACTOR = 0.2;
-    private static final double TOSS_BASE_Y = 0.2;
-    private static final double TOSS_VERTICAL_FACTOR = 0.5;
+    private static final double TOSS_SPREAD = 0.02;
 
     private final SealClock clock = new SealClock(STAGGER);
     private int pendingTask = Integer.MIN_VALUE;
@@ -100,11 +97,8 @@ public final class StoreBehavior implements ISealBehavior {
         if (inventory == null) {
             Vec3 spot = Vec3.atCenterOf(at.pos()).relative(at.face(), 1.0);
             ItemEntity dropped = new ItemEntity(level, spot.x, spot.y, spot.z, load);
-            RandomSource random = level.getRandom();
-            dropped.setDeltaMovement(
-                    tossDraw(random) * TOSS_HORIZONTAL_FACTOR,
-                    TOSS_BASE_Y * TOSS_VERTICAL_FACTOR,
-                    tossDraw(random) * TOSS_HORIZONTAL_FACTOR);
+            Vec3 toss = tossVelocity(level.getRandom());
+            dropped.setDeltaMovement(toss.x, toss.y, toss.z);
             if (level.addFreshEntity(dropped)) {
                 return load.getCount();
             }
@@ -122,8 +116,8 @@ public final class StoreBehavior implements ISealBehavior {
         return Math.max(0, offered - (refused.isEmpty() ? 0 : refused.getCount()));
     }
 
-    private static double tossDraw(RandomSource random) {
-        return random.nextDouble() * 2 * TOSS_DRAW - TOSS_DRAW;
+    static Vec3 tossVelocity(RandomSource random) {
+        return new Vec3(random.triangle(0.0, TOSS_SPREAD), 0.0, random.triangle(0.0, TOSS_SPREAD));
     }
 
     private static InvHelper.FilterMatch carriedMatch(ISealEntity seal, IGolemAPI golem, InvHelper.InvFilter matching) {
