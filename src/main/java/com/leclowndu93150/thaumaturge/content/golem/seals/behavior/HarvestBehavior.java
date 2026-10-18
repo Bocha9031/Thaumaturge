@@ -26,7 +26,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.CocoaBlock;
 import net.minecraft.world.level.block.FarmBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -142,7 +141,7 @@ public final class HarvestBehavior implements ISealBehavior {
         if (!seal.setting(REPLANT) || seed.isEmpty()) {
             return;
         }
-        Direction plantFace = plantingFace(crop, level.getBlockState(pos.below()));
+        Direction plantFace = CropUtils.plantingSupport(crop).orElse(null);
         if (plantFace != null) {
             Task replant = Task.atBlock(seal.pos(), pos);
             replant.setPriority(task.priority());
@@ -156,14 +155,6 @@ public final class HarvestBehavior implements ISealBehavior {
             site.assign(replant.id());
             sites.put(pos.asLong(), site);
         }
-    }
-
-    private static @Nullable Direction plantingFace(BlockState crop, BlockState soil) {
-        boolean cocoa = crop.getBlock() instanceof CocoaBlock;
-        if (!cocoa && soil.is(BlockTags.DIRT) || soil.getBlock() instanceof FarmBlock) {
-            return Direction.DOWN;
-        }
-        return cocoa ? crop.getValue(CocoaBlock.FACING) : null;
     }
 
     private void replant(ServerLevel level, IGolemAPI golem, Task task) {
