@@ -1,7 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.world.objects;
 
 import com.leclowndu93150.thaumaturge.content.aura.node.NodeGenerator;
-import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.mojang.serialization.Codec;
@@ -11,27 +10,33 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
+import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.world.level.storage.loot.BuiltInLootTables;
+import org.jspecify.annotations.Nullable;
 
 public final class HilltopStonesFeature extends Feature<NoneFeatureConfiguration> {
-    private static final int MIN_Y = 85;
-    private static final int RING_RADIUS = 3;
-    private static final int SAMPLE_RADIUS = 2;
-    private static final int MAX_AIR_GAP = 2;
-    private static final int FILL_DEPTH = 4;
-    private static final int PILLAR_STOP_MIN_HEIGHT = 2;
+    private static final int MIN_PLATFORM_Y = 85;
+    private static final int PLATFORM_RADIUS = 3;
+    private static final int SAMPLE_CORNER_REACH = PLATFORM_RADIUS - 1;
+    private static final int MAX_GROUND_RISE = 2;
+    private static final int MAX_COVER_LAYERS = 2;
+    private static final int FOOTING_DEPTH = 4;
+    private static final int PILLAR_MIN_HEIGHT = 2;
+    private static final int PILLAR_MAX_HEIGHT = 4;
+    private static final int PILLAR_SIDE_SHIFT = 1;
     private static final int VINE_ONE_IN = 3;
-    private static final int VINE_LENGTH = 4;
+    private static final int VINE_MAX_DROP = 4;
     private static final int NODE_HEIGHT = 5;
-    private static final int PLACE_FLAGS = 3;
+    private static final int CHEST_HEIGHT = 2;
+    private static final int PLACE_FLAGS = Block.UPDATE_CLIENTS;
 
     public HilltopStonesFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
@@ -42,165 +47,136 @@ public final class HilltopStonesFeature extends Feature<NoneFeatureConfiguration
         WorldGenLevel level = context.level();
         RandomSource random = context.random();
         BlockPos origin = context.origin();
-        int i = origin.getX();
-        int j = origin.getY();
-        int k = origin.getZ();
-        if (!validSpawn(level, i - SAMPLE_RADIUS, j, k - SAMPLE_RADIUS)
-                || !validSpawn(level, i, j, k)
-                || !validSpawn(level, i + SAMPLE_RADIUS, j, k)
-                || !validSpawn(level, i + SAMPLE_RADIUS, j, k + SAMPLE_RADIUS)
-                || !validSpawn(level, i, j, k + SAMPLE_RADIUS)) {
+        BlockPos anchor = groundAt(level, origin.getX(), origin.getZ());
+        if (anchor == null || anchor.getY() + 1 < MIN_PLATFORM_Y || !siteIsLevel(level, anchor)) {
             return false;
         }
-        BlockState fill = groundState(level, i, j, k);
-        boolean vines = !level.getBiome(origin).value().coldEnoughToSnow(origin);
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int x = i - RING_RADIUS; x <= i + RING_RADIUS; x++) {
-            for (int z = k - RING_RADIUS; z <= k + RING_RADIUS; z++) {
-                if ((x == i - RING_RADIUS || x == i + RING_RADIUS) && (z == k - RING_RADIUS || z == k + RING_RADIUS)) {
-                    continue;
-                }
-                level.setBlock(cursor.set(x, j, z), floorState(random), PLACE_FLAGS);
-                boolean stop = false;
-                for (int y = 1; y <= FILL_DEPTH; y++) {
-                    if (j - y >= level.getMinBuildHeight()) {
-                        BlockState below = level.getBlockState(cursor.set(x, j - y, z));
-                        if (below.isAir()
-                                || below.is(Blocks.SNOW)
-                                || below.is(Blocks.SHORT_GRASS)
-                                || below.is(BlockTags.SMALL_FLOWERS)
-                                || below.is(TTBlockTags.MAGICAL_PLANTS)) {
-                            level.setBlock(cursor, fill, PLACE_FLAGS);
-                        }
-                    }
-                    if (x == i && z == k && y == 1) {
-                        placeCenter(level, random, i, j, k);
-                    }
-                    if (!stop && isPillarColumn(x, z, i, k)) {
-                        level.setBlock(
-                                cursor.set(x, j + y, z),
-                                TTBlocks.OBSIDIAN_TOTEM.get().defaultBlockState(),
-                                PLACE_FLAGS);
-                        if (y >= PILLAR_STOP_MIN_HEIGHT && random.nextBoolean()) {
-                            stop = true;
-                            if (vines) {
-                                growVinesAround(level, random, x, j + y, z);
-                            }
-                        }
-                    }
-                }
-                if (isPillarColumn(x, z, i, k)) {
-                    ObsidianTotemFeature.reshapeTotems(level, new BlockPos(x, j, z), FILL_DEPTH);
-                }
-            }
+
+        BlockPos centre = anchor.above();
+        layPlatform(level, random, centre, level.getBlockState(anchor));
+        boolean snowy = level.getBiome(centre).value().coldEnoughToSnow(centre);
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            BlockPos edge = centre.relative(side, PLATFORM_RADIUS).above();
+            raisePillar(level, random, edge.relative(side.getClockWise(), PILLAR_SIDE_SHIFT), snowy);
+            raisePillar(level, random, edge.relative(side.getCounterClockWise(), PILLAR_SIDE_SHIFT), snowy);
         }
+        furnishCentre(level, random, centre);
         NodeGenerator.createRandomNodeAt(
                 level,
-                new BlockPos(i, j + NODE_HEIGHT, k),
+                centre.above(NODE_HEIGHT),
                 random,
                 false,
-                true,
+                false,
                 false,
                 NodeGenerator.DEFAULT_SPECIAL_RARITY,
                 NodeGenerator.DEFAULT_BASE_AURA);
         return true;
     }
 
-    private static boolean isPillarColumn(int x, int z, int i, int k) {
-        return (x == i - RING_RADIUS || x == i + RING_RADIUS) && Math.abs((z - k) % 2) == 1
-                || (z == k - RING_RADIUS || z == k + RING_RADIUS) && Math.abs((x - i) % 2) == 1;
+    static @Nullable BlockPos groundAt(WorldGenLevel level, int x, int z) {
+        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos(
+                x, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1, z);
+        for (int layer = 0; layer < MAX_COVER_LAYERS && isCover(level.getBlockState(probe)); layer++) {
+            probe.move(Direction.DOWN);
+        }
+        BlockState ground = level.getBlockState(probe);
+        return ground.is(BlockTags.DIRT)
+                        || ground.is(Blocks.GRASS_BLOCK)
+                        || ground.is(BlockTags.BASE_STONE_OVERWORLD)
+                ? probe.immutable()
+                : null;
     }
 
-    private static BlockState floorState(RandomSource random) {
-        return random.nextBoolean()
-                ? TTBlocks.OBSIDIAN_TILE.get().defaultBlockState()
-                : Blocks.OBSIDIAN.defaultBlockState();
+    private static boolean isCover(BlockState state) {
+        return state.is(Blocks.SNOW)
+                || state.is(Blocks.SHORT_GRASS)
+                || state.is(Blocks.TALL_GRASS)
+                || state.is(Blocks.FERN)
+                || state.is(Blocks.LARGE_FERN);
     }
 
-    private void placeCenter(WorldGenLevel level, RandomSource random, int i, int j, int k) {
-        level.setBlock(new BlockPos(i, j + 1, k), TTBlocks.OBSIDIAN_TILE.get().defaultBlockState(), PLACE_FLAGS);
-        BlockPos chestPos = new BlockPos(i, j + 2, k);
-        level.setBlock(chestPos, Blocks.CHEST.defaultBlockState(), PLACE_FLAGS);
-        RandomizableContainer.setBlockEntityLootTable(level, random, chestPos, BuiltInLootTables.SIMPLE_DUNGEON);
-        BlockPos spawnerPos = new BlockPos(i, j, k);
-        level.setBlock(spawnerPos, Blocks.SPAWNER.defaultBlockState(), PLACE_FLAGS);
-        if (level.getBlockEntity(spawnerPos) instanceof SpawnerBlockEntity spawner) {
+    static boolean siteIsLevel(WorldGenLevel level, BlockPos anchor) {
+        for (int stepX = -1; stepX <= 1; stepX++) {
+            for (int stepZ = -1; stepZ <= 1; stepZ++) {
+                int reach = stepX != 0 && stepZ != 0 ? SAMPLE_CORNER_REACH : PLATFORM_RADIUS;
+                BlockPos sample = groundAt(level, anchor.getX() + stepX * reach, anchor.getZ() + stepZ * reach);
+                if (sample == null) {
+                    return false;
+                }
+                int rise = sample.getY() - anchor.getY();
+                if (rise < 0 || rise > MAX_GROUND_RISE) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static void layPlatform(WorldGenLevel level, RandomSource random, BlockPos centre, BlockState footing) {
+        BlockState tile = TTBlocks.OBSIDIAN_TILE.get().defaultBlockState();
+        BlockState obsidian = Blocks.OBSIDIAN.defaultBlockState();
+        for (int dx = -PLATFORM_RADIUS; dx <= PLATFORM_RADIUS; dx++) {
+            for (int dz = -PLATFORM_RADIUS; dz <= PLATFORM_RADIUS; dz++) {
+                if (Math.abs(dx) == PLATFORM_RADIUS && Math.abs(dz) == PLATFORM_RADIUS) {
+                    continue;
+                }
+                BlockPos cell = centre.offset(dx, 0, dz);
+                level.setBlock(cell, random.nextBoolean() ? tile : obsidian, PLACE_FLAGS);
+                fillBeneath(level, cell, footing);
+            }
+        }
+    }
+
+    private static void fillBeneath(WorldGenLevel level, BlockPos cell, BlockState footing) {
+        for (int depth = 1; depth <= FOOTING_DEPTH; depth++) {
+            BlockPos below = cell.below(depth);
+            BlockState existing = level.getBlockState(below);
+            if (!existing.isAir() && !isCover(existing) && !existing.is(BlockTags.SMALL_FLOWERS)) {
+                return;
+            }
+            level.setBlock(below, footing, PLACE_FLAGS);
+        }
+    }
+
+    private static void raisePillar(WorldGenLevel level, RandomSource random, BlockPos base, boolean snowy) {
+        BlockState totem = TTBlocks.OBSIDIAN_TOTEM.get().defaultBlockState();
+        int height = 0;
+        boolean stoppedOnRoll = false;
+        while (height < PILLAR_MAX_HEIGHT && !stoppedOnRoll) {
+            level.setBlock(base.above(height), totem, PLACE_FLAGS);
+            height++;
+            stoppedOnRoll = height >= PILLAR_MIN_HEIGHT && random.nextBoolean();
+        }
+        if (stoppedOnRoll && !snowy) {
+            drapeVines(level, random, base.above(height - 1));
+        }
+        ObsidianTotemFeature.reshapeTotems(level, base, PILLAR_MAX_HEIGHT);
+    }
+
+    private static void drapeVines(WorldGenLevel level, RandomSource random, BlockPos top) {
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            BlockPos start = top.relative(side);
+            if (!level.isEmptyBlock(start) || random.nextInt(VINE_ONE_IN) != 0) {
+                continue;
+            }
+            BlockState vine = Blocks.VINE.defaultBlockState()
+                    .setValue(VineBlock.getPropertyForFace(side.getOpposite()), true);
+            BlockPos.MutableBlockPos strand = start.mutable();
+            for (int drop = 0; drop <= VINE_MAX_DROP && level.isEmptyBlock(strand); drop++) {
+                level.setBlock(strand, vine, PLACE_FLAGS);
+                strand.move(Direction.DOWN);
+            }
+        }
+    }
+
+    private static void furnishCentre(WorldGenLevel level, RandomSource random, BlockPos centre) {
+        level.setBlock(centre, Blocks.SPAWNER.defaultBlockState(), PLACE_FLAGS);
+        if (level.getBlockEntity(centre) instanceof SpawnerBlockEntity spawner) {
             spawner.setEntityId(TTEntities.WISP.get(), random);
         }
-    }
-
-    private static void growVinesAround(WorldGenLevel level, RandomSource random, int x, int y, int z) {
-        tryGrowVines(level, random, new BlockPos(x - 1, y, z), VineBlock.EAST);
-        tryGrowVines(level, random, new BlockPos(x + 1, y, z), VineBlock.WEST);
-        tryGrowVines(level, random, new BlockPos(x, y, z - 1), VineBlock.SOUTH);
-        tryGrowVines(level, random, new BlockPos(x, y, z + 1), VineBlock.NORTH);
-    }
-
-    private static void tryGrowVines(WorldGenLevel level, RandomSource random, BlockPos pos, BooleanProperty face) {
-        if (random.nextInt(VINE_ONE_IN) != 0 || !level.getBlockState(pos).isAir()) {
-            return;
-        }
-        BlockState vine = Blocks.VINE.defaultBlockState().setValue(face, true);
-        level.setBlock(pos, vine, PLACE_FLAGS);
-        BlockPos.MutableBlockPos cursor = pos.mutable();
-        for (int a = 0; a < VINE_LENGTH; a++) {
-            cursor.move(Direction.DOWN);
-            if (!level.getBlockState(cursor).isAir()) {
-                break;
-            }
-            level.setBlock(cursor, vine, PLACE_FLAGS);
-        }
-    }
-
-    private static boolean validSpawn(WorldGenLevel level, int x, int y, int z) {
-        if (y < MIN_Y) {
-            return false;
-        }
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(x, y, z);
-        int distanceToAir = 0;
-        while (distanceToAir <= MAX_AIR_GAP
-                && !level.getBlockState(cursor.setY(y + distanceToAir)).isAir()) {
-            distanceToAir++;
-        }
-        if (distanceToAir > MAX_AIR_GAP) {
-            return false;
-        }
-        int groundY = y + distanceToAir - 1;
-        BlockState ground = level.getBlockState(cursor.setY(groundY));
-        BlockState above = level.getBlockState(cursor.setY(groundY + 1));
-        BlockState below = level.getBlockState(cursor.setY(groundY - 1));
-        if (!above.isAir()) {
-            return false;
-        }
-        if (isValidGround(ground)) {
-            return true;
-        }
-        return (ground.is(Blocks.SNOW)
-                        || ground.is(Blocks.SHORT_GRASS)
-                        || ground.is(BlockTags.SMALL_FLOWERS)
-                        || ground.is(TTBlockTags.MAGICAL_PLANTS))
-                && isValidGround(below);
-    }
-
-    private static boolean isValidGround(BlockState state) {
-        return state.is(Blocks.STONE) || state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.DIRT);
-    }
-
-    private static BlockState groundState(WorldGenLevel level, int x, int y, int z) {
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos(x, y - 1, z);
-        while (cursor.getY() > level.getMinBuildHeight()) {
-            BlockState state = level.getBlockState(cursor);
-            if (isValidGround(state)) {
-                return state;
-            }
-            if (!state.isAir()
-                    && !state.is(Blocks.SNOW)
-                    && !state.is(Blocks.SHORT_GRASS)
-                    && !state.is(TTBlockTags.MAGICAL_PLANTS)) {
-                break;
-            }
-            cursor.move(Direction.DOWN);
-        }
-        return Blocks.DIRT.defaultBlockState();
+        level.setBlock(centre.above(), TTBlocks.OBSIDIAN_TILE.get().defaultBlockState(), PLACE_FLAGS);
+        BlockPos chest = centre.above(CHEST_HEIGHT);
+        level.setBlock(chest, Blocks.CHEST.defaultBlockState(), PLACE_FLAGS);
+        RandomizableContainer.setBlockEntityLootTable(level, random, chest, BuiltInLootTables.SIMPLE_DUNGEON);
     }
 }
