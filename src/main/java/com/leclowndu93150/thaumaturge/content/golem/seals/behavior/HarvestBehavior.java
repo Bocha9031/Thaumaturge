@@ -50,6 +50,8 @@ public final class HarvestBehavior implements ISealBehavior {
                             .forGetter(behavior -> Optional.empty()))
             .apply(instance, HarvestBehavior::restore));
 
+    private static final int HARVEST_JOB = 0;
+    static final int REPLANT_JOB = 1;
     private static final int STAGGER = 33;
     private static final int SCAN_PERIOD = 5;
     private static final int TIDY_PERIOD = 100;
@@ -57,6 +59,7 @@ public final class HarvestBehavior implements ISealBehavior {
     private static final int REPLANT_LIFESPAN = 300;
 
     private final SealClock clock = new SealClock(STAGGER);
+    private final TaskLedger<BlockPos> harvests = new TaskLedger<>();
     private final Map<Long, ReplantSite> sites = new HashMap<>();
     private int cursor;
 
@@ -76,15 +79,19 @@ public final class HarvestBehavior implements ISealBehavior {
 
     @Override
     public void tick(ServerLevel level, ISealEntity seal) {
-        if (clock.at(TIDY_PERIOD)) {
+        int now = clock.advance();
+        if (now % TIDY_PERIOD == 0) {
+            harvests.dropFinished(level);
             forgetSitesOutside(level, SealArea.bounds(seal));
         }
-        if (clock.advance() % SCAN_PERIOD != 0) {
+        if (now % SCAN_PERIOD != 0) {
             return;
         }
         BlockPos cell = SealArea.cell(seal, cursor++);
         if (CropUtils.isGrownCrop(level, cell)) {
-            post(level, seal, cell);
+            if (!harvests.tracks(cell)) {
+                post(level, seal, cell.immutable(), HARVEST_JOB);
+            }
             return;
         }
         ReplantSite site = sites.get(cell.asLong());
@@ -92,7 +99,7 @@ public final class HarvestBehavior implements ISealBehavior {
                 && site != null
                 && level.getBlockState(cell).isAir()
                 && !TaskBoard.of(level).isLive(site.taskId())) {
-            site.assign(post(level, seal, site.pos()).id());
+            site.assign(post(level, seal, site.pos(), REPLANT_JOB).id());
         }
     }
 
@@ -109,22 +116,46 @@ public final class HarvestBehavior implements ISealBehavior {
         });
     }
 
-    private static Task post(ServerLevel level, ISealEntity seal, BlockPos pos) {
+    private Task post(ServerLevel level, ISealEntity seal, BlockPos pos, int job) {
         Task task = Task.atBlock(seal.pos(), pos);
         task.setPriority(seal.priority());
+        task.setData(job);
         GolemDispatch.postTask(level, task);
+        if (job == HARVEST_JOB) {
+            harvests.record(task, pos);
+        }
         return task;
     }
 
     @Override
     public boolean completeTask(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task) {
-        if (CropUtils.isGrownCrop(level, task.pos())) {
-            reap(level, seal, golem, task);
-        } else {
+        ReplantSite site = siteFor(task);
+        if (isReplantTask(task, site)) {
             replant(level, golem, task);
+        } else {
+            reap(level, seal, golem, task);
+            harvests.forget(task);
         }
         task.end();
         return true;
+    }
+
+    static boolean isReplantTask(Task task, @Nullable ReplantSite site) {
+        return task.data() == REPLANT_JOB || site != null && site.taskId() == task.id();
+    }
+
+    private @Nullable ReplantSite siteFor(Task task) {
+        ReplantSite site = sites.get(task.pos().asLong());
+        return site != null && site.taskId() == task.id() ? site : null;
+    }
+
+    @Override
+    public void onTaskSuspended(ServerLevel level, ISealEntity seal, Task task) {
+        harvests.forget(task);
+        ReplantSite site = siteFor(task);
+        if (site != null && isReplantTask(task, site)) {
+            site.assign(0);
+        }
     }
 
     private void reap(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task) {
@@ -212,9 +243,13 @@ public final class HarvestBehavior implements ISealBehavior {
 
     @Override
     public boolean canPerform(ISealEntity seal, IGolemAPI golem, Task task) {
-        ReplantSite site = sites.get(task.pos().asLong());
-        if (site == null || site.taskId() != task.id()) {
+        ReplantSite site = siteFor(task);
+        if (!isReplantTask(task, site)) {
             return true;
+        }
+        if (site == null) {
+            task.end();
+            return false;
         }
         boolean holdingSeed = golem.hands().holds(site.seed());
         if (!holdingSeed && seal.setting(REQUEST_SEEDS)) {
