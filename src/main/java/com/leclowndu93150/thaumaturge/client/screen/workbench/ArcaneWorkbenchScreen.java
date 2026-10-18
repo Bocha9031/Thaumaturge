@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.api.recipe.IArcaneRecipe;
 import com.leclowndu93150.thaumaturge.client.render.GuiBlend;
 import com.leclowndu93150.thaumaturge.client.screen.AbstractTTContainerScreen;
 import com.leclowndu93150.thaumaturge.client.screen.TTScreenTextures;
+import com.leclowndu93150.thaumaturge.client.screen.TTTooltips;
 import com.leclowndu93150.thaumaturge.content.recipe.ThaumaturgeCraftingManager;
 import com.leclowndu93150.thaumaturge.content.wands.WandEconomy;
 import com.leclowndu93150.thaumaturge.content.wands.WandTooltips;
@@ -15,6 +16,7 @@ import com.leclowndu93150.thaumaturge.content.workbench.SlotCrystalEssentia;
 import com.leclowndu93150.thaumaturge.content.workbench.WorkbenchPayment;
 import com.mojang.math.Axis;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import net.minecraft.ChatFormatting;
@@ -34,12 +36,17 @@ public class ArcaneWorkbenchScreen extends AbstractTTContainerScreen<MenuArcaneW
     private static final int WAND_SLOT_TEX_OFFSET_X = 10;
     private static final int WAND_SLOT_TEX_OFFSET_Y = 6;
     private static final int WAND_COST_Y_OFFSET = 129;
-    private static final int WAND_COST_HOVER_HEIGHT = 6;
+    private static final int TEXT_HOVER_HEIGHT = 6;
     private static final int WAND_COST_HOVER_MIN_HALF_WIDTH = 10;
+    private static final int VIS_TEXT_CENTER_X = 168;
+    private static final int VIS_AVAILABLE_Y = 46;
+    private static final int VIS_COST_Y = 38;
+    private static final float VIS_TEXT_SCALE = 0.5F;
+    private static final int PERCENT = 100;
     private static final int SLOT_SIZE = 16;
     private static final DecimalFormat WAND_COST_FORMAT = new DecimalFormat("#.##");
 
-    private Component wandTooltip;
+    private List<Component> hoveredTooltip;
 
     public ArcaneWorkbenchScreen(MenuArcaneWorkbench menu, Inventory inventory, Component title) {
         super(menu, inventory, title, TTScreenTextures.ARCANE_WORKBENCH, 190, 234);
@@ -50,18 +57,21 @@ public class ArcaneWorkbenchScreen extends AbstractTTContainerScreen<MenuArcaneW
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        wandTooltip = null;
+        hoveredTooltip = null;
         super.render(graphics, mouseX, mouseY, partialTick);
-        if (wandTooltip != null) {
-            graphics.renderTooltip(font, wandTooltip, mouseX, mouseY);
+        if (hoveredTooltip != null) {
+            graphics.renderComponentTooltip(font, hoveredTooltip, mouseX, mouseY);
         }
     }
 
     @Override
     protected void renderSlotTooltip(GuiGraphics graphics, Slot slot, int mouseX, int mouseY) {
-        if (slot instanceof SlotCrystalEssentia && wandTooltip != null) {
-            graphics.renderComponentTooltip(font, List.of(slot.getItem().getHoverName(), wandTooltip), mouseX, mouseY);
-            wandTooltip = null;
+        if (slot instanceof SlotCrystalEssentia && hoveredTooltip != null) {
+            List<Component> tooltip = new ArrayList<>();
+            tooltip.add(slot.getItem().getHoverName());
+            tooltip.addAll(hoveredTooltip);
+            graphics.renderComponentTooltip(font, tooltip, mouseX, mouseY);
+            hoveredTooltip = null;
         } else if (slot instanceof SlotCrystalEssentia) {
             graphics.renderTooltip(font, slot.getItem().getHoverName(), mouseX, mouseY);
         } else {
@@ -120,45 +130,45 @@ public class ArcaneWorkbenchScreen extends AbstractTTContainerScreen<MenuArcaneW
                         ARGB32.color(128, color));
                 graphics.pose().popPose();
                 if (mouseX >= slotX && mouseX < slotX + SLOT_SIZE && mouseY >= slotY && mouseY < slotY + SLOT_SIZE) {
-                    wandTooltip = Component.translatable(
-                            "gui.thaumaturge.arcane_workbench.crystal_needed.tooltip",
-                            WandEconomy.CRYSTAL_SUBSTITUTE_VIS);
+                    hoveredTooltip = List.of(TTTooltips.workbenchCrystalNeeded(WandEconomy.CRYSTAL_SUBSTITUTE_VIS));
                 }
             }
         }
 
-        graphics.pose().pushPose();
-        graphics.pose().translate(x + 168, y + 46, 0.0F);
-        graphics.pose().scale(0.5f, 0.5f, 1.0f);
+        boolean insufficient = requiredVis > availableVis;
         Component available = Component.translatable("gui.thaumaturge.arcane_workbench.vis_available", availableVis);
-        int availableWidth = font.width(available) / 2;
-        graphics.drawString(
-                font,
+        if (drawCenteredText(
+                graphics,
                 available,
-                -availableWidth,
-                0,
-                0xFF000000 | (requiredVis > availableVis ? 15625838 : 7237358),
-                false);
-        graphics.pose().popPose();
+                x + VIS_TEXT_CENTER_X,
+                y + VIS_AVAILABLE_Y,
+                insufficient ? 0xFFEE6E6E : 0xFF6E6EEE,
+                mouseX,
+                mouseY)) {
+            hoveredTooltip = TTTooltips.workbenchVisAvailable(insufficient);
+        }
 
         if (plan != null && requiredVis > 0) {
             int baseVis = recipe.visCost();
             Component required;
+            List<Component> requiredTooltip;
             if (requiredVis < baseVis) {
-                int discountPercentage = Math.round(100.0F - requiredVis * 100.0F / baseVis);
+                int discountPercentage = Math.round(PERCENT - requiredVis * (float) PERCENT / baseVis);
                 required = Component.translatable(
                         "gui.thaumaturge.arcane_workbench.required_vis_discount", requiredVis, discountPercentage);
+                requiredTooltip = TTTooltips.workbenchVisCostDiscounted(discountPercentage);
             } else if (!plan.crystalsToConsume().isEmpty()) {
                 required = Component.translatable("gui.thaumaturge.arcane_workbench.required_vis_crude", requiredVis);
+                requiredTooltip = TTTooltips.workbenchVisCostUnfocused(
+                        Math.round((WandEconomy.CRAFT_AURA_SURCHARGE - 1.0F) * PERCENT));
             } else {
                 required = Component.translatable("gui.thaumaturge.arcane_workbench.required_vis", requiredVis);
+                requiredTooltip = TTTooltips.workbenchVisCost();
             }
-            graphics.pose().pushPose();
-            graphics.pose().translate(x + 168, y + 38, 0.0F);
-            graphics.pose().scale(0.5f, 0.5f, 1.0f);
-            int requiredWidth = font.width(required) / 2;
-            graphics.drawString(font, required, -requiredWidth, 0, 0xFF000000 | 12648447, false);
-            graphics.pose().popPose();
+            if (drawCenteredText(
+                    graphics, required, x + VIS_TEXT_CENTER_X, y + VIS_COST_Y, 0xFFC0FFFF, mouseX, mouseY)) {
+                hoveredTooltip = requiredTooltip;
+            }
         }
 
         if (plan != null && !plan.wandCentivis().isEmpty()) {
@@ -183,14 +193,28 @@ public class ArcaneWorkbenchScreen extends AbstractTTContainerScreen<MenuArcaneW
             int amountsWidth = font.width(amounts) / 2;
             graphics.drawString(font, amounts, -amountsWidth, 0, 0xFFFFFFFF, false);
             graphics.pose().popPose();
-            int hoverHalfWidth = Math.max(amountsWidth / 2, WAND_COST_HOVER_MIN_HALF_WIDTH);
-            if (mouseX >= lineCenterX - hoverHalfWidth
-                    && mouseX < lineCenterX + hoverHalfWidth
-                    && mouseY >= lineY - 1
-                    && mouseY < lineY + WAND_COST_HOVER_HEIGHT) {
-                wandTooltip = Component.translatable(
-                        "gui.thaumaturge.arcane_workbench.wand_pay.tooltip", WandEconomy.CRYSTAL_SUBSTITUTE_VIS);
+            if (isOverText(amounts, lineCenterX, lineY, WAND_COST_HOVER_MIN_HALF_WIDTH, mouseX, mouseY)) {
+                hoveredTooltip = TTTooltips.workbenchWandPayment(WandEconomy.CRYSTAL_SUBSTITUTE_VIS);
             }
         }
+    }
+
+    private boolean drawCenteredText(
+            GuiGraphics graphics, Component text, int centerX, int top, int color, int mouseX, int mouseY) {
+        int textWidth = font.width(text);
+        graphics.pose().pushPose();
+        graphics.pose().translate(centerX, top, 0.0F);
+        graphics.pose().scale(VIS_TEXT_SCALE, VIS_TEXT_SCALE, 1.0F);
+        graphics.drawString(font, text, -textWidth / 2, 0, color, false);
+        graphics.pose().popPose();
+        return isOverText(text, centerX, top, 0, mouseX, mouseY);
+    }
+
+    private boolean isOverText(Component text, int centerX, int top, int minHalfWidth, int mouseX, int mouseY) {
+        int halfWidth = Math.max(Math.round(font.width(text) * VIS_TEXT_SCALE / 2.0F), minHalfWidth);
+        return mouseX >= centerX - halfWidth
+                && mouseX < centerX + halfWidth
+                && mouseY >= top - 1
+                && mouseY < top + TEXT_HOVER_HEIGHT;
     }
 }
