@@ -36,6 +36,7 @@ import net.minecraft.world.level.block.NetherWartBlock;
 import net.minecraft.world.level.block.StemBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -130,6 +131,21 @@ class LampDeviceCutoffTest {
         }
         lamp.loadAdditional(new CompoundTag(), registries);
         assertEquals(0, save(lamp).getInt("charges"));
+    }
+
+    @Test
+    void arcaneLampSkipsHeightmapLookupForAnUnloadedTargetColumn() {
+        var state = TTBlocks.LAMP_ARCANE.get().defaultBlockState();
+        var lamp = new BlockEntityLampArcane(BlockPos.ZERO, state);
+        when(level.getGameTime()).thenReturn(0L);
+        when(level.hasNeighborSignal(BlockPos.ZERO)).thenReturn(false);
+        when(level.hasChunkAt(any())).thenReturn(false);
+
+        BlockEntityLampArcane.serverTick(level, BlockPos.ZERO, state, lamp);
+
+        verify(level).hasChunkAt(BlockPos.ZERO);
+        verify(level, never()).getHeight(Heightmap.Types.MOTION_BLOCKING, 0, 0);
+        verify(level, never()).getBlockState(any());
     }
 
     @Test
