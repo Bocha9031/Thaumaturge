@@ -46,6 +46,7 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
     private final List<ItemStack> items = new ArrayList<>();
     private final List<ItemStack> stock = new ArrayList<>();
     private long collectedAt = Long.MIN_VALUE;
+    private boolean collected;
     private final Player player;
     private final @Nullable LogisticsTarget target;
     private final DataSlot start = DataSlot.standalone();
@@ -144,15 +145,25 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
     }
 
     private int lastPage() {
-        return Math.max(0, items.size() / COLUMNS - (ROWS - 1));
+        return lastPageForItemCount(items.size());
+    }
+
+    static int lastPageForItemCount(int itemCount) {
+        return Math.max(0, Math.ceilDiv(itemCount, COLUMNS) - ROWS);
+    }
+
+    static boolean shouldCollectStock(boolean hasCollected, long now, long collectedAt) {
+        return !hasCollected || now - collectedAt >= COLLECT_INTERVAL_TICKS;
     }
 
     private void refresh(boolean full) {
-        if (full
-                && player.level() instanceof ServerLevel level
-                && level.getGameTime() - collectedAt >= COLLECT_INTERVAL_TICKS) {
-            collect(level);
-            collectedAt = level.getGameTime();
+        if (full && player.level() instanceof ServerLevel level) {
+            long now = level.getGameTime();
+            if (shouldCollectStock(collected, now, collectedAt)) {
+                collect(level);
+                collectedAt = now;
+                collected = true;
+            }
         }
         if (full) {
             String filter = searchText.toLowerCase(Locale.ROOT);
