@@ -35,6 +35,8 @@ import org.jspecify.annotations.Nullable;
 
 public class BlockCrucible extends BaseEntityBlock {
     private static final int LAVA_HURT_INTERVAL = 10;
+    private static final int SIGNAL_STEPS = 14;
+    private static final int MAX_SIGNAL = 15;
 
     public static final MapCodec<BlockCrucible> CODEC = simpleCodec(BlockCrucible::new);
 
@@ -131,9 +133,13 @@ public class BlockCrucible extends BaseEntityBlock {
     @Override
     protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         if (!(level.getBlockEntity(pos) instanceof BlockEntityCrucible crucible)) return 0;
-        float ratio = (float) crucible.getAspects().totalAmount() / BlockEntityCrucible.MAX_ASPECT;
+        return comparatorSignal(crucible.getAspects().totalAmount());
+    }
 
-        return Mth.floor(ratio * 14.0F) + (crucible.getAspects().totalAmount() > 0 ? 1 : 0);
+    static int comparatorSignal(int aspectAmount) {
+        if (aspectAmount <= 0) return 0;
+        int filledSteps = Mth.floor((float) aspectAmount / BlockEntityCrucible.MAX_ASPECT * SIGNAL_STEPS);
+        return Math.min(MAX_SIGNAL, filledSteps + 1);
     }
 
     @Override

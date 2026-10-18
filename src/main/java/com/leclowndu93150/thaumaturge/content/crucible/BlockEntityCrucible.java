@@ -27,6 +27,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -499,15 +500,24 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
 
     public void attemptSmelt(ItemEntity entity) {
         if (entity.level().isClientSide()) return;
-        ItemStack stack = entity.getItem();
         Entity throwerRef = entity.getOwner();
         if (!(throwerRef instanceof Player player)) return;
-        ItemStack res = attemptSmelt(stack, player);
-        if (res != null && res.getCount() > 0) {
-            stack.setCount(res.getCount());
-            entity.setItem(stack);
-        } else {
+        ItemStack stack = entity.getItem();
+        int offeredCount = thrownShare(stack.getCount());
+        if (offeredCount <= 0) return;
+        ItemStack offered = stack.copyWithCount(offeredCount);
+        ItemStack remainder = attemptSmelt(offered, player);
+        int consumed = offeredCount - (remainder == null ? 0 : remainder.getCount());
+        if (consumed <= 0) return;
+        int left = stack.getCount() - consumed;
+        if (left <= 0) {
             entity.discard();
+        } else {
+            entity.setItem(stack.copyWithCount(left));
         }
+    }
+
+    static int thrownShare(int count) {
+        return count <= 0 ? 0 : Mth.positiveCeilDiv(count, 2);
     }
 }
