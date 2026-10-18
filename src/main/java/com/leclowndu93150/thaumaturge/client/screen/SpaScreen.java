@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -91,7 +92,9 @@ public class SpaScreen extends AbstractTTContainerScreen<MenuSpa> {
             TextureAtlasSprite sprite = Minecraft.getInstance()
                     .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
                     .apply(ext.getStillTexture(resource));
-            int tint = ext.getTintColor(resource);
+            int tint = spa.getLevel() instanceof ClientLevel level
+                    ? ext.getTintColor(fluid.defaultFluidState(), level, spa.getBlockPos())
+                    : ext.getTintColor(resource);
             float r = ARGB32.red(tint) / 255.0F;
             float g = ARGB32.green(tint) / 255.0F;
             float b = ARGB32.blue(tint) / 255.0F;

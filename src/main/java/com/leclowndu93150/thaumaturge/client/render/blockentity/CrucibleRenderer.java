@@ -4,6 +4,7 @@ import com.leclowndu93150.thaumaturge.content.crucible.BlockEntityCrucible;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -35,7 +36,9 @@ public final class CrucibleRenderer implements BlockEntityRenderer<BlockEntityCr
         TextureAtlasSprite sprite = Minecraft.getInstance()
                 .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
                 .apply(ext.getStillTexture(fluid));
-        int color = ext.getTintColor(fluid);
+        int color = crucible.getLevel() instanceof ClientLevel level
+                ? ext.getTintColor(fluid.getFluid().defaultFluidState(), level, crucible.getBlockPos())
+                : ext.getTintColor(fluid);
 
         float recolor = (float) crucible.getAspects().totalAmount() / BlockEntityCrucible.MAX_ASPECT;
         if (recolor > 0.0F) {
