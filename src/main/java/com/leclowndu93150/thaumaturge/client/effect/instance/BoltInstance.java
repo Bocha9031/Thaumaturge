@@ -84,8 +84,18 @@ public final class BoltInstance implements IFXInstance {
             float thin = noise.nextInt(THIN_CHANCE) == 0 ? 1.0F - this.age * THIN_DECAY : 1.0F;
             path.add(new PathStep(x, y, z, thin * this.width));
         }
-        path.add(new PathStep(this.spanX, this.spanY, this.spanZ, this.width));
+        PathStep target = new PathStep(this.spanX, this.spanY, this.spanZ, this.width);
+        path.add(target);
+        path.add(extrapolateEnd(path.get(path.size() - 2), target));
         return path;
+    }
+
+    static PathStep extrapolateEnd(PathStep previous, PathStep target) {
+        return new PathStep(
+                target.x() * 2.0 - previous.x(),
+                target.y() * 2.0 - previous.y(),
+                target.z() * 2.0 - previous.z(),
+                target.width());
     }
 
     private static double sway(Random noise) {

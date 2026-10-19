@@ -96,7 +96,8 @@ public final class BoreDrillFx {
     }
 
     private static boolean beyondView(PoseStack poseStack, Vec3 tip) {
-        Vector3f cameraRelativeTip = poseStack.last().pose().transformPosition((float) tip.x, (float) tip.y, (float) tip.z, new Vector3f());
+        Vector3f cameraRelativeTip =
+                poseStack.last().pose().transformPosition((float) tip.x, (float) tip.y, (float) tip.z, new Vector3f());
         boolean fastGraphics = Minecraft.getInstance().options.graphicsMode().get() == GraphicsStatus.FAST;
         return beyondView(cameraRelativeTip.x(), cameraRelativeTip.y(), cameraRelativeTip.z(), fastGraphics);
     }
