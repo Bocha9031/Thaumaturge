@@ -101,7 +101,8 @@ public final class Spells {
     }
 
     /**
-     * The tint of a node: its aspect's colour when it has an aspect, else its part's colour.
+     * The tint of a node: its aspect's colour when the part is an effect or lets the node choose its aspect,
+     * else its part's colour.
      *
      * @param registries the registry lookup
      * @param node       the node
@@ -113,7 +114,7 @@ public final class Spells {
             return WHITE;
         }
         Optional<ResourceKey<IAspect>> aspect = part.get().aspect().resolve(node.aspect(), registries);
-        if (aspect.isPresent() && part.get().aspect().selectable()) {
+        if (aspect.isPresent() && usesAspectColor(part.get().kind(), part.get().aspect().selectable())) {
             Optional<Holder.Reference<IAspect>> holder =
                     registries.lookup(IAspect.REGISTRY_KEY).flatMap(lookup -> lookup.get(aspect.get()));
             if (holder.isPresent()) {
@@ -121,6 +122,10 @@ public final class Spells {
             }
         }
         return part.get().color() & WHITE;
+    }
+
+    static boolean usesAspectColor(SpellPartKind kind, boolean selectable) {
+        return selectable || kind == SpellPartKind.EFFECT;
     }
 
     /**
