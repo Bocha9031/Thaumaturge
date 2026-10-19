@@ -79,7 +79,9 @@ public final class GrappleGunItem extends Item {
     }
 
     static Vec3 spawnPoint(Player player, InteractionHand hand) {
-        HumanoidArm arm = hand == InteractionHand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
+        HumanoidArm arm = hand == InteractionHand.MAIN_HAND
+                ? player.getMainArm()
+                : player.getMainArm().getOpposite();
         float sideYaw = player.getYRot() + (arm == HumanoidArm.RIGHT ? RIGHT_YAW_OFFSET : -RIGHT_YAW_OFFSET);
         Vec3 forward = horizontalHeading(player.getYRot()).scale(FORWARD_REACH);
         Vec3 side = horizontalHeading(sideYaw).scale(SIDE_SHIFT);
