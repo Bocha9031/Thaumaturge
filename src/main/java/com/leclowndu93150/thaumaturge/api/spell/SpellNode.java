@@ -8,6 +8,7 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.EncoderException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +59,9 @@ public record SpellNode(
                                             .optionalFieldOf("aspect")
                                             .forGetter(SpellNode::aspect),
                                     Codec.unboundedMap(Codec.string(0, MAX_SETTING_KEY), Codec.INT)
+                                            .validate(settings -> settings.size() <= MAX_SETTINGS
+                                                    ? DataResult.success(settings)
+                                                    : DataResult.error(() -> "Too many spell settings"))
                                             .optionalFieldOf("settings", Map.of())
                                             .forGetter(SpellNode::settings),
                                     self.sizeLimitedListOf(MAX_CHILDREN)
@@ -177,12 +181,19 @@ public record SpellNode(
 
         @Override
         public void encode(ByteBuf buffer, SpellNode node) {
+            encode(buffer, node, 1);
+        }
+
+        private void encode(ByteBuf buffer, SpellNode node, int depth) {
+            if (depth > MAX_DEPTH) {
+                throw new EncoderException("Spell nested deeper than " + MAX_DEPTH);
+            }
             PART.encode(buffer, node.part());
             ASPECT.encode(buffer, node.aspect());
             SETTINGS.encode(buffer, node.settings());
             ByteBufCodecs.writeCount(buffer, node.children().size(), MAX_CHILDREN);
             for (SpellNode child : node.children()) {
-                encode(buffer, child);
+                encode(buffer, child, depth + 1);
             }
         }
 
