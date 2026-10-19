@@ -339,6 +339,13 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void boreSparklePulseUsesTheRevisedAmplitudeAndPeriod() {
+        assertEquals(1.0F, BoreSparkleParticle.pulseAt(0.0F), 1.0E-6F);
+        assertEquals(1.3F, BoreSparkleParticle.pulseAt((float) Math.PI), 1.0E-6F);
+        assertEquals(1.0F, BoreSparkleParticle.pulseAt((float) (2.0 * Math.PI)), 1.0E-6F);
+    }
+
+    @Test
     void stabilizerRuneClampsNonpositiveLifetimesAndStartsWithItsFadedAlpha() throws Exception {
         ClientLevel level = mock(ClientLevel.class);
         for (int life : new int[] {0, -1}) {

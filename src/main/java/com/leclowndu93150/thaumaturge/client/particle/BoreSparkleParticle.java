@@ -11,9 +11,12 @@ import net.minecraft.world.phys.Vec3;
 
 public final class BoreSparkleParticle extends SeekerParticle {
     private static final int FRAME_COUNT = 4;
-    private static final float MIN_SCALE = 0.5F;
-    private static final float SCALE_RANGE = 0.5F;
-    private static final float DRIFT = 0.01F;
+    private static final float DRIFT_STRENGTH = 0.004F;
+    private static final float SIZE_UNIT = 0.1F;
+    private static final float SIZE_BASE = 0.5F;
+    private static final float SIZE_RANGE = 0.3F;
+    private static final float PULSE_AMPLITUDE = 0.3F;
+    private static final float PULSE_DIVISOR = 2.0F;
 
     private BoreSparkleParticle(
             ClientLevel level, double x, double y, double z, BoreSparkleParticleOptions options, ParticleSheet sheet) {
@@ -26,9 +29,9 @@ public final class BoreSparkleParticle extends SeekerParticle {
                 options.targetEntityId(),
                 new Vec3(options.tx(), options.ty(), options.tz()),
                 Vec3.ZERO,
-                DRIFT);
+                DRIFT_STRENGTH);
         setColor(options.r(), options.g(), options.b());
-        this.quadSize = MIN_SCALE + this.random.nextFloat() * SCALE_RANGE;
+        this.quadSize = SIZE_BASE + this.random.nextFloat() * SIZE_RANGE;
     }
 
     @Override
@@ -38,8 +41,11 @@ public final class BoreSparkleParticle extends SeekerParticle {
 
     @Override
     public float getQuadSize(float partialTick) {
-        float pulse = Mth.sin(this.age / 3.0F) * 0.5F + 1.0F;
-        return this.quadSize * 0.1F * pulse;
+        return this.quadSize * SIZE_UNIT * pulseAt(this.age);
+    }
+
+    static float pulseAt(float age) {
+        return Mth.sin(age / PULSE_DIVISOR) * PULSE_AMPLITUDE + 1.0F;
     }
 
     @Override
