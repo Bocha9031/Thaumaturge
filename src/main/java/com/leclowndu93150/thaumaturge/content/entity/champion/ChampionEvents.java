@@ -5,9 +5,9 @@ import com.leclowndu93150.thaumaturge.api.entity.ThaumaturgeEntityTypeTags;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
+import com.leclowndu93150.thaumaturge.content.entity.boss.EntityThaumaturgeBoss;
 import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTLootTables;
-import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
@@ -24,6 +24,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
@@ -33,6 +34,11 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 public final class ChampionEvents {
     private static final int ROLL_BOUND = 100;
     private static final double MIN_CHAMPION_HEALTH = 10.0;
+    private static final int EASY_OR_DISABLED_PENALTY = 2;
+    private static final int HARD_BONUS = 2;
+    private static final int SPOOKY_BONUS = 2;
+    private static final int SPOOKY_BONUS_DISABLED = 1;
+    private static final int WHITELIST_FLOOR = 1;
     private static final int XP_BASE = 5;
     private static final int XP_SPREAD = 3;
 
@@ -46,34 +52,52 @@ public final class ChampionEvents {
                 || ChampionHelper.rolled(mob)) {
             return;
         }
-        boolean allowed = ThaumaturgeCommonConfig.ALLOW_CHAMPION_MOBS.get();
-        int roll = mob.getRandom().nextInt(ROLL_BOUND);
         Level level = mob.level();
-        if (level.getDifficulty() == Difficulty.EASY || !allowed) {
-            roll += 2;
-        }
-        if (level.getDifficulty() == Difficulty.HARD && allowed) {
-            roll -= 2;
-        }
-        Holder<Biome> biome = level.getBiome(mob.blockPosition());
-        if (biome.is(TTBiomeTags.IS_SPOOKY) || level.dimension() == Level.NETHER || level.dimension() == Level.END) {
-            roll -= allowed ? 2 : 1;
-        }
-        int whitelistBonus = 0;
-        boolean whitelisted = false;
-        Integer weight = mob.getType().builtInRegistryHolder().getData(ChampionDataMaps.CHAMPION_WHITELIST);
-        if (weight != null) {
-            whitelisted = true;
-            if (allowed) {
-                whitelistBonus = Math.max(whitelistBonus, weight - 1);
-            }
-        }
-        roll -= whitelistBonus;
-        if (whitelisted && roll <= 0 && mob.getAttributeBaseValue(Attributes.MAX_HEALTH) >= MIN_CHAMPION_HEALTH) {
+        if (winsRoll(level, mob)) {
             ChampionHelper.makeChampion(mob, false);
         } else {
             ChampionHelper.markRolled(mob);
         }
+    }
+
+    private static boolean winsRoll(Level level, Monster mob) {
+        Integer weight = mob.getType().builtInRegistryHolder().getData(ChampionDataMaps.CHAMPION_WHITELIST);
+        if (weight == null || mob.getAttributeBaseValue(Attributes.MAX_HEALTH) < MIN_CHAMPION_HEALTH) {
+            return false;
+        }
+        return mob.getRandom().nextInt(ROLL_BOUND) <= rollModifier(
+                ThaumaturgeCommonConfig.ALLOW_CHAMPION_MOBS.get(),
+                level.getDifficulty(),
+                isSpooky(level, mob),
+                weight,
+                isBoss(mob));
+    }
+
+    static int rollModifier(boolean enabled, Difficulty difficulty, boolean spooky, int weight, boolean boss) {
+        int modifier = 0;
+        if (!enabled || difficulty == Difficulty.EASY) {
+            modifier -= EASY_OR_DISABLED_PENALTY;
+        }
+        if (enabled && difficulty == Difficulty.HARD) {
+            modifier += HARD_BONUS;
+        }
+        if (spooky) {
+            modifier += enabled ? SPOOKY_BONUS : SPOOKY_BONUS_DISABLED;
+        }
+        if ((enabled || boss) && weight > WHITELIST_FLOOR) {
+            modifier += weight - WHITELIST_FLOOR;
+        }
+        return modifier;
+    }
+
+    private static boolean isBoss(Monster mob) {
+        return mob instanceof EntityThaumaturgeBoss || mob.getType().builtInRegistryHolder().is(Tags.EntityTypes.BOSSES);
+    }
+
+    private static boolean isSpooky(Level level, Monster mob) {
+        return level.getBiome(mob.blockPosition()).is(TTBiomeTags.IS_SPOOKY)
+                || level.dimension() == Level.NETHER
+                || level.dimension() == Level.END;
     }
 
     @SubscribeEvent

@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.entity.champion.trait;
 
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraitModifiers;
 import com.leclowndu93150.thaumaturge.content.entity.champion.ShieldChargeSound;
+import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -26,10 +27,13 @@ public final class WardedChampionTrait extends AbstractChampionTrait {
 
     @Override
     public void tick(LivingEntity mob) {
-        if (mob.invulnerableTime <= 0
-                && mob.tickCount % RECHARGE_INTERVAL_TICKS == 0
-                && mob.getAbsorptionAmount() < ward(mob)) {
-            mob.setAbsorptionAmount(mob.getAbsorptionAmount() + RECHARGE_AMOUNT);
+        if (mob.tickCount % RECHARGE_INTERVAL_TICKS != 0 || mob.invulnerableTime > 0) {
+            return;
+        }
+        float ward = ward(mob);
+        float current = mob.getAbsorptionAmount();
+        if (current < ward) {
+            mob.setAbsorptionAmount(Math.min(ward, current + RECHARGE_AMOUNT));
         }
     }
 
@@ -40,6 +44,6 @@ public final class WardedChampionTrait extends AbstractChampionTrait {
     }
 
     private static int ward(LivingEntity mob) {
-        return (int) mob.getAttributeBaseValue(Attributes.MAX_HEALTH) / 2;
+        return Mth.floor(mob.getAttributeBaseValue(Attributes.MAX_HEALTH) / 2);
     }
 }
