@@ -317,11 +317,6 @@ public class EntityPech extends Monster implements RangedAttackMob, HoldsStill, 
     }
 
     @Override
-    public void releaseHold() {
-        this.atTradeTable = false;
-    }
-
-    @Override
     public boolean wantsToCollect(ItemEntity item) {
         return !item.getTags().contains(DROPPED_BY_PECH_TAG)
                 && !item.getTags().contains(LEGACY_DROPPED_BY_PECH_TAG)

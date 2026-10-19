@@ -14,16 +14,11 @@ public final class HoldStillGoal<T extends Mob & HoldsStill> extends Goal {
 
     @Override
     public boolean canUse() {
-        return mob.isAlive() && mob.onGround() && !mob.isInWater() && mob.holdingStill();
+        return mob.isAlive() && mob.onGround() && !mob.isInWater() && mob.hurtTime == 0 && mob.holdingStill();
     }
 
     @Override
     public void start() {
         mob.getNavigation().stop();
-    }
-
-    @Override
-    public void stop() {
-        mob.releaseHold();
     }
 }

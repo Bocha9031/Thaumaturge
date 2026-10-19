@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.entity;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.leclowndu93150.thaumaturge.content.entity.ai.HoldStillGoal;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import java.util.List;
@@ -15,6 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RangedAttackGoal;
 import net.minecraft.world.item.ItemStack;
@@ -38,6 +40,26 @@ class PechStateTest {
         pech.refreshCombatGoal();
         assertEquals(1, pech.combatGoalCount());
         assertFalse(pech.hasRangedGoal());
+    }
+
+    @Test
+    void tradeHoldResumesAfterDamageAndOnlyMenuCloseReleasesIt() {
+        TestPech pech = new TestPech(mock(ServerLevel.class));
+        pech.setDomesticated(true);
+        pech.atTradeTable = true;
+        pech.setOnGround(true);
+        Goal holdGoal = pech.goalSelector.getAvailableGoals().stream()
+                .map(wrapped -> wrapped.getGoal())
+                .filter(HoldStillGoal.class::isInstance)
+                .findFirst()
+                .orElseThrow();
+
+        pech.hurtTime = 1;
+        assertFalse(holdGoal.canUse());
+        pech.hurtTime = 0;
+        assertTrue(holdGoal.canUse());
+        holdGoal.stop();
+        assertTrue(pech.atTradeTable);
     }
 
     private static RegistryAccess registries() {
