@@ -89,14 +89,6 @@ public final class TubeModels {
     }
 
     private static Variant indicatorVariant(Direction direction) {
-        Variant variant = Variant.variant().with(VariantProperties.MODEL, TUBE_ONEWAY_MARKER);
-        return switch (direction) {
-            case NORTH -> variant;
-            case SOUTH -> variant.with(VariantProperties.Y_ROT, VariantProperties.Rotation.R180);
-            case WEST -> variant.with(VariantProperties.Y_ROT, VariantProperties.Rotation.R270);
-            case EAST -> variant.with(VariantProperties.Y_ROT, VariantProperties.Rotation.R90);
-            case UP -> variant.with(VariantProperties.X_ROT, VariantProperties.Rotation.R270);
-            case DOWN -> variant.with(VariantProperties.X_ROT, VariantProperties.Rotation.R90);
-        };
+        return sideVariant(TUBE_ONEWAY_MARKER, direction);
     }
 }
