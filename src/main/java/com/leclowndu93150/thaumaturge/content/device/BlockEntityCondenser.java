@@ -407,7 +407,7 @@ public final class BlockEntityCondenser extends BlockEntity implements IEssentia
             if (!simulate && level != null && !level.isClientSide()) {
                 makeDirty(level);
             }
-            return 0;
+            return Math.max(0, amount);
         }
         int room = CAPACITY - essentia;
         if (room <= 0 || amount <= 0) {

@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaCapabilities;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaPull;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaTransfer;
 import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaConduit;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
@@ -153,21 +154,30 @@ class CondenserConduitCutoffTest {
     }
 
     @Test
-    void vitiumSelectsWeightedCleanCandidatesKeepsConnectionsAndConsumesNothing() {
+    void vitiumTransferSimulationAcceptsWithoutClogAndCommitAcceptsAndClogs() {
         var machine = machine();
         lattice(BlockPos.ZERO.above(), BlockPos.ZERO.above(2), BlockPos.ZERO.above(3));
         var connected = blocks.get(BlockPos.ZERO.above(2)).setValue(PipeBlock.UP, true);
         blocks.put(BlockPos.ZERO.above(2), connected);
         machine.triggerCheck();
-        assertEquals(0, machine.insert(vitium, 7, Direction.NORTH, true));
+
+        var source = mock(IEssentiaConduit.class);
+        when(source.releasesOn(Direction.SOUTH)).thenReturn(true);
+        when(source.extract(vitium, 7, Direction.SOUTH, true)).thenReturn(7);
+        when(source.extract(vitium, 7, Direction.SOUTH, false)).thenReturn(7);
+        assertEquals(7, EssentiaTransfer.transfer(source, Direction.SOUTH, machine, Direction.NORTH, vitium, 7, true));
         verify(level, never()).setBlock(any(), any(), anyInt());
+        verify(random, never()).nextInt(17);
+
         when(random.nextInt(17)).thenReturn(1);
-        assertEquals(0, machine.insert(vitium, 7, Direction.NORTH, false));
+        assertEquals(7, EssentiaTransfer.transfer(source, Direction.SOUTH, machine, Direction.NORTH, vitium, 7, false));
         assertTrue(blocks.get(BlockPos.ZERO.above(2)).is(TTBlocks.CONDENSER_LATTICE_DIRTY.get()));
         assertTrue(blocks.get(BlockPos.ZERO.above(2)).getValue(PipeBlock.UP));
         assertEquals(0, save(machine).getInt("essentia"));
         assertEquals(575, machine.interval());
         verify(random).nextInt(17);
+        verify(source, times(2)).extract(vitium, 7, Direction.SOUTH, true);
+        verify(source).extract(vitium, 7, Direction.SOUTH, false);
     }
 
     @Test
