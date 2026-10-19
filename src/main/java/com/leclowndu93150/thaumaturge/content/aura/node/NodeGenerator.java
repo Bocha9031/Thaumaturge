@@ -41,7 +41,7 @@ public final class NodeGenerator {
     private static final double PERCENT_TOTAL = 100.0;
     private static final int MODIFIER_ODDS_DIVISOR = 2;
     private static final float TAINTED_STRENGTH_FACTOR = 1.5F;
-    private static final float REDUCED_STRENGTH_DIVISOR = 4.0F;
+    private static final int REDUCED_STRENGTH_DIVISOR = 4;
     private static final int STRENGTH_FLOOR = 8;
     private static final int BONUS_ASPECT_ROLLS = 3;
     private static final int BIOME_SEED_POINTS = 2;
@@ -430,20 +430,27 @@ public final class NodeGenerator {
 
     private static void settleStrength(RollContext context, Draft draft) {
         RandomSource random = context.random();
-        float strength = context.biomeStrength();
+        int strength = Math.round(context.biomeStrength());
         if (draft.type != NodeType.PURE && context.biome().is(TTBiomeTags.IS_TAINTED)) {
-            strength *= TAINTED_STRENGTH_FACTOR;
+            strength = boostTaintedStrength(strength);
             if (random.nextBoolean() && !ThaumaturgeCommonConfig.WUSS_MODE.get()) {
                 draft.type = NodeType.TAINTED;
-                strength *= TAINTED_STRENGTH_FACTOR;
+                strength = boostTaintedStrength(strength);
             }
         }
         if (context.silverwood() || context.small()) {
             strength /= REDUCED_STRENGTH_DIVISOR;
         }
-        int whole = Math.max(STRENGTH_FLOOR, (int) strength);
-        int half = whole / 2;
-        draft.budget = half + random.nextInt(whole - half);
+        draft.budget = chooseStrengthBudget(Math.max(STRENGTH_FLOOR, strength), random);
+    }
+
+    static int boostTaintedStrength(int strength) {
+        return Math.round(strength * TAINTED_STRENGTH_FACTOR);
+    }
+
+    static int chooseStrengthBudget(int strength, RandomSource random) {
+        int half = strength / 2;
+        return half + random.nextInt(half);
     }
 
     private static void seedAspects(RollContext context, Draft draft) {

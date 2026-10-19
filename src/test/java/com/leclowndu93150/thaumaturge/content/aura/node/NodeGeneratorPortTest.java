@@ -68,6 +68,20 @@ class NodeGeneratorPortTest {
     }
 
     @Test
+    void taintedNodeStrengthRoundsBeforeApplyingTheSecondMultiplier() {
+        assertEquals(152, NodeGenerator.boostTaintedStrength(101));
+        assertEquals(228, NodeGenerator.boostTaintedStrength(NodeGenerator.boostTaintedStrength(101)));
+    }
+
+    @Test
+    void oddStrengthBudgetStopsOneBelowItsInput() {
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextInt(50)).thenReturn(49);
+
+        assertEquals(99, NodeGenerator.chooseStrengthBudget(101, random));
+    }
+
+    @Test
     void weightedBudgetAddsStrengthAccordingToAspectSeeds() throws Exception {
         Holder<IAspect> first = Holder.direct(mock(IAspect.class));
         Holder<IAspect> second = Holder.direct(mock(IAspect.class));
