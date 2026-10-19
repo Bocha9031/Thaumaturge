@@ -199,11 +199,16 @@ public class EntityEldritchGolem extends EntityThaumaturgeBoss implements Ranged
     @Override
     public boolean hurt(DamageSource source, float damage) {
         if (!(level() instanceof ServerLevel level)) return false;
-        if (!isHeadless() && damage > getHealth() && !source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
+        if (isFatalUnblockedHit(
+                isHeadless(), damage, getHealth(), source.is(DamageTypeTags.BYPASSES_INVULNERABILITY))) {
             loseHead(level);
             return false;
         }
         return super.hurt(source, damage);
+    }
+
+    static boolean isFatalUnblockedHit(boolean headless, float damage, float health, boolean bypassesInvulnerability) {
+        return !headless && damage >= health && !bypassesInvulnerability;
     }
 
     private void loseHead(ServerLevel level) {
