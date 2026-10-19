@@ -18,10 +18,8 @@ import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
-import java.awt.*;
 import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -34,7 +32,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -132,83 +129,11 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
     private void sendEffects() {
         if (level == null || level.isClientSide()) return;
         ServerLevel level = (ServerLevel) this.level;
+        float surface = getFluidHeight();
         if (this.heat > 150) {
-            Effects.crucibleFroth(
-                            level,
-                            new Vec3(
-                                    getBlockPos().getX()
-                                            + 0.2F
-                                            + level.getRandom().nextFloat() * 0.6F,
-                                    getBlockPos().getY() + getFluidHeight(),
-                                    getBlockPos().getZ()
-                                            + 0.2F
-                                            + level.getRandom().nextFloat() * 0.6F))
-                    .send();
-            if (this.aspects.totalAmount() > MAX_ASPECT) {
-                for (int a = 0; a < 2; a++) {
-                    Effects.crucibleFrothDown(
-                                    level,
-                                    new Vec3(
-                                            getBlockPos().getX(),
-                                            getBlockPos().getY() + 1,
-                                            getBlockPos().getZ()
-                                                    + level.getRandom().nextFloat()))
-                            .send();
-                    Effects.crucibleFrothDown(
-                                    level,
-                                    new Vec3(
-                                            getBlockPos().getX() + 1,
-                                            getBlockPos().getY() + 1,
-                                            getBlockPos().getZ()
-                                                    + level.getRandom().nextFloat()))
-                            .send();
-                    Effects.crucibleFrothDown(
-                                    level,
-                                    new Vec3(
-                                            getBlockPos().getX()
-                                                    + level.getRandom().nextFloat(),
-                                            getBlockPos().getY() + 1,
-                                            getBlockPos().getZ()))
-                            .send();
-                    Effects.crucibleFrothDown(
-                                    level,
-                                    new Vec3(
-                                            getBlockPos().getX()
-                                                    + level.getRandom().nextFloat(),
-                                            getBlockPos().getY() + 1,
-                                            getBlockPos().getZ() + 1))
-                            .send();
-                }
-            }
+            CrucibleFx.froth(level, getBlockPos(), surface, this.aspects.totalAmount() > MAX_ASPECT);
         }
-
-        if (level.getRandom().nextInt(6) == 0 && !this.aspects.isEmpty()) {
-            int color = this.aspects
-                            .entries()
-                            .get(level.getRandom().nextInt(aspects.size()))
-                            .aspect()
-                            .value()
-                            .color()
-                    + -16777216;
-            int x = 5 + level.getRandom().nextInt(22);
-            int y = 5 + level.getRandom().nextInt(22);
-            this.delay = level.getRandom().nextInt(10);
-            this.prevcolor = color;
-            this.prevx = x;
-            this.prevy = y;
-            Color c = new Color(color);
-            float r = c.getRed() / 255.0F;
-            float g = c.getGreen() / 255.0F;
-            float b = c.getBlue() / 255.0F;
-            Effects.crucibleBubble(
-                            level,
-                            new Vec3(
-                                    getBlockPos().getX() + x / 32.0F + 1 / 64F,
-                                    getBlockPos().getY() + 0.05F + getFluidHeight(),
-                                    getBlockPos().getZ() + y / 32.0F + 1 / 64F))
-                    .color(r, g, b)
-                    .send();
-        }
+        CrucibleFx.bubble(level, getBlockPos(), surface, aspects);
     }
 
     @Override
@@ -368,11 +293,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                     1.0F,
                     false);
             if (!level.isClientSide()) {
-                Effects.bamf((ServerLevel) level, Vec3.atCenterOf(getBlockPos()).add(0F, 0.75F, 0F))
-                        .withSound()
-                        .fancy()
-                        .side(Direction.UP)
-                        .send();
+                CrucibleFx.craftComplete((ServerLevel) level, getBlockPos());
             }
             return true;
         } else if (event != 2) {
@@ -388,31 +309,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                     1.0F,
                     false);
             if (!level.isClientSide()) {
-                for (int q = 0; q < 10; q++) {
-                    Color color;
-                    if (aspects.isEmpty()) {
-                        color = new Color(1.0F, 1.0F, 1.0F);
-                    } else {
-                        color = new Color(aspects.entries()
-                                .get(level.getRandom().nextInt(aspects.size()))
-                                .aspect()
-                                .value()
-                                .color());
-                    }
-                    Effects.crucibleBoil(
-                                    (ServerLevel) level,
-                                    new Vec3(
-                                            getBlockPos().getX()
-                                                    + 0.2F
-                                                    - level.getRandom().nextFloat() * 0.6F,
-                                            getBlockPos().getY() + 0.1F + getFluidHeight(),
-                                            getBlockPos().getZ()
-                                                    + 0.2F
-                                                    - level.getRandom().nextFloat() * 0.6F))
-                            .heat(data)
-                            .color(color.getRed() / 255f, color.getGreen() / 255F, color.getBlue() / 255F)
-                            .send();
-                }
+                CrucibleFx.boilBurst((ServerLevel) level, getBlockPos(), getFluidHeight(), aspects, data);
             }
             return true;
         }

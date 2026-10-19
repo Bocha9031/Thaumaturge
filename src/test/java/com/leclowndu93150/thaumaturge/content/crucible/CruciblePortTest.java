@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
 
 class CruciblePortTest {
@@ -52,5 +56,29 @@ class CruciblePortTest {
         assertTrue(BlockEntityCrucible.boilingStateChanged(151, 150, 1));
         assertFalse(BlockEntityCrucible.boilingStateChanged(150, 149, 1));
         assertFalse(BlockEntityCrucible.boilingStateChanged(151, 150, 0));
+    }
+
+    @Test
+    void crucibleParticlePositionsStayOnSurfaceAndRim() {
+        BlockPos pos = new BlockPos(12, 34, -5);
+        for (int seed = 0; seed < 64; seed++) {
+            RandomSource random = RandomSource.create(seed);
+            Vec3 froth = CrucibleFx.frothPoint(pos, 0.65F, random);
+            assertTrue(froth.x >= pos.getX() + 0.2 && froth.x <= pos.getX() + 0.8);
+            assertEquals(pos.getY() + 0.65F, froth.y, 1.0E-6);
+            assertTrue(froth.z >= pos.getZ() + 0.2 && froth.z <= pos.getZ() + 0.8);
+
+            Vec3 bubble = CrucibleFx.bubblePoint(pos, 0.65F, random);
+            assertTrue(bubble.x >= pos.getX() + 0.21875 && bubble.x <= pos.getX() + 0.78125);
+            assertEquals((double) (pos.getY() + 0.65F) + 0.02, bubble.y, 1.0E-6);
+            assertTrue(bubble.z >= pos.getZ() + 0.21875 && bubble.z <= pos.getZ() + 0.78125);
+
+            for (Direction side : Direction.Plane.HORIZONTAL) {
+                Vec3 overflowFroth = CrucibleFx.rimPoint(pos, side, random);
+                assertEquals(pos.getY() + 1.0, overflowFroth.y);
+                assertTrue(overflowFroth.x >= pos.getX() - 0.04 && overflowFroth.x <= pos.getX() + 1.04);
+                assertTrue(overflowFroth.z >= pos.getZ() - 0.04 && overflowFroth.z <= pos.getZ() + 1.04);
+            }
+        }
     }
 }
