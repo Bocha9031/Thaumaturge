@@ -10,7 +10,7 @@ import com.leclowndu93150.thaumaturge.api.golems.parts.GolemMaterial;
 import com.leclowndu93150.thaumaturge.api.golems.parts.GolemPartModel;
 import com.leclowndu93150.thaumaturge.content.golem.parts.GolemArmDart;
 import com.leclowndu93150.thaumaturge.content.golem.parts.GolemLegLevitator;
-import com.leclowndu93150.thaumaturge.content.golem.parts.GolemLegWheels;
+import com.leclowndu93150.thaumaturge.content.golem.parts.RollerLegDust;
 import java.util.List;
 import java.util.function.Supplier;
 import net.minecraft.core.Registry;
@@ -245,7 +245,7 @@ public final class TTGolemParts {
                             GolemComponent.of(() -> new ItemStack(Items.BOWL, 2)),
                             GolemComponent.of(() -> new ItemStack(Items.LEATHER)),
                             GolemComponent.mechanism()),
-                    new GolemLegWheels(),
+                    new RollerLegDust(),
                     List.of(TTGolemTraits.WHEELED)));
 
     public static final DeferredHolder<GolemLeg, GolemLeg> LEGS_CLIMBER = LEGS.register(
