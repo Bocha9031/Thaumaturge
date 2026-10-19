@@ -7,47 +7,61 @@ import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 
 public final class SlimyBubbleParticle extends TTParticle {
-    private static final int GROW_TICKS = 6;
-    private static final int RISE_END_GAP = 4;
-    private static final int GROW_LIFT_AGE = 5;
-    private static final float GROW_LIFT = 0.1F;
-    private static final double RISE_SPEED = 0.005;
-    private static final int GROW_FRAME = 0;
-    private static final int RISE_FRAME = 3;
-    private static final int POP_END_FRAME = 6;
+    private static final int SWELL_TICKS = 6;
+    private static final int SWELL_FRAMES = 4;
+    private static final int POP_UP_TICK = 3;
+    private static final double POP_UP_HEIGHT = 0.06;
+    private static final int FLOAT_FRAME_LOW = 3;
+    private static final int FLOAT_FRAME_HIGH = 4;
+    private static final int WOBBLE_TICKS = 2;
+    private static final double RISE_ACCELERATION = 0.0008;
+    private static final int POP_TICKS = 4;
+    private static final int POP_FRAME_FIRST = 5;
+    private static final int POP_FRAME_SECOND = 6;
+    private static final double POP_SLOWDOWN = 0.5;
+    private static final float SIZE_UNIT = 0.8F;
+    private static final int MIN_LIFETIME = SWELL_TICKS + POP_TICKS + 1;
 
     private SlimyBubbleParticle(
-            ClientLevel level,
-            double x,
-            double y,
-            double z,
-            double vx,
-            double vy,
-            double vz,
-            SlimyBubbleParticleOptions options,
-            ParticleSheet sheet) {
-        super(level, x, y, z, vx, vy, vz, sheet);
+            ClientLevel level, double x, double y, double z, SlimyBubbleParticleOptions options, ParticleSheet sheet) {
+        super(level, x, y, z, 0.0, 0.0, 0.0, sheet);
         setColor(options.color());
         this.alpha = options.alpha();
-        this.lifetime = options.age();
-        this.quadSize = options.scale();
-        frame(GROW_FRAME);
+        this.lifetime = particleLifetime(options.age());
+        this.quadSize = options.scale() * SIZE_UNIT;
+        frame(0);
     }
 
     @Override
     protected void update() {
-        if (this.age - 1 < GROW_TICKS) {
-            frame(GROW_FRAME + this.age / 2);
-            if (this.age == GROW_LIFT_AGE) {
-                this.y += GROW_LIFT;
+        int remaining = this.lifetime - this.age;
+        if (this.age < SWELL_TICKS) {
+            frame(frameFor(this.age, this.lifetime));
+            if (this.age == POP_UP_TICK) {
+                setPos(this.x, this.y + POP_UP_HEIGHT, this.z);
             }
-        } else if (this.age < this.lifetime - RISE_END_GAP) {
-            this.yd += RISE_SPEED;
-            frame(RISE_FRAME + this.age % 4 / 2);
+        } else if (remaining > POP_TICKS) {
+            this.yd += RISE_ACCELERATION;
+            frame(frameFor(this.age, this.lifetime));
         } else {
-            this.yd /= 2.0;
-            frame(POP_END_FRAME - (this.lifetime - this.age) / 2);
+            this.yd *= POP_SLOWDOWN;
+            frame(frameFor(this.age, this.lifetime));
         }
+    }
+
+    static int particleLifetime(int requested) {
+        return Math.max(MIN_LIFETIME, requested);
+    }
+
+    static int frameFor(int age, int lifetime) {
+        int remaining = lifetime - age;
+        if (age < SWELL_TICKS) {
+            return age * SWELL_FRAMES / SWELL_TICKS;
+        }
+        if (remaining > POP_TICKS) {
+            return age / WOBBLE_TICKS % 2 == 0 ? FLOAT_FRAME_LOW : FLOAT_FRAME_HIGH;
+        }
+        return remaining > POP_TICKS / 2 ? POP_FRAME_FIRST : POP_FRAME_SECOND;
     }
 
     @Override
@@ -68,7 +82,7 @@ public final class SlimyBubbleParticle extends TTParticle {
                 double vx,
                 double vy,
                 double vz) {
-            return new SlimyBubbleParticle(level, x, y, z, vx, vy, vz, options, SHEET);
+            return new SlimyBubbleParticle(level, x, y, z, options, SHEET);
         }
     }
 }

@@ -325,6 +325,20 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void slimyBubbleKeepsSwellFloatAndPopFramesInsideItsMinimumLifetime() {
+        assertEquals(11, SlimyBubbleParticle.particleLifetime(-10));
+        assertEquals(11, SlimyBubbleParticle.particleLifetime(0));
+        assertEquals(23, SlimyBubbleParticle.particleLifetime(23));
+
+        assertEquals(0, SlimyBubbleParticle.frameFor(0, 11));
+        assertEquals(1, SlimyBubbleParticle.frameFor(2, 11));
+        assertEquals(3, SlimyBubbleParticle.frameFor(5, 11));
+        assertEquals(4, SlimyBubbleParticle.frameFor(6, 11));
+        assertEquals(5, SlimyBubbleParticle.frameFor(7, 11));
+        assertEquals(6, SlimyBubbleParticle.frameFor(9, 11));
+    }
+
+    @Test
     void stabilizerRuneClampsNonpositiveLifetimesAndStartsWithItsFadedAlpha() throws Exception {
         ClientLevel level = mock(ClientLevel.class);
         for (int life : new int[] {0, -1}) {
