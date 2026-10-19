@@ -467,6 +467,22 @@ final class ParticleBehaviorPortTest {
         assertEquals(0.9F, floatConstant(ScanGlyphParticle.class, "HOLD_ALPHA"));
     }
 
+    @Test
+    void puffAndPechCurseUseTheRevisedLifetimeAndVisualProfiles() throws Exception {
+        assertEquals(18, intConstant(PuffParticle.class, "LIFETIME_RANGE"));
+        assertEquals(0.12F, floatConstant(PuffParticle.class, "START_SIZE"));
+        assertEquals(0.24F, floatConstant(PuffParticle.class, "END_SIZE_BASE"));
+        assertEquals(0.12F, floatConstant(PuffParticle.class, "END_ALPHA"));
+        assertEquals(0.72F, floatConstant(PuffParticle.class, "DRAG"));
+        assertEquals(0.03F, floatConstant(PuffParticle.class, "SHADE_JITTER"));
+
+        assertEquals(51, intConstant(PechCurseParticle.class, "LIFETIME_RANGE"));
+        assertEquals(1.0F, floatConstant(PechCurseParticle.class, "START_RED"));
+        assertEquals(0.85F, floatConstant(PechCurseParticle.class, "START_ALPHA"));
+        assertEquals(1.1F, floatConstant(PechCurseParticle.class, "SPIN_BASE"));
+        assertEquals(60.0, doubleConstant(PechCurseParticle.class, "TILT_DEVIATION_DEGREES"));
+    }
+
     private static void invokeUpdate(Object particle) throws Exception {
         Method update = particle.getClass().getDeclaredMethod("update");
         update.setAccessible(true);

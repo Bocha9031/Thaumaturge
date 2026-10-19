@@ -9,7 +9,22 @@ import net.minecraft.util.RandomSource;
 public final class PechCurseParticle extends TTParticle {
     private static final int FRAME_COUNT = 4;
     private static final int BASE_LIFETIME = 50;
-    private static final float START_ALPHA = 0.75F;
+    private static final int LIFETIME_RANGE = 51;
+    private static final float START_RED = 1.0F;
+    private static final float START_GREEN = 0.25F;
+    private static final float START_BLUE = 0.85F;
+    private static final float END_RED_BASE = 0.28F;
+    private static final float END_GREEN = 0.04F;
+    private static final float END_BLUE_BASE = 0.45F;
+    private static final float END_COLOR_JITTER = 0.1F;
+    private static final float START_SIZE = 0.3F;
+    private static final float END_SIZE_BASE = 5.0F;
+    private static final float END_SIZE_RANGE = 1.2F;
+    private static final float SIZE_UNIT = 0.1F;
+    private static final float START_ALPHA = 0.85F;
+    private static final float SPIN_BASE = 1.1F;
+    private static final float SPIN_RANGE = 0.8F;
+    private static final double TILT_DEVIATION_DEGREES = 60.0;
     private static final float DEG_TO_RAD = (float) (Math.PI / 180.0);
 
     private final float endR;
@@ -20,18 +35,18 @@ public final class PechCurseParticle extends TTParticle {
 
     private PechCurseParticle(ClientLevel level, double x, double y, double z, ParticleSheet sheet) {
         super(level, x, y, z, 0.0, 0.0, 0.0, sheet);
-        setColor(0.9F, 0.1F, 0.5F);
-        this.endR = 0.1F + this.random.nextFloat() * 0.1F;
-        this.endB = 0.5F + this.random.nextFloat() * 0.1F;
-        this.lifetime = BASE_LIFETIME + this.random.nextInt(50);
-        this.startSize = 0.3F;
-        this.endSize = (5.0F + this.random.nextFloat() * 2.0F) * 0.1F;
+        setColor(START_RED, START_GREEN, START_BLUE);
+        this.endR = END_RED_BASE + this.random.nextFloat() * END_COLOR_JITTER;
+        this.endB = END_BLUE_BASE + this.random.nextFloat() * END_COLOR_JITTER;
+        this.lifetime = BASE_LIFETIME + this.random.nextInt(LIFETIME_RANGE);
+        this.startSize = START_SIZE;
+        this.endSize = (END_SIZE_BASE + this.random.nextFloat() * END_SIZE_RANGE) * SIZE_UNIT;
         this.quadSize = this.startSize;
         frame(this.random.nextInt(FRAME_COUNT));
-        float spinSpeed = 3.0F + this.random.nextFloat() * 3.0F;
+        float spinSpeed = SPIN_BASE + this.random.nextFloat() * SPIN_RANGE;
         setSpin(this.random.nextFloat(), this.random.nextBoolean() ? -spinSpeed : spinSpeed);
-        float yaw = 90.0F * (float) this.random.nextGaussian() * DEG_TO_RAD;
-        float pitch = 90.0F * (float) this.random.nextGaussian() * DEG_TO_RAD;
+        float yaw = (float) TILT_DEVIATION_DEGREES * (float) this.random.nextGaussian() * DEG_TO_RAD;
+        float pitch = (float) TILT_DEVIATION_DEGREES * (float) this.random.nextGaussian() * DEG_TO_RAD;
         this.facing = (target, camera, partialTick) -> target.rotationYXZ(-yaw, pitch, 0.0F);
     }
 
@@ -40,7 +55,7 @@ public final class PechCurseParticle extends TTParticle {
         float t = progress();
         this.alpha = START_ALPHA * (1.0F - t);
         this.quadSize = Keyframes.sample(t, this.startSize, this.endSize);
-        lerpColor(t, 0.9F, 0.1F, 0.5F, this.endR, 0.0F, this.endB);
+        lerpColor(t, START_RED, START_GREEN, START_BLUE, this.endR, END_GREEN, this.endB);
     }
 
     @Override
