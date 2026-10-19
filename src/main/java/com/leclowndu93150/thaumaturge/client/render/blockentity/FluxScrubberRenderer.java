@@ -27,10 +27,10 @@ public final class FluxScrubberRenderer implements BlockEntityRenderer<BlockEnti
             MultiBufferSource buffers,
             int light,
             int overlay) {
-        long gameTime = scrubber.getLevel() == null ? 0 : scrubber.getLevel().getGameTime();
-        float time =
-                gameTime + partialTick + Math.floorMod(scrubber.getBlockPos().asLong(), 1000);
-        float bob = Mth.sin(time / 8.0F) * 0.075F + 0.075F;
+        long gameTime = scrubber.getLevel() == null ? 0L : scrubber.getLevel().getGameTime();
+        float bob = scrubber.getLevel() == null
+                ? 0.0F
+                : FluxScrubberRenderMath.bob(gameTime, partialTick, Mth.getSeed(scrubber.getBlockPos()));
         pose.pushPose();
         pose.translate(0.5F, 0.5F, 0.5F);
         BlockFacingPose.northBased(pose, scrubber.getBlockState().getValue(BlockStateProperties.FACING));
