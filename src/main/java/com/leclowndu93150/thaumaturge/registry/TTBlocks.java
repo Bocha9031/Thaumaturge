@@ -2006,7 +2006,7 @@ public final class TTBlocks {
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(50.0F, 20000.0F)
                     .sound(SoundType.STONE)
-                    .lightLevel(state -> 8)
+                    .lightLevel(state -> state.getValue(BlockEldritchObelisk.PART) == 0 ? 8 : 0)
                     .noOcclusion()
                     .noLootTable());
 

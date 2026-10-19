@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.client.extensions;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.model.AdvancedAlchemicalFurnaceItemSpecialRenderer;
 import com.leclowndu93150.thaumaturge.client.model.DeconTableItemSpecialRenderer;
+import com.leclowndu93150.thaumaturge.client.model.EldritchObeliskItemSpecialRenderer;
 import com.leclowndu93150.thaumaturge.client.model.GolemBuilderItemSpecialRenderer;
 import com.leclowndu93150.thaumaturge.client.model.GolemItemSpecialRenderer;
 import com.leclowndu93150.thaumaturge.client.model.HungryChestItemSpecialRenderer;
@@ -42,6 +43,7 @@ public final class TTItemRenderExtensions {
         register(event, () -> new NodeStabilizerItemSpecialRenderer(true), TTItems.NODE_STABILIZER_ADVANCED);
         register(event, () -> new NodeStabilizerItemSpecialRenderer(false, true), TTItems.NODE_TRANSDUCER);
         register(event, HungryChestItemSpecialRenderer::new, TTItems.HUNGRY_CHEST);
+        register(event, EldritchObeliskItemSpecialRenderer::new, TTItems.ELDRITCH_OBELISK);
         TTItems.NITORS.values().forEach(item -> register(event, NitorItemSpecialRenderer::new, item));
     }
 

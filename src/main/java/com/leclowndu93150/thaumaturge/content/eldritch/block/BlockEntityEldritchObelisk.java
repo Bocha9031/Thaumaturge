@@ -27,6 +27,9 @@ public final class BlockEntityEldritchObelisk extends BlockEntity {
         if (counter++ % PULSE_INTERVAL != 0) {
             return;
         }
+        if (counter == 1) {
+            BlockEldritchObelisk.ensureInteractionParts(level, pos, level.getBlockState(pos));
+        }
         List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, new AABB(pos).inflate(BUFF_RANGE));
         for (LivingEntity entity : nearby) {
             if (entity.getType().is(ThaumaturgeEntityTypeTags.ELDRITCH) && !entity.hasEffect(MobEffects.REGENERATION)) {

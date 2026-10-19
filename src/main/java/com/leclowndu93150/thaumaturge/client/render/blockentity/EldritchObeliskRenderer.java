@@ -118,6 +118,20 @@ public final class EldritchObeliskRenderer implements BlockEntityRenderer<BlockE
                 base,
                 1.0F);
 
+        renderPhysicalModel(poseStack, buffers, light, base, top, outerLands);
+    }
+
+    public static void renderItemModel(PoseStack poseStack, MultiBufferSource buffers, int light) {
+        poseStack.pushPose();
+        poseStack.translate(0.5F, 0.0F, 0.5F);
+        poseStack.scale(0.35F, 0.23F, 0.35F);
+        poseStack.translate(-0.5F, -2.5F, -0.5F);
+        renderPhysicalModel(poseStack, buffers, light, COLUMN_BASE, COLUMN_BASE + COLUMN_HEIGHT, false);
+        poseStack.popPose();
+    }
+
+    private static void renderPhysicalModel(
+            PoseStack poseStack, MultiBufferSource buffers, int light, float base, float top, boolean outerLands) {
         RenderType sideType = RenderType.entityCutout(outerLands ? SIDE_TEXTURE_OUTER : SIDE_TEXTURE);
         VertexConsumer sideBuffer = buffers.getBuffer(sideType);
         for (int a = 0; a < 4; a++) {
