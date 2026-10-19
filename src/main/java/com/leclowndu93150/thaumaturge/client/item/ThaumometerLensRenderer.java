@@ -18,6 +18,7 @@ import com.leclowndu93150.thaumaturge.content.research.pool.AspectPools;
 import com.leclowndu93150.thaumaturge.content.research.scan.ScanNode;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -31,21 +32,27 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 
 public final class ThaumometerLensRenderer {
-    private static final float NAME_Y = -0.25F;
-    private static final float NAME_SCALE = 0.005F;
-    private static final int NAME_SHRINK_WIDTH = 90;
-    private static final float NAME_SHRINK_PER_PX = 0.000025F;
+    private static final float NAME_Y = 0.2F;
+    private static final float NAME_SCALE = 0.0075F;
+    private static final float NAME_MAX_WIDTH = 0.62F;
     private static final int NAME_COLOR = 0xFFFFFFFF;
-    private static final float NODE_LINE_SCALE = 0.004F;
-    private static final int NODE_LINE_TEXT_Y = -40;
-    private static final int NODE_LINE_COLOR = 0xFFEEAE16;
-    private static final float TAG_SPACE_SCALE = 0.0075F;
+    private static final float NODE_LINE_SCALE = 0.005F;
+    private static final float NODE_LINE_Y = -0.29F;
+    private static final float NODE_LINE_MAX_WIDTH = 0.5F;
+    private static final int NODE_LINE_COLOR = 0xFFE6B84A;
+    private static final float TAG_SPACE_SCALE = 0.0072F;
+    private static final float TAG_MAX_HEIGHT = 0.37F;
+    private static final float TAG_GRID_CENTRE_Y = -0.07F;
     private static final int TAG_SIZE = 16;
-    private static final int TAG_BASE_Y = -8;
+    private static final float TAG_GAP = 2.0F;
+    private static final float TAG_ROW_GAP = 1.0F;
+    private static final float TAG_PITCH = TAG_SIZE + TAG_GAP;
+    private static final float TAG_ROW_PITCH = TAG_SIZE + TAG_ROW_GAP;
     private static final float TAG_ALPHA = 1.0F;
     private static final float TAG_AMOUNT_TEXT_SCALE = 0.5F;
     private static final int TAG_TEXT_COLOR = 0xFFFFFFFF;
-    private static final int TAGS_PER_ROW = 5;
+    private static final int TAGS_FIRST_ROW = 5;
+    private static final int TAG_MAX_ROWS = 5;
 
     private ThaumometerLensRenderer() {}
 
@@ -108,44 +115,62 @@ public final class ThaumometerLensRenderer {
         Font font = mc.font;
         if (nodeLine != null) {
             poseStack.pushPose();
-            poseStack.scale(NODE_LINE_SCALE, NODE_LINE_SCALE, NODE_LINE_SCALE);
-            font.drawInBatch(
-                    nodeLine.getVisualOrderText(),
-                    -font.width(nodeLine) / 2.0F,
-                    NODE_LINE_TEXT_Y,
-                    NODE_LINE_COLOR,
-                    false,
-                    poseStack.last().pose(),
-                    buffers,
-                    Font.DisplayMode.NORMAL,
-                    0,
-                    LightTexture.FULL_BRIGHT);
+            int width = font.width(nodeLine);
+            poseStack.translate(0.0F, NODE_LINE_Y, 0.0F);
+            float scale = fit(width, NODE_LINE_SCALE, NODE_LINE_MAX_WIDTH);
+            poseStack.scale(scale, scale, scale);
+            drawText(font, nodeLine, -width / 2.0F, -font.lineHeight / 2.0F, true, NODE_LINE_COLOR, poseStack, buffers);
             poseStack.popPose();
         }
         if (aspects != null && !aspects.isEmpty()) {
             submitAspectGrid(poseStack, buffers, font, player, aspects);
         }
         poseStack.pushPose();
-        poseStack.translate(0.0F, NAME_Y, 0.0F);
         float scale = nameScale(font, name);
+        poseStack.translate(0.0F, NAME_Y, 0.0F);
         poseStack.scale(scale, scale, scale);
+        drawText(font, name, -font.width(name) / 2.0F, -font.lineHeight / 2.0F, true, NAME_COLOR, poseStack, buffers);
+        poseStack.popPose();
+    }
+
+    private static float nameScale(Font font, Component name) {
+        return fit(font.width(name), NAME_SCALE, NAME_MAX_WIDTH);
+    }
+
+    static float fit(int width, float baseScale, float maximumWidth) {
+        return width <= 0 ? baseScale : Math.min(baseScale, maximumWidth / width);
+    }
+
+    static int rowsFor(int entryCount) {
+        int rows = 0;
+        int capacity = 0;
+        while (rows < TAG_MAX_ROWS && capacity < entryCount) {
+            capacity += TAGS_FIRST_ROW - rows;
+            rows++;
+        }
+        return rows;
+    }
+
+    private static void drawText(
+            Font font,
+            Component text,
+            float x,
+            float y,
+            boolean shadow,
+            int color,
+            PoseStack poseStack,
+            MultiBufferSource buffers) {
         font.drawInBatch(
-                name.getVisualOrderText(),
-                -font.width(name) / 2.0F,
-                0.0F,
-                NAME_COLOR,
-                false,
+                text.getVisualOrderText(),
+                x,
+                y,
+                color,
+                shadow,
                 poseStack.last().pose(),
                 buffers,
                 Font.DisplayMode.NORMAL,
                 0,
                 LightTexture.FULL_BRIGHT);
-        poseStack.popPose();
-    }
-
-    private static float nameScale(Font font, Component name) {
-        int width = font.width(name);
-        return width > NAME_SHRINK_WIDTH ? NAME_SCALE - NAME_SHRINK_PER_PX * (width - NAME_SHRINK_WIDTH) : NAME_SCALE;
     }
 
     private static void submitAspectGrid(
@@ -154,15 +179,36 @@ public final class ThaumometerLensRenderer {
             Font font,
             AbstractClientPlayer player,
             AspectList aspects) {
+        var entries = aspects.entries();
+        int rows = rowsFor(entries.size());
+        if (rows == 0) {
+            return;
+        }
+        float height = rows * TAG_ROW_PITCH - TAG_ROW_GAP;
+        float scale = Math.min(TAG_SPACE_SCALE, TAG_MAX_HEIGHT / height);
         poseStack.pushPose();
-        poseStack.scale(TAG_SPACE_SCALE, TAG_SPACE_SCALE, TAG_SPACE_SCALE);
-        int column = 0;
-        int row = 0;
-        int remaining = aspects.size();
-        int baseX = Math.min(TAGS_PER_ROW, remaining) * TAG_SIZE / 2;
-        for (AspectInstance entry : aspects.entries()) {
-            int x = -baseX + column * TAG_SIZE;
-            int y = TAG_BASE_Y + row * TAG_SIZE;
+        poseStack.translate(0.0F, TAG_GRID_CENTRE_Y, 0.0F);
+        poseStack.scale(scale, scale, scale);
+        poseStack.translate(0.0F, -height / 2.0F, 0.0F);
+        int start = 0;
+        for (int row = 0; row < rows && start < entries.size(); row++) {
+            int end = Math.min(entries.size(), start + TAGS_FIRST_ROW - row);
+            submitAspectRow(poseStack, buffers, font, player, entries.subList(start, end), row);
+            start = end;
+        }
+        poseStack.popPose();
+    }
+
+    private static void submitAspectRow(
+            PoseStack poseStack,
+            MultiBufferSource buffers,
+            Font font,
+            AbstractClientPlayer player,
+            List<AspectInstance> entries,
+            int row) {
+        float x = -(entries.size() * TAG_PITCH - TAG_GAP) / 2.0F;
+        float y = row * TAG_ROW_PITCH;
+        for (AspectInstance entry : entries) {
             boolean known = AspectPools.isDiscovered(player, entry.aspect());
             poseStack.pushPose();
             poseStack.translate(x + TAG_SIZE / 2.0F, y + TAG_SIZE / 2.0F, 0.0F);
@@ -193,14 +239,7 @@ public final class ThaumometerLensRenderer {
                 poseStack.popPose();
             }
             poseStack.popPose();
-            column++;
-            if (column >= TAGS_PER_ROW - row) {
-                column = 0;
-                row++;
-                remaining -= TAGS_PER_ROW - row;
-                baseX = Math.min(TAGS_PER_ROW - row, Math.max(remaining, 1)) * TAG_SIZE / 2;
-            }
+            x += TAG_PITCH;
         }
-        poseStack.popPose();
     }
 }
