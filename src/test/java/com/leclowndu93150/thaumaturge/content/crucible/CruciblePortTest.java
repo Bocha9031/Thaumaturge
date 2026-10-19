@@ -31,10 +31,12 @@ class CruciblePortTest {
 
     @Test
     void crucibleSurfaceTracksWaterAndEssentiaAndCapsOverflow() {
-        assertEquals(0.25F, BlockEntityCrucible.fluidSurfaceHeight(0, 0));
-        assertEquals(0.75F, BlockEntityCrucible.fluidSurfaceHeight(1000, 0));
-        assertEquals(0.95F, BlockEntityCrucible.fluidSurfaceHeight(1000, 100));
-        assertEquals(1.01F, BlockEntityCrucible.fluidSurfaceHeight(1000, 101));
+        assertEquals(0.3F, BlockEntityCrucible.fluidSurfaceHeight(0, 0), 0.0001F);
+        assertEquals(0.8F, BlockEntityCrucible.fluidSurfaceHeight(1000, 0), 0.0001F);
+        assertEquals(0.775F, BlockEntityCrucible.fluidSurfaceHeight(500, 50), 0.0001F);
+        assertEquals(0.9999F, BlockEntityCrucible.fluidSurfaceHeight(0, 100), 0.0001F);
+        assertEquals(0.9999F, BlockEntityCrucible.fluidSurfaceHeight(1000, 100), 0.0001F);
+        assertEquals(1.001F, BlockEntityCrucible.fluidSurfaceHeight(1000, 101), 0.0001F);
     }
 
     @Test

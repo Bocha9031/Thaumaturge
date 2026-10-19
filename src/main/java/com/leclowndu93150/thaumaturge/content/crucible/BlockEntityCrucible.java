@@ -50,10 +50,11 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
     private static final int CRAFT_LEAK_RESET = LEAK_THRESHOLD - LEAK_DELAY_AFTER_CRAFT;
     private static final int OVERFLOW_INTERVAL = 5;
 
-    private static final float SURFACE_FLOOR = 0.25F;
+    private static final float SURFACE_FLOOR = 0.3F;
     private static final float SURFACE_WATER_RISE = 0.5F;
-    private static final float SURFACE_ESSENTIA_RISE = 0.2F;
-    private static final float SURFACE_OVERFULL = 1.01F;
+    private static final float SURFACE_OVERFULL = 1.001F;
+    private static final float SURFACE_EXACT_FULL = 0.9999F;
+    private static final float SURFACE_RIM = 1.0F;
 
     private final FluidTank tank = new FluidTank(TANK_CAPACITY) {
         @Override
@@ -188,7 +189,9 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
         if (aspectAmount > MAX_ASPECT) return SURFACE_OVERFULL;
         float water = (float) waterAmount / TANK_CAPACITY;
         float essentia = (float) aspectAmount / MAX_ASPECT;
-        return SURFACE_FLOOR + water * SURFACE_WATER_RISE + essentia * SURFACE_ESSENTIA_RISE;
+        float waterSurface = SURFACE_FLOOR + water * SURFACE_WATER_RISE;
+        float surface = waterSurface + essentia * (SURFACE_RIM - waterSurface);
+        return aspectAmount == MAX_ASPECT || surface >= SURFACE_RIM ? SURFACE_EXACT_FULL : surface;
     }
 
     boolean isBoiling() {
