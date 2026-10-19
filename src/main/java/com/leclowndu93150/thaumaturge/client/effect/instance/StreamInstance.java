@@ -206,9 +206,7 @@ public abstract class StreamInstance implements IFXInstance {
             points[slot][1] = point.y() + Mth.sin(beat / 7.0F) * wobble;
             points[slot][2] = point.z() + Mth.sin(beat / 8.0F) * wobble;
             double radius = point.radius() * (1.0F + Mth.sin(beat / 3.0F) * RADIUS_VARIANCE) * radiusScale;
-            if (phase > n - TAPER_SPAN) {
-                radius *= Mth.cos((float) ((phase - (n - TAPER_LEAD)) / (float) TAPER_SPAN * (Math.PI / 2.0)));
-            }
+            radius *= tailTaper(phase, n);
             radii[slot] = anchorRadius(slot, radius);
             colour(colours[slot], beat);
         }
@@ -224,6 +222,13 @@ public abstract class StreamInstance implements IFXInstance {
             case 4 -> (this.radiusBase + radius * 2.0) / 3.0;
             default -> radius;
         };
+    }
+
+    static double tailTaper(int phase, int pointCount) {
+        if (phase <= pointCount - TAPER_SPAN) {
+            return 1.0;
+        }
+        return Math.max(0.0, Math.cos((phase - (pointCount - TAPER_LEAD)) / (double) TAPER_SPAN * (Math.PI / 2.0)));
     }
 
     protected void colour(float[] out, int beat) {
