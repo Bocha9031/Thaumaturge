@@ -31,6 +31,7 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
     private static final List<BoltInstance> BOLTS = new ArrayList<>();
     private static final List<BeamInstance> BEAMS = new ArrayList<>();
     private static final float ARC_SIZE = 0.125F;
+    private static final float ARC_CROSS_HALF_WIDTH = ARC_SIZE * Mth.SQRT_OF_TWO;
     private static final float SOURCE_QUAD_SIZE = 0.33F;
     private static final float HIT_QUAD_SIZE = 0.3F;
     private static final float HIT_WHITE_MIX = 0.5F;
@@ -215,15 +216,26 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
             poseStack.popPose();
             return;
         }
+        Vec3 side = arcHorizontalSide(arc.points.get(n - 1));
         for (int c = 0; c < n - 1; c++) {
             Vec3 v0 = arc.points.get(c);
             Vec3 v1 = arc.points.get(c + 1);
             float u0 = arcTextureU(c, arc.length);
             float u1 = arcTextureU(c + 1, arc.length);
             emitArcQuadY(consumer, mat, v0, v1, u0, u1, color, ARC_SIZE);
-            emitArcQuadXZ(consumer, mat, v0, v1, u0, u1, color, ARC_SIZE);
+            emitArcQuadXZ(consumer, mat, v0, v1, u0, u1, color, side, ARC_CROSS_HALF_WIDTH);
         }
         poseStack.popPose();
+    }
+
+    static Vec3 arcHorizontalSide(Vec3 endpoint) {
+        double sideX = -endpoint.z;
+        double sideZ = endpoint.x;
+        double flat = Math.sqrt(sideX * sideX + sideZ * sideZ);
+        if (flat < MIN_BEAM_LENGTH) {
+            return new Vec3(1.0, 0.0, 0.0);
+        }
+        return new Vec3(sideX / flat, 0.0, sideZ / flat);
     }
 
     static float arcTextureU(int pointIndex, float chordLength) {
@@ -247,11 +259,21 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
     }
 
     private static void emitArcQuadXZ(
-            VertexConsumer consumer, Matrix4f mat, Vec3 v0, Vec3 v1, float u0, float u1, int color, float size) {
-        vertex(consumer, mat, v0.x - size, v0.y, v0.z - size, u0, 1.0F, color);
-        vertex(consumer, mat, v0.x + size, v0.y, v0.z + size, u0, 0.0F, color);
-        vertex(consumer, mat, v1.x + size, v1.y, v1.z + size, u1, 0.0F, color);
-        vertex(consumer, mat, v1.x - size, v1.y, v1.z - size, u1, 1.0F, color);
+            VertexConsumer consumer,
+            Matrix4f mat,
+            Vec3 v0,
+            Vec3 v1,
+            float u0,
+            float u1,
+            int color,
+            Vec3 side,
+            float halfWidth) {
+        double sx = side.x * halfWidth;
+        double sz = side.z * halfWidth;
+        vertex(consumer, mat, v0.x - sx, v0.y, v0.z - sz, u0, 1.0F, color);
+        vertex(consumer, mat, v0.x + sx, v0.y, v0.z + sz, u0, 0.0F, color);
+        vertex(consumer, mat, v1.x + sx, v1.y, v1.z + sz, u1, 0.0F, color);
+        vertex(consumer, mat, v1.x - sx, v1.y, v1.z - sz, u1, 1.0F, color);
     }
 
     private static void vertex(
