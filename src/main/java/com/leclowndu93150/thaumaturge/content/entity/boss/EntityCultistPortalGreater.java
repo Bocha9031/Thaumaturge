@@ -100,10 +100,9 @@ public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
     @Override
     public void tick() {
         super.tick();
-        if (this.level().isClientSide()) {
+        if (!isAlive() || !(level() instanceof ServerLevel server)) {
             return;
         }
-        ServerLevel server = (ServerLevel) this.level();
         if (this.stageCounter <= 0) {
             if (this.level().getNearestPlayer(this, ACTIVATION_RANGE) != null) {
                 this.level().broadcastEntityEvent(this, CultistPortals.PULSE_EVENT);
