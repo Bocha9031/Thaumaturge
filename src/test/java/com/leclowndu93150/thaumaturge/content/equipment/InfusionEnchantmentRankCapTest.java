@@ -185,6 +185,31 @@ class InfusionEnchantmentRankCapTest {
     }
 
     @Test
+    void refiningAppliesToMatchingDropsWithoutASecondToolGate() {
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextDouble()).thenReturn(0.1);
+        ServerLevel level = mock(ServerLevel.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        when(level.getRandom()).thenReturn(random);
+        BlockState state = mock(BlockState.class);
+        Player player = mock(Player.class);
+        ItemStack tool = stackWithLevel(InfusionEnchantment.REFINING, 1);
+        when(tool.isCorrectToolForDrops(state)).thenReturn(false);
+        when(player.getUUID()).thenReturn(UUID.randomUUID());
+        when(player.getMainHandItem()).thenReturn(tool);
+        ItemEntity drop = mock(ItemEntity.class);
+        when(drop.getItem()).thenReturn(new ItemStack(Items.RAW_IRON));
+        BlockDropsEvent event = blockDrops(level, state, player, new ArrayList<>(List.of(drop)));
+
+        try (MockedStatic<RefiningResults> refiningResults = mockStatic(RefiningResults.class)) {
+            refiningResults.when(() -> RefiningResults.clusterFor(state)).thenReturn(Items.IRON_INGOT);
+
+            InfusionEnchantmentEvents.onBlockDrops(event);
+        }
+
+        verify(drop).setItem(argThat(stack -> stack.is(Items.IRON_INGOT) && stack.getCount() == 1));
+    }
+
+    @Test
     void essenceUsesDeclaredMaximumForGeneratedCrystals() {
         RandomSource random = mock(RandomSource.class);
         AtomicInteger calls = new AtomicInteger();

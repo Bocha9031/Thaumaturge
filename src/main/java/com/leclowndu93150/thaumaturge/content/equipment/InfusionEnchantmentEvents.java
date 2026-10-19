@@ -232,7 +232,7 @@ public final class InfusionEnchantmentEvents {
         if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.REFINING)) {
             int rank = cappedLevel(held, InfusionEnchantment.REFINING);
             Item cluster = RefiningResults.clusterFor(state);
-            if (cluster != null && (held.isCorrectToolForDrops(state) || hasSilkTouch(level, held))) {
+            if (cluster != null) {
                 float chance = (1 + rank) * REFINING_CHANCE_PER_LEVEL;
                 boolean changed = false;
                 for (ItemEntity drop : event.getDrops()) {
