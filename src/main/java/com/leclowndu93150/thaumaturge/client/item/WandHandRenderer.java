@@ -1,10 +1,15 @@
 package com.leclowndu93150.thaumaturge.client.item;
 
 import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.api.spell.CastStyle;
+import com.leclowndu93150.thaumaturge.api.spell.Spell;
 import com.leclowndu93150.thaumaturge.api.wands.render.WandRenderers;
 import com.leclowndu93150.thaumaturge.client.casters.WandTipTracker;
 import com.leclowndu93150.thaumaturge.client.model.WandItemSpecialRenderer;
+import com.leclowndu93150.thaumaturge.content.casters.SocketedFocus;
+import com.leclowndu93150.thaumaturge.content.spell.item.FocusItems;
 import com.leclowndu93150.thaumaturge.content.wands.ItemWand;
+import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -24,11 +29,20 @@ import net.neoforged.neoforge.client.event.RenderHandEvent;
 public final class WandHandRenderer {
     private static final float BASE_SCALE = 0.8F;
     private static final float ITEM_SCALE = 0.4F;
-    private static final float USE_TILT_MAX_TICKS = 3.0F;
-    private static final float USE_TILT_DEGREES = 60.0F;
-    private static final float WAVE_ROLL_PERIOD = 10.0F;
-    private static final float WAVE_PITCH_PERIOD = 15.0F;
-    private static final float WAVE_DEGREES = 10.0F;
+    private static final float WAND_GRIP_Y = 0.9F;
+    private static final float STAFF_GRIP_Y = 1.36F;
+    private static final float TIP_RAMP_TICKS = 5.0F;
+    private static final float TIP_DEGREES = -34.0F;
+    private static final float SWAY_DEGREES = 3.2F;
+    private static final float SWAY_SECONDARY = 0.45F;
+    private static final float SWAY_PITCH_RATE = 0.093F;
+    private static final float SWAY_PITCH_DRIFT_RATE = 0.041F;
+    private static final float SWAY_ROLL_RATE = 0.071F;
+    private static final float SWAY_ROLL_DRIFT_RATE = 0.029F;
+    private static final float SWAY_ROLL_PHASE = 1.9F;
+    private static final float TREMBLE_DEGREES = 0.7F;
+    private static final float TREMBLE_PITCH_RATE = 2.9F;
+    private static final float TREMBLE_ROLL_RATE = 4.3F;
 
     private WandHandRenderer() {}
 
@@ -63,7 +77,8 @@ public final class WandHandRenderer {
         }
         applyModelBasis(poseStack, mirror, arg.rod().staff());
         if (using) {
-            applyUseWave(poseStack, mirror, player.getTicksUsingItem() + partial);
+            applyUseWave(
+                    poseStack, mirror, arg.rod().staff(), chargesOnUse(stack), player.getTicksUsingItem() + partial);
         }
         WandTipTracker.capture(poseStack, WandItemSpecialRenderer.tipModelY(arg));
         WandRenderers.render(WandItemSpecialRenderer.context(
@@ -120,14 +135,39 @@ public final class WandHandRenderer {
         poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
     }
 
-    private static void applyUseWave(PoseStack poseStack, float mirror, float useTicks) {
-        float tilt = Math.min(useTicks, USE_TILT_MAX_TICKS);
-        poseStack.translate(0.0F, 1.0F, 0.0F);
-        poseStack.mulPose(Axis.XP.rotationDegrees(10.0F));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(mirror * 10.0F));
-        poseStack.mulPose(Axis.XN.rotationDegrees(USE_TILT_DEGREES * (tilt / USE_TILT_MAX_TICKS)));
-        poseStack.mulPose(Axis.ZP.rotationDegrees(mirror * Mth.sin(useTicks / WAVE_ROLL_PERIOD) * WAVE_DEGREES));
-        poseStack.mulPose(Axis.XP.rotationDegrees(Mth.sin(useTicks / WAVE_PITCH_PERIOD) * WAVE_DEGREES));
-        poseStack.translate(0.0F, -1.0F, 0.0F);
+    private static void applyUseWave(
+            PoseStack poseStack, float mirror, boolean staff, boolean charged, float useTicks) {
+        float settle = useSettle(useTicks);
+        float pitch;
+        float roll;
+        if (charged) {
+            pitch = Mth.sin(useTicks * TREMBLE_PITCH_RATE) * TREMBLE_DEGREES;
+            roll = Mth.cos(useTicks * TREMBLE_ROLL_RATE) * TREMBLE_DEGREES;
+        } else {
+            pitch = (Mth.sin(useTicks * SWAY_PITCH_RATE) + Mth.sin(useTicks * SWAY_PITCH_DRIFT_RATE) * SWAY_SECONDARY)
+                    * SWAY_DEGREES;
+            roll = (Mth.cos(useTicks * SWAY_ROLL_RATE)
+                            + Mth.sin(useTicks * SWAY_ROLL_DRIFT_RATE + SWAY_ROLL_PHASE) * SWAY_SECONDARY)
+                    * SWAY_DEGREES;
+        }
+        float grip = staff ? STAFF_GRIP_Y : WAND_GRIP_Y;
+        poseStack.translate(0.0F, grip, 0.0F);
+        poseStack.mulPose(Axis.XP.rotationDegrees(TIP_DEGREES * settle + pitch * settle));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(mirror * roll * settle));
+        poseStack.translate(0.0F, -grip, 0.0F);
+    }
+
+    static float useSettle(float useTicks) {
+        float ramp = Mth.clamp(useTicks / TIP_RAMP_TICKS, 0.0F, 1.0F);
+        return ramp * ramp * (3.0F - 2.0F * ramp);
+    }
+
+    private static boolean chargesOnUse(ItemStack wand) {
+        SocketedFocus socketed = wand.get(TTDataComponents.SOCKETED_FOCUS.get());
+        if (socketed == null) {
+            return false;
+        }
+        Spell spell = FocusItems.spell(socketed.focus());
+        return spell != null && spell.style() == CastStyle.CHARGED;
     }
 }
