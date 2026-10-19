@@ -12,18 +12,31 @@ import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class InlayBlockColors {
+    private static final int MAX_CHARGE = 15;
+    private static final int MAX_CHANNEL = 255;
+    private static final int OPAQUE_ALPHA = 255;
     private static final float UNCHARGED_BRIGHTNESS = 0.3F;
+    private static final float FIRST_CHARGE_BRIGHTNESS = 0.55F;
+    private static final float FULL_BRIGHTNESS = 1.0F;
+    private static final int FIRST_CHARGE = 1;
 
     private InlayBlockColors() {}
 
     @SubscribeEvent
     public static void onRegisterBlockColors(RegisterColorHandlersEvent.Block event) {
         BlockColor source = (state, level, pos, tintIndex) -> {
-            int charge = state.getValue(BlockInlay.CHARGE);
-            float brightness = charge == 0 ? UNCHARGED_BRIGHTNESS : charge / 15.0F * 0.5F + 0.5F;
-            int channel = Mth.clamp((int) (brightness * 255.0F), 0, 255);
-            return 0xFF000000 | channel << 16 | channel << 8 | channel;
+            int grey =
+                    Mth.clamp(Math.round(brightness(state.getValue(BlockInlay.CHARGE)) * MAX_CHANNEL), 0, MAX_CHANNEL);
+            return OPAQUE_ALPHA << 24 | grey << 16 | grey << 8 | grey;
         };
         event.register(source, TTBlocks.INLAY.get());
+    }
+
+    static float brightness(int charge) {
+        if (charge < FIRST_CHARGE) {
+            return UNCHARGED_BRIGHTNESS;
+        }
+        float progress = (float) (charge - FIRST_CHARGE) / (MAX_CHARGE - FIRST_CHARGE);
+        return Mth.lerp(progress, FIRST_CHARGE_BRIGHTNESS, FULL_BRIGHTNESS);
     }
 }
