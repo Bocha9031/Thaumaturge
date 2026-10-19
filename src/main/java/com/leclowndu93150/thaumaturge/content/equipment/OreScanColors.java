@@ -8,19 +8,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.Tags;
 
 public final class OreScanColors {
-    public static final int DEFAULT = 12632256;
+    public static final int DEFAULT = 0xC4C4C4;
 
-    private static final int C_IRON = 14200723;
-    private static final int C_COAL = 1052688;
-    private static final int C_REDSTONE = 16711680;
-    private static final int C_GOLD = 16576075;
-    private static final int C_LAPIS = 1328572;
-    private static final int C_DIAMOND = 6155509;
-    private static final int C_EMERALD = 1564002;
-    private static final int C_QUARTZ = 15064789;
-    private static final int C_COPPER = 16620629;
-    private static final int C_AMBER = 16626469;
-    private static final int C_CINNABAR = 10159368;
+    private static final int C_IRON = 0xD8B49C;
+    private static final int C_COAL = 0x1C1A1E;
+    private static final int C_REDSTONE = 0xF0140E;
+    private static final int C_GOLD = 0xFFD23A;
+    private static final int C_LAPIS = 0x1E3CC0;
+    private static final int C_DIAMOND = 0x8CF2F4;
+    private static final int C_EMERALD = 0x22DC5A;
+    private static final int C_QUARTZ = 0xF2E8DA;
+    private static final int C_COPPER = 0xE89A62;
+    private static final int C_AMBER = 0xF0A01E;
+    private static final int C_CINNABAR = 0x8A0E14;
 
     private record Entry(TagKey<Block> ore, int color) {}
 
