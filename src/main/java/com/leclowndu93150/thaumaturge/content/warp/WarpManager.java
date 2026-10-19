@@ -83,7 +83,7 @@ public final class WarpManager {
     public static int getWarpFromGear(ServerPlayer player) {
         int warp = getFinalWarp(player.getMainHandItem(), player);
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.isArmor()) {
+            if (isHumanoidArmorSlot(slot)) {
                 warp += getFinalWarp(player.getItemBySlot(slot), player);
             }
         }
@@ -93,6 +93,10 @@ public final class WarpManager {
             }
         }
         return warp;
+    }
+
+    static boolean isHumanoidArmorSlot(EquipmentSlot slot) {
+        return slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR;
     }
 
     private static void notifyGain(ServerPlayer player, WarpType type) {

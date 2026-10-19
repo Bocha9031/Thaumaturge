@@ -1,6 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.warp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -9,12 +11,21 @@ import static org.mockito.Mockito.withSettings;
 
 import com.leclowndu93150.thaumaturge.api.items.IWarpingGear;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.Test;
 
 class WarpManagerTest {
+    @Test
+    void onlyHumanoidArmorSlotsContributeAsPlayerArmor() {
+        assertTrue(WarpManager.isHumanoidArmorSlot(EquipmentSlot.HEAD));
+        assertTrue(WarpManager.isHumanoidArmorSlot(EquipmentSlot.FEET));
+        assertFalse(WarpManager.isHumanoidArmorSlot(EquipmentSlot.BODY));
+        assertFalse(WarpManager.isHumanoidArmorSlot(EquipmentSlot.MAINHAND));
+    }
+
     @Test
     void finalGearWarpIncludesOnlyPassiveGearAndStackWarp() {
         ItemStack stack = mock(ItemStack.class);
