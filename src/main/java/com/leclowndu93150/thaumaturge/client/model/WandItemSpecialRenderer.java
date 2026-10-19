@@ -17,8 +17,6 @@ import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import java.util.ArrayList;
-import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
@@ -43,7 +41,7 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
     private static final float PX = 0.0625F;
     private static final int TEX_W = 32;
     private static final int TEX_H = 32;
-    private static final int RUNE_LIGHT = 200;
+    private static final int RUNE_LIGHT = WandLightMath.smoothPacked(236);
     private static final float MODEL_LIFT = 0.5F;
     private static final float FOCUS_ALPHA = 0.95F;
     private static final int SCRIPT_GLYPHS = 16;
@@ -52,9 +50,6 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
     private static final float FOCUS_STAFF_SCALE_Y = 0.5525F;
     private static final float FOCUS_SCALE = 0.5F;
     private static final float FOCUS_TOP_PX = 6.0F;
-    private static final float CAP_TOP_PX = 1.0F;
-    private static final float CAP_STAFF_SCALE_Y = 1.1F;
-    private static final float SCEPTRE_CAP_SCALE = 1.3F;
 
     public WandItemSpecialRenderer() {
         super(
@@ -77,10 +72,6 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
         WandRenderers.render(context(stack, arg, poseStack, buffers, light, overlay, displayContext, false));
         poseStack.popPose();
     }
-
-    private record CapPlacement(float offsetY, float scaleXZ, float scaleY, float pivotPx) {}
-
-    private static final float CAP_PIVOT_BOTTOM_PX = 20.0F;
 
     public static void submitParts(WandArg arg, PoseStack poseStack, MultiBufferSource buffers, int light) {
         submitParts(arg, poseStack, buffers, light, false);
@@ -131,7 +122,7 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
             float ticks,
             boolean firstPersonHand,
             int rodTint) {
-        int rodLight = arg.rod().glow() ? (int) (200.0F + Mth.sin((int) ticks) * 5.0F + 5.0F) : light;
+        int rodLight = arg.rod().glow() ? glowLight(ticks) : light;
         RenderType rodType = firstPersonHand
                 ? RenderType.entityCutoutNoCull(arg.rod().texture())
                 : TTFlatRenderTypes.entityCutoutFlat(arg.rod().texture());
@@ -140,25 +131,8 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
             poseStack.translate(0.0F, -0.1F, 0.0F);
             poseStack.scale(1.2F, 2.0F, 1.2F);
         }
-        box(poseStack.last(), buffers.getBuffer(rodType), -1.0F, 1.0F, -1.0F, 2, 18, 2, 0, 8, rodTint, rodLight);
+        box(poseStack.last(), buffers.getBuffer(rodType), -1.0F, 0.0F, -1.0F, 2, 18, 2, 0, 8, rodTint, rodLight);
         poseStack.popPose();
-    }
-
-    private static List<CapPlacement> capLayout(boolean staff, boolean sceptre) {
-        List<CapPlacement> layout = new ArrayList<>();
-        if (sceptre) {
-            layout.add(new CapPlacement(0.0F, SCEPTRE_CAP_SCALE, SCEPTRE_CAP_SCALE, 0.0F));
-            layout.add(new CapPlacement(0.3F, 1.0F, 0.66F, 0.0F));
-        } else {
-            layout.add(new CapPlacement(0.0F, 1.0F, 1.0F, 0.0F));
-        }
-        if (staff) {
-            layout.add(new CapPlacement(0.225F, 1.0F, 0.66F, 0.0F));
-            layout.add(new CapPlacement(0.875F, 1.0F, 1.0F, CAP_PIVOT_BOTTOM_PX));
-        } else {
-            layout.add(new CapPlacement(0.0F, 1.0F, 1.0F, CAP_PIVOT_BOTTOM_PX));
-        }
-        return layout;
     }
 
     private static void submitCaps(
@@ -173,16 +147,13 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
                 ? RenderType.entityCutoutNoCull(arg.cap().texture())
                 : TTFlatRenderTypes.entityCutoutFlat(arg.cap().texture());
         poseStack.pushPose();
-        if (staff) {
-            poseStack.scale(1.3F, CAP_STAFF_SCALE_Y, 1.3F);
-        } else {
-            poseStack.scale(1.2F, 1.0F, 1.2F);
-        }
-        for (CapPlacement placement : capLayout(staff, arg.sceptre())) {
+        float outerScaleXZ = WandCapLayout.outerScaleXZ(staff);
+        poseStack.scale(outerScaleXZ, WandCapLayout.outerScaleY(staff), outerScaleXZ);
+        for (WandCapLayout.Placement placement : WandCapLayout.create(staff, arg.sceptre())) {
             poseStack.pushPose();
             poseStack.translate(0.0F, placement.offsetY(), 0.0F);
             poseStack.scale(placement.scaleXZ(), placement.scaleY(), placement.scaleXZ());
-            poseStack.translate(0.0F, placement.pivotPx() * PX, 0.0F);
+            poseStack.translate(0.0F, placement.pivotPixels() * PX, 0.0F);
             box(poseStack.last(), buffers.getBuffer(capType), -1.0F, -1.0F, -1.0F, 2, 2, 2, 0, 0, capTint, light);
             poseStack.popPose();
         }
@@ -200,7 +171,7 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
             poseStack.scale(FOCUS_SCALE, FOCUS_SCALE, FOCUS_SCALE);
         }
         int tint = ARGB32.color((int) (FOCUS_ALPHA * 255.0F), arg.focusColor());
-        int focusLight = (int) (195.0F + Mth.sin(ticks / 3.0F) * 10.0F + 10.0F);
+        int focusLight = WandLightMath.focus(ticks);
         box(poseStack.last(), buffers.getBuffer(focusType), -3.0F, -6.0F, -3.0F, 6, 6, 6, 0, 0, tint, focusLight);
         poseStack.popPose();
     }
@@ -214,12 +185,12 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
             return -FOCUS_TOP_PX * PX * FOCUS_SCALE;
         }
         if (staff) {
-            return STAFF_MODEL_SHIFT - CAP_TOP_PX * PX * CAP_STAFF_SCALE_Y;
+            return STAFF_MODEL_SHIFT - WandCapLayout.outerScaleY(true) * PX;
         }
         if (arg.sceptre()) {
-            return -CAP_TOP_PX * PX * SCEPTRE_CAP_SCALE;
+            return -1.3F * PX;
         }
-        return -CAP_TOP_PX * PX;
+        return -PX;
     }
 
     private static float clientTicks() {
@@ -227,6 +198,10 @@ public final class WandItemSpecialRenderer extends BlockEntityWithoutLevelRender
         return player == null
                 ? 0.0F
                 : player.tickCount + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(false);
+    }
+
+    private static int glowLight(float ticks) {
+        return WandLightMath.glow(ticks);
     }
 
     private static final float[] RUNE_CORNER_X = {-1.0F, 1.0F, 1.0F, -1.0F};
