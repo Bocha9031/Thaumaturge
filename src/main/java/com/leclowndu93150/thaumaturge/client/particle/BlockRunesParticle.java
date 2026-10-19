@@ -12,8 +12,10 @@ import org.joml.Vector3f;
 
 public final class BlockRunesParticle extends TTParticle {
     private static final int RUNE_COUNT = 16;
-    private static final float QUAD_RADIUS = 0.3F;
-    private static final float FACE_OFFSET = -0.51F;
+    private static final float QUAD_RADIUS = 0.17F;
+    private static final float SIZE_DEVIATION = 0.08F;
+    private static final float FACE_OFFSET = -0.505F;
+    private static final float HITBOX = 0.01F;
     private static final int EMISSIVE_LIGHT = 0x00F000F0;
     private static final float FADE_IN_PORTION = 0.2F;
 
@@ -31,9 +33,9 @@ public final class BlockRunesParticle extends TTParticle {
         this.alpha = 0.0F;
         this.quadSize = QUAD_RADIUS
                 * (options.variant()
-                        ? (float) (0.5 + this.random.nextGaussian() * 0.1)
-                        : (float) (1.0 + this.random.nextGaussian() * 0.1));
-        this.setSize(0.01F, 0.01F);
+                        ? (float) (0.5 + this.random.nextGaussian() * SIZE_DEVIATION)
+                        : (float) (1.0 + this.random.nextGaussian() * SIZE_DEVIATION));
+        this.setSize(HITBOX, HITBOX);
         frame(this.random.nextInt(RUNE_COUNT));
         this.faceRotation = new Quaternionf().rotateY((float) Math.toRadians(this.random.nextInt(4) * 90.0F));
         float slideX = options.variant() ? 0.0F : this.random.nextFloat() * 0.2F;

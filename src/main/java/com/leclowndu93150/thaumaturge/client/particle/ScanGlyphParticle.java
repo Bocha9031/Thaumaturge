@@ -9,9 +9,10 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.util.RandomSource;
 
 public final class ScanGlyphParticle extends TTParticle {
-    private static final int FRAME_COUNT = 15;
     private static final int LIFETIME = 44;
     private static final float SIZE = 0.9F;
+    private static final float HOLD_ALPHA = 0.9F;
+    private static final int TICKS_PER_FRAME = 2;
 
     private final boolean additive;
 
@@ -28,8 +29,8 @@ public final class ScanGlyphParticle extends TTParticle {
 
     @Override
     protected void update() {
-        frame(this.age % FRAME_COUNT);
-        this.alpha = Keyframes.sample(progress(), 0.0F, 1.0F, 0.8F, 0.0F);
+        frame(this.age / TICKS_PER_FRAME % sheetFrames());
+        this.alpha = HOLD_ALPHA * Keyframes.sample(progress(), 0.0F, 1.0F, 1.0F, 1.0F, 1.0F, 0.0F);
     }
 
     @Override

@@ -452,6 +452,21 @@ final class ParticleBehaviorPortTest {
         assertEquals(4.0E-4, doubleConstant(GolemTrailParticle.class, "WIND_SCALE"));
     }
 
+    @Test
+    void runeMistAndScanGlyphUseRevisedScaleAndAnimationProfiles() throws Exception {
+        assertEquals(0.17F, floatConstant(BlockRunesParticle.class, "QUAD_RADIUS"));
+        assertEquals(0.08F, floatConstant(BlockRunesParticle.class, "SIZE_DEVIATION"));
+        assertEquals(-0.505F, floatConstant(BlockRunesParticle.class, "FACE_OFFSET"));
+
+        assertEquals(120, intConstant(MistFlatParticle.class, "LIFETIME_RANGE"));
+        assertEquals(0.1F, floatConstant(MistFlatParticle.class, "START_SIZE"));
+        assertEquals(0.1F, floatConstant(MistFlatParticle.class, "SPIN_SPEED"));
+        assertEquals(3.0E-4, doubleConstant(MistFlatParticle.class, "WIND_SCALE"));
+
+        assertEquals(2, intConstant(ScanGlyphParticle.class, "TICKS_PER_FRAME"));
+        assertEquals(0.9F, floatConstant(ScanGlyphParticle.class, "HOLD_ALPHA"));
+    }
+
     private static void invokeUpdate(Object particle) throws Exception {
         Method update = particle.getClass().getDeclaredMethod("update");
         update.setAccessible(true);

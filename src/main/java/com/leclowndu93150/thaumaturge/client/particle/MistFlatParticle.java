@@ -8,7 +8,11 @@ import net.minecraft.util.RandomSource;
 
 public final class MistFlatParticle extends TTParticle {
     private static final int BASE_LIFETIME = 400;
-    private static final double WIND_SCALE = 0.001;
+    private static final int LIFETIME_RANGE = 120;
+    private static final float START_SIZE = 0.1F;
+    private static final float END_SIZE = 0.5F;
+    private static final float SPIN_SPEED = 0.1F;
+    private static final double WIND_SCALE = 3.0E-4;
 
     private MistFlatParticle(
             ClientLevel level,
@@ -22,9 +26,9 @@ public final class MistFlatParticle extends TTParticle {
             ParticleSheet sheet) {
         super(level, x, y, z, vx, vy, vz, sheet);
         setColor(options.getRed(), options.getGreen(), options.getBlue());
-        this.lifetime = BASE_LIFETIME + this.random.nextInt(100);
-        this.quadSize = 0.2F;
-        setSpin(this.random.nextFloat(), this.random.nextBoolean() ? -1.0F : 1.0F);
+        this.lifetime = BASE_LIFETIME + this.random.nextInt(LIFETIME_RANGE);
+        this.quadSize = START_SIZE;
+        setSpin(this.random.nextFloat(), this.random.nextBoolean() ? -SPIN_SPEED : SPIN_SPEED);
         setMoonWind(WIND_SCALE);
     }
 
@@ -32,7 +36,7 @@ public final class MistFlatParticle extends TTParticle {
     protected void update() {
         float t = progress();
         this.alpha = 1.0F - t;
-        this.quadSize = Keyframes.sample(t, 0.2F, 0.5F);
+        this.quadSize = Keyframes.sample(t, START_SIZE, END_SIZE);
     }
 
     public static final class Provider implements ParticleProvider<ColorParticleOption> {
