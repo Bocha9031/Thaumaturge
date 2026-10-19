@@ -421,7 +421,7 @@ final class ParticleBehaviorPortTest {
         float partialTick = 0.5F;
         bolt.render(buffer, camera, partialTick);
 
-        double amplitude = partialTick / 10.0F;
+        double amplitude = partialTick / 24.0F;
         double expectedX =
                 Mth.lerp(0.25, shape.coordinate(0, 0, amplitude), shape.coordinate(1, 0, amplitude)) - originX;
         double expectedY =
@@ -434,6 +434,24 @@ final class ParticleBehaviorPortTest {
         assertEquals(expectedZ, firstVertex.z, 1.0E-5);
     }
 
+    @Test
+    void boltCurlyWispAndGolemTrailUseRevisedMotionProfiles() throws Exception {
+        assertEquals(4096, intConstant(BoltParticle.class, "SEED_BOUND"));
+        assertEquals(24.0F, floatConstant(BoltParticle.class, "SWAY_TIME_DIVISOR"));
+        assertEquals(0.2F, floatConstant(BoltParticle.class, "MIN_ALPHA"));
+
+        assertEquals(20, intConstant(CurlyWispParticle.class, "LIFETIME_BASE"));
+        assertEquals(4, intConstant(CurlyWispParticle.class, "LIFETIME_RANGE_PER_SEED"));
+        assertEquals(55.0, doubleConstant(CurlyWispParticle.class, "TILT_DEVIATION_DEGREES"));
+        assertEquals(1.05F, floatConstant(CurlyWispParticle.class, "END_SIZE_BASE"));
+        assertEquals(1.1F, floatConstant(CurlyWispParticle.class, "SPIN_BASE"));
+
+        assertEquals(16, intConstant(GolemTrailParticle.class, "BASE_LIFETIME"));
+        assertEquals(8, intConstant(GolemTrailParticle.class, "LIFETIME_RANGE"));
+        assertEquals(0.45F, floatConstant(GolemTrailParticle.class, "END_SIZE"));
+        assertEquals(4.0E-4, doubleConstant(GolemTrailParticle.class, "WIND_SCALE"));
+    }
+
     private static void invokeUpdate(Object particle) throws Exception {
         Method update = particle.getClass().getDeclaredMethod("update");
         update.setAccessible(true);
@@ -444,6 +462,24 @@ final class ParticleBehaviorPortTest {
         Field velocity = Particle.class.getDeclaredField(name);
         velocity.setAccessible(true);
         return velocity.getDouble(particle);
+    }
+
+    private static int intConstant(Class<?> type, String name) throws Exception {
+        Field field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.getInt(null);
+    }
+
+    private static float floatConstant(Class<?> type, String name) throws Exception {
+        Field field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.getFloat(null);
+    }
+
+    private static double doubleConstant(Class<?> type, String name) throws Exception {
+        Field field = type.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.getDouble(null);
     }
 
     private static <T> T construct(Class<T> type, Class<?>[] parameterTypes, Object... arguments) throws Exception {

@@ -16,12 +16,14 @@ import org.joml.Vector3f;
 public final class BoltParticle extends TTParticle {
     private static final int FRAME_COUNT = 16;
     private static final int BOLT_LIFETIME = 3;
-    private static final float MIN_ALPHA = 0.1F;
+    private static final float MIN_ALPHA = 0.2F;
     private static final float WIDTH_DIVISOR = 6.0F;
     private static final int EMISSIVE_LIGHT = 0x00F000F0;
-    private static final int SEED_BOUND = 1000;
-    private static final int PHASE_MULTIPLES = 50;
+    private static final int SEED_BOUND = 4096;
+    private static final int PHASE_MULTIPLES = 8;
     private static final int BEADS_PER_SECTION = 4;
+    private static final float HITBOX = 0.02F;
+    private static final float SWAY_TIME_DIVISOR = 24.0F;
 
     private final float beadSize;
     private final int seed;
@@ -31,7 +33,7 @@ public final class BoltParticle extends TTParticle {
             ClientLevel level, double x, double y, double z, BoltParticleOptions options, ParticleSheet sheet) {
         super(level, x, y, z, 0.0, 0.0, 0.0, sheet);
         setColor(options.r(), options.g(), options.b());
-        this.setSize(0.02F, 0.02F);
+        this.setSize(HITBOX, HITBOX);
         this.lifetime = BOLT_LIFETIME;
         this.beadSize = options.width() / WIDTH_DIVISOR;
         this.seed = this.random.nextInt(SEED_BOUND);
@@ -57,7 +59,7 @@ public final class BoltParticle extends TTParticle {
         Vec3 cam = camera.getPosition();
         float fade = Mth.clamp(1.0F - (this.age + partialTick) / this.lifetime, MIN_ALPHA, 1.0F);
         int color = ARGB32.colorFromFloat(fade, this.rCol, this.gCol, this.bCol);
-        double amplitude = (this.age + partialTick) / 10.0F;
+        double amplitude = (this.age + partialTick) / SWAY_TIME_DIVISOR;
         Quaternionf rotation = camera.rotation();
         float u0 = getU0();
         float u1 = getU1();
