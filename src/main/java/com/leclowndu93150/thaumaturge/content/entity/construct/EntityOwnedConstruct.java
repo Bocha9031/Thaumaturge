@@ -33,6 +33,8 @@ public abstract class EntityOwnedConstruct extends PathfinderMob implements Owna
     private static final String MASTER_KEY = "Owner";
     private static final String COMMISSIONED_KEY = "v";
     private static final int CHATTER_INTERVAL = 240;
+    private static final float JOLT_YAW_SCALE = 45.0F;
+    private static final float JOLT_PITCH_SCALE = 20.0F;
 
     private boolean commissioned;
 
@@ -85,6 +87,28 @@ public abstract class EntityOwnedConstruct extends PathfinderMob implements Owna
         if (!commissioned && !level().isClientSide()) {
             discard();
         }
+    }
+
+    final void jolt() {
+        setXRot(perturb(getXRot(), JOLT_PITCH_SCALE));
+        setYHeadRot(perturb(getYHeadRot(), JOLT_YAW_SCALE));
+        swivelWithHead();
+    }
+
+    final void swivelWithHead() {
+        float yaw = getYHeadRot();
+        setYRot(yaw);
+        setYBodyRot(yaw);
+    }
+
+    final void regenerate(int interval, float amount) {
+        if (tickCount % interval == 0 && getHealth() < getMaxHealth()) {
+            heal(amount);
+        }
+    }
+
+    private float perturb(float angle, float scale) {
+        return angle + (float) random.nextGaussian() * scale;
     }
 
     @Override

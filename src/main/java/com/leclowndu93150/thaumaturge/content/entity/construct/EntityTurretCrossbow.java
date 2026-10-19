@@ -22,6 +22,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.RangedAttackGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
+import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.minecraft.world.entity.player.Player;
@@ -59,6 +60,12 @@ public class EntityTurretCrossbow extends EntityOwnedConstruct implements Ranged
 
     public EntityTurretCrossbow(EntityType<? extends EntityTurretCrossbow> type, Level level) {
         super(type, level);
+        this.lookControl = new ConstructLookControl(this);
+    }
+
+    @Override
+    protected PathNavigation createNavigation(Level level) {
+        return new StationaryNavigation(this, level);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
@@ -170,10 +177,8 @@ public class EntityTurretCrossbow extends EntityOwnedConstruct implements Ranged
             setTarget(null);
         }
         if (!level().isClientSide()) {
-            yBodyRot = yHeadRot;
-            if (tickCount % HEAL_INTERVAL == 0) {
-                heal(1.0F);
-            }
+            swivelWithHead();
+            regenerate(HEAL_INTERVAL, 1.0F);
             followActivatorRail();
         } else {
             updateArmSwingProgress();
@@ -253,8 +258,7 @@ public class EntityTurretCrossbow extends EntityOwnedConstruct implements Ranged
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (!(level() instanceof ServerLevel level)) return false;
-        setYRot((float) (getYRot() + random.nextGaussian() * 45.0));
-        setXRot((float) (getXRot() + random.nextGaussian() * 20.0));
+        jolt();
         return super.hurt(source, amount);
     }
 
