@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 public final class EldritchCapRenderer<T extends BlockEntity> implements BlockEntityRenderer<T> {
+    private static final int MAX_EYES = 4;
     public static final ResourceLocation CAP_TEXTURE = TTIds.rl("textures/entity/obelisk_cap.png");
     public static final ResourceLocation CAP_TEXTURE_OUTER = TTIds.rl("textures/entity/obelisk_cap_2.png");
     public static final ResourceLocation ALTAR_TEXTURE = TTIds.rl("textures/entity/obelisk_cap_altar.png");
@@ -58,7 +59,7 @@ public final class EldritchCapRenderer<T extends BlockEntity> implements BlockEn
         EldritchObeliskRenderer.renderCap(model, poseStack, buffers, type, light);
         poseStack.popPose();
 
-        int eyes = eyeCount.applyAsInt(cap);
+        int eyes = clampEyeCount(eyeCount.applyAsInt(cap));
         if (eyes <= 0) {
             return;
         }
@@ -78,5 +79,9 @@ public final class EldritchCapRenderer<T extends BlockEntity> implements BlockEn
             ItemRenderHelper.render(eyeStack, ItemDisplayContext.FIXED, poseStack, buffers, light, overlay, 0);
             poseStack.popPose();
         }
+    }
+
+    static int clampEyeCount(int eyes) {
+        return Math.min(MAX_EYES, eyes);
     }
 }
