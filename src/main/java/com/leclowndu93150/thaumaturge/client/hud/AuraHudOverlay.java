@@ -6,65 +6,72 @@ import com.leclowndu93150.thaumaturge.client.aura.ClientAuraCache;
 import com.leclowndu93150.thaumaturge.client.render.GuiBlend;
 import com.leclowndu93150.thaumaturge.content.item.ThaumometerItem;
 import com.leclowndu93150.thaumaturge.network.ServerboundRequestAuraChunkPayload;
-import java.text.DecimalFormat;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.jspecify.annotations.Nullable;
 
 public final class AuraHudOverlay implements LeftHudStack.Gauge {
     private static final ResourceLocation HUD = TTIds.rl("textures/gui/hud.png");
     private static final int TEX_SIZE = 256;
 
-    private static final float VISCON = 525.0F;
-    private static final int HUD_X = 2;
-    private static final int BAR_X = 5;
-    private static final float BAR_TOP = 10.0F;
-    private static final int BAR_RANGE = 64;
-    private static final float FRAME_U = 72.0F;
-    private static final float FRAME_V = 48.0F;
+    private static final int FRAME_X = 3;
+    private static final int FRAME_Y = 1;
+    private static final int FRAME_U = 72;
+    private static final int FRAME_V = 48;
     private static final int FRAME_W = 16;
     private static final int FRAME_H = 80;
-    private static final float FILL_U = 88.0F;
-    private static final float FILL_V = 56.0F;
-    private static final int FILL_W = 8;
-    private static final int FILL_H = 64;
-    private static final float VIS_RIPPLE_U = 96.0F;
-    private static final float FLUX_RIPPLE_U = 104.0F;
-    private static final float RIPPLE_V_BASE = 56.0F;
-    private static final float FLUX_RIPPLE_V_BASE = 120.0F;
-    private static final float NEEDLE_TOP = 8.0F;
-    private static final float NEEDLE_U = 117.0F;
-    private static final float NEEDLE_V = 61.0F;
-    private static final int NEEDLE_W = 14;
-    private static final int NEEDLE_H = 5;
-    private static final int NEEDLE_X = 2;
-    private static final int FRAME_X = 1;
-    private static final int FRAME_Y = 1;
-    private static final int TEXT_X = 16;
+    private static final int TUBE_X = 7;
+    private static final int TUBE_BOTTOM = 74;
+    private static final int TUBE_W = 8;
+    private static final int TUBE_ROWS = 64;
+    private static final int FILL_U = 88;
+    private static final int FILL_V = 56;
+    private static final int FILL_PERIOD = 64;
+    private static final int VIS_SHIMMER_U = 96;
+    private static final int FLUX_SHIMMER_U = 104;
+    private static final int SHIMMER_V = 56;
+    private static final int SHIMMER_PERIOD = 128;
+    private static final int POINTER_X = 4;
+    private static final int POINTER_U = 117;
+    private static final int POINTER_V = 61;
+    private static final int POINTER_W = 14;
+    private static final int POINTER_H = 5;
+    private static final int POINTER_TIP_ROW = 2;
+    private static final int TEXT_X = 18;
     private static final float TEXT_SCALE = 0.5F;
-
-    private static final int VIS_FILL_TINT = 0xFFB266E5;
-    private static final int FLUX_FILL_TINT = 0xFF3F194C;
-    private static final int VIS_RIPPLE_TINT = 0x80FFFFFF;
-    private static final int FLUX_RIPPLE_TINT = 0x80B266FF;
-    private static final int VIS_TEXT_COLOR = 0xFFEEAAFF;
-    private static final int FLUX_TEXT_COLOR = 0xFFAA11BB;
+    private static final int FULL_TUBE_AURA = 520;
+    private static final int VIS_TINT = 0xFFC7A6EE;
+    private static final int FLUX_TINT = 0xFF4B2559;
+    private static final int VIS_SHIMMER_TINT = 0x5CFFF4FF;
+    private static final int FLUX_SHIMMER_TINT = 0x70B37BFF;
+    private static final float VIS_SHIMMER_SPEED = 0.55F;
+    private static final float FLUX_SHIMMER_SPEED = -0.3F;
+    private static final long SCROLL_WRAP_TICKS = 64000L;
+    private static final int VIS_TEXT_COLOR = 0xFFF2CDEB;
+    private static final int FLUX_TEXT_COLOR = 0xFFC01C82;
+    private static final int TEXT_UPSCALE = 2;
+    private static final int TENTHS = 10;
     private static final int STACK_HEIGHT = 83;
-
-    private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("#######.#");
 
     public AuraHudOverlay() {}
 
     @Override
     public boolean visible(Minecraft mc, LocalPlayer player) {
-        return shouldShow(player);
+        if (mc.screen != null || !mc.mouseHandler.isMouseGrabbed() || !shouldShow(player)) {
+            return false;
+        }
+        ChunkPos chunk = player.chunkPosition();
+        if (ClientAuraCache.shouldRequest(chunk)) {
+            PacketDistributor.sendToServer(new ServerboundRequestAuraChunkPayload(chunk.x, chunk.z));
+        }
+        return snapshotFor(player) != null;
     }
 
     @Override
@@ -81,147 +88,179 @@ public final class AuraHudOverlay implements LeftHudStack.Gauge {
     public void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        ChunkPos pos = new ChunkPos(player.blockPosition());
-        if (ClientAuraCache.shouldRequest(pos)) {
-            PacketDistributor.sendToServer(new ServerboundRequestAuraChunkPayload(pos.x, pos.z));
-        }
-        ClientAuraCache.Snapshot snap = ClientAuraCache.get(pos);
-        if (snap == null) {
-            snap = ClientAuraCache.latest();
-        }
-        if (snap == null) {
+        ClientLevel level = mc.level;
+        if (player == null || level == null) {
             return;
         }
-
-        float partial = deltaTracker.getGameTimeDeltaPartialTick(false);
-        float base = Mth.clamp(snap.base() / VISCON, 0.0F, 1.0F);
-        float vis = Mth.clamp(snap.vis() / VISCON, 0.0F, 1.0F);
-        float flux = Mth.clamp(snap.flux() / VISCON, 0.0F, 1.0F);
-        float count = player.tickCount + partial;
-        float count2 = player.tickCount / 3.0F + partial;
-        if (flux + vis > 1.0F) {
-            float m = 1.0F / (flux + vis);
-            base *= m;
-            vis *= m;
-            flux *= m;
+        ClientAuraCache.Snapshot snapshot = snapshotFor(player);
+        if (snapshot == null) {
+            return;
         }
-
-        if (vis > 0.0F) {
-            float start = BAR_TOP + (1.0F - vis) * BAR_RANGE;
-            int fillHeight = Math.round(vis * BAR_RANGE);
-            int y = Math.round(BAR_TOP + BAR_RANGE) - fillHeight;
-            GuiBlend.blitTinted(
-                    graphics,
-                    HUD,
-                    HUD_X + BAR_X,
-                    y,
-                    FILL_W,
-                    fillHeight,
-                    FILL_U,
-                    FILL_V,
-                    FILL_W,
-                    FILL_H,
-                    TEX_SIZE,
-                    TEX_SIZE,
-                    VIS_FILL_TINT);
-            GuiBlend.blitAdditive(
-                    graphics,
-                    HUD,
-                    HUD_X + BAR_X,
-                    y,
-                    VIS_RIPPLE_U,
-                    RIPPLE_V_BASE + count % BAR_RANGE,
-                    FILL_W,
-                    fillHeight,
-                    TEX_SIZE,
-                    TEX_SIZE,
-                    VIS_RIPPLE_TINT);
-            if (player.isShiftKeyDown()) {
-                drawAmount(graphics, AMOUNT_FORMAT.format(snap.vis()), start, VIS_TEXT_COLOR);
-            }
+        float visShare = share(snapshot.vis());
+        float fluxShare = share(snapshot.flux());
+        float baseShare = share(snapshot.base());
+        float filled = visShare + fluxShare;
+        if (filled > 1.0F) {
+            visShare /= filled;
+            fluxShare /= filled;
+            baseShare /= filled;
         }
-
-        if (flux > 0.0F) {
-            float start = BAR_TOP + (1.0F - flux - vis) * BAR_RANGE;
-            int fillHeight = Math.round(flux * BAR_RANGE);
-            int y = Math.round(start);
-            GuiBlend.blitTinted(
-                    graphics,
-                    HUD,
-                    HUD_X + BAR_X,
-                    y,
-                    FILL_W,
-                    fillHeight,
-                    FILL_U,
-                    FILL_V,
-                    FILL_W,
-                    FILL_H,
-                    TEX_SIZE,
-                    TEX_SIZE,
-                    FLUX_FILL_TINT);
-            GuiBlend.blitAdditive(
-                    graphics,
-                    HUD,
-                    HUD_X + BAR_X,
-                    y,
-                    FLUX_RIPPLE_U,
-                    FLUX_RIPPLE_V_BASE - count2 % BAR_RANGE,
-                    FILL_W,
-                    fillHeight,
-                    TEX_SIZE,
-                    TEX_SIZE,
-                    FLUX_RIPPLE_TINT);
-            if (player.isShiftKeyDown()) {
-                drawAmount(graphics, AMOUNT_FORMAT.format(snap.flux()), start - 4.0F, FLUX_TEXT_COLOR);
-            }
-        }
-
+        int visRows = Math.round(visShare * TUBE_ROWS);
+        int fluxRows = Math.min(TUBE_ROWS - visRows, Math.round(fluxShare * TUBE_ROWS));
+        int visTop = TUBE_BOTTOM - visRows;
+        int fluxTop = visTop - fluxRows;
+        float clock = (level.getGameTime() % SCROLL_WRAP_TICKS) + deltaTracker.getGameTimeDeltaPartialTick(false);
+        drawBand(graphics, visTop, visRows, VIS_TINT, VIS_SHIMMER_U, VIS_SHIMMER_TINT, clock * VIS_SHIMMER_SPEED);
+        drawBand(graphics, fluxTop, fluxRows, FLUX_TINT, FLUX_SHIMMER_U, FLUX_SHIMMER_TINT, clock * FLUX_SHIMMER_SPEED);
+        GuiBlend.blitTinted(
+                graphics, HUD, FRAME_X, FRAME_Y, FRAME_U, FRAME_V, FRAME_W, FRAME_H, TEX_SIZE, TEX_SIZE, 0xFFFFFFFF);
+        int pointerTip = TUBE_BOTTOM - Math.round(baseShare * TUBE_ROWS);
         GuiBlend.blitTinted(
                 graphics,
                 HUD,
-                HUD_X + FRAME_X,
-                FRAME_Y,
-                (float) FRAME_U,
-                (float) FRAME_V,
-                FRAME_W,
-                FRAME_H,
+                POINTER_X,
+                pointerTip - POINTER_TIP_ROW,
+                POINTER_U,
+                POINTER_V,
+                POINTER_W,
+                POINTER_H,
                 TEX_SIZE,
                 TEX_SIZE,
                 0xFFFFFFFF);
-
-        float needleStart = NEEDLE_TOP + (1.0F - base) * BAR_RANGE;
-        GuiBlend.blitTinted(
-                graphics,
-                HUD,
-                HUD_X + NEEDLE_X,
-                Math.round(needleStart),
-                (float) NEEDLE_U,
-                (float) NEEDLE_V,
-                NEEDLE_W,
-                NEEDLE_H,
-                TEX_SIZE,
-                TEX_SIZE,
-                0xFFFFFFFF);
-    }
-
-    private static void drawAmount(GuiGraphics graphics, String text, float y, int color) {
-        Minecraft mc = Minecraft.getInstance();
-        graphics.pose().pushPose();
-        graphics.pose().translate(HUD_X + TEXT_X, y, 0.0F);
-        graphics.pose().scale(TEXT_SCALE, TEXT_SCALE, 1.0F);
-        graphics.drawString(mc.font, text, 0, 0, color, false);
-        graphics.pose().popPose();
+        if (player.isShiftKeyDown()) {
+            drawAmounts(graphics, mc, snapshot, visTop, fluxTop);
+        }
     }
 
     private static boolean shouldShow(Player player) {
-        if (GogglesAccess.wearsRevealingGear(player)) {
-            return true;
+        return GogglesAccess.wearsRevealingGear(player)
+                || player.getMainHandItem().getItem() instanceof ThaumometerItem
+                || player.getOffhandItem().getItem() instanceof ThaumometerItem;
+    }
+
+    private static ClientAuraCache.@Nullable Snapshot snapshotFor(LocalPlayer player) {
+        ClientAuraCache.Snapshot own = ClientAuraCache.get(player.chunkPosition());
+        return own != null ? own : ClientAuraCache.latest();
+    }
+
+    static float share(float amount) {
+        return Math.clamp(amount / FULL_TUBE_AURA, 0.0F, 1.0F);
+    }
+
+    private static void drawBand(
+            GuiGraphics graphics, int top, int rows, int tint, int shimmerU, int shimmerTint, float scroll) {
+        if (rows <= 0) {
+            return;
         }
-        ItemStack main = player.getMainHandItem();
-        if (!main.isEmpty() && main.getItem() instanceof ThaumometerItem) {
-            return true;
+        int tubeRow = top - (TUBE_BOTTOM - TUBE_ROWS);
+        scrolledStrip(graphics, false, top, rows, FILL_U, FILL_V, FILL_PERIOD, tubeRow, tint);
+        int shimmerRow = Math.floorMod(tubeRow + (int) Math.floor(scroll), SHIMMER_PERIOD);
+        scrolledStrip(graphics, true, top, rows, shimmerU, SHIMMER_V, SHIMMER_PERIOD, shimmerRow, shimmerTint);
+    }
+
+    private static void scrolledStrip(
+            GuiGraphics graphics,
+            boolean additive,
+            int top,
+            int rows,
+            int u,
+            int v,
+            int period,
+            int startRow,
+            int tint) {
+        int first = Math.min(rows, period - startRow);
+        if (additive) {
+            GuiBlend.blitAdditive(
+                    graphics,
+                    HUD,
+                    TUBE_X,
+                    top,
+                    TUBE_W,
+                    first,
+                    u,
+                    v + startRow,
+                    TUBE_W,
+                    first,
+                    TEX_SIZE,
+                    TEX_SIZE,
+                    tint);
+        } else {
+            GuiBlend.blitTinted(
+                    graphics,
+                    HUD,
+                    TUBE_X,
+                    top,
+                    TUBE_W,
+                    first,
+                    u,
+                    v + startRow,
+                    TUBE_W,
+                    first,
+                    TEX_SIZE,
+                    TEX_SIZE,
+                    tint);
         }
-        ItemStack off = player.getOffhandItem();
-        return !off.isEmpty() && off.getItem() instanceof ThaumometerItem;
+        if (first < rows) {
+            if (additive) {
+                GuiBlend.blitAdditive(
+                        graphics,
+                        HUD,
+                        TUBE_X,
+                        top + first,
+                        TUBE_W,
+                        rows - first,
+                        u,
+                        v,
+                        TUBE_W,
+                        rows - first,
+                        TEX_SIZE,
+                        TEX_SIZE,
+                        tint);
+            } else {
+                GuiBlend.blitTinted(
+                        graphics,
+                        HUD,
+                        TUBE_X,
+                        top + first,
+                        TUBE_W,
+                        rows - first,
+                        u,
+                        v,
+                        TUBE_W,
+                        rows - first,
+                        TEX_SIZE,
+                        TEX_SIZE,
+                        tint);
+            }
+        }
+    }
+
+    private static void drawAmounts(
+            GuiGraphics graphics, Minecraft mc, ClientAuraCache.Snapshot snapshot, int visTop, int fluxTop) {
+        graphics.pose().pushPose();
+        graphics.pose().scale(TEXT_SCALE, TEXT_SCALE, 1.0F);
+        int x = TEXT_X * TEXT_UPSCALE;
+        graphics.drawString(
+                mc.font,
+                amount(snapshot.vis()),
+                x,
+                visTop * TEXT_UPSCALE - mc.font.lineHeight / TEXT_UPSCALE,
+                VIS_TEXT_COLOR,
+                false);
+        graphics.drawString(
+                mc.font,
+                amount(snapshot.flux()),
+                x,
+                fluxTop * TEXT_UPSCALE - mc.font.lineHeight,
+                FLUX_TEXT_COLOR,
+                false);
+        graphics.pose().popPose();
+    }
+
+    static String amount(float value) {
+        long tenths = Math.round(value * TENTHS);
+        long whole = tenths / TENTHS;
+        long fraction = Math.abs(tenths % TENTHS);
+        return fraction == 0 ? Long.toString(whole) : whole + "." + fraction;
     }
 }
