@@ -63,7 +63,7 @@ public final class TTTooltipEvents {
                             1,
                             Component.translatable(
                                             "tooltip.thaumaturge.charge",
-                                            RechargeAccess.getCharge(event.getItemStack()),
+                                            RechargeAccess.storedVis(event.getItemStack()),
                                             charge.capacity())
                                     .withStyle(ChatFormatting.AQUA));
         }

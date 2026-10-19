@@ -46,32 +46,32 @@ public final class VerdantCharmItem extends Item {
                 || !(wearer instanceof Player player)) {
             return;
         }
-        if (player.getEffect(MobEffects.WITHER) != null && RechargeAccess.consumeCharge(stack, player, WITHER_COST)) {
+        if (player.getEffect(MobEffects.WITHER) != null && RechargeAccess.spendVis(stack, WITHER_COST)) {
             player.removeEffect(MobEffects.WITHER);
             return;
         }
-        if (player.getEffect(MobEffects.POISON) != null && RechargeAccess.consumeCharge(stack, player, POISON_COST)) {
+        if (player.getEffect(MobEffects.POISON) != null && RechargeAccess.spendVis(stack, POISON_COST)) {
             player.removeEffect(MobEffects.POISON);
             return;
         }
         if (player.getEffect(TTMobEffects.FLUX_TAINT) != null
-                && RechargeAccess.consumeCharge(stack, player, FLUX_TAINT_COST)) {
+                && RechargeAccess.spendVis(stack, FLUX_TAINT_COST)) {
             player.removeEffect(TTMobEffects.FLUX_TAINT);
             return;
         }
         int type = type(stack);
         if (type == TYPE_LIFE
                 && player.getHealth() < player.getMaxHealth()
-                && RechargeAccess.consumeCharge(stack, player, HEAL_COST)) {
+                && RechargeAccess.spendVis(stack, HEAL_COST)) {
             player.heal(1.0F);
             return;
         }
         if (type == TYPE_SUSTAIN) {
-            if (player.getAirSupply() < LOW_AIR && RechargeAccess.consumeCharge(stack, player, SUSTAIN_COST)) {
+            if (player.getAirSupply() < LOW_AIR && RechargeAccess.spendVis(stack, SUSTAIN_COST)) {
                 player.setAirSupply(RESTORED_AIR);
                 return;
             }
-            if (player.canEat(false) && RechargeAccess.consumeCharge(stack, player, SUSTAIN_COST)) {
+            if (player.canEat(false) && RechargeAccess.spendVis(stack, SUSTAIN_COST)) {
                 player.getFoodData().eat(FOOD_AMOUNT, FOOD_SATURATION);
             }
         }

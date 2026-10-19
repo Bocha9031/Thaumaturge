@@ -22,7 +22,7 @@ class TravellerBootsMovementTest {
         when(player.onGround()).thenReturn(true);
 
         try (MockedStatic<RechargeAccess> rechargeAccess = mockStatic(RechargeAccess.class)) {
-            rechargeAccess.when(() -> RechargeAccess.getCharge(stack)).thenReturn(1);
+            rechargeAccess.when(() -> RechargeAccess.storedVis(stack)).thenReturn(1);
 
             TravellerBootsItem.clientMovementTick(player, stack);
         }
@@ -40,7 +40,7 @@ class TravellerBootsMovementTest {
         when(player.onGround()).thenReturn(true);
 
         try (MockedStatic<RechargeAccess> rechargeAccess = mockStatic(RechargeAccess.class)) {
-            rechargeAccess.when(() -> RechargeAccess.getCharge(stack)).thenReturn(1);
+            rechargeAccess.when(() -> RechargeAccess.storedVis(stack)).thenReturn(1);
 
             TravellerBootsItem.clientMovementTick(player, stack);
         }

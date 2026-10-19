@@ -36,17 +36,17 @@ public final class AmuletVisItem extends Item {
             return;
         }
         for (int slot = 0; slot < Inventory.getSelectionSize(); slot++) {
-            if (RechargeAccess.rechargeItem(
+            if (RechargeAccess.drawFromAura(
                             player.level(), player.getInventory().getItem(slot), player.blockPosition(), player, 1)
-                    > 0.0F) {
+                    > 0) {
                 return;
             }
         }
         if (topUpWand(player)) {
             return;
         }
-        if (RechargeAccess.rechargeItem(player.level(), player.getOffhandItem(), player.blockPosition(), player, 1)
-                        > 0.0F
+        if (RechargeAccess.drawFromAura(player.level(), player.getOffhandItem(), player.blockPosition(), player, 1)
+                        > 0
                 || topUpWand(player, player.getOffhandItem())) {
             return;
         }
@@ -55,9 +55,9 @@ public final class AmuletVisItem extends Item {
         }
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             if (slot.isArmor()
-                    && RechargeAccess.rechargeItem(
+                    && RechargeAccess.drawFromAura(
                                     player.level(), player.getItemBySlot(slot), player.blockPosition(), player, 1)
-                            > 0.0F) {
+                            > 0) {
                 return;
             }
         }

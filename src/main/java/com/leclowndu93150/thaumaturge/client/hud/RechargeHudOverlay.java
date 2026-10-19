@@ -72,7 +72,7 @@ public final class RechargeHudOverlay implements LayeredDraw.Layer {
             if (display == ChargeDisplay.NEVER) {
                 continue;
             }
-            int charge = RechargeAccess.getCharge(stack);
+            int charge = RechargeAccess.storedVis(stack);
             Integer previous = lastCharge.put(slot, charge);
             if (previous == null || previous != charge) {
                 changeTick.put(slot, player.tickCount);

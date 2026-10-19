@@ -86,7 +86,7 @@ public final class BlockEntityRechargePedestal extends BlockEntityPedestal {
         if (counter % RECHARGE_INTERVAL_TICKS != 0) {
             return;
         }
-        if (RechargeAccess.rechargeItem(level, getItem(), worldPosition, null, RECHARGE_AMOUNT) > 0.0F) {
+        if (RechargeAccess.drawFromAura(level, getItem(), worldPosition, null, RECHARGE_AMOUNT) > 0) {
             setChanged();
             syncToClient();
             sendSparkle(level);

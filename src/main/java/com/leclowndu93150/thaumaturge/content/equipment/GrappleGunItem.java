@@ -43,7 +43,7 @@ public final class GrappleGunItem extends Item {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         player.playSound(TTSounds.ICE.get(), 3.0F, 0.8F + level.getRandom().nextFloat() * 0.1F);
         ItemStack stack = player.getItemInHand(hand);
-        if (!level.isClientSide() && RechargeAccess.getCharge(stack) > 0) {
+        if (!level.isClientSide() && RechargeAccess.storedVis(stack) > 0) {
             EntityGrapple grapple = new EntityGrapple(TTEntities.GRAPPLE.get(), level, player, hand);
             grapple.shootFromRotation(
                     player, player.getXRot(), player.getYRot(), LAUNCH_PITCH_OFFSET, LAUNCH_VELOCITY, 0.0F);
@@ -53,7 +53,7 @@ public final class GrappleGunItem extends Item {
             Vec3 look = player.getLookAngle();
             grapple.setPos(grapple.getX() + px + look.x, grapple.getY(), grapple.getZ() + pz + look.z);
             if (level.addFreshEntity(grapple)) {
-                RechargeAccess.consumeCharge(stack, player, 1);
+                RechargeAccess.spendVis(stack, 1);
                 stack.set(TTDataComponents.GRAPPLE_LOADED, true);
             }
         }

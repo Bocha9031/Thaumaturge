@@ -79,13 +79,13 @@ public final class TravellerBootsItem extends ArmorItem {
             int energy = stack.getOrDefault(TTDataComponents.ENERGY.get(), 0);
             if (energy > 0) {
                 energy--;
-            } else if (RechargeAccess.consumeCharge(stack, player, 1)) {
+            } else if (RechargeAccess.spendVis(stack, 1)) {
                 energy = ENERGY_PER_CHARGE;
             }
             stack.set(TTDataComponents.ENERGY.get(), energy);
         }
         boolean active =
-                RechargeAccess.getCharge(stack) > 0 && !player.getAbilities().flying && !player.isShiftKeyDown();
+                RechargeAccess.storedVis(stack) > 0 && !player.getAbilities().flying && !player.isShiftKeyDown();
         AttributeInstance stepHeight = player.getAttribute(Attributes.STEP_HEIGHT);
         AttributeInstance jumpHeight = player.getAttribute(Attributes.JUMP_STRENGTH);
         if (stepHeight != null) {
@@ -105,7 +105,7 @@ public final class TravellerBootsItem extends ArmorItem {
     }
 
     public static void clientMovementTick(Player player, ItemStack stack) {
-        if (RechargeAccess.getCharge(stack) <= 0
+        if (RechargeAccess.storedVis(stack) <= 0
                 || player.getAbilities().flying
                 || player.isPassenger()
                 || player.zza <= 0.0F) {

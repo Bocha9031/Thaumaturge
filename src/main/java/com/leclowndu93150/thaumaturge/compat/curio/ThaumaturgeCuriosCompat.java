@@ -170,9 +170,9 @@ public final class ThaumaturgeCuriosCompat {
         }
         IItemHandlerModifiable equipped = invOpt.get().getEquippedCurios();
         for (int slot = 0; slot < equipped.getSlots(); slot++) {
-            if (RechargeAccess.rechargeItem(
+            if (RechargeAccess.drawFromAura(
                             player.level(), equipped.getStackInSlot(slot), player.blockPosition(), player, 1)
-                    > 0.0F) {
+                    > 0) {
                 return true;
             }
         }
