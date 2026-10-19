@@ -380,9 +380,13 @@ public final class Effects {
                         0.35F,
                         1.0F + (rand.nextFloat() - rand.nextFloat()) * 0.1F);
             }
-            Vec3 sidePush = side == null ? Vec3.ZERO : new Vec3(side.getStepX(), side.getStepY(), side.getStepZ()).scale(0.12);
+            Vec3 sidePush =
+                    side == null ? Vec3.ZERO : new Vec3(side.getStepX(), side.getStepY(), side.getStepZ()).scale(0.12);
             for (int a = 0; a < 10; a++) {
-                Vec3 launch = new Vec3(signedSpeed(rand, 0.04, 0.07), signedSpeed(rand, 0.04, 0.07), signedSpeed(rand, 0.04, 0.07))
+                Vec3 launch = new Vec3(
+                                signedSpeed(rand, 0.04, 0.07),
+                                signedSpeed(rand, 0.04, 0.07),
+                                signedSpeed(rand, 0.04, 0.07))
                         .add(sidePush);
                 Vec3 start = pos.add(launch.scale(1.5));
                 float pr = Mth.clamp(r + (float) (rand.nextGaussian() * 0.06), 0.0F, 1.0F);
@@ -417,7 +421,10 @@ public final class Effects {
             float wb = Mth.lerp(0.5F, b, 0.72F);
             for (int a = 0; a < wisps; a++) {
                 curlyWisp(level, pos)
-                        .motion(signedSpeed(rand, 0.02, 0.04), signedSpeed(rand, 0.02, 0.04), signedSpeed(rand, 0.02, 0.04))
+                        .motion(
+                                signedSpeed(rand, 0.02, 0.04),
+                                signedSpeed(rand, 0.02, 0.04),
+                                signedSpeed(rand, 0.02, 0.04))
                         .color(wr, wg, wb)
                         .alpha(0.65F)
                         .scale(0.55F)
@@ -1429,12 +1436,7 @@ public final class Effects {
         public void send() {
             RandomSource rand = level.getRandom();
             BubbleParticleOptions options = new BubbleParticleOptions(
-                    ARGB32.colorFromFloat(1.0F, r, g, b),
-                    0.8F,
-                    1.0F,
-                    18 + rand.nextInt(5),
-                    -0.01F,
-                    false);
+                    ARGB32.colorFromFloat(1.0F, r, g, b), 0.8F, 1.0F, 18 + rand.nextInt(5), -0.01F, false);
             spawn(level, options, pos.x, pos.y, pos.z);
         }
     }
@@ -1499,13 +1501,8 @@ public final class Effects {
 
         public void send() {
             RandomSource rand = level.getRandom();
-            BubbleParticleOptions options = new BubbleParticleOptions(
-                    0xFFCBC2DA,
-                    0.7F,
-                    0.45F,
-                    3 + rand.nextInt(5),
-                    0.1F,
-                    false);
+            BubbleParticleOptions options =
+                    new BubbleParticleOptions(0xFFCBC2DA, 0.7F, 0.45F, 3 + rand.nextInt(5), 0.1F, false);
             spawn(level, options, pos.x, pos.y, pos.z, 0.0, -0.006, 0.0);
         }
     }
@@ -1521,13 +1518,8 @@ public final class Effects {
 
         public void send() {
             RandomSource rand = level.getRandom();
-            BubbleParticleOptions options = new BubbleParticleOptions(
-                    0xFF3B2470,
-                    0.85F,
-                    1.3F,
-                    10 + rand.nextInt(11),
-                    0.35F,
-                    false);
+            BubbleParticleOptions options =
+                    new BubbleParticleOptions(0xFF3B2470, 0.85F, 1.3F, 10 + rand.nextInt(11), 0.35F, false);
             spawn(level, options, pos.x, pos.y, pos.z);
         }
     }
@@ -1615,7 +1607,12 @@ public final class Effects {
         }
 
         public void send() {
-            spawn(level, new EssentiaDropParticleOptions(ARGB32.colorFromFloat(1.0F, r, g, b), alpha), pos.x, pos.y, pos.z);
+            spawn(
+                    level,
+                    new EssentiaDropParticleOptions(ARGB32.colorFromFloat(1.0F, r, g, b), alpha),
+                    pos.x,
+                    pos.y,
+                    pos.z);
         }
     }
 
@@ -1631,8 +1628,8 @@ public final class Effects {
 
         public void send() {
             RandomSource rand = level.getRandom();
-            BubbleParticleOptions options = new BubbleParticleOptions(
-                    JAR_COLOR, 0.5F, 0.8F, 20 + rand.nextInt(11), 0.6F, true);
+            BubbleParticleOptions options =
+                    new BubbleParticleOptions(JAR_COLOR, 0.5F, 0.8F, 20 + rand.nextInt(11), 0.6F, true);
             spawn(
                     level,
                     options,
@@ -1743,7 +1740,8 @@ public final class Effects {
                 int count = Math.max(SPARKLE_FACE_MINIMUM, (int) Math.round(area * SPARKLE_FACE_DENSITY));
                 for (int index = 0; index < count; index++) {
                     Vec3 point = pointOnFace(shell, face, rand);
-                    int delay = (int) (point.distanceTo(start) * SHELL_TICKS_PER_BLOCK) + rand.nextInt(SPARKLE_DELAY_JITTER);
+                    int delay = (int) (point.distanceTo(start) * SHELL_TICKS_PER_BLOCK)
+                            + rand.nextInt(SPARKLE_DELAY_JITTER);
                     float blend = rand.nextFloat();
                     float green = Mth.lerp(blend, DUST_GOLD_GREEN, DUST_CREAM_GREEN);
                     float blue = Mth.lerp(blend, DUST_GOLD_BLUE, DUST_CREAM_BLUE);
@@ -1766,8 +1764,8 @@ public final class Effects {
                 return false;
             }
             var state = level.getBlockState(neighbour);
-            boolean sealed = state.isSolidRender(level, neighbour)
-                    && state.isFaceSturdy(level, neighbour, face.getOpposite());
+            boolean sealed =
+                    state.isSolidRender(level, neighbour) && state.isFaceSturdy(level, neighbour, face.getOpposite());
             return !sealed;
         }
 
@@ -1785,7 +1783,8 @@ public final class Effects {
                     coordinates[axis.ordinal()] = Mth.clamp(centre + random.nextGaussian() * spread, min, max);
                 }
             }
-            return new Vec3(coordinates[Axis.X.ordinal()], coordinates[Axis.Y.ordinal()], coordinates[Axis.Z.ordinal()]);
+            return new Vec3(
+                    coordinates[Axis.X.ordinal()], coordinates[Axis.Y.ordinal()], coordinates[Axis.Z.ordinal()]);
         }
     }
 
@@ -2052,8 +2051,8 @@ public final class Effects {
         }
 
         public void send() {
-            BubbleParticleOptions options = new BubbleParticleOptions(
-                    ARGB32.colorFromFloat(1.0F, r, g, b), 0.3F, scale, maxAge, -0.05F, false);
+            BubbleParticleOptions options =
+                    new BubbleParticleOptions(ARGB32.colorFromFloat(1.0F, r, g, b), 0.3F, scale, maxAge, -0.05F, false);
             spawn(level, options, pos.x, pos.y, pos.z, 0.0, 0.012, 0.0);
         }
     }

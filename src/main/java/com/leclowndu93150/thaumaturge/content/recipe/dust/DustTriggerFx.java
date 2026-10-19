@@ -39,7 +39,9 @@ public final class DustTriggerFx {
     private DustTriggerFx() {}
 
     public static Vec3 posToHand(ServerPlayer player, InteractionHand hand) {
-        HumanoidArm arm = hand == InteractionHand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
+        HumanoidArm arm = hand == InteractionHand.MAIN_HAND
+                ? player.getMainArm()
+                : player.getMainArm().getOpposite();
         float bodyYaw = player.yBodyRot * Mth.DEG_TO_RAD;
         double sideSign = arm == HumanoidArm.RIGHT ? 1.0 : -1.0;
         double rightX = -Mth.cos(bodyYaw);
@@ -57,13 +59,18 @@ public final class DustTriggerFx {
         Vec3 toBlock = Vec3.atCenterOf(pos).subtract(handPos);
         for (int i = 0; i < BURST_COUNT; i++) {
             boolean floaty = rand.nextInt(BURST_FLOATY_ODDS) == 0;
-            float decay = floaty ? BURST_FLOATY_DECAY_MIN + rand.nextFloat() * BURST_FLOATY_DECAY_SPAN : BURST_ARC_DECAY;
+            float decay =
+                    floaty ? BURST_FLOATY_DECAY_MIN + rand.nextFloat() * BURST_FLOATY_DECAY_SPAN : BURST_ARC_DECAY;
             double toss = floaty ? BURST_FLOATY_TOSS : BURST_ARC_TOSS;
             float gravity = floaty ? BURST_FLOATY_GRAVITY : BURST_ARC_GRAVITY;
             Vec3 velocity = toBlock.scale(1.0 - decay)
-                    .add(rand.nextGaussian() * BURST_SCATTER, toss + rand.nextGaussian() * BURST_SCATTER, rand.nextGaussian() * BURST_SCATTER);
+                    .add(
+                            rand.nextGaussian() * BURST_SCATTER,
+                            toss + rand.nextGaussian() * BURST_SCATTER,
+                            rand.nextGaussian() * BURST_SCATTER);
             int delay = rand.nextInt(BURST_DELAY_BOUND);
-            SparkleParticleOptions options = new SparkleParticleOptions(Effects.dustSparkleColor(rand), BURST_SCALE, delay, decay, gravity, BURST_BASE_AGE, true);
+            SparkleParticleOptions options = new SparkleParticleOptions(
+                    Effects.dustSparkleColor(rand), BURST_SCALE, delay, decay, gravity, BURST_BASE_AGE, true);
             Effects.spawn(level, options, handPos.x, handPos.y, handPos.z, velocity.x, velocity.y, velocity.z);
         }
     }
