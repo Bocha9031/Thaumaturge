@@ -16,7 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
 class NodeRendererLayersTest {
-    private static final ResourceLocation TEXTURE = TTIds.rl("textures/misc/auranodes.png");
+    private static final ResourceLocation TEXTURE = TTIds.rl("textures/effect/auranodes.png");
 
     private record Layer(RenderType type, float scale, float alpha, int strip) {}
 
