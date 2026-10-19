@@ -2,8 +2,8 @@ package com.leclowndu93150.thaumaturge.client.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.items.AreaPreviewer;
-import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
+import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;

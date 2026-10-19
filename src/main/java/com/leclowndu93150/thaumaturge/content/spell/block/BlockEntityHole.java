@@ -130,8 +130,7 @@ public final class BlockEntityHole extends AbstractSyncedBlockEntity {
         Direction.Axis second = AXES[(free.ordinal() + 2) % AXIS_COUNT];
         int firstSide = (edge & FIRST_SIDE_BIT) == 0 ? -1 : 1;
         int secondSide = (edge & SECOND_SIDE_BIT) == 0 ? -1 : 1;
-        if (!exposed(level, pos, first, firstSide, second, secondSide)
-                || random.nextInt(SPARKLE_SKIP_ODDS) == 0) {
+        if (!exposed(level, pos, first, firstSide, second, secondSide) || random.nextInt(SPARKLE_SKIP_ODDS) == 0) {
             return;
         }
         double along = random.nextDouble();
@@ -167,12 +166,7 @@ public final class BlockEntityHole extends AbstractSyncedBlockEntity {
     }
 
     private static boolean exposed(
-            Level level,
-            BlockPos pos,
-            Direction.Axis first,
-            int firstSide,
-            Direction.Axis second,
-            int secondSide) {
+            Level level, BlockPos pos, Direction.Axis first, int firstSide, Direction.Axis second, int secondSide) {
         BlockPos firstNeighbour = pos.relative(first, firstSide);
         BlockPos secondNeighbour = pos.relative(second, secondSide);
         BlockPos diagonal = firstNeighbour.relative(second, secondSide);
@@ -185,13 +179,8 @@ public final class BlockEntityHole extends AbstractSyncedBlockEntity {
     }
 
     static boolean isExposed(
-            boolean firstOpen,
-            boolean secondOpen,
-            boolean firstOpaque,
-            boolean secondOpaque,
-            boolean diagonalOpaque) {
-        return firstOpen && (secondOpaque || diagonalOpaque)
-                || secondOpen && (firstOpaque || diagonalOpaque);
+            boolean firstOpen, boolean secondOpen, boolean firstOpaque, boolean secondOpaque, boolean diagonalOpaque) {
+        return firstOpen && (secondOpaque || diagonalOpaque) || secondOpen && (firstOpaque || diagonalOpaque);
     }
 
     private static boolean open(Level level, BlockPos pos) {

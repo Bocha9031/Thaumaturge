@@ -47,7 +47,8 @@ public final class TaintTraitVisuals {
         float shade = random.nextFloat();
         float scale = SCALE_BASE + random.nextFloat() * SCALE_SPREAD;
         return new FluxSwirlParticleOptions(
-                ARGB32.colorFromFloat(ALPHA, RED_BASE + RED_SPREAD * shade, GREEN, BLUE_BASE + BLUE_SPREAD * (1.0F - shade)),
+                ARGB32.colorFromFloat(
+                        ALPHA, RED_BASE + RED_SPREAD * shade, GREEN, BLUE_BASE + BLUE_SPREAD * (1.0F - shade)),
                 scale,
                 scale * END_GROWTH);
     }

@@ -133,7 +133,8 @@ public final class ChampionTraitVisuals {
         MobTraitVisuals.registerParticles(TTMobTraits.ARMORED.getKey(), ChampionTraitVisuals::armored);
         MobTraitVisuals.registerParticles(TTMobTraits.MIGHTY.getKey(), ChampionTraitVisuals::mighty);
         MobTraitVisuals.registerParticles(TTMobTraits.GRIM.getKey(), ChampionTraitVisuals::grim);
-        MobTraitVisuals.registerTint(TTMobTraits.GRIM.getKey(), ARGB32.colorFromFloat(OPAQUE, GRIM_TINT, GRIM_TINT, GRIM_TINT));
+        MobTraitVisuals.registerTint(
+                TTMobTraits.GRIM.getKey(), ARGB32.colorFromFloat(OPAQUE, GRIM_TINT, GRIM_TINT, GRIM_TINT));
         MobTraitVisuals.registerParticles(TTMobTraits.WARDED.getKey(), ChampionTraitVisuals::warded);
         MobTraitVisuals.registerParticles(TTMobTraits.WARP.getKey(), ChampionTraitVisuals::warp);
         MobTraitVisuals.registerParticles(TTMobTraits.UNDYING.getKey(), ChampionTraitVisuals::undying);
@@ -160,7 +161,11 @@ public final class ChampionTraitVisuals {
             return;
         }
         double low = mob.getBoundingBox().minY + random.nextFloat() * mob.getBbHeight() * BOLD_HEIGHT_FRACTION;
-        int color = ARGB32.colorFromFloat(OPAQUE, BOLD_RED_BASE - random.nextFloat() * BOLD_RED_DROP, 0.0F, spread(random, BOLD_BLUE_BASE, BOLD_BLUE_SPREAD));
+        int color = ARGB32.colorFromFloat(
+                OPAQUE,
+                BOLD_RED_BASE - random.nextFloat() * BOLD_RED_DROP,
+                0.0F,
+                spread(random, BOLD_BLUE_BASE, BOLD_BLUE_SPREAD));
         level.addParticle(new SparkParticleOptions(color, OPAQUE, BOLD_SCALE), x, low, z, 0.0, 0.0, 0.0);
     }
 
@@ -168,7 +173,11 @@ public final class ChampionTraitVisuals {
         if (!passes(random, HALF_GATE)) {
             return;
         }
-        int color = ARGB32.colorFromFloat(OPAQUE, spread(random, SPINE_RED_BASE, SPINE_SPREAD), spread(random, SPINE_GREEN_BASE, SPINE_SPREAD), spread(random, SPINE_BLUE_BASE, SPINE_SPREAD));
+        int color = ARGB32.colorFromFloat(
+                OPAQUE,
+                spread(random, SPINE_RED_BASE, SPINE_SPREAD),
+                spread(random, SPINE_GREEN_BASE, SPINE_SPREAD),
+                spread(random, SPINE_BLUE_BASE, SPINE_SPREAD));
         int variant = random.nextInt(SHARD_VARIANTS);
         float scale = spread(random, SPINE_SCALE_BASE, SPINE_SCALE_SPREAD);
         level.addParticle(new CrackShardParticleOptions(color, variant, scale, SPINE_AGE), x, y, z, 0.0, 0.0, 0.0);
@@ -178,17 +187,22 @@ public final class ChampionTraitVisuals {
         if (!passes(random, ARMOR_GATE)) {
             return;
         }
-        int color = ARGB32.colorFromFloat(OPAQUE, ARMOR_RED_GREEN, ARMOR_RED_GREEN, spread(random, ARMOR_BLUE_BASE, ARMOR_BLUE_SPREAD));
+        int color = ARGB32.colorFromFloat(
+                OPAQUE, ARMOR_RED_GREEN, ARMOR_RED_GREEN, spread(random, ARMOR_BLUE_BASE, ARMOR_BLUE_SPREAD));
         float scale = spread(random, ARMOR_SCALE_BASE, ARMOR_SCALE_SPREAD);
         int age = ARMOR_AGE_BASE + random.nextInt(ARMOR_AGE_SPREAD);
-        level.addParticle(new ShieldSparkParticleOptions(color, ARMOR_ALPHA, scale, age, NO_DELAY, true), x, y, z, 0.0, 0.0, 0.0);
+        level.addParticle(
+                new ShieldSparkParticleOptions(color, ARMOR_ALPHA, scale, age, NO_DELAY, true), x, y, z, 0.0, 0.0, 0.0);
     }
 
     private static void mighty(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
         if (!passes(random, MIGHTY_GATE)) {
             return;
         }
-        int color = ARGB32.colorFromFloat(OPAQUE, spread(random, MIGHTY_COLOR_BASE, MIGHTY_COLOR_SPREAD), spread(random, MIGHTY_COLOR_BASE, MIGHTY_COLOR_SPREAD),
+        int color = ARGB32.colorFromFloat(
+                OPAQUE,
+                spread(random, MIGHTY_COLOR_BASE, MIGHTY_COLOR_SPREAD),
+                spread(random, MIGHTY_COLOR_BASE, MIGHTY_COLOR_SPREAD),
                 spread(random, MIGHTY_COLOR_BASE, MIGHTY_COLOR_SPREAD));
         int variant = random.nextInt(SHARD_VARIANTS);
         float scale = spread(random, MIGHTY_SCALE_BASE, MIGHTY_SCALE_SPREAD);
@@ -200,7 +214,14 @@ public final class ChampionTraitVisuals {
         if (!passes(random, HALF_GATE)) {
             return;
         }
-        level.addParticle(new FlameFanParticleOptions(spread(random, GRIM_SCALE_BASE, GRIM_SCALE_SPREAD), NO_LIFT, GRIM_ALPHA), x, y, z, 0.0, GRIM_DRIFT, 0.0);
+        level.addParticle(
+                new FlameFanParticleOptions(spread(random, GRIM_SCALE_BASE, GRIM_SCALE_SPREAD), NO_LIFT, GRIM_ALPHA),
+                x,
+                y,
+                z,
+                0.0,
+                GRIM_DRIFT,
+                0.0);
     }
 
     private static void warded(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
@@ -208,40 +229,69 @@ public final class ChampionTraitVisuals {
             return;
         }
         level.addParticle(
-                TTParticles.colorOf(TTParticles.LEAF_MOTE, spread(random, WARDED_BASE, WARDED_SPREAD), spread(random, WARDED_BASE, WARDED_SPREAD), spread(random, WARDED_BASE, WARDED_SPREAD)), x, y, z,
-                0.0, 0.0, 0.0);
+                TTParticles.colorOf(
+                        TTParticles.LEAF_MOTE,
+                        spread(random, WARDED_BASE, WARDED_SPREAD),
+                        spread(random, WARDED_BASE, WARDED_SPREAD),
+                        spread(random, WARDED_BASE, WARDED_SPREAD)),
+                x,
+                y,
+                z,
+                0.0,
+                0.0,
+                0.0);
     }
 
     private static void warp(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
         if (!passes(random, HALF_GATE)) {
             return;
         }
-        int color = ARGB32.colorFromFloat(OPAQUE, spread(random, WARP_RED_BASE, WARP_RED_SPREAD), 0.0F, spread(random, WARP_BLUE_BASE, WARP_BLUE_SPREAD));
+        int color = ARGB32.colorFromFloat(
+                OPAQUE,
+                spread(random, WARP_RED_BASE, WARP_RED_SPREAD),
+                0.0F,
+                spread(random, WARP_BLUE_BASE, WARP_BLUE_SPREAD));
         float scale = spread(random, WARP_SCALE_BASE, WARP_SCALE_SPREAD);
         float endScale = spread(random, WARP_SCALE_BASE, WARP_SCALE_SPREAD);
-        level.addParticle(new WispFlameParticleOptions(color, WARP_ALPHA, scale, endScale, NO_DELAY), x, y, z, 0.0, 0.0, 0.0);
+        level.addParticle(
+                new WispFlameParticleOptions(color, WARP_ALPHA, scale, endScale, NO_DELAY), x, y, z, 0.0, 0.0, 0.0);
     }
 
     private static void undying(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
         if (!passes(random, HALF_GATE)) {
             return;
         }
-        int color = ARGB32.colorFromFloat(OPAQUE, spread(random, UNDYING_LOW_BASE, UNDYING_LOW_SPREAD), spread(random, UNDYING_GREEN_BASE, UNDYING_GREEN_SPREAD),
+        int color = ARGB32.colorFromFloat(
+                OPAQUE,
+                spread(random, UNDYING_LOW_BASE, UNDYING_LOW_SPREAD),
+                spread(random, UNDYING_GREEN_BASE, UNDYING_GREEN_SPREAD),
                 spread(random, UNDYING_LOW_BASE, UNDYING_LOW_SPREAD));
         float scale = spread(random, UNDYING_SCALE_BASE, UNDYING_SCALE_SPREAD);
         float endScale = spread(random, UNDYING_SCALE_BASE, UNDYING_SCALE_SPREAD);
-        level.addParticle(new WispFlameParticleOptions(color, UNDYING_ALPHA, scale, endScale, NO_DELAY), x, y, z, 0.0, RISE, 0.0);
+        level.addParticle(
+                new WispFlameParticleOptions(color, UNDYING_ALPHA, scale, endScale, NO_DELAY), x, y, z, 0.0, RISE, 0.0);
     }
 
     private static void fiery(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
-        level.addParticle(new FlameFanParticleOptions(spread(random, FIERY_SCALE_BASE, FIERY_SCALE_SPREAD), NO_LIFT, FIERY_ALPHA), x, y, z, 0.0, RISE, 0.0);
+        level.addParticle(
+                new FlameFanParticleOptions(spread(random, FIERY_SCALE_BASE, FIERY_SCALE_SPREAD), NO_LIFT, FIERY_ALPHA),
+                x,
+                y,
+                z,
+                0.0,
+                RISE,
+                0.0);
     }
 
     private static void sickly(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
         if (!passes(random, HALF_GATE)) {
             return;
         }
-        int color = ARGB32.colorFromFloat(OPAQUE, SICKLY_RED, spread(random, SICKLY_GREEN_BASE, SICKLY_GREEN_SPREAD), spread(random, SICKLY_BLUE_BASE, SICKLY_BLUE_SPREAD));
+        int color = ARGB32.colorFromFloat(
+                OPAQUE,
+                SICKLY_RED,
+                spread(random, SICKLY_GREEN_BASE, SICKLY_GREEN_SPREAD),
+                spread(random, SICKLY_BLUE_BASE, SICKLY_BLUE_SPREAD));
         float scale = spread(random, SICKLY_SCALE_BASE, SICKLY_SCALE_SPREAD);
         level.addParticle(new FluxSwirlParticleOptions(color, scale, SICKLY_END_SCALE), x, y, z, 0.0, SINK, 0.0);
     }
@@ -250,15 +300,33 @@ public final class ChampionTraitVisuals {
         if (!passes(random, HALF_GATE)) {
             return;
         }
-        level.addParticle(TTParticles.colorOf(TTParticles.GOO_DRIP, VENOM_RED, spread(random, VENOM_GREEN_BASE, VENOM_GREEN_SPREAD), spread(random, VENOM_BLUE_BASE, VENOM_BLUE_SPREAD)), x, y, z, 0.0,
-                RISE_SLOW, 0.0);
+        level.addParticle(
+                TTParticles.colorOf(
+                        TTParticles.GOO_DRIP,
+                        VENOM_RED,
+                        spread(random, VENOM_GREEN_BASE, VENOM_GREEN_SPREAD),
+                        spread(random, VENOM_BLUE_BASE, VENOM_BLUE_SPREAD)),
+                x,
+                y,
+                z,
+                0.0,
+                RISE_SLOW,
+                0.0);
     }
 
     private static void vampiric(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {
         if (!passes(random, VAMPIRIC_GATE)) {
             return;
         }
-        level.addParticle(TTParticles.colorOf(TTParticles.GOO_DRIP, spread(random, VAMPIRIC_RED_BASE, VAMPIRIC_RED_SPREAD), 0.0F, 0.0F), x, y, z, 0.0, 0.0, 0.0);
+        level.addParticle(
+                TTParticles.colorOf(
+                        TTParticles.GOO_DRIP, spread(random, VAMPIRIC_RED_BASE, VAMPIRIC_RED_SPREAD), 0.0F, 0.0F),
+                x,
+                y,
+                z,
+                0.0,
+                0.0,
+                0.0);
     }
 
     private static void infested(LivingEntity mob, Level level, RandomSource random, double x, double y, double z) {

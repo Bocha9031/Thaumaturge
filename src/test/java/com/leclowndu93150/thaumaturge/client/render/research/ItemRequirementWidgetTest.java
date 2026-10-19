@@ -31,11 +31,10 @@ class ItemRequirementWidgetTest {
 
     @Test
     void wildcardDamageRequirementDoesNotAnimateItsDurability() {
-        DataComponentPatch components = DataComponentPatch.builder().set(DataComponents.DAMAGE, 32767).build();
-        ResearchRequirement requirement = new ResearchRequirement(
-                HolderSet.direct(Items.WOODEN_SWORD.builtInRegistryHolder()),
-                components,
-                1);
+        DataComponentPatch components =
+                DataComponentPatch.builder().set(DataComponents.DAMAGE, 32767).build();
+        ResearchRequirement requirement =
+                new ResearchRequirement(HolderSet.direct(Items.WOODEN_SWORD.builtInRegistryHolder()), components, 1);
         ItemStack expected = new ItemStack(Items.WOODEN_SWORD);
         expected.applyComponents(components);
 

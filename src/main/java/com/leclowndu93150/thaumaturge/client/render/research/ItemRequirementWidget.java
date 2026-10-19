@@ -40,6 +40,7 @@ public final class ItemRequirementWidget {
     private static final int CHECKMARK_SIZE = 10;
 
     private static final long CYCLE_SECONDS = 1000L;
+
     private ItemRequirementWidget() {}
 
     public static int stride(int requirementCount) {

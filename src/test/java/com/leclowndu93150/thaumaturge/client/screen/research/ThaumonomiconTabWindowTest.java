@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 final class ThaumonomiconTabWindowTest {
     @Test
     void scrollingUsesZeroBasedVisibleRangeAndClampsToLastFullPage() {
-        ThaumonomiconBrowserScreen.TabWindow window =
-                ThaumonomiconBrowserScreen.tabWindow(9, 99, 100, 24);
+        ThaumonomiconBrowserScreen.TabWindow window = ThaumonomiconBrowserScreen.tabWindow(9, 99, 100, 24);
 
         assertEquals(5, window.firstIndex());
         assertEquals(4, window.visibleCount());
@@ -18,10 +17,8 @@ final class ThaumonomiconTabWindowTest {
 
     @Test
     void shortAndEmptyListsResetScrollAndDoNotShiftTabs() {
-        ThaumonomiconBrowserScreen.TabWindow shortList =
-                ThaumonomiconBrowserScreen.tabWindow(2, 7, 100, 24);
-        ThaumonomiconBrowserScreen.TabWindow emptyList =
-                ThaumonomiconBrowserScreen.tabWindow(0, 4, 100, 24);
+        ThaumonomiconBrowserScreen.TabWindow shortList = ThaumonomiconBrowserScreen.tabWindow(2, 7, 100, 24);
+        ThaumonomiconBrowserScreen.TabWindow emptyList = ThaumonomiconBrowserScreen.tabWindow(0, 4, 100, 24);
 
         assertEquals(0, shortList.firstIndex());
         assertEquals(0, shortList.maxScroll());

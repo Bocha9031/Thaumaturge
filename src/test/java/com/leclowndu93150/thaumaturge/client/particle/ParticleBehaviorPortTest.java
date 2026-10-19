@@ -48,7 +48,9 @@ final class ParticleBehaviorPortTest {
     void taintSwarmUsesOrbGlowFramesAndFullBrightLighting() throws Exception {
         TaintSwarmParticle particle = construct(
                 TaintSwarmParticle.class,
-                new Class<?>[] {ClientLevel.class, double.class, double.class, double.class, TaintSwarmParticleOptions.class},
+                new Class<?>[] {
+                    ClientLevel.class, double.class, double.class, double.class, TaintSwarmParticleOptions.class
+                },
                 mock(ClientLevel.class),
                 0.0,
                 0.0,

@@ -243,20 +243,8 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
         float easedScale = RadialFocusMotion.easeOutCubic(radialHudScale);
         float radius = (BASE_RADIUS + fociItem.size() * RADIUS_PER_FOCUS) * easedScale;
         float animationTime = mc.player.tickCount + partialTicks;
-        drawRing(
-                graphics,
-                RADIAL_1,
-                cx,
-                cy,
-                animationTime / RING_1_PERIOD_TICKS * 360.0F,
-                radius * RING_1_SIZE);
-        drawRing(
-                graphics,
-                RADIAL_2,
-                cx,
-                cy,
-                -animationTime / RING_2_PERIOD_TICKS * 360.0F,
-                radius * RING_2_SIZE);
+        drawRing(graphics, RADIAL_1, cx, cy, animationTime / RING_1_PERIOD_TICKS * 360.0F, radius * RING_1_SIZE);
+        drawRing(graphics, RADIAL_2, cx, cy, -animationTime / RING_2_PERIOD_TICKS * 360.0F, radius * RING_2_SIZE);
 
         ItemStack socketed = wand.socketedFocus(casterStack);
         if (FocusItems.isFocus(socketed)) {

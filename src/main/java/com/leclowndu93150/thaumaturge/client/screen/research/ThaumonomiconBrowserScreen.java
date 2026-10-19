@@ -345,11 +345,8 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
             if (!isCategoryUnlocked(knowledge, ref)) continue;
             count++;
         }
-        TabWindow tabWindow = tabWindow(
-                count,
-                catScrollPos,
-                screenY - CATEGORY_AVAILABLE_HEIGHT_PADDING,
-                CATEGORY_BUTTON_STRIDE_Y);
+        TabWindow tabWindow =
+                tabWindow(count, catScrollPos, screenY - CATEGORY_AVAILABLE_HEIGHT_PADDING, CATEGORY_BUTTON_STRIDE_Y);
         catScrollPos = tabWindow.firstIndex();
         catScrollMax = tabWindow.maxScroll();
         addonShift = tabWindow.verticalShift();

@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.particle;
 
-import com.leclowndu93150.thaumaturge.content.particle.TaintSwarmParticleOptions;
 import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
+import com.leclowndu93150.thaumaturge.content.particle.TaintSwarmParticleOptions;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
