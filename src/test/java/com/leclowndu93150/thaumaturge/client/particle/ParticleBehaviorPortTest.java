@@ -89,6 +89,43 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void visSparkleKeepsHomingSpeedBoundedAndShrinksWhileNearTarget() throws Exception {
+        VisSparkleParticle sparkle = construct(
+                VisSparkleParticle.class,
+                new Class<?>[] {
+                    ClientLevel.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    VisSparkleParticleOptions.class,
+                    ParticleSheet.class
+                },
+                mock(ClientLevel.class),
+                0.0,
+                0.0,
+                0.0,
+                new VisSparkleParticleOptions(10.0, 0.0, 0.0, 0),
+                null);
+
+        invokeUpdate(sparkle);
+        assertTrue(Math.abs(particleVelocity(sparkle, "xd")) <= 0.1);
+        assertTrue(Math.abs(particleVelocity(sparkle, "yd")) <= 0.1);
+        assertTrue(Math.abs(particleVelocity(sparkle, "zd")) <= 0.1);
+
+        sparkle.setPos(9.0, 0.0, 0.0);
+        invokeUpdate(sparkle);
+        Field proximityScale = VisSparkleParticle.class.getDeclaredField("proximityScale");
+        proximityScale.setAccessible(true);
+        assertEquals(0.95F, proximityScale.getFloat(sparkle), 1.0E-6F);
+
+        Field age = Particle.class.getDeclaredField("age");
+        age.setAccessible(true);
+        age.setInt(sparkle, 10);
+        invokeUpdate(sparkle);
+        assertEquals(0.95F * 0.95F, proximityScale.getFloat(sparkle), 1.0E-6F);
+    }
+
+    @Test
     void wispFollowsOwnerPositionDeltaAndIgnoresRemovedOwner() throws Exception {
         ClientLevel level = mock(ClientLevel.class);
         when(level.getRandom()).thenReturn(RandomSource.create(12L));
@@ -268,6 +305,12 @@ final class ParticleBehaviorPortTest {
         Method update = particle.getClass().getDeclaredMethod("update");
         update.setAccessible(true);
         update.invoke(particle);
+    }
+
+    private static double particleVelocity(Particle particle, String name) throws Exception {
+        Field velocity = Particle.class.getDeclaredField(name);
+        velocity.setAccessible(true);
+        return velocity.getDouble(particle);
     }
 
     private static <T> T construct(Class<T> type, Class<?>[] parameterTypes, Object... arguments) throws Exception {
