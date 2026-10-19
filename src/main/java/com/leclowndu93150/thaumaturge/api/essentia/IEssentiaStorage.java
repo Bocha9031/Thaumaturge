@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.api.essentia;
 
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import net.minecraft.core.Holder;
 
 /**
@@ -12,8 +13,11 @@ import net.minecraft.core.Holder;
  * direction argument. Querying with a {@code null} side does not expose this capability. A view
  * may be read-only by returning zero from both transfer methods.
  *
- * <p>Transfer methods return the amount moved, or the amount that would move when simulating.
- * Simulation must not mutate contents or advance {@link #contentRevision()}.
+ * <p>The simulate-based transfer methods are immediate compatibility conveniences and operate
+ * outside any caller-owned transaction. Prefer the transaction overloads when a transfer must
+ * participate in a larger atomic operation. A transaction can expose tentative contents to its
+ * caller, but does not advance {@link #contentRevision()} or notify the host until the root scope
+ * commits.
  *
  * <p>All methods are server-thread contracts. Capability instances follow NeoForge block
  * capability lifetime rules and become invalid when their owning block entity is removed or its
@@ -47,9 +51,29 @@ public interface IEssentiaStorage {
      * @param aspect the aspect supplied
      * @param amount the maximum amount to insert
      * @param simulate whether to report the result without changing storage
+     * @throws IllegalStateException if called while a transaction is already open on this thread;
+     *     use the transaction overload instead
      * @return the amount accepted or that would be accepted, between zero and {@code amount}
      */
     int insert(Holder<IAspect> aspect, int amount, boolean simulate);
+
+    /**
+     * Inserts up to {@code amount} as part of a caller-owned transaction. The change is visible
+     * immediately to the current server-thread scope, but is rolled back if that scope or any
+     * enclosing scope aborts.
+     *
+     * <p>The default is deliberately fail-closed: legacy providers that only implement the
+     * simulate-based methods cannot safely participate in an atomic craft. Implementations that
+     * own rollback-capable storage should override this method.
+     *
+     * @param aspect the aspect supplied
+     * @param amount the maximum amount to insert
+     * @param transaction the open transaction that owns the change
+     * @return the amount accepted, between zero and {@code amount}
+     */
+    default int insert(Holder<IAspect> aspect, int amount, TransactionContext transaction) {
+        return 0;
+    }
 
     /**
      * Extracts up to {@code amount} of an aspect.
@@ -57,9 +81,29 @@ public interface IEssentiaStorage {
      * @param aspect the aspect requested
      * @param amount the maximum amount to extract
      * @param simulate whether to report the result without changing storage
+     * @throws IllegalStateException if called while a transaction is already open on this thread;
+     *     use the transaction overload instead
      * @return the amount extracted or that would be extracted, between zero and {@code amount}
      */
     int extract(Holder<IAspect> aspect, int amount, boolean simulate);
+
+    /**
+     * Extracts up to {@code amount} as part of a caller-owned transaction. The change is visible
+     * immediately to the current server-thread scope, but is rolled back if that scope or any
+     * enclosing scope aborts.
+     *
+     * <p>The default is deliberately fail-closed: legacy providers that only implement the
+     * simulate-based methods cannot safely participate in an atomic craft. Implementations that
+     * own rollback-capable storage should override this method.
+     *
+     * @param aspect the aspect requested
+     * @param amount the maximum amount to extract
+     * @param transaction the open transaction that owns the change
+     * @return the amount extracted, between zero and {@code amount}
+     */
+    default int extract(Holder<IAspect> aspect, int amount, TransactionContext transaction) {
+        return 0;
+    }
 
     /**
      * Returns a monotonically increasing revision for committed content changes.
