@@ -114,7 +114,8 @@ public final class Spells {
             return WHITE;
         }
         Optional<ResourceKey<IAspect>> aspect = part.get().aspect().resolve(node.aspect(), registries);
-        if (aspect.isPresent() && usesAspectColor(part.get().kind(), part.get().aspect().selectable())) {
+        if (aspect.isPresent()
+                && usesAspectColor(part.get().kind(), part.get().aspect().selectable())) {
             Optional<Holder.Reference<IAspect>> holder =
                     registries.lookup(IAspect.REGISTRY_KEY).flatMap(lookup -> lookup.get(aspect.get()));
             if (holder.isPresent()) {
