@@ -19,6 +19,9 @@ import net.neoforged.neoforge.client.RenderTypeHelper;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 public final class TubeValveRenderer implements BlockEntityRenderer<BlockEntityTubeValve> {
+    private static final float FULL_TURN = 360.0F;
+    private static final float SINK_TRAVEL = 0.11F;
+
     public static final ModelResourceLocation MODEL_ID =
             ModelResourceLocation.standalone(TTIds.rl("block/tube_valve_head"));
 
@@ -39,10 +42,15 @@ public final class TubeValveRenderer implements BlockEntityRenderer<BlockEntityT
         orientTo(valve.flowSide(), poseStack);
         float rotation = valve.rotation(partialTick);
         poseStack.mulPose(Axis.YP.rotationDegrees(-rotation * 1.5F));
-        poseStack.translate(0.0F, -0.03F - rotation / 360.0F * 0.09F, 0.0F);
+        poseStack.translate(0.0F, sinkOffset(rotation), 0.0F);
         poseStack.translate(-0.5F, -0.5F, -0.5F);
         renderModel(valve.getBlockState(), poseStack, buffers, light, overlay);
         poseStack.popPose();
+    }
+
+    static float sinkOffset(float rotation) {
+        float closed = Math.clamp(rotation / FULL_TURN, 0.0F, 1.0F);
+        return -closed * SINK_TRAVEL;
     }
 
     private static void orientTo(Direction direction, PoseStack poseStack) {

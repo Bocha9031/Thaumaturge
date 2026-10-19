@@ -8,6 +8,7 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -20,11 +21,14 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
 public final class BlockNitor extends BaseEntityBlock {
+    private static final double SHAPE_MIN = 5.0;
+    private static final double SHAPE_MAX = 11.0;
+
     public static final MapCodec<BlockNitor> CODEC = RecordCodecBuilder.mapCodec(
             inst -> inst.group(DyeColor.CODEC.fieldOf("dye").forGetter(BlockNitor::dye), propertiesCodec())
                     .apply(inst, BlockNitor::new));
 
-    private static final VoxelShape SHAPE = box(5.28, 5.28, 5.28, 10.56, 10.56, 10.56);
+    static final VoxelShape SHAPE = Block.box(SHAPE_MIN, SHAPE_MIN, SHAPE_MIN, SHAPE_MAX, SHAPE_MAX, SHAPE_MAX);
 
     private final DyeColor dye;
 
