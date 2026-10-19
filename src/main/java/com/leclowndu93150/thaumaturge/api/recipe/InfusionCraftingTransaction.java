@@ -102,6 +102,8 @@ public final class InfusionCraftingTransaction {
         MATRIX_BUSY,
         /** No infusion recipe matches the catalyst and components. */
         NO_RECIPE,
+        /** A matched recipe could not provide the component plan required to execute an infusion job. */
+        INVALID_RECIPE,
         /** A recipe matches, but the player has not unlocked it. */
         RESEARCH_LOCKED,
         /** The staged items no longer resolve to the expected recipe. */

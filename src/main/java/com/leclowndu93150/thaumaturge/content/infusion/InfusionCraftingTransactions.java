@@ -64,7 +64,20 @@ public final class InfusionCraftingTransactions implements InfusionCraftingTrans
         if (match == null) {
             return Inspection.failure(Failure.NO_RECIPE);
         }
+        return inspectMatch(matrix, level, player, input, match);
+    }
+
+    static Inspection inspectMatch(
+            BlockEntityInfusionMatrix matrix,
+            ServerLevel level,
+            ServerPlayer player,
+            InfusionInput input,
+            InfusionRecipeMatcher.Match match) {
         InfusionJobRecipe recipe = match.recipe();
+        List<ItemStack> components = recipe.jobComponents(input);
+        if (components == null) {
+            return Inspection.failure(Failure.INVALID_RECIPE);
+        }
         ItemStack output = BlockEntityInfusionMatrix.preserveCatalystDamage(
                 recipe.assemble(input, level.registryAccess()), input.catalyst());
         return new Inspection(
@@ -74,7 +87,7 @@ public final class InfusionCraftingTransactions implements InfusionCraftingTrans
                 recipe.jobInstability(input),
                 recipe.gateStatus(player),
                 output,
-                remainders(recipe.jobComponents(input)),
+                remainders(components),
                 recipe.exactResult());
     }
 
