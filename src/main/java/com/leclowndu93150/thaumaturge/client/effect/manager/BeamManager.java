@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.client.effect.manager;
 
-import com.leclowndu93150.thaumaturge.client.effect.geometry.PolyCone;
+import com.leclowndu93150.thaumaturge.client.effect.geometry.TubeMesh;
 import com.leclowndu93150.thaumaturge.client.effect.instance.ArcInstance;
 import com.leclowndu93150.thaumaturge.client.effect.instance.BeamInstance;
 import com.leclowndu93150.thaumaturge.client.effect.instance.BoltInstance;
@@ -258,9 +258,9 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
             colours[i][3] = alpha;
             radii[i] = s.width() / 10.0;
         }
-        PolyCone.render(poseStack, consumer, points, colours, radii, 0, 1.0F, 0.0F);
+        TubeMesh.draw(poseStack, consumer, points, colours, radii, 0, 1.0F, 0.0F);
         for (int i = 0; i < n; i++) radii[i] /= 3.0;
-        PolyCone.render(poseStack, consumer, points, colours, radii, 0, 1.0F, 0.0F);
+        TubeMesh.draw(poseStack, consumer, points, colours, radii, 0, 1.0F, 0.0F);
         poseStack.popPose();
     }
 

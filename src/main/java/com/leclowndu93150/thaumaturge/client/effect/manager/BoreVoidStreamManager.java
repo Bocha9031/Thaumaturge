@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.client.effect.manager;
 
-import com.leclowndu93150.thaumaturge.client.effect.geometry.PolyCone;
+import com.leclowndu93150.thaumaturge.client.effect.geometry.TubeMesh;
 import com.leclowndu93150.thaumaturge.client.effect.instance.BoreStreamInstance;
 import com.leclowndu93150.thaumaturge.client.effect.instance.StreamInstance;
 import com.leclowndu93150.thaumaturge.client.effect.instance.VoidStreamInstance;
@@ -71,7 +71,7 @@ public final class BoreVoidStreamManager extends AbstractFXManager<IFXInstance> 
                 if (snap == null) continue;
                 poseStack.pushPose();
                 poseStack.translate(snap.originX() - cx, snap.originY() - cy, snap.originZ() - cz);
-                PolyCone.render(
+                TubeMesh.draw(
                         poseStack,
                         consumer,
                         snap.points(),
@@ -102,7 +102,7 @@ public final class BoreVoidStreamManager extends AbstractFXManager<IFXInstance> 
                 packYawPitch(snap.colours(), yawNorm, pitchNorm);
                 poseStack.pushPose();
                 poseStack.translate(snap.originX() - cx, snap.originY() - cy, snap.originZ() - cz);
-                PolyCone.render(
+                TubeMesh.draw(
                         poseStack,
                         addConsumer,
                         snap.points(),
@@ -125,7 +125,7 @@ public final class BoreVoidStreamManager extends AbstractFXManager<IFXInstance> 
                 packYawPitch(snap.colours(), yawNorm, pitchNorm);
                 poseStack.pushPose();
                 poseStack.translate(snap.originX() - cx, snap.originY() - cy, snap.originZ() - cz);
-                PolyCone.render(
+                TubeMesh.draw(
                         poseStack,
                         trConsumer,
                         snap.points(),
