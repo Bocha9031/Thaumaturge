@@ -251,6 +251,14 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void nitorCorePulseReturnsToBaselineWithSmoothMidpoint() {
+        assertEquals(1.0F, NitorCoreParticle.pulseScale(0, 10, 1.12F), 1.0E-6F);
+        assertEquals(1.12F, NitorCoreParticle.pulseScale(5, 10, 1.12F), 1.0E-6F);
+        assertEquals(1.0F, NitorCoreParticle.pulseScale(10, 10, 1.12F), 1.0E-6F);
+        assertEquals(1.0F, NitorCoreParticle.pulseScale(20, 10, 1.12F), 1.0E-6F);
+    }
+
+    @Test
     void boltInterpolatesWorldCoordinatesBeforeCameraOffsetAndFloatConversion() throws Exception {
         double originX = 16_777_216.0;
         double originY = 64.0;
