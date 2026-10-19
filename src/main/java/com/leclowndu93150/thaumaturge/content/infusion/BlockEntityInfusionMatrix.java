@@ -265,19 +265,32 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
             return false;
         }
         InfusionJobRecipe recipe = match.recipe();
+        InfusionCraftJob pendingJob = createCraftJob(recipe, input, env, player, level);
+        if (pendingJob == null) {
+            return false;
+        }
+        job = pendingJob;
+        level.playSound(null, worldPosition, TTSounds.CRAFTSTART.get(), SoundSource.BLOCKS, 0.5F, 1.0F);
+        setChanged();
+        syncToClient();
+        return true;
+    }
+
+    static @Nullable InfusionCraftJob createCraftJob(
+            InfusionJobRecipe recipe, InfusionInput input, MatrixEnvironment env, Player player, ServerLevel level) {
+        List<ItemStack> ingredients = recipe.jobComponents(input);
+        if (ingredients == null) {
+            return null;
+        }
         AspectList cost = scaledCost(env, recipe.jobEssentia(input));
-        job = new InfusionCraftJob(
-                recipe.jobComponents(input),
+        return new InfusionCraftJob(
+                ingredients,
                 cost,
                 recipe.jobResult(input, level.getRandom(), level.registryAccess()),
                 input.catalyst().copyWithCount(1),
                 recipe.jobInstability(input),
                 Optional.of(player.getUUID()),
                 cost);
-        level.playSound(null, worldPosition, TTSounds.CRAFTSTART.get(), SoundSource.BLOCKS, 0.5F, 1.0F);
-        setChanged();
-        syncToClient();
-        return true;
     }
 
     InfusionInput stagedInput(ServerLevel level) {
