@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.wands;
 
 import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
@@ -127,12 +128,7 @@ public class EntityAspectOrb extends Entity {
         if (!rawAspect.equals(cachedColorAspect)) {
             cachedColorAspect = rawAspect;
             ResourceKey<IAspect> key = getAspect();
-            Holder<IAspect> holder = key == null
-                    ? null
-                    : level().registryAccess()
-                            .lookupOrThrow(IAspect.REGISTRY_KEY)
-                            .get(key)
-                            .orElse(null);
+            Holder<IAspect> holder = key == null ? null : Aspects.resolve(level(), key);
             cachedColor = holder == null ? UNTINTED : holder.value().color();
         }
         return cachedColor;
