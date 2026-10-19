@@ -25,6 +25,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -91,7 +92,17 @@ public class EntityThaumaturgeBoss extends Monster {
         if (this.getTarget() != null && !this.getTarget().isAlive()) {
             this.setTarget(null);
         }
+        this.setAiGate(this.getSpawnTimer() <= 0);
         this.bossBar.update();
+    }
+
+    private void setAiGate(boolean open) {
+        this.goalSelector.setControlFlag(Goal.Flag.MOVE, open);
+        this.goalSelector.setControlFlag(Goal.Flag.LOOK, open);
+        this.targetSelector.setControlFlag(Goal.Flag.TARGET, open);
+        if (!open) {
+            this.getNavigation().stop();
+        }
     }
 
     @Override
@@ -153,7 +164,7 @@ public class EntityThaumaturgeBoss extends Monster {
         while (iterator.hasNext()) {
             Map.Entry<Integer, Integer> entry = iterator.next();
             Entity candidate = this.level().getEntity(entry.getKey());
-            if (candidate == null || !candidate.isAlive() || this.distanceToSqr(candidate) > AGGRO_RANGE_SQ) {
+            if (this.isStaleAttacker(candidate)) {
                 iterator.remove();
                 continue;
             }
@@ -168,26 +179,57 @@ public class EntityThaumaturgeBoss extends Monster {
                 best = entry.getValue();
             }
         }
-        if (newTarget != null && current != null && newTarget.getId() != current.getId()) {
+        if (newTarget != null && current != null && newTarget.getId() != current.getId() && this.canAttack(newTarget)) {
             this.setTarget(newTarget);
         }
         if (LabyrinthHelper.isLabyrinthBound(this)) {
             return;
         }
-        float oldMax = this.getMaxHealth();
+        this.applyScalingSlots(Math.min(MAX_PLAYER_BUFFS, players - 1));
+    }
+
+    private boolean isStaleAttacker(@Nullable Entity attacker) {
+        if (!(attacker instanceof LivingEntity living)
+                || !living.isAlive()
+                || living.isRemoved()
+                || living.level() != this.level()) {
+            return true;
+        }
+        if (living instanceof Player player && (player.isSpectator() || player.isCreative())) {
+            return true;
+        }
+        return this.distanceToSqr(living) > AGGRO_RANGE_SQ;
+    }
+
+    private void applyScalingSlots(int slots) {
         AttributeInstance health = this.getAttribute(Attributes.MAX_HEALTH);
         AttributeInstance damage = this.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (health == null || damage == null) {
+            return;
+        }
+        float oldMax = this.getMaxHealth();
+        float healthFraction = oldMax > 0.0F ? this.getHealth() / oldMax : 1.0F;
+        boolean healthChanged = false;
         for (int slot = 0; slot < MAX_PLAYER_BUFFS; slot++) {
-            health.removeModifier(hpBuffId(slot));
-            damage.removeModifier(dmgBuffId(slot));
+            boolean enabled = slot < slots;
+            healthChanged |= this.syncModifier(health, hpBuffId(slot), PLAYER_HP_BUFF, enabled);
+            this.syncModifier(damage, dmgBuffId(slot), PLAYER_DMG_BUFF, enabled);
         }
-        for (int slot = 0; slot < Math.min(MAX_PLAYER_BUFFS, players - 1); slot++) {
-            health.addTransientModifier(
-                    new AttributeModifier(hpBuffId(slot), PLAYER_HP_BUFF, AttributeModifier.Operation.ADD_VALUE));
-            damage.addTransientModifier(
-                    new AttributeModifier(dmgBuffId(slot), PLAYER_DMG_BUFF, AttributeModifier.Operation.ADD_VALUE));
+        if (healthChanged && this.isAlive()) {
+            this.setHealth(healthFraction * this.getMaxHealth());
         }
-        this.setHealth(this.getHealth() * this.getMaxHealth() / oldMax);
+    }
+
+    private boolean syncModifier(AttributeInstance instance, ResourceLocation id, double amount, boolean wanted) {
+        if (instance.hasModifier(id) == wanted) {
+            return false;
+        }
+        if (wanted) {
+            instance.addTransientModifier(new AttributeModifier(id, amount, AttributeModifier.Operation.ADD_VALUE));
+        } else {
+            instance.removeModifier(id);
+        }
+        return true;
     }
 
     private static ResourceLocation hpBuffId(int slot) {
