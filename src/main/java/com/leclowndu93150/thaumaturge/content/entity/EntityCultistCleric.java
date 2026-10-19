@@ -100,6 +100,11 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
         return this.entityData.get(DATA_RITUAL_ANCHOR);
     }
 
+    public Vec3 ritualFocus() {
+        BlockPos anchor = this.ritualAnchor();
+        return new Vec3(anchor.getX() + 0.5, anchor.getY() + RITUAL_ANCHOR_HEIGHT, anchor.getZ() + 0.5);
+    }
+
     @Override
     protected ResourceKey<LootTable> equipmentTable() {
         return TTLootTables.EQUIPMENT_CULTIST_CLERIC;
