@@ -33,7 +33,7 @@ import net.minecraft.world.entity.ai.goal.LeapAtTargetGoal;
 import net.minecraft.world.entity.ai.goal.LookAtPlayerGoal;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
-import net.minecraft.world.entity.ai.goal.RandomStrollGoal;
+import net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal;
 import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.monster.Monster;
@@ -59,12 +59,17 @@ public class EntityEldritchCrab extends Monster implements ISidedHurt {
     private static final float HELM_BREAK_HEALTH_FRACTION = 0.5F;
     private static final float HARD_GROUP_EFFECT_CHANCE = 0.1F;
     private static final int BREAK_PARTICLES = 8;
+    private static final int MOUNTED_ATTACK_BASE = 10;
+    private static final int MOUNTED_ATTACK_SPREAD = 10;
+    private static final int FALL_GRACE_TICKS = 20;
 
     private static final int SHELL_BREAK_TICKS = 8;
 
     private int attackTime;
 
     private int shellBreakTicks;
+
+    private boolean shownHelm;
 
     public EntityEldritchCrab(EntityType<? extends EntityEldritchCrab> type, Level level) {
         super(type, level);
@@ -81,8 +86,8 @@ public class EntityEldritchCrab extends Monster implements ISidedHurt {
     @Override
     protected void registerGoals() {
         this.goalSelector.addGoal(2, new LeapAtTargetGoal(this, LEAP_STRENGTH));
-        this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.0, false));
-        this.goalSelector.addGoal(7, new RandomStrollGoal(this, 0.8));
+        this.goalSelector.addGoal(3, new MeleeAttackGoal(this, 1.0, true));
+        this.goalSelector.addGoal(7, new WaterAvoidingRandomStrollGoal(this, 0.8));
         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
         this.goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 8.0F));
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
@@ -107,8 +112,12 @@ public class EntityEldritchCrab extends Monster implements ISidedHurt {
     @Override
     public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
         super.onSyncedDataUpdated(key);
-        if (DATA_HELM.equals(key) && this.level().isClientSide() && !this.hasHelm()) {
-            this.shellBreakTicks = SHELL_BREAK_TICKS;
+        if (DATA_HELM.equals(key) && this.level().isClientSide()) {
+            boolean nowHelmed = this.hasHelm();
+            if (this.shownHelm && !nowHelmed) {
+                this.shellBreakTicks = SHELL_BREAK_TICKS;
+            }
+            this.shownHelm = nowHelmed;
         }
     }
 
@@ -144,10 +153,10 @@ public class EntityEldritchCrab extends Monster implements ISidedHurt {
     }
 
     private static Holder<MobEffect> randomGroupEffect(RandomSource rand) {
-        return switch (rand.nextInt(4)) {
-            case 0 -> MobEffects.MOVEMENT_SPEED;
-            case 1 -> MobEffects.DAMAGE_BOOST;
-            case 2 -> MobEffects.REGENERATION;
+        return switch (rand.nextInt(5)) {
+            case 0, 1 -> MobEffects.MOVEMENT_SPEED;
+            case 2 -> MobEffects.DAMAGE_BOOST;
+            case 3 -> MobEffects.REGENERATION;
             default -> MobEffects.INVISIBILITY;
         };
     }
@@ -198,32 +207,41 @@ public class EntityEldritchCrab extends Monster implements ISidedHurt {
     @Override
     public void tick() {
         super.tick();
-        this.attackTime--;
-        if (this.tickCount < 20) {
-            this.fallDistance = 0.0F;
-        }
         if (this.level().isClientSide()) {
             if (this.shellBreakTicks > 0) {
                 this.shellBreakTicks--;
             }
             return;
         }
-        var target = this.getTarget();
-        if (this.getVehicle() == null
-                && target != null
-                && !target.isVehicle()
-                && !this.onGround()
-                && !this.hasHelm()
-                && target.isAlive()
-                && this.getY() - target.getY() >= target.getBbHeight() / 2.0F
-                && this.distanceToSqr(target) < LATCH_RANGE_SQ) {
-            this.startRiding(target);
+        if (this.tickCount < FALL_GRACE_TICKS) {
+            this.resetFallDistance();
         }
-        if (this.getVehicle() != null && this.isAlive() && this.attackTime <= 0) {
-            this.attackTime = 10 + this.random.nextInt(10);
-            this.doHurtTarget(this.getVehicle());
-            if (this.random.nextFloat() < DISMOUNT_CHANCE) {
+        if (!this.isAlive()) {
+            return;
+        }
+        if (this.getVehicle() instanceof LivingEntity host) {
+            if (!host.isAlive()) {
                 this.stopRiding();
+                return;
+            }
+            if (--this.attackTime <= 0) {
+                this.attackTime = MOUNTED_ATTACK_BASE + this.random.nextInt(MOUNTED_ATTACK_SPREAD + 1);
+                this.doHurtTarget(host);
+                if (this.random.nextFloat() < DISMOUNT_CHANCE) {
+                    this.stopRiding();
+                }
+            }
+        } else if (!this.isPassenger()) {
+            LivingEntity target = this.getTarget();
+            if (target != null
+                    && !target.isVehicle()
+                    && !this.onGround()
+                    && !this.hasHelm()
+                    && target.isAlive()
+                    && this.getY() >= target.getY() + target.getBbHeight() * 0.5
+                    && this.distanceToSqr(target) <= LATCH_RANGE_SQ
+                    && this.startRiding(target, true)) {
+                this.attackTime = MOUNTED_ATTACK_BASE + this.random.nextInt(MOUNTED_ATTACK_SPREAD + 1);
             }
         }
     }
@@ -245,7 +263,7 @@ public class EntityEldritchCrab extends Monster implements ISidedHurt {
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
         boolean result = super.hurt(source, damage);
-        if (this.hasHelm() && this.getHealth() / this.getMaxHealth() <= HELM_BREAK_HEALTH_FRACTION) {
+        if (result && this.hasHelm() && this.getHealth() / this.getMaxHealth() <= HELM_BREAK_HEALTH_FRACTION) {
             this.setHelm(false);
             level.sendParticles(
                     new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(TTItems.CRIMSON_PLATE_CHEST.get())),
