@@ -1969,6 +1969,8 @@ public final class TTModelProvider implements DataProvider {
     }
 
     private void arcaneDoor() {
+        BiConsumer<ResourceLocation, Supplier<JsonElement>> cutoutOutput =
+                (id, json) -> modelOutput.accept(id, () -> cutout(json.get()));
         TextureMapping textures = new TextureMapping()
                 .put(TextureSlot.TOP, blockTexture("arcane_door_top"))
                 .put(TextureSlot.BOTTOM, blockTexture("arcane_door_bottom"));
@@ -1980,10 +1982,14 @@ public final class TTModelProvider implements DataProvider {
                 ModelTemplates.DOOR_BOTTOM_RIGHT.create(TTBlocks.ARCANE_DOOR.get(), textures, modelOutput);
         ResourceLocation bottomRightOpen =
                 ModelTemplates.DOOR_BOTTOM_RIGHT_OPEN.create(TTBlocks.ARCANE_DOOR.get(), textures, modelOutput);
-        ResourceLocation topLeft = TTIds.rl("block/arcane_door_top_left");
-        ResourceLocation topLeftOpen = TTIds.rl("block/arcane_door_top_left_open");
-        ResourceLocation topRight = TTIds.rl("block/arcane_door_top_right");
-        ResourceLocation topRightOpen = TTIds.rl("block/arcane_door_top_right_open");
+        ResourceLocation topLeft =
+                ModelTemplates.DOOR_TOP_LEFT.create(TTBlocks.ARCANE_DOOR.get(), textures, cutoutOutput);
+        ResourceLocation topLeftOpen =
+                ModelTemplates.DOOR_TOP_LEFT_OPEN.create(TTBlocks.ARCANE_DOOR.get(), textures, cutoutOutput);
+        ResourceLocation topRight =
+                ModelTemplates.DOOR_TOP_RIGHT.create(TTBlocks.ARCANE_DOOR.get(), textures, cutoutOutput);
+        ResourceLocation topRightOpen =
+                ModelTemplates.DOOR_TOP_RIGHT_OPEN.create(TTBlocks.ARCANE_DOOR.get(), textures, cutoutOutput);
         blockStateOutput.accept(MultiVariantGenerator.multiVariant(TTBlocks.ARCANE_DOOR.get())
                 .with(doorHalf(
                         doorHalf(
