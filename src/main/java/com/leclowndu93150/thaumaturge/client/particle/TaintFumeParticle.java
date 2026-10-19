@@ -10,9 +10,9 @@ import net.minecraft.util.RandomSource;
 public final class TaintFumeParticle extends TTParticle {
     private static final int FRAME_COUNT = 3;
     private static final int BASE_LIFETIME = 80;
-    private static final float START_ALPHA = 0.75F;
-    private static final float FRICTION = 0.975F;
-    private static final float GRAVITY = 0.2F;
+    private static final float START_ALPHA = 0.8F;
+    private static final float FRICTION = 0.95F;
+    private static final float GRAVITY = 0.05F;
 
     private final float startSize;
     private final float endSize;
@@ -29,10 +29,10 @@ public final class TaintFumeParticle extends TTParticle {
             ParticleSheet sheet) {
         super(level, x, y, z, vx, vy, vz, sheet);
         if (options.color() == TaintFumeParticleOptions.RANDOM_COLOR) {
-            this.rCol = 0.4F + this.random.nextFloat() * 0.2F;
-            this.gCol = 0.1F + this.random.nextFloat() * 0.3F;
-            this.bCol = 0.5F + this.random.nextFloat() * 0.2F;
-            this.lifetime = BASE_LIFETIME + this.random.nextInt(20);
+            this.rCol = 0.3F + this.random.nextFloat() * 0.22F;
+            this.gCol = 0.1F + this.random.nextFloat() * 0.14F;
+            this.bCol = 0.36F + this.random.nextFloat() * 0.12F;
+            this.lifetime = BASE_LIFETIME + this.random.nextInt(21);
             this.friction = FRICTION;
             this.gravity = GRAVITY;
         } else {
@@ -41,10 +41,10 @@ public final class TaintFumeParticle extends TTParticle {
             this.friction = 0.9F;
         }
         this.startSize = options.scale() * 0.1F;
-        this.endSize = this.startSize / 4.0F;
+        this.endSize = this.startSize * 0.3F;
         this.quadSize = this.startSize;
         frame(this.random.nextInt(FRAME_COUNT));
-        setSpin(this.random.nextFloat(), this.random.nextBoolean() ? -1.0F : 1.0F);
+        setSpin(this.random.nextFloat(), this.random.nextBoolean() ? 0.15F : -0.15F);
     }
 
     @Override

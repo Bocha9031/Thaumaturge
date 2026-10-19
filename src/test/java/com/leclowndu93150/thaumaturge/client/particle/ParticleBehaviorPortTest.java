@@ -282,6 +282,13 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void fluxGooDropletLifetimeIsSkewedTowardShorterParticles() {
+        assertEquals(50, FluxGooDropletParticle.skewedLifetime(0.0F));
+        assertEquals(84, FluxGooDropletParticle.skewedLifetime(0.5F));
+        assertEquals(600, FluxGooDropletParticle.skewedLifetime(1.0F));
+    }
+
+    @Test
     void stabilizerRuneClampsNonpositiveLifetimesAndStartsWithItsFadedAlpha() throws Exception {
         ClientLevel level = mock(ClientLevel.class);
         for (int life : new int[] {0, -1}) {

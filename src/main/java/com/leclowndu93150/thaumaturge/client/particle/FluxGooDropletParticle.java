@@ -11,6 +11,10 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 public final class FluxGooDropletParticle extends BreakingItemParticle {
+    private static final int SKEWED_LIFETIME_BASE = 50;
+    private static final int SKEWED_LIFETIME_EXTRA = 550;
+    private static final int SKEW_POWER = 4;
+
     private final float baseAlpha;
 
     private FluxGooDropletParticle(
@@ -57,8 +61,7 @@ public final class FluxGooDropletParticle extends BreakingItemParticle {
                 double ya,
                 double za) {
             RandomSource random = level.getRandom();
-            int lifetime =
-                    options.lifetime() > 0 ? options.lifetime() : (int) (66.0F / (random.nextFloat() * 0.9F + 0.1F));
+            int lifetime = options.lifetime() > 0 ? options.lifetime() : skewedLifetime(random.nextFloat());
             return new FluxGooDropletParticle(
                     level,
                     x,
@@ -72,5 +75,13 @@ public final class FluxGooDropletParticle extends BreakingItemParticle {
                     options.alpha(),
                     lifetime);
         }
+    }
+
+    static int skewedLifetime(float roll) {
+        float skewed = roll;
+        for (int i = 1; i < SKEW_POWER; i++) {
+            skewed *= roll;
+        }
+        return SKEWED_LIFETIME_BASE + (int) (skewed * SKEWED_LIFETIME_EXTRA);
     }
 }
