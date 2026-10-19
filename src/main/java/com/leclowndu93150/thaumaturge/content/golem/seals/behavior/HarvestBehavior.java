@@ -23,10 +23,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FarmBlock;
+import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -54,7 +56,6 @@ public final class HarvestBehavior implements ISealBehavior {
     private static final int STAGGER = 41;
     private static final int SCAN_PERIOD = 5;
     private static final int TIDY_PERIOD = 100;
-    private static final int BREAK_EFFECT = 2001;
     private static final int REPLANT_LIFESPAN = 300;
 
     private final SealClock clock = new SealClock(STAGGER);
@@ -207,11 +208,25 @@ public final class HarvestBehavior implements ISealBehavior {
             till(level, hand, ground);
         }
         ItemStack seed = site.seed().copyWithCount(1);
-        golem.hands().release(seed);
-        GolemInteractionHelper.golemClick(level, golem, ground, support.getOpposite(), seed, false, false);
-        BlockState planted = level.getBlockState(pos);
-        if (!planted.isAir()) {
-            level.levelEvent(BREAK_EFFECT, pos, Block.getId(planted));
+        InteractionResult result = plant(level, golem, seed, ground, support);
+        if (result == InteractionResult.SUCCESS && !level.getBlockState(pos).isAir()) {
+            level.levelEvent(LevelEvent.PARTICLES_DESTROY_BLOCK, pos, Block.getId(level.getBlockState(pos)));
+            golem.hands().release(site.seed().copyWithCount(1));
+            golem.grantRankExperience(1);
+            golem.animateSwing();
+        }
+    }
+
+    private static InteractionResult plant(
+            ServerLevel level, IGolemAPI golem, ItemStack seed, BlockPos ground, Direction support) {
+        FakePlayer player = TTFakePlayer.GOLEM.at(level, golem.asEntity());
+        try {
+            player.setItemInHand(InteractionHand.MAIN_HAND, seed);
+            BlockHitResult hit = new BlockHitResult(
+                    Vec3.atCenterOf(ground), support.getOpposite(), ground, false);
+            return player.gameMode.useItemOn(player, level, seed, InteractionHand.MAIN_HAND, hit);
+        } finally {
+            player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         }
     }
 
