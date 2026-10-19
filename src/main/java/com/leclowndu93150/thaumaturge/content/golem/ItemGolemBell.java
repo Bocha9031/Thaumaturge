@@ -25,8 +25,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public final class ItemGolemBell extends Item implements ISealDisplayer {
-    private static final double AIM_LENGTH = 5.0;
-    private static final double AIM_STEP = 0.05;
+    private static final double AIM_LENGTH = 25.0D;
+    private static final double AIM_STEP = 0.5D;
     static final int AIM_SAMPLES = (int) Math.round(AIM_LENGTH / AIM_STEP);
     private static final float CHIME_VOLUME = 0.5F;
     private static final float CHIME_PITCH_SPREAD = 0.2F;
