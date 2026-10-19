@@ -59,7 +59,7 @@ class EssentiaIntakeCutoffTest {
     }
 
     @Test
-    void onlyConfiguredSideReceivesAndPullTracksHostDemandAndStrength() {
+    void onlyConfiguredSideReceivesAndPullUsesFixedStrengthUntilDemandIsSatisfied() {
         assertTrue(intake.connectsOn(Direction.EAST));
         assertTrue(intake.receivesOn(Direction.EAST));
         assertFalse(intake.connectsOn(Direction.WEST));
@@ -67,8 +67,7 @@ class EssentiaIntakeCutoffTest {
         assertSame(aspect, intake.pull(Direction.EAST).aspect());
         assertEquals(128, intake.pull(Direction.EAST).strength());
         assertSame(EssentiaPull.NONE, intake.pull(null));
-        when(host.intakeSuction(128)).thenReturn(78);
-        assertEquals(78, intake.pull(Direction.EAST).strength());
+        assertEquals(128, intake.pull(Direction.EAST).strength());
         when(host.wantsEssentia()).thenReturn(false);
         assertSame(EssentiaPull.NONE, intake.pull(Direction.EAST));
     }

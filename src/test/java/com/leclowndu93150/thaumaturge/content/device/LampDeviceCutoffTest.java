@@ -115,16 +115,15 @@ class LampDeviceCutoffTest {
     }
 
     @Test
-    void fertilitySuctionDropsTenPerChargeAndNativeNbtRetainsTheCounter() {
+    void fertilitySuctionStaysFixedUntilFullAndNativeNbtRetainsTheCounter() {
         var lamp = fertility(0);
         for (int charges = 0; charges <= 10; charges++) {
             CompoundTag stored = new CompoundTag();
             stored.putInt("charges", charges);
             lamp.loadAdditional(stored, registries);
-            assertEquals(128 - 10 * charges, lamp.intakeSuction(128));
             assertEquals(charges < 10, lamp.wantsEssentia());
             assertEquals(
-                    charges < 10 ? EssentiaPull.of(desire, 128 - 10 * charges) : EssentiaPull.NONE,
+                    charges < 10 ? EssentiaPull.of(desire, 128) : EssentiaPull.NONE,
                     lamp.intake().pull(Direction.EAST));
             assertEquals(EssentiaPull.NONE, lamp.intake().pull(Direction.WEST));
             assertEquals(stored, save(lamp));
@@ -236,7 +235,7 @@ class LampDeviceCutoffTest {
     }
 
     @Test
-    void fertilityUsesThreeHundredRunningTicksAndRedstoneResetsTheTimer() {
+    void fertilityUsesThreeHundredActiveTicksAndPausesItsTimerWhenDisabled() {
         try (var intakes = mockConstruction(EssentiaIntake.class)) {
             var lamp = fertility(10);
             nearby(adult(EntityType.COW), adult(EntityType.COW));
@@ -251,19 +250,22 @@ class LampDeviceCutoffTest {
             CompoundTag recharged = new CompoundTag();
             recharged.putInt("charges", 10);
             lamp.loadAdditional(recharged, registries);
-            tick(lamp, 1);
-            assertEquals(5, save(lamp).getInt("charges"));
             when(level.hasNeighborSignal(BlockPos.ZERO)).thenReturn(true);
             tick(lamp, 100);
-            assertEquals(5, save(lamp).getInt("charges"));
+            assertEquals(10, save(lamp).getInt("charges"));
             when(level.hasNeighborSignal(BlockPos.ZERO)).thenReturn(false);
             tick(lamp, 1);
-            assertEquals(0, save(lamp).getInt("charges"));
-            verify(level, times(4)).getEntitiesOfClass(eq(Animal.class), any(AABB.class));
+            assertEquals(10, save(lamp).getInt("charges"));
+            tick(lamp, 298);
+            assertEquals(10, save(lamp).getInt("charges"));
+            verify(level, times(2)).getEntitiesOfClass(eq(Animal.class), any(AABB.class));
+            tick(lamp, 1);
+            assertEquals(5, save(lamp).getInt("charges"));
+            verify(level, times(3)).getEntitiesOfClass(eq(Animal.class), any(AABB.class));
             var insufficient = fertility(4);
             tick(insufficient, 301);
             assertEquals(4, save(insufficient).getInt("charges"));
-            verify(level, times(4)).getEntitiesOfClass(eq(Animal.class), any(AABB.class));
+            verify(level, times(3)).getEntitiesOfClass(eq(Animal.class), any(AABB.class));
         }
     }
 
