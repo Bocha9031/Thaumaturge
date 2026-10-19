@@ -55,13 +55,9 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
     private static final float MIN_COST_MULT = 0.5F;
     private static final float ESSENTIA_STARVE_PENALTY = 0.25F;
     private static final int ESSENTIA_FX_RANGE_TICKS = 12;
-    private static final int CLIENT_SOURCE_BASE_COUNT = 3;
+    private static final int CLIENT_SOURCE_BASE_COUNT = MatrixPullParticleMath.SOURCE_PARTICLE_COUNT;
     private static final int CLIENT_SPARKLE_ODDS = 3;
-    private static final float SPARKLE_VIOLET_RED = 0.62F;
-    private static final float SPARKLE_PURPLE_RED = 0.45F;
-    private static final float SPARKLE_GREEN = 0.18F;
-    private static final float SPARKLE_BLUE_MIN = 0.75F;
-    private static final float SPARKLE_BLUE_SPAN = 0.25F;
+    private static final float SPARKLE_GREEN = MatrixPullParticleMath.SPARKLE_GREEN;
     private static final int GLYPH_INTERVAL = 5;
     private static final float GLYPH_RED_LOW = 0.55F;
     private static final float GLYPH_RED_RANGE = 0.25F;
@@ -78,10 +74,7 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
     private static final float PROBLEM_SPARK_SIZE = 0.35F;
     private static final double PROBLEM_SPARK_INSET = 0.25;
     private static final double PROBLEM_SPARK_SPAN = 0.5;
-    private static final double PEDESTAL_CENTER = 0.5;
-    private static final double CRUMB_ITEM_SPOT_LIFT = 0.3;
-    private static final double CRUMB_ITEM_SPOT_RADIUS = 0.08;
-    private static final double CRUMB_ITEM_KICK = 0.02;
+    private static final double CRUMB_ITEM_KICK = MatrixPullParticleMath.CRUMB_ITEM_KICK;
     private static final double GOGGLES_TEXT_Y_OFFSET = 1.5;
 
     private static final DecimalFormat STABILITY_FORMAT = new DecimalFormat("#######.##");
@@ -565,8 +558,8 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
     private void spawnPullFX(RandomSource rand, BlockPos loc, ItemStack stack) {
         Vec3 goal = new Vec3(worldPosition.getX() + 0.5, worldPosition.getY() - 0.5, worldPosition.getZ() + 0.5);
         if (rand.nextInt(CLIENT_SPARKLE_ODDS) == 0) {
-            float red = Mth.lerp(rand.nextFloat(), SPARKLE_PURPLE_RED, SPARKLE_VIOLET_RED);
-            float blue = SPARKLE_BLUE_MIN + rand.nextFloat() * SPARKLE_BLUE_SPAN;
+            float red = MatrixPullParticleMath.sparkleRed(rand.nextFloat());
+            float blue = MatrixPullParticleMath.sparkleBlue(rand.nextFloat());
             level.addParticle(
                     new BoreSparkleParticleOptions(goal.x, goal.y, goal.z, red, SPARKLE_GREEN, blue),
                     loc.getX() + rand.nextDouble(),
@@ -591,9 +584,8 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
             }
         } else {
             for (int a = 0; a < CLIENT_SOURCE_BASE_COUNT; a++) {
-                double x = loc.getX() + PEDESTAL_CENTER + rand.nextGaussian() * CRUMB_ITEM_SPOT_RADIUS;
-                double y = loc.getY() + 1.0 + CRUMB_ITEM_SPOT_LIFT + rand.nextGaussian() * CRUMB_ITEM_SPOT_RADIUS;
-                double z = loc.getZ() + PEDESTAL_CENTER + rand.nextGaussian() * CRUMB_ITEM_SPOT_RADIUS;
+                Vec3 start = MatrixPullParticleMath.nonBlockItemStart(
+                        loc, rand.nextDouble(), rand.nextDouble(), rand.nextDouble());
                 level.addParticle(
                         new InfusionCrumbsParticleOptions(
                                 template,
@@ -603,9 +595,9 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
                                 rand.nextGaussian() * CRUMB_ITEM_KICK,
                                 rand.nextGaussian() * CRUMB_ITEM_KICK,
                                 rand.nextGaussian() * CRUMB_ITEM_KICK),
-                        x,
-                        y,
-                        z,
+                        start.x,
+                        start.y,
+                        start.z,
                         0.0,
                         0.0,
                         0.0);
