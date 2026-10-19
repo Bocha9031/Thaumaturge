@@ -27,6 +27,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -76,7 +77,7 @@ public final class WispEntity extends Monster implements IEntityAspectSource {
 
     @Override
     protected void registerGoals() {
-        this.goalSelector.addGoal(5, new FlyingWanderGoal(this, true, () -> true));
+        this.goalSelector.addGoal(5, new FlyingWanderGoal(this, true, this::isDrifting));
         this.goalSelector.addGoal(7, new GhastLikeLookGoal(this));
         this.goalSelector.addGoal(7, new WispZapGoal(this));
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
@@ -183,6 +184,11 @@ public final class WispEntity extends Monster implements IEntityAspectSource {
         if (this.level() instanceof ServerLevel && aspect() == null) {
             pickRandomAspect();
         }
+    }
+
+    private boolean isDrifting() {
+        LivingEntity target = getTarget();
+        return target == null || !getSensing().hasLineOfSight(target);
     }
 
     private void pickRandomAspect() {

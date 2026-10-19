@@ -17,6 +17,10 @@ public final class GhastLikeMoveControl extends MoveControl {
         this.flyer = flyer;
     }
 
+    public void stop() {
+        this.operation = MoveControl.Operation.WAIT;
+    }
+
     @Override
     public void tick() {
         if (this.operation == MoveControl.Operation.MOVE_TO) {
