@@ -8,10 +8,11 @@ import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.util.RandomSource;
 
 public final class FireMoteParticle extends TTParticle {
-    private static final int LIFETIME = 16;
+    private static final int LIFETIME = 14;
     private static final int EMISSIVE_LIGHT = 0x00F000F0;
-    private static final float SKIP_CHANCE = 1.0F / 6.0F;
-    private static final float SPIN_PER_TICK = 1.0F;
+    private static final int EXTRA_AGE_ODDS = 5;
+    private static final float SPIN_PER_TICK = 0.32F;
+    private static final float START_ROLL = (float) (Math.PI / 6.0);
 
     private final float startAlpha;
     private final float startSize;
@@ -29,7 +30,7 @@ public final class FireMoteParticle extends TTParticle {
         this.startSize = options.scale() * 0.1F;
         this.quadSize = this.startSize;
         this.translucent = options.translucent();
-        this.roll = (float) (Math.PI * 2.0);
+        this.roll = START_ROLL;
         this.oRoll = this.roll;
     }
 
@@ -39,14 +40,14 @@ public final class FireMoteParticle extends TTParticle {
 
     @Override
     protected void update() {
-        if (this.random.nextFloat() < SKIP_CHANCE) {
+        if (this.random.nextInt(EXTRA_AGE_ODDS) == 0) {
             this.age++;
         }
         this.oRoll = this.roll;
-        this.roll += SPIN_PER_TICK;
         float t = progress();
         this.quadSize = this.startSize * (1.0F - t);
         this.alpha = this.startAlpha * (1.0F - t);
+        this.roll += SPIN_PER_TICK;
     }
 
     @Override

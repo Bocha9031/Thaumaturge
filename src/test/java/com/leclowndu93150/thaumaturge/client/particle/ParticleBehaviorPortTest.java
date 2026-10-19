@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.leclowndu93150.thaumaturge.client.particle.support.BoltLineShape;
 import com.leclowndu93150.thaumaturge.content.particle.BoltParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BoreSparkleParticleOptions;
+import com.leclowndu93150.thaumaturge.content.particle.InfusionCrumbsParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.StabilizerRuneParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VentParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VisSparkleParticleOptions;
@@ -25,9 +26,13 @@ import java.util.List;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.junit.jupiter.api.Test;
@@ -286,6 +291,37 @@ final class ParticleBehaviorPortTest {
         assertEquals(50, FluxGooDropletParticle.skewedLifetime(0.0F));
         assertEquals(84, FluxGooDropletParticle.skewedLifetime(0.5F));
         assertEquals(600, FluxGooDropletParticle.skewedLifetime(1.0F));
+    }
+
+    @Test
+    void infusionCrumbsUseSmallTintedPatchesOnThe1211SharedItemBlockAtlas() throws Exception {
+        TextureAtlasSprite sprite = mock(TextureAtlasSprite.class);
+        InfusionCrumbsParticle particle = construct(
+                InfusionCrumbsParticle.class,
+                new Class<?>[] {
+                    ClientLevel.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    InfusionCrumbsParticleOptions.class,
+                    TextureAtlasSprite.class
+                },
+                mock(ClientLevel.class),
+                0.0,
+                0.0,
+                0.0,
+                new InfusionCrumbsParticleOptions(ItemStack.EMPTY, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0),
+                sprite);
+
+        Field alpha = Particle.class.getDeclaredField("alpha");
+        alpha.setAccessible(true);
+        assertEquals(0.4F, alpha.getFloat(particle), 1.0E-6F);
+
+        Field size = SingleQuadParticle.class.getDeclaredField("quadSize");
+        size.setAccessible(true);
+        float quadSize = size.getFloat(particle);
+        assertTrue(quadSize >= 0.5F / 32.0F && quadSize <= 2.0F / 32.0F);
+        assertEquals(ParticleRenderType.TERRAIN_SHEET, particle.getRenderType());
     }
 
     @Test

@@ -9,9 +9,14 @@ import net.minecraft.util.RandomSource;
 public final class FocusCloudParticle extends TTParticle {
     private static final int FRAME_COUNT = 4;
     private static final int BASE_LIFETIME = 20;
-    private static final float PEAK_ALPHA = 0.66F;
-    private static final float FRICTION = 0.99F;
-    private static final double WIND_SCALE = 0.001;
+    private static final int LIFETIME_RANGE = 11;
+    private static final float PEAK_ALPHA = 0.4F;
+    private static final float FRICTION = 0.98F;
+    private static final float SIZE_UNIT = 0.2F;
+    private static final float START_SIZE_BASE = 2.0F;
+    private static final float END_SIZE_BASE = 4.5F;
+    private static final float SPIN_SPEED = 0.06F;
+    private static final double WIND_SCALE = 4.0E-4;
 
     private final float startSize;
     private final float endSize;
@@ -28,14 +33,14 @@ public final class FocusCloudParticle extends TTParticle {
             ParticleSheet sheet) {
         super(level, x, y, z, vx, vy, vz, sheet);
         setColor(options.getRed(), options.getGreen(), options.getBlue());
-        this.lifetime = BASE_LIFETIME + this.random.nextInt(10);
+        this.lifetime = BASE_LIFETIME + this.random.nextInt(LIFETIME_RANGE);
         this.friction = FRICTION;
-        this.startSize = (5.0F + this.random.nextFloat()) * 0.1F;
-        this.endSize = (10.0F + this.random.nextFloat()) * 0.1F;
+        this.startSize = (START_SIZE_BASE + this.random.nextFloat()) * SIZE_UNIT;
+        this.endSize = (END_SIZE_BASE + this.random.nextFloat()) * SIZE_UNIT;
         this.quadSize = this.startSize;
         this.alpha = 0.0F;
         frame(this.random.nextInt(FRAME_COUNT));
-        setSpin(this.random.nextFloat(), this.random.nextBoolean() ? -0.25F : 0.25F);
+        setSpin(this.random.nextFloat(), this.random.nextBoolean() ? -SPIN_SPEED : SPIN_SPEED);
         setMoonWind(WIND_SCALE);
     }
 
