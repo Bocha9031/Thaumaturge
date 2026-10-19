@@ -28,6 +28,11 @@ public final class TTGolemPartRenderHooks {
 
     private TTGolemPartRenderHooks() {}
 
+    static float grinderRotation(float ageInTicks, float swingProgress) {
+        float swingLeft = 1.0F - swingProgress;
+        return 2.5F * ageInTicks + 720.0F * (1.0F - swingLeft * swingLeft * swingLeft);
+    }
+
     @SubscribeEvent
     public static void onRegisterHooks(RegisterGolemPartRenderHooksEvent event) {
         event.register(CLAWS_MESH, new ClawJaws());
@@ -46,7 +51,6 @@ public final class TTGolemPartRenderHooks {
 
     private static final class ClawJaws implements GolemPartRenderHook {
         private static final float MAX_OPEN_DEGREES = 34.0F;
-        private static final float REST_DROP = -1.5F / 16.0F;
 
         @Override
         public void posePiece(String piece, GolemPartRenderView golem, PoseStack pose, GolemPartModel.LimbSide side) {
@@ -54,7 +58,6 @@ public final class TTGolemPartRenderHooks {
             if (direction == 0.0F) {
                 return;
             }
-            pose.translate(0.0F, REST_DROP, 0.0F);
             float progress = golem.swingProgress();
             if (progress <= 0.0F) {
                 return;
@@ -71,9 +74,8 @@ public final class TTGolemPartRenderHooks {
             if (!"grinder".equals(piece)) {
                 return;
             }
-            float spin = 12.5F * golem.ageInTicks() + 180.0F * golem.swingProgress();
-            float angle = side == GolemPartModel.LimbSide.LEFT ? -(spin + 22.0F) : spin;
-            pose.translate(0.0F, -1.0F / 16.0F, 0.0F);
+            float spin = grinderRotation(golem.ageInTicks(), golem.swingProgress());
+            float angle = side == GolemPartModel.LimbSide.LEFT ? -(spin + 25.0F) : spin;
             pose.mulPose(Axis.XP.rotationDegrees(angle));
         }
     }
@@ -99,7 +101,6 @@ public final class TTGolemPartRenderHooks {
         @Override
         public void posePiece(String piece, GolemPartRenderView golem, PoseStack pose, GolemPartModel.LimbSide side) {
             if ("wheel".equals(piece)) {
-                pose.translate(0.0F, -2.5F / 16.0F, 0.0F);
                 pose.mulPose(Axis.XP.rotationDegrees(-golem.wheelRotation()));
             }
         }
@@ -113,12 +114,18 @@ public final class TTGolemPartRenderHooks {
                 PoseStack pose,
                 MultiBufferSource buffers,
                 GolemPartModel.LimbSide side) {
-            if (!"cargo".equals(piece) || !golem.hasSecondHandItem()) {
+            if (!"basket".equals(piece) || !golem.hasSecondHandItem()) {
                 return;
             }
             pose.pushPose();
-            pose.translate(0.0F, 3.0F / 16.0F, 6.5F / 16.0F);
-            pose.scale(0.45F, 0.45F, 0.45F);
+            if (golem.secondHandItemIsBlock()) {
+                pose.translate(0.0F, 0.15F, 0.38F);
+                pose.scale(0.5F, 0.5F, 0.5F);
+            } else {
+                pose.translate(0.0F, 0.07F, 0.38F);
+                pose.mulPose(Axis.XP.rotationDegrees(90.0F));
+                pose.scale(0.6F, 0.6F, 0.6F);
+            }
             ItemRenderHelper.render(
                     golem.secondHandItem(),
                     ItemDisplayContext.FIXED,
@@ -134,7 +141,7 @@ public final class TTGolemPartRenderHooks {
     private static final class ShoulderMirror implements GolemPartRenderHook {
         @Override
         public void posePiece(String piece, GolemPartRenderView golem, PoseStack pose, GolemPartModel.LimbSide side) {
-            if (side == GolemPartModel.LimbSide.LEFT && piece.endsWith("_outer")) {
+            if (side == GolemPartModel.LimbSide.LEFT) {
                 pose.mulPose(Axis.YP.rotationDegrees(180.0F));
             }
         }

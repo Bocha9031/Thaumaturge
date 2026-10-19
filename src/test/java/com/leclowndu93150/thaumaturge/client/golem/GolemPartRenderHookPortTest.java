@@ -81,12 +81,19 @@ class GolemPartRenderHookPortTest {
         float expectedDeltaY = -(float) Math.sin(Math.toRadians(openDegrees));
 
         assertEquals(expectedDeltaY, openTip.y - restTip.y, 1.0E-4F);
-        assertEquals(0.01F - 1.5F / 16.0F, restTip.y, 1.0E-6F);
+        assertEquals(0.01F, restTip.y, 0.0F);
 
         PoseStack unrelatedPose = new PoseStack();
         claws.posePiece("claw003", swinging, unrelatedPose, GolemPartModel.LimbSide.MIDDLE);
         Vector3f unrelatedTip = unrelatedPose.last().pose().transformPosition(0.0F, 0.01F, 1.0F, new Vector3f());
         assertEquals(0.01F, unrelatedTip.y, 0.0F);
+    }
+
+    @Test
+    void grinderUsesMainSpinRateAndCubicAttackEase() {
+        assertEquals(25.0F, TTGolemPartRenderHooks.grinderRotation(10.0F, 0.0F), 0.0F);
+        assertEquals(655.0F, TTGolemPartRenderHooks.grinderRotation(10.0F, 0.5F), 0.0F);
+        assertEquals(745.0F, TTGolemPartRenderHooks.grinderRotation(10.0F, 1.0F), 0.0F);
     }
 
     @Test
