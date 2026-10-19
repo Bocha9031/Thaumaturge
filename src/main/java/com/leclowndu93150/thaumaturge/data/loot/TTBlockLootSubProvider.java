@@ -44,7 +44,23 @@ public final class TTBlockLootSubProvider extends BlockLootSubProvider {
     private static final float AMBER_CURIO_CHANCE = 0.1F;
     private static final float[] VENT_CURIO_CHANCES = {0.01F, 0.01F, 0.02F, 0.03F};
     // Taint Rock rolls a Flux crystal at 1/15, plus another 1/15 for each Fortune level.
-    private static final float[] TAINT_ROCK_CRYSTAL_CHANCES = {1.0F / 15.0F, 2.0F / 15.0F, 3.0F / 15.0F, 4.0F / 15.0F};
+    private static final float[] TAINT_ROCK_CRYSTAL_CHANCES = {
+        1.0F / 15.0F,
+        2.0F / 15.0F,
+        3.0F / 15.0F,
+        4.0F / 15.0F,
+        5.0F / 15.0F,
+        6.0F / 15.0F,
+        7.0F / 15.0F,
+        8.0F / 15.0F,
+        9.0F / 15.0F,
+        10.0F / 15.0F,
+        11.0F / 15.0F,
+        12.0F / 15.0F,
+        13.0F / 15.0F,
+        14.0F / 15.0F,
+        15.0F / 15.0F
+    };
 
     private LootTable.Builder dropSelfWithoutExplosion(Block block) {
         return LootTable.lootTable()

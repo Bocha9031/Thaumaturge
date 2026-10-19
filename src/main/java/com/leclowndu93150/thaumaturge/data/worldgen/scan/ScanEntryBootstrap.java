@@ -78,7 +78,28 @@ public final class ScanEntryBootstrap {
                 null,
                 null);
         register(ctx, "orecrystal", "scanned/orecrystal", crystals, null, null);
-        register(ctx, "plants", "plants", blockReg.getOrThrow(TTBlockTags.MAGICAL_PLANTS), null, null);
+        register(
+                ctx,
+                "plants",
+                "plants",
+                blocks(
+                        blockReg,
+                        List.of(
+                                TTBlocks.LOG_GREATWOOD.get(),
+                                TTBlocks.LOG_SILVERWOOD.get(),
+                                TTBlocks.WOOD_GREATWOOD.get(),
+                                TTBlocks.WOOD_SILVERWOOD.get(),
+                                TTBlocks.STRIPPED_LOG_GREATWOOD.get(),
+                                TTBlocks.STRIPPED_LOG_SILVERWOOD.get(),
+                                TTBlocks.STRIPPED_WOOD_GREATWOOD.get(),
+                                TTBlocks.STRIPPED_WOOD_SILVERWOOD.get(),
+                                TTBlocks.SAPLING_GREATWOOD.get(),
+                                TTBlocks.SAPLING_SILVERWOOD.get(),
+                                TTBlocks.PLANT_CINDERPEARL.get(),
+                                TTBlocks.PLANT_SHIMMERLEAF.get(),
+                                TTBlocks.PLANT_VISHROOM.get())),
+                null,
+                null);
         register(ctx, "plantwood", "scanned/plantwood", woods, null, null);
 
         register(
