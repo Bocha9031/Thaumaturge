@@ -37,9 +37,13 @@ public final class BlockPavingStone extends BaseEntityBlock {
     private static final VoxelShape SHAPE = Block.box(0.0, 0.0, 0.0, 16.0, 15.0, 16.0);
     private static final int SPEED_DURATION = 40;
     private static final int SPEED_AMPLIFIER = 1;
-    private static final int RUNE_DURATION_POWERED = 20;
-    private static final int RUNE_DURATION_ACTIVE = 24;
-    private static final float RUNE_GRAVITY = -0.02F;
+    private static final double RUNE_CENTER = 0.5;
+    private static final double RUNE_HEIGHT = 1.05;
+    private static final RuneStyle POWERED_STYLE = new RuneStyle(0.3F, 0.4F, 0.2F, 0.25F, 0.85F, 0.15F, 2, 8, -0.06F);
+    private static final RuneStyle ACTIVE_STYLE = new RuneStyle(0.85F, 0.15F, 0.0F, 0.2F, 0.0F, 0.15F, 4, 8, -0.06F);
+    private static final RuneStyle WARNING_STYLE = new RuneStyle(0.8F, 0.2F, 0.2F, 0.3F, 0.6F, 0.4F, 1, 10, 0.0F);
+    private static final double WARNING_RANGE = 1.0;
+    private static final double WARNING_MIN_SPREAD = 0.75;
 
     private final boolean barrier;
 
@@ -93,62 +97,38 @@ public final class BlockPavingStone extends BaseEntityBlock {
             return;
         }
         if (level.hasNeighborSignal(pos)) {
-            for (int a = 0; a < 4; a++) {
-                spawnRune(
-                        level,
-                        pos,
-                        0.2F + random.nextFloat() * 0.4F,
-                        random.nextFloat() * 0.3F,
-                        0.8F + random.nextFloat() * 0.2F,
-                        RUNE_DURATION_POWERED,
-                        RUNE_GRAVITY);
-            }
+            spawnRunes(level, pos, random, POWERED_STYLE);
             return;
         }
         BlockState barrierState = TTBlocks.BARRIER.get().defaultBlockState();
         if (level.getBlockState(pos.above(1)) == barrierState || level.getBlockState(pos.above(2)) == barrierState) {
-            for (int a = 0; a < 6; a++) {
-                spawnRune(
-                        level,
-                        pos,
-                        0.9F + random.nextFloat() * 0.1F,
-                        random.nextFloat() * 0.3F,
-                        random.nextFloat() * 0.3F,
-                        RUNE_DURATION_ACTIVE,
-                        RUNE_GRAVITY);
-            }
+            spawnRunes(level, pos, random, ACTIVE_STYLE);
             return;
         }
-        List<Entity> nearby = level.getEntities(null, new AABB(pos).inflate(1.0));
-        for (Entity entity : nearby) {
-            if (entity instanceof LivingEntity && !(entity instanceof Player)) {
-                level.addParticle(
-                        new BlockRunesParticleOptions(
-                                0.6F + random.nextFloat() * 0.4F,
-                                0.0F,
-                                0.3F + random.nextFloat() * 0.7F,
-                                RUNE_DURATION_POWERED,
-                                0.0F,
-                                false),
-                        pos.getX() + 0.5,
-                        pos.getY() + 0.6F + random.nextFloat() * Math.max(0.8F, entity.getEyeHeight()) + 0.5,
-                        pos.getZ() + 0.5,
-                        0.0,
-                        0.0,
-                        0.0);
-                break;
-            }
+        AABB nearby = new AABB(pos).inflate(WARNING_RANGE);
+        List<LivingEntity> intruders = level.getEntitiesOfClass(
+                LivingEntity.class, nearby, candidate -> !(candidate instanceof Player) && candidate.isAlive());
+        if (intruders.isEmpty()) {
+            return;
+        }
+        LivingEntity intruder = intruders.get(random.nextInt(intruders.size()));
+        double base = pos.getY() + RUNE_HEIGHT;
+        double spread = Math.max(WARNING_MIN_SPREAD, intruder.getEyeY() - base);
+        emitRune(level, pos.getX() + RUNE_CENTER, base + random.nextDouble() * spread, pos.getZ() + RUNE_CENTER, random, WARNING_STYLE);
+    }
+
+    private static void spawnRunes(Level level, BlockPos pos, RandomSource random, RuneStyle style) {
+        for (int i = 0; i < style.count(); i++) {
+            emitRune(level, pos.getX() + RUNE_CENTER, pos.getY() + RUNE_HEIGHT, pos.getZ() + RUNE_CENTER, random, style);
         }
     }
 
-    private static void spawnRune(Level level, BlockPos pos, float r, float g, float b, int duration, float gravity) {
-        level.addParticle(
-                new BlockRunesParticleOptions(r, g, b, duration, gravity, false),
-                pos.getX() + 0.5,
-                pos.getY() + 0.7F + 0.5,
-                pos.getZ() + 0.5,
-                0.0,
-                0.0,
-                0.0);
+    private static void emitRune(Level level, double x, double y, double z, RandomSource random, RuneStyle style) {
+        float red = style.redBase() + random.nextFloat() * style.redSpread();
+        float green = style.greenBase() + random.nextFloat() * style.greenSpread();
+        float blue = style.blueBase() + random.nextFloat() * style.blueSpread();
+        level.addParticle(new BlockRunesParticleOptions(red, green, blue, style.duration(), style.gravity(), false), x, y, z, 0.0, 0.0, 0.0);
     }
+
+    private record RuneStyle(float redBase, float redSpread, float greenBase, float greenSpread, float blueBase, float blueSpread, int count, int duration, float gravity) {}
 }

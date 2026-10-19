@@ -28,11 +28,22 @@ public final class BlockEffectShock extends Block {
     private static final float SHOCK_DAMAGE = 1.0F;
     private static final int SLOWNESS_DURATION = 20;
     private static final int SELF_REMOVE_ONE_IN = 100;
-    private static final int SOUND_ONE_IN = 50;
-    private static final float SOUND_VOLUME = 0.25F;
-    private static final float SPARK_BASE_SCALE = 3.0F;
-    private static final float SPARK_SCALE_SPREAD = 6.0F;
-    private static final float SPARK_HEIGHT = 0.1515F;
+    private static final int SPARK_OPAQUE = 1;
+    private static final double SPARK_MIN_HEIGHT = 1.0 / 7.0;
+    private static final double SPARK_HEIGHT_SPREAD = 1.0 / 3.0 - SPARK_MIN_HEIGHT;
+    private static final float SPARK_BASE_SCALE = 0.35F;
+    private static final float SPARK_SCALE_PER_HEIGHT = 1.2F;
+    private static final float SPARK_ALPHA = 0.85F;
+    private static final float SPARK_RED_BASE = 0.7F;
+    private static final float SPARK_RED_SPREAD = 0.2F;
+    private static final float SPARK_GREEN_BASE = 0.9F;
+    private static final float SPARK_GREEN_SPREAD = 0.1F;
+    private static final float SPARK_BLUE = 1.0F;
+    private static final int HUM_ODDS = 50;
+    private static final float HUM_VOLUME = 0.1F;
+    private static final float HUM_PITCH_BASE = 0.9F;
+    private static final float HUM_PITCH_SPREAD = 0.2F;
+    private static final double BLOCK_CENTER = 0.5;
 
     public BlockEffectShock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -80,34 +91,30 @@ public final class BlockEffectShock extends Block {
 
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        float h = random.nextFloat() * 0.33F;
-        spawnSpark(
-                level,
-                pos.getX() + random.nextFloat(),
-                pos.getY() + SPARK_HEIGHT + h / 2.0F,
-                pos.getZ() + random.nextFloat(),
-                SPARK_BASE_SCALE + h * SPARK_SCALE_SPREAD,
-                0.65F + random.nextFloat() * 0.1F,
-                1.0F,
-                1.0F,
-                0.8F);
-        if (random.nextInt(SOUND_ONE_IN) == 0) {
+        double lift = SPARK_MIN_HEIGHT + random.nextDouble() * SPARK_HEIGHT_SPREAD;
+        float scale = SPARK_BASE_SCALE + (float) lift * SPARK_SCALE_PER_HEIGHT;
+        float red = SPARK_RED_BASE + random.nextFloat() * SPARK_RED_SPREAD;
+        float green = SPARK_GREEN_BASE + random.nextFloat() * SPARK_GREEN_SPREAD;
+        int color = ARGB32.colorFromFloat(SPARK_OPAQUE, red, green, SPARK_BLUE);
+        level.addParticle(
+                new SparkParticleOptions(color, SPARK_ALPHA, scale),
+                pos.getX() + random.nextDouble(),
+                pos.getY() + lift,
+                pos.getZ() + random.nextDouble(),
+                0.0,
+                0.0,
+                0.0);
+        if (random.nextInt(HUM_ODDS) == 0) {
+            float pitch = HUM_PITCH_BASE + random.nextFloat() * HUM_PITCH_SPREAD;
             level.playLocalSound(
-                    pos.getX(),
-                    pos.getY(),
-                    pos.getZ(),
+                    pos.getX() + BLOCK_CENTER,
+                    pos.getY() + BLOCK_CENTER,
+                    pos.getZ() + BLOCK_CENTER,
                     TTSounds.JACOBS.get(),
                     SoundSource.AMBIENT,
-                    SOUND_VOLUME,
-                    1.0F + (random.nextFloat() - random.nextFloat()) * 0.2F,
+                    HUM_VOLUME,
+                    pitch,
                     false);
         }
-    }
-
-    private static void spawnSpark(
-            Level level, double x, double y, double z, float size, float r, float g, float b, float alpha) {
-        RandomSource rand = level.getRandom();
-        level.addParticle(
-                new SparkParticleOptions(ARGB32.colorFromFloat(1.0F, r, g, b), alpha, size), x, y, z, 0.0, 0.0, 0.0);
     }
 }
