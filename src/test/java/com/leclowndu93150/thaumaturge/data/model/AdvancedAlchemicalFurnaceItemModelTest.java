@@ -27,17 +27,25 @@ class AdvancedAlchemicalFurnaceItemModelTest {
         register.setAccessible(true);
         register.invoke(provider);
 
-        JsonObject model = models.get(ResourceLocation.fromNamespaceAndPath(
-                        "thaumaturge", "item/advanced_alchemical_furnace"))
+        JsonObject model = models.get(
+                        ResourceLocation.fromNamespaceAndPath("thaumaturge", "item/advanced_alchemical_furnace"))
                 .get()
                 .getAsJsonObject();
         assertEquals("minecraft:builtin/entity", model.get("parent").getAsString());
         JsonObject display = model.getAsJsonObject("display");
         assertNotNull(display);
-        assertEquals("[30.0,225.0,0.0]", display.getAsJsonObject("gui").get("rotation").toString());
-        assertEquals("[0.0,-2.75,0.0]", display.getAsJsonObject("gui").get("translation").toString());
-        assertEquals("[0.0,-3.5,0.0]", display.getAsJsonObject("fixed").get("translation").toString());
-        assertEquals("[0.625,0.625,0.625]", display.getAsJsonObject("fixed").get("scale").toString());
+        assertEquals(
+                "[30.0,225.0,0.0]",
+                display.getAsJsonObject("gui").get("rotation").toString());
+        assertEquals(
+                "[0.0,-2.75,0.0]",
+                display.getAsJsonObject("gui").get("translation").toString());
+        assertEquals(
+                "[0.0,-3.5,0.0]",
+                display.getAsJsonObject("fixed").get("translation").toString());
+        assertEquals(
+                "[0.625,0.625,0.625]",
+                display.getAsJsonObject("fixed").get("scale").toString());
     }
 
     private static void setField(Object target, String name, Object value) throws ReflectiveOperationException {

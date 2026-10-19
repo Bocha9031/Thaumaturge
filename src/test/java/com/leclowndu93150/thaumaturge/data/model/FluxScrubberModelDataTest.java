@@ -32,16 +32,23 @@ class FluxScrubberModelDataTest {
         JsonObject item = model(models, "item/flux_scrubber");
         for (JsonObject wrapper : new JsonObject[] {block, item}) {
             assertEquals("thaumaturge:mesh", wrapper.get("loader").getAsString());
-            assertEquals("thaumaturge:models/mesh/flux_scrubber.ttmesh", wrapper.get("model").getAsString());
+            assertEquals(
+                    "thaumaturge:models/mesh/flux_scrubber.ttmesh",
+                    wrapper.get("model").getAsString());
             assertEquals("minecraft:cutout", wrapper.get("render_type").getAsString());
-            assertEquals("thaumaturge:block/flux_scrubber", wrapper.getAsJsonObject("textures")
-                    .get("texture0")
-                    .getAsString());
+            assertEquals(
+                    "thaumaturge:block/flux_scrubber",
+                    wrapper.getAsJsonObject("textures").get("texture0").getAsString());
         }
         assertFalse(block.getAsJsonObject("visibility").get("Tip").getAsBoolean());
         assertNotNull(item.get("transform"));
         assertEquals("corner", item.getAsJsonObject("transform").get("origin").getAsString());
-        assertEquals("-0.5", item.getAsJsonObject("transform").getAsJsonArray("translation").get(2).getAsString());
+        assertEquals(
+                "-0.5",
+                item.getAsJsonObject("transform")
+                        .getAsJsonArray("translation")
+                        .get(2)
+                        .getAsString());
     }
 
     private static JsonObject model(Map<ResourceLocation, Supplier<JsonElement>> models, String path) {
