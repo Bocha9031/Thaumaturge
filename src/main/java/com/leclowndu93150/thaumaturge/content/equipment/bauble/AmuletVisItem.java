@@ -8,6 +8,8 @@ import com.leclowndu93150.thaumaturge.api.items.RechargeAccess;
 import com.leclowndu93150.thaumaturge.compat.curio.ThaumaturgeCuriosCompat;
 import com.leclowndu93150.thaumaturge.content.wands.ItemWand;
 import com.leclowndu93150.thaumaturge.content.wands.WandVisHelper;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -35,45 +37,43 @@ public final class AmuletVisItem extends Item {
                 || player.tickCount % rechargeInterval != 0) {
             return;
         }
+        List<RechargeTarget> targets = new ArrayList<>();
         for (int slot = 0; slot < Inventory.getSelectionSize(); slot++) {
-            if (RechargeAccess.drawFromAura(
-                            player.level(), player.getInventory().getItem(slot), player.blockPosition(), player, 1)
-                    > 0) {
-                return;
+            collectRechargeTarget(player.getInventory().getItem(slot), targets);
+        }
+        for (int slot = 0; slot < Inventory.getSelectionSize(); slot++) {
+            collectWandTarget(player.getInventory().getItem(slot), targets);
+        }
+        ItemStack offhand = player.getOffhandItem();
+        collectRechargeTarget(offhand, targets);
+        collectWandTarget(offhand, targets);
+        if (ModList.get().isLoaded(TTIds.CURIOS)) {
+            for (ItemStack curio : ThaumaturgeCuriosCompat.equippedCurios(player)) {
+                collectRechargeTarget(curio, targets);
             }
-        }
-        if (topUpWand(player)) {
-            return;
-        }
-        if (RechargeAccess.drawFromAura(player.level(), player.getOffhandItem(), player.blockPosition(), player, 1) > 0
-                || topUpWand(player, player.getOffhandItem())) {
-            return;
-        }
-        if (ModList.get().isLoaded(TTIds.CURIOS) && ThaumaturgeCuriosCompat.rechargeFirstCurio(player)) {
-            return;
         }
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (slot.isArmor()
-                    && RechargeAccess.drawFromAura(
-                                    player.level(), player.getItemBySlot(slot), player.blockPosition(), player, 1)
-                            > 0) {
+            if (slot.isArmor()) {
+                collectRechargeTarget(player.getItemBySlot(slot), targets);
+            }
+        }
+        targets = orderTargets(targets);
+        for (RechargeTarget target : targets) {
+            if (target.recharge(player)) {
                 return;
             }
         }
     }
 
-    private boolean topUpWand(Player player) {
-        for (int slot = 0; slot < Inventory.getSelectionSize(); slot++) {
-            if (topUpWand(player, player.getInventory().getItem(slot))) {
-                return true;
-            }
+    static void collectRechargeTarget(ItemStack candidate, List<RechargeTarget> targets) {
+        if (RechargeAccess.profile(candidate) != null && RechargeAccess.roomFor(candidate) > 0) {
+            targets.add(new RechargeTarget(candidate, RechargeAccess.fillFraction(candidate), null));
         }
-        return false;
     }
 
-    private boolean topUpWand(Player player, ItemStack candidate) {
+    private static void collectWandTarget(ItemStack candidate, List<RechargeTarget> targets) {
         if (!(candidate.getItem() instanceof ItemWand)) {
-            return false;
+            return;
         }
         int max = WandVisHelper.getMaxVis(candidate);
         ResourceKey<IAspect> lowest = null;
@@ -85,11 +85,28 @@ public final class AmuletVisItem extends Item {
                 lowest = primal;
             }
         }
-        if (lowest == null || AuraHelper.drainVis(player.level(), player.blockPosition(), 1.0F, false) <= 0.0F) {
-            return false;
+        if (lowest != null) {
+            targets.add(new RechargeTarget(candidate, (float) lowestAmount / max, lowest));
         }
-        WandVisHelper.addVis(candidate, lowest, 1, true);
-        return true;
+    }
+
+    static List<RechargeTarget> orderTargets(List<RechargeTarget> targets) {
+        return targets.stream()
+                .sorted(Comparator.comparingDouble(RechargeTarget::fill))
+                .toList();
+    }
+
+    record RechargeTarget(ItemStack stack, float fill, ResourceKey<IAspect> wandAspect) {
+        boolean recharge(Player player) {
+            if (wandAspect == null) {
+                return RechargeAccess.drawFromAura(player.level(), stack, player.blockPosition(), player, 1) > 0;
+            }
+            if (AuraHelper.drainVis(player.level(), player.blockPosition(), 1.0F, false) <= 0.0F) {
+                return false;
+            }
+            WandVisHelper.addVis(stack, wandAspect, 1, true);
+            return true;
+        }
     }
 
     @Override

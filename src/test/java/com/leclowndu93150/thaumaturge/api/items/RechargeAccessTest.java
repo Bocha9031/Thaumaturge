@@ -64,6 +64,23 @@ class RechargeAccessTest {
         }
     }
 
+    @Test
+    void auraDrawStillRespectsPreservationProtection() {
+        Level level = mock(Level.class);
+        when(level.isClientSide()).thenReturn(false);
+        BlockPos pos = new BlockPos(2, 3, 4);
+        ItemStack stack = rechargeableStack(80, 0);
+        net.minecraft.world.entity.player.Player player = mock(net.minecraft.world.entity.player.Player.class);
+
+        try (MockedStatic<AuraHelper> aura = mockStatic(AuraHelper.class)) {
+            aura.when(() -> AuraHelper.shouldPreserveAura(level, player, pos)).thenReturn(true);
+
+            assertEquals(0, RechargeAccess.drawFromAura(level, stack, pos, player, 1));
+            assertEquals(0, RechargeAccess.storedVis(stack));
+            aura.verify(() -> AuraHelper.drainVis(level, pos, 1, true), Mockito.never());
+        }
+    }
+
     private static ItemStack rechargeableStack(int capacity, int stored) {
         ItemStack stack = new ItemStack(Items.STICK);
         stack.set(TTDataComponents.RECHARGEABLE.get(), new ChargeProfile(capacity, ChargeDisplay.ALWAYS));
