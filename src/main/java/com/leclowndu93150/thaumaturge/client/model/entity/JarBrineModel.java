@@ -10,6 +10,12 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 public final class JarBrineModel {
     private static final int TEXTURE_WIDTH = 64;
     private static final int TEXTURE_HEIGHT = 32;
+    private static final int BRINE_U = 0;
+    private static final int BRINE_V = 0;
+    private static final float BRINE_HALF_WIDTH = 4.0F;
+    private static final float BRINE_TOP = -11.6F;
+    private static final float BRINE_WIDTH = 8.0F;
+    private static final float BRINE_HEIGHT = 11.0F;
 
     public final ModelPart root;
 
@@ -22,7 +28,15 @@ public final class JarBrineModel {
         PartDefinition root = mesh.getRoot();
         root.addOrReplaceChild(
                 "brine",
-                CubeListBuilder.create().texOffs(0, 0).mirror().addBox(-4.0F, -11.0F, -4.0F, 8.0F, 10.0F, 8.0F),
+                CubeListBuilder.create()
+                        .texOffs(BRINE_U, BRINE_V)
+                        .addBox(
+                                -BRINE_HALF_WIDTH,
+                                BRINE_TOP,
+                                -BRINE_HALF_WIDTH,
+                                BRINE_WIDTH,
+                                BRINE_HEIGHT,
+                                BRINE_WIDTH),
                 PartPose.ZERO);
         return LayerDefinition.create(mesh, TEXTURE_WIDTH, TEXTURE_HEIGHT);
     }
