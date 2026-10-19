@@ -1,10 +1,12 @@
 package com.leclowndu93150.thaumaturge.client.particle;
 
 import com.leclowndu93150.thaumaturge.content.particle.TaintSwarmParticleOptions;
+import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.entity.Entity;
 
 /**
@@ -36,7 +38,6 @@ public final class TaintSwarmParticle extends TTParticle {
         this.rCol = 0.7F;
         this.gCol = 0.0F;
         this.bCol = 1.0F;
-        frame(this.random.nextInt(3));
     }
 
     @Override
@@ -67,12 +68,21 @@ public final class TaintSwarmParticle extends TTParticle {
     protected void update() {
         float progress = progress();
         this.alpha = 0.75F * Math.min(1.0F, progress * 6.0F) * (1.0F - progress * 0.35F);
-        frame((this.age / 3) % 3);
+        frame(frameAtAge(this.age));
+    }
+
+    static int frameAtAge(int age) {
+        return Math.floorMod(age, 8) * 2;
     }
 
     @Override
     public ParticleRenderType getRenderType() {
         return TTParticleLayers.translucent(this.sheet);
+    }
+
+    @Override
+    protected int getLightColor(float partialTick) {
+        return LightTexture.FULL_BRIGHT;
     }
 
     public static final class Provider implements ParticleProvider<TaintSwarmParticleOptions> {
@@ -91,6 +101,6 @@ public final class TaintSwarmParticle extends TTParticle {
     }
 
     private static final class ParticleSheetHolder {
-        private static final ParticleSheet SHEET = TTParticleSheets.sheet("taint_fume");
+        private static final ParticleSheet SHEET = TTParticleSheets.sheet(ParticleTextures.ORB_GLOW);
     }
 }

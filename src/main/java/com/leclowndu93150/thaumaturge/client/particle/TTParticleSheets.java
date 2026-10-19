@@ -14,15 +14,16 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class TTParticleSheets {
-    private static final Map<String, ParticleSheet> SHEETS = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, ParticleSheet> SHEETS = new ConcurrentHashMap<>();
 
     private TTParticleSheets() {}
 
     public static ParticleSheet sheet(String name) {
-        return SHEETS.computeIfAbsent(
-                name,
-                key -> new ParticleSheet(
-                        key, ResourceLocation.fromNamespaceAndPath(TTIds.MODID, "textures/particle/" + key + ".png")));
+        return sheet(TTIds.rl("textures/particle/" + name + ".png"));
+    }
+
+    public static ParticleSheet sheet(ResourceLocation texture) {
+        return SHEETS.computeIfAbsent(texture, key -> new ParticleSheet(key.getPath(), key));
     }
 
     @SubscribeEvent
@@ -30,6 +31,11 @@ public final class TTParticleSheets {
         event.registerReloadListener((ResourceManagerReloadListener) manager -> {
             SHEETS.values().forEach(ParticleSheet::invalidate);
             TextureManager textures = Minecraft.getInstance().getTextureManager();
+            for (ParticleSheet sheet : SHEETS.values()) {
+                if (!sheet.texture().getPath().startsWith("textures/particle/")) {
+                    textures.getTexture(sheet.texture());
+                }
+            }
             for (ResourceLocation id : manager.listResources(
                             "textures/particle", path -> path.getPath().endsWith(".png"))
                     .keySet()) {

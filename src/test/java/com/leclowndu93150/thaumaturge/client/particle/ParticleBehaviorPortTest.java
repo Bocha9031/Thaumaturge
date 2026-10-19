@@ -10,12 +10,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.leclowndu93150.thaumaturge.client.particle.support.BoltLineShape;
+import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
 import com.leclowndu93150.thaumaturge.content.particle.AirGustParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BoltParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BoreSparkleParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.FlameFanParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.InfusionCrumbsParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.StabilizerRuneParticleOptions;
+import com.leclowndu93150.thaumaturge.content.particle.TaintSwarmParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VentParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VisSparkleParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.WispParticleOptions;
@@ -31,6 +33,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.SingleQuadParticle;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -41,6 +44,30 @@ import org.joml.Quaternionf;
 import org.junit.jupiter.api.Test;
 
 final class ParticleBehaviorPortTest {
+    @Test
+    void taintSwarmUsesOrbGlowFramesAndFullBrightLighting() throws Exception {
+        TaintSwarmParticle particle = construct(
+                TaintSwarmParticle.class,
+                new Class<?>[] {ClientLevel.class, double.class, double.class, double.class, TaintSwarmParticleOptions.class},
+                mock(ClientLevel.class),
+                0.0,
+                0.0,
+                0.0,
+                new TaintSwarmParticleOptions(1));
+
+        Field sheet = TTParticle.class.getDeclaredField("sheet");
+        sheet.setAccessible(true);
+        assertEquals(ParticleTextures.ORB_GLOW, ((ParticleSheet) sheet.get(particle)).texture());
+        assertEquals(0, TaintSwarmParticle.frameAtAge(0));
+        assertEquals(2, TaintSwarmParticle.frameAtAge(1));
+        assertEquals(14, TaintSwarmParticle.frameAtAge(7));
+        assertEquals(0, TaintSwarmParticle.frameAtAge(8));
+
+        Method getLightColor = TaintSwarmParticle.class.getDeclaredMethod("getLightColor", float.class);
+        getLightColor.setAccessible(true);
+        assertEquals(LightTexture.FULL_BRIGHT, getLightColor.invoke(particle, 0.0F));
+    }
+
     @Test
     void visSparkleAndWispyMoteRemoveAtTheirExactArrivalDistances() throws Exception {
         ClientLevel level = mock(ClientLevel.class);
