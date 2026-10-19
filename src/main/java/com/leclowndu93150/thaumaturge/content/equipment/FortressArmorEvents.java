@@ -3,6 +3,8 @@ package com.leclowndu93150.thaumaturge.content.equipment;
 import com.leclowndu93150.thaumaturge.TTIds;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -103,7 +105,7 @@ public final class FortressArmorEvents {
     }
 
     private static void angryGhostRetaliation(LivingIncomingDamageEvent event, Player victim) {
-        if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) {
+        if (!(attackerOf(event.getSource()) instanceof LivingEntity attacker)) {
             return;
         }
         ItemStack helm = victim.getItemBySlot(EquipmentSlot.HEAD);
@@ -133,5 +135,10 @@ public final class FortressArmorEvents {
             case LEGS -> ArmorItem.Type.LEGGINGS;
             default -> ArmorItem.Type.BOOTS;
         };
+    }
+
+    static Entity attackerOf(DamageSource source) {
+        Entity attacker = source.getEntity();
+        return attacker != null ? attacker : source.getDirectEntity();
     }
 }
