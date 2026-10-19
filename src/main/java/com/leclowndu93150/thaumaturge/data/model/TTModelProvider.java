@@ -102,7 +102,6 @@ public final class TTModelProvider implements DataProvider {
             Optional.of(TTIds.rl("block/condenser")), Optional.empty(), TextureSlot.SIDE, TextureSlot.PARTICLE);
 
     private static final ResourceLocation GENERATED_PARENT = ResourceLocation.withDefaultNamespace("item/generated");
-    private static final ResourceLocation BEWLR_BLOCK_PARENT = TTIds.rl("item/bewlr_block");
     private static final ResourceLocation PROPERTY_LINKED = TTIds.rl("linked");
     private static final ResourceLocation PROPERTY_LOADED = TTIds.rl("loaded");
     private static final ResourceLocation PROPERTY_NOTE_COMPLETE = TTIds.rl("note_complete");
@@ -258,7 +257,7 @@ public final class TTModelProvider implements DataProvider {
         delegateItem(TTBlocks.NODE_STABILIZER_ADVANCED.get().asItem(), TTIds.rl("item/node_stabilizer_base"));
         delegateItem(TTBlocks.NODE_TRANSDUCER.get().asItem(), TTIds.rl("item/node_stabilizer_base"));
         simpleBlock(TTBlocks.JAR_NODE.get(), TTIds.rl("block/jar_normal"));
-        delegateItem(TTBlocks.JAR_NODE.get().asItem(), BEWLR_BLOCK_PARENT);
+        delegateItem(TTBlocks.JAR_NODE.get().asItem(), BLOCK_PARENT);
         horizontalBlock(TTBlocks.INFERNAL_FURNACE.get(), "infernal_furnace");
         simpleBlock(
                 TTBlocks.NETHER_BRICKS_PLACEHOLDER.get(), ModelLocationUtils.getModelLocation(Blocks.NETHER_BRICKS));
@@ -951,7 +950,7 @@ public final class TTModelProvider implements DataProvider {
 
     private void registerJar(Block block, String modelName) {
         simpleBlock(block, TTIds.rl("block/" + modelName));
-        delegateItem(block.asItem(), BEWLR_BLOCK_PARENT);
+        delegateItem(block.asItem(), BLOCK_PARENT);
     }
 
     private void registerAlembic(Block block) {
@@ -1135,7 +1134,7 @@ public final class TTModelProvider implements DataProvider {
                     flat.addProperty("parent", TTIds.rl("item/nitor").toString());
                     model.add("base", flat);
                     JsonObject inHand = new JsonObject();
-                    inHand.addProperty("parent", BEWLR_BLOCK_PARENT.toString());
+                    inHand.addProperty("parent", BLOCK_PARENT.toString());
                     JsonObject perspectives = new JsonObject();
                     perspectives.add("firstperson_lefthand", inHand);
                     perspectives.add("firstperson_righthand", inHand);
@@ -1345,7 +1344,7 @@ public final class TTModelProvider implements DataProvider {
 
     private void registerJarBrain() {
         simpleBlock(TTBlocks.JAR_BRAIN.get(), TTIds.rl("block/jar_normal"));
-        delegateItem(TTBlocks.JAR_BRAIN.get().asItem(), BEWLR_BLOCK_PARENT);
+        delegateItem(TTBlocks.JAR_BRAIN.get().asItem(), BLOCK_PARENT);
     }
 
     private void registerNoiseDevices() {
@@ -1418,7 +1417,7 @@ public final class TTModelProvider implements DataProvider {
                                         Map.of("parent", "thaumaturge:block/centrifuge_spinner")))));
 
         registerInvisibleBlock(TTBlocks.HUNGRY_CHEST.get());
-        delegateItem(TTItems.HUNGRY_CHEST.get(), BEWLR_BLOCK_PARENT);
+        delegateItem(TTItems.HUNGRY_CHEST.get(), BLOCK_PARENT);
     }
 
     private void registerLattice(Block block, String coreModel) {
