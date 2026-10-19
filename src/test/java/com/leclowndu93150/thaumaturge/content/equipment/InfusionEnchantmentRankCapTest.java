@@ -32,6 +32,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
@@ -158,6 +159,8 @@ class InfusionEnchantmentRankCapTest {
             InfusionEnchantmentEvents.onRightClickBlock(event);
 
             scanner.verify(() -> SoundingScan.perform(level, player, pos, InfusionEnchantment.SOUNDING.maxLevel()));
+            verify(event).setCanceled(true);
+            verify(event).setCancellationResult(InteractionResult.SUCCESS);
         }
     }
 

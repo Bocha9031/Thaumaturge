@@ -28,6 +28,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -154,31 +155,37 @@ public final class InfusionEnchantmentEvents {
 
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (event.getLevel().isClientSide() || event.getEntity() == null) {
+        if (event.getEntity() == null) {
             return;
         }
         Player player = event.getEntity();
         ItemStack held = player.getItemInHand(event.getHand() == null ? InteractionHand.MAIN_HAND : event.getHand());
         int rank = cappedLevel(held, InfusionEnchantment.SOUNDING);
-        if (rank > 0 && player.isShiftKeyDown()) {
-            held.hurtAndBreak(
-                    SOUNDING_DAMAGE,
-                    player,
-                    event.getHand() == InteractionHand.OFF_HAND ? EquipmentSlot.OFFHAND : EquipmentSlot.MAINHAND);
-            ServerLevel level = (ServerLevel) event.getLevel();
-            level.playSound(
-                    null,
-                    event.getPos().getX() + 0.5,
-                    event.getPos().getY() + 0.5,
-                    event.getPos().getZ() + 0.5,
-                    TTSounds.WANDFAIL.get(),
-                    SoundSource.BLOCKS,
-                    0.2F,
-                    0.2F + level.getRandom().nextFloat() * 0.2F);
-            if (player instanceof ServerPlayer serverPlayer) {
-                SoundingScan.perform(level, serverPlayer, event.getPos(), rank);
-            }
+        if (rank <= 0 || !player.isShiftKeyDown()) {
+            return;
         }
+
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        if (!(event.getLevel() instanceof ServerLevel level) || !(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+
+        held.hurtAndBreak(
+                SOUNDING_DAMAGE,
+                serverPlayer,
+                event.getHand() == InteractionHand.OFF_HAND ? EquipmentSlot.OFFHAND : EquipmentSlot.MAINHAND);
+        float pitch = 0.45F + level.getRandom().nextFloat() * 0.1F;
+        level.playSound(
+                null,
+                event.getPos().getX() + 0.5,
+                event.getPos().getY() + 0.5,
+                event.getPos().getZ() + 0.5,
+                SoundEvents.NOTE_BLOCK_BASEDRUM,
+                SoundSource.BLOCKS,
+                0.4F,
+                pitch);
+        SoundingScan.perform(level, serverPlayer, event.getPos(), rank);
     }
 
     @SubscribeEvent
