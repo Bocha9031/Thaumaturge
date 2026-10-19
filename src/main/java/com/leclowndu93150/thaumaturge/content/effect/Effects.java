@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.content.particle.BoreSparkleParticleOption
 import com.leclowndu93150.thaumaturge.content.particle.BubbleParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BurstParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.CurlyWispParticleOptions;
+import com.leclowndu93150.thaumaturge.content.particle.EssentiaDropParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.FireMoteParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.LightningFlashParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.ScanGlyphParticleOptions;
@@ -1420,10 +1421,10 @@ public final class Effects {
             RandomSource rand = level.getRandom();
             BubbleParticleOptions options = new BubbleParticleOptions(
                     ARGB32.colorFromFloat(1.0F, r, g, b),
+                    0.8F,
                     1.0F,
-                    rand.nextFloat() * 0.3F + 0.3F,
-                    15 + rand.nextInt(10),
-                    -0.001F,
+                    18 + rand.nextInt(5),
+                    -0.01F,
                     false);
             spawn(level, options, pos.x, pos.y, pos.z);
         }
@@ -1454,22 +1455,25 @@ public final class Effects {
 
         public void send() {
             RandomSource rand = level.getRandom();
+            float buoyancy = -0.006F * heat;
+            double kick = 0.01 * heat;
             for (int a = 0; a < 2; a++) {
+                float skew = rand.nextFloat();
                 BubbleParticleOptions options = new BubbleParticleOptions(
                         ARGB32.colorFromFloat(1.0F, r, g, b),
-                        1.0F,
-                        rand.nextFloat() * 0.3F + 0.2F,
-                        (int) (7.0 + 8.0 / (rand.nextDouble() * 0.8 + 0.2)),
-                        -0.025F * heat,
+                        0.8F,
+                        0.9F,
+                        7 + (int) (skew * skew * 24.0F),
+                        buoyancy,
                         false);
                 spawn(
                         level,
                         options,
-                        pos.x + 0.2 + rand.nextFloat() * 0.6,
+                        pos.x + (rand.nextDouble() * 2.0 - 1.0) * 0.3,
                         pos.y,
-                        pos.z + 0.2 + rand.nextFloat() * 0.6,
+                        pos.z + (rand.nextDouble() * 2.0 - 1.0) * 0.3,
                         0.0,
-                        0.002,
+                        kick,
                         0.0);
             }
         }
@@ -1487,13 +1491,13 @@ public final class Effects {
         public void send() {
             RandomSource rand = level.getRandom();
             BubbleParticleOptions options = new BubbleParticleOptions(
-                    ARGB32.colorFromFloat(1.0F, 0.5F, 0.5F, 0.7F),
-                    1.0F,
-                    rand.nextFloat() * 0.2F + 0.2F,
-                    4 + rand.nextInt(3),
+                    0xFFCBC2DA,
+                    0.7F,
+                    0.45F,
+                    3 + rand.nextInt(5),
                     0.1F,
                     false);
-            spawn(level, options, pos.x, pos.y, pos.z);
+            spawn(level, options, pos.x, pos.y, pos.z, 0.0, -0.006, 0.0);
         }
     }
 
@@ -1509,12 +1513,12 @@ public final class Effects {
         public void send() {
             RandomSource rand = level.getRandom();
             BubbleParticleOptions options = new BubbleParticleOptions(
-                    ARGB32.colorFromFloat(1.0F, 0.25F, 0.0F, 0.75F),
-                    0.8F,
-                    rand.nextFloat() * 0.2F + 0.4F,
-                    12 + rand.nextInt(12),
-                    0.05F,
-                    true);
+                    0xFF3B2470,
+                    0.85F,
+                    1.3F,
+                    10 + rand.nextInt(11),
+                    0.35F,
+                    false);
             spawn(level, options, pos.x, pos.y, pos.z);
         }
     }
@@ -1602,28 +1606,12 @@ public final class Effects {
         }
 
         public void send() {
-            RandomSource rand = level.getRandom();
-            BubbleParticleOptions options = new BubbleParticleOptions(
-                    ARGB32.colorFromFloat(1.0F, r, g, b),
-                    alpha,
-                    0.4F + rand.nextFloat() * 0.2F,
-                    20 + rand.nextInt(10),
-                    0.01F,
-                    false);
-            spawn(
-                    level,
-                    options,
-                    pos.x,
-                    pos.y,
-                    pos.z,
-                    rand.nextGaussian() * 0.005,
-                    rand.nextGaussian() * 0.005,
-                    rand.nextGaussian() * 0.005);
+            spawn(level, new EssentiaDropParticleOptions(ARGB32.colorFromFloat(1.0F, r, g, b), alpha), pos.x, pos.y, pos.z);
         }
     }
 
     public static final class JarSplash {
-        private static final int JAR_COLOR = 0x286176;
+        private static final int JAR_COLOR = 0x1C6E7A;
         private final ServerLevel level;
         private final Vec3 pos;
 
@@ -1635,16 +1623,16 @@ public final class Effects {
         public void send() {
             RandomSource rand = level.getRandom();
             BubbleParticleOptions options = new BubbleParticleOptions(
-                    JAR_COLOR, 0.5F, 0.4F + rand.nextFloat() * 0.3F, 20 + rand.nextInt(10), 0.3F, true);
+                    JAR_COLOR, 0.5F, 0.8F, 20 + rand.nextInt(11), 0.6F, true);
             spawn(
                     level,
                     options,
                     pos.x + rand.nextGaussian() * 0.075,
-                    pos.y,
+                    pos.y + rand.nextGaussian() * 0.06,
                     pos.z + rand.nextGaussian() * 0.075,
-                    rand.nextGaussian() * 0.015,
-                    0.075 + rand.nextFloat() * 0.05,
-                    rand.nextGaussian() * 0.015);
+                    rand.nextGaussian() * 0.025,
+                    0.1 + rand.nextDouble() * 0.06,
+                    rand.nextGaussian() * 0.025);
         }
     }
 
@@ -2057,8 +2045,8 @@ public final class Effects {
 
         public void send() {
             BubbleParticleOptions options = new BubbleParticleOptions(
-                    ARGB32.colorFromFloat(1.0F, r, g, b), 0.25F, scale, maxAge, -0.01F, false);
-            spawn(level, options, pos.x, pos.y, pos.z);
+                    ARGB32.colorFromFloat(1.0F, r, g, b), 0.3F, scale, maxAge, -0.05F, false);
+            spawn(level, options, pos.x, pos.y, pos.z, 0.0, 0.012, 0.0);
         }
     }
 }
