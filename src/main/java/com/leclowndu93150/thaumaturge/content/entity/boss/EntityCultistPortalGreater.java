@@ -39,7 +39,7 @@ public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
     private static final int CRATE_WINDOW_MAX = 150;
     private static final int CRATE_WINDOW_MIN = 20;
     private static final int CRATE_INTERVAL = 13;
-    private static final int CRATE_SPREAD = 5;
+    private static final int CRATE_RADIUS = 4;
     private static final float CRATE_RARE_CHANCE = 0.05F;
     private static final float CRATE_UNCOMMON_CHANCE = 0.2F;
     private static final float TOUCH_DAMAGE = 8.0F;
@@ -167,10 +167,10 @@ public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
     }
 
     private void placeCrate(ServerLevel server) {
-        int x = (int) this.getX() + this.random.nextInt(CRATE_SPREAD) - this.random.nextInt(CRATE_SPREAD);
-        int z = (int) this.getZ() + this.random.nextInt(CRATE_SPREAD) - this.random.nextInt(CRATE_SPREAD);
-        BlockPos pos = new BlockPos(x, (int) this.getY(), z);
-        if (x == (int) this.getX() || z == (int) this.getZ() || !server.isEmptyBlock(pos)) {
+        int dx = offsetFromRoll(this.random.nextInt(CRATE_RADIUS * 2 + 1));
+        int dz = offsetFromRoll(this.random.nextInt(CRATE_RADIUS * 2 + 1));
+        BlockPos pos = this.blockPosition().offset(dx, 0, dz);
+        if (dx == 0 || dz == 0 || !server.hasChunkAt(pos) || !server.isEmptyBlock(pos)) {
             return;
         }
         this.level().broadcastEntityEvent(this, CultistPortals.PULSE_EVENT);
@@ -187,6 +187,10 @@ public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
                 .color(ARC_COLOR)
                 .send();
         this.playSound(TTSounds.WANDFAIL.get(), 1.0F, 1.0F);
+    }
+
+    static int offsetFromRoll(int roll) {
+        return roll - CRATE_RADIUS;
     }
 
     private int getTiming() {
