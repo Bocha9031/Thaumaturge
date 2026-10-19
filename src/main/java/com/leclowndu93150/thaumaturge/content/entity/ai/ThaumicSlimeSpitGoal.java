@@ -3,100 +3,108 @@ package com.leclowndu93150.thaumaturge.content.entity.ai;
 import com.leclowndu93150.thaumaturge.content.entity.ThaumicSlime;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
-import java.util.EnumSet;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 public final class ThaumicSlimeSpitGoal extends Goal {
-    private static final int COOLDOWN_TICKS = 100;
-    private static final int COOLDOWN_RESET_TICKS = 101;
-    private static final double PLAYER_RANGE = 16.0;
-    private static final double MIN_SPIT_DISTANCE = 4.0;
-    private static final int MIN_SPIT_SIZE = 3;
-    private static final float SPIT_SPEED = 1.5F;
-    private static final float SPIT_SPREAD = 1.0F;
-    private static final float SPREAD_SCALE = 0.0075F;
-    private static final float ARC_COMPENSATION = 0.2F;
+    private static final double DETECTION_RANGE = 16.0;
+    private static final int FIRST_COOLDOWN = 100;
+    private static final int COOLDOWN = 101;
+    private static final int NOT_COUNTING = -1;
+    private static final float FACE_TURN = 10.0F;
+    private static final int CHILD_SIZE = 1;
+    private static final double MID_HEIGHT = 0.5;
+    private static final double LEAD_DISTANCE = 1.0;
+    private static final double AIM_HEIGHT_FRACTION = 1.0 / 3.0;
+    private static final double ARC_PER_BLOCK = 0.2;
+    private static final double THROW_SPEED = 1.5;
+    private static final double WOBBLE = 0.02;
+    private static final float FULL_TURN_DEGREES = 360.0F;
+    private static final float GORE_VOLUME = 1.0F;
+    private static final float GORE_PITCH_BASE = 0.6F;
+    private static final float GORE_PITCH_SPREAD = 0.1F;
 
     private final ThaumicSlime slime;
-    private int cooldown = COOLDOWN_TICKS;
+    private int cooldown = FIRST_COOLDOWN;
+    private int lastCountedTick = NOT_COUNTING;
+    private @Nullable Player mark;
 
     public ThaumicSlimeSpitGoal(ThaumicSlime slime) {
         this.slime = slime;
-        this.setFlags(EnumSet.noneOf(Goal.Flag.class));
     }
 
     @Override
     public boolean canUse() {
-        Player nearest = slime.level().getNearestPlayer(slime, PLAYER_RANGE);
+        Player nearest = slime.level().getNearestPlayer(
+                slime.getX(), slime.getY(), slime.getZ(), DETECTION_RANGE, EntitySelector.NO_CREATIVE_OR_SPECTATOR);
+        int now = slime.tickCount;
         if (nearest == null) {
+            lastCountedTick = NOT_COUNTING;
             return false;
         }
-        if (cooldown > 0) {
-            cooldown--;
-            return false;
-        }
-        if (slime.getSize() < MIN_SPIT_SIZE) {
-            return false;
-        }
-        return slime.distanceTo(nearest) > MIN_SPIT_DISTANCE;
+        cooldown -= lastCountedTick == NOT_COUNTING ? 1 : now - lastCountedTick;
+        lastCountedTick = now;
+        slime.lookAt(nearest, FACE_TURN, FACE_TURN);
+        mark = nearest;
+        return cooldown <= 0 && slime.canSpitAt(nearest);
+    }
+
+    @Override
+    public boolean canContinueToUse() {
+        return false;
     }
 
     @Override
     public void start() {
-        if (!(slime.level() instanceof ServerLevel serverLevel)) {
-            return;
+        Player target = mark;
+        if (target != null && slime.level() instanceof ServerLevel level) {
+            spit(level, target);
         }
-        Player target = serverLevel.getNearestPlayer(slime, PLAYER_RANGE);
-        if (target == null) {
-            return;
-        }
-        cooldown = COOLDOWN_RESET_TICKS;
-        ThaumicSlime child = TTEntities.THAUMIC_SLIME.get().create(serverLevel);
+        mark = null;
+    }
+
+    private void spit(ServerLevel level, Player target) {
+        ThaumicSlime child = TTEntities.THAUMIC_SLIME.get().create(level);
         if (child == null) {
             return;
         }
-        child.setSize(1, true);
-        AABB box = slime.getBoundingBox();
-        double originY = (box.minY + box.maxY) / 2.0;
-        double dx = target.getX() - slime.getX();
-        double dy = target.getBoundingBox().minY + target.getBbHeight() / 3.0F - originY;
-        double dz = target.getZ() - slime.getZ();
-        double hDist = Math.sqrt(dx * dx + dz * dz);
-        if (hDist >= 1.0E-7) {
-            float yaw = (float) (Math.atan2(dz, dx) * 180.0 / Math.PI) - 90.0F;
-            float pitch = (float) (-(Math.atan2(dy, hDist) * 180.0 / Math.PI));
-            child.moveTo(slime.getX() + dx / hDist, originY, slime.getZ() + dz / hDist, yaw, pitch);
-            shoot(child, dx, dy + hDist * ARC_COMPENSATION, dz, SPIT_SPEED, SPIT_SPREAD);
-        }
-        serverLevel.addFreshEntity(child);
-        slime.playSound(
-                TTSounds.GORE.get(),
-                1.0F,
-                ((slime.getRandom().nextFloat() - slime.getRandom().nextFloat()) * 0.2F + 1.0F) * 0.8F);
-        slime.setSize(slime.getSize() - 1, true);
+        RandomSource random = slime.getRandom();
+        Vec3 origin = new Vec3(slime.getX(), slime.getY(MID_HEIGHT), slime.getZ());
+        Vec3 start = launchStart(origin, new Vec3(target.getX(), origin.y, target.getZ()));
+        child.setSize(CHILD_SIZE, true);
+        child.moveTo(start.x, start.y, start.z, random.nextFloat() * FULL_TURN_DEGREES, 0.0F);
+        double distance = Math.sqrt(slime.distanceToSqr(target));
+        Vec3 targetPosition = new Vec3(target.getX(), target.getY(), target.getZ());
+        Vec3 aim = aimPoint(start, targetPosition, target.getBbHeight(), distance);
+        Vec3 heading = aim.subtract(start).normalize().add(
+                random.triangle(0.0, WOBBLE),
+                random.triangle(0.0, WOBBLE),
+                random.triangle(0.0, WOBBLE));
+        child.setDeltaMovement(heading.scale(THROW_SPEED));
+        child.markLaunched();
+        level.addFreshEntity(child);
+        float pitch = GORE_PITCH_BASE + (random.nextFloat() - random.nextFloat()) * GORE_PITCH_SPREAD;
+        level.playSound(null, slime.getX(), slime.getY(), slime.getZ(), TTSounds.GORE.get(), SoundSource.HOSTILE, GORE_VOLUME, pitch);
+        slime.setSize(slime.getSize() - 1, false);
+        cooldown = COOLDOWN;
     }
 
-    private void shoot(ThaumicSlime child, double dx, double dy, double dz, float speed, float spread) {
-        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        dx /= length;
-        dy /= length;
-        dz /= length;
-        dx += child.getRandom().nextGaussian() * SPREAD_SCALE * spread;
-        dy += child.getRandom().nextGaussian() * SPREAD_SCALE * spread;
-        dz += child.getRandom().nextGaussian() * SPREAD_SCALE * spread;
-        dx *= speed;
-        dy *= speed;
-        dz *= speed;
-        child.setDeltaMovement(dx, dy, dz);
-        float hLength = (float) Math.sqrt(dx * dx + dz * dz);
-        float yaw = (float) (Math.atan2(dx, dz) * 180.0 / Math.PI);
-        float pitch = (float) (Math.atan2(dy, hLength) * 180.0 / Math.PI);
-        child.setYRot(yaw);
-        child.yRotO = yaw;
-        child.setXRot(pitch);
-        child.xRotO = pitch;
+    static Vec3 launchStart(Vec3 origin, Vec3 target) {
+        Vec3 flat = new Vec3(target.x - origin.x, 0.0, target.z - origin.z);
+        Vec3 lead = flat.lengthSqr() > 0.0 ? flat.normalize().scale(LEAD_DISTANCE) : Vec3.ZERO;
+        return origin.add(lead);
+    }
+
+    static Vec3 aimPoint(Vec3 start, Vec3 target, double targetHeight, double distance) {
+        return new Vec3(
+                target.x,
+                target.y + targetHeight * AIM_HEIGHT_FRACTION + distance * ARC_PER_BLOCK,
+                target.z);
     }
 }
