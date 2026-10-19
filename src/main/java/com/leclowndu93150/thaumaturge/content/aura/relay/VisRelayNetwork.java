@@ -27,16 +27,19 @@ public final class VisRelayNetwork implements VisRelayHelper.Bindings {
     @Override
     public int drainCentivis(
             ServerLevel level, BlockPos consumerPos, ResourceKey<IAspect> primal, int amount, boolean simulate) {
-        if (amount <= 0) {
+        Tap tap = tap(level, consumerPos, primal, amount);
+        if (tap == null) {
             return 0;
         }
-        try (Transaction transaction = Transaction.openRoot()) {
-            int drained = drainCentivis(level, consumerPos, primal, amount, transaction);
-            if (!simulate) {
-                transaction.commit();
-            }
-            return drained;
+        if (simulate) {
+            return clamp(tap.source().source().availableCentivis(primal), amount);
         }
+
+        int drained = drainNow(tap.source(), primal, amount);
+        if (drained > 0) {
+            tap.relay().triggerConsumeEffect(level, tap.aspect());
+        }
+        return drained;
     }
 
     @Override
@@ -46,18 +49,14 @@ public final class VisRelayNetwork implements VisRelayHelper.Bindings {
             ResourceKey<IAspect> primal,
             int amount,
             TransactionContext transaction) {
-        if (amount <= 0) {
+        Tap tap = tap(level, consumerPos, primal, amount);
+        if (tap == null) {
             return 0;
         }
-        BlockEntityVisRelay relay = findRelayNear(level, consumerPos);
-        LinkedRelaySource source = relay == null ? null : relay.resolveSource(level);
-        Holder<IAspect> aspect = Aspects.resolve(level.registryAccess(), primal);
-        if (source == null || aspect == null) {
-            return 0;
-        }
-        int drained = clamp(source.source().drainCentivis(primal, amount, transaction), amount);
+        int drained = clamp(tap.source().source().drainCentivis(primal, amount, transaction), amount);
         if (drained > 0) {
-            new RootCommitJournal(() -> relay.triggerConsumeEffect(level, aspect)).updateSnapshots(transaction);
+            new RootCommitJournal(() -> tap.relay().triggerConsumeEffect(level, tap.aspect()))
+                    .updateSnapshots(transaction);
         }
         return drained;
     }
@@ -122,6 +121,19 @@ public final class VisRelayNetwork implements VisRelayHelper.Bindings {
         return Math.max(0, Math.min(amount, supplied));
     }
 
+    private static @Nullable Tap tap(ServerLevel level, BlockPos consumerPos, ResourceKey<IAspect> primal, int amount) {
+        if (amount <= 0) {
+            return null;
+        }
+        BlockEntityVisRelay relay = findRelayNear(level, consumerPos);
+        LinkedRelaySource source = relay == null ? null : relay.resolveSource(level);
+        if (source == null) {
+            return null;
+        }
+        Holder<IAspect> aspect = Aspects.resolve(level.registryAccess(), primal);
+        return aspect == null ? null : new Tap(relay, source, aspect);
+    }
+
     public static @Nullable BlockEntityVisRelay findRelayNear(ServerLevel level, BlockPos consumerPos) {
         BlockEntityVisRelay best = null;
         double bestDistance = Double.MAX_VALUE;
@@ -165,4 +177,6 @@ public final class VisRelayNetwork implements VisRelayHelper.Bindings {
         }
         return found;
     }
+
+    private record Tap(BlockEntityVisRelay relay, LinkedRelaySource source, Holder<IAspect> aspect) {}
 }

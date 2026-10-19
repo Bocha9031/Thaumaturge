@@ -28,6 +28,21 @@ import org.junit.jupiter.api.Test;
 
 class VisRelayTransactionTest {
     @Test
+    void simulatedDrainUsesAvailabilityWithoutMutatingOrTriggeringTheRelay() {
+        ResourceSetup resources = resources();
+        VisRelayNetwork network = new VisRelayNetwork();
+
+        assertEquals(30, network.drainCentivis(resources.level(), BlockPos.ZERO, TTAspects.AER, 30, true));
+        assertEquals(100, resources.source().stock());
+        assertEquals(0, resources.source().drainCalls());
+        verify(resources.relay(), never()).triggerConsumeEffect(resources.level(), resources.aspect());
+
+        assertEquals(100, network.drainCentivis(resources.level(), BlockPos.ZERO, TTAspects.AER, 120, true));
+        assertEquals(100, resources.source().stock());
+        assertEquals(0, resources.source().drainCalls());
+    }
+
+    @Test
     void drainRollbackRestoresSourceAndDefersRelayPulseUntilRootCommit() {
         ResourceSetup resources = resources();
         VisRelayNetwork network = new VisRelayNetwork();
@@ -88,6 +103,7 @@ class VisRelayTransactionTest {
     private static final class JournaledSource implements IVisRelaySource {
         private final StockJournal journal = new StockJournal();
         private int stock;
+        private int drainCalls;
 
         JournaledSource(int stock) {
             this.stock = stock;
@@ -95,6 +111,10 @@ class VisRelayTransactionTest {
 
         int stock() {
             return stock;
+        }
+
+        int drainCalls() {
+            return drainCalls;
         }
 
         @Override
@@ -109,6 +129,7 @@ class VisRelayTransactionTest {
 
         @Override
         public int drainCentivis(ResourceKey<IAspect> primal, int amount, TransactionContext transaction) {
+            drainCalls++;
             int taken = Math.min(stock, amount);
             if (taken > 0) {
                 journal.updateSnapshots(transaction);
