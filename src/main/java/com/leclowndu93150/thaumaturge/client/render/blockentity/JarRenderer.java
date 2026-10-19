@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJar;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.Sheets;
@@ -32,15 +33,15 @@ public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar> {
     public static final Material ANIMATED_GLOW_MATERIAL =
             new Material(TextureAtlas.LOCATION_BLOCKS, ANIMATED_GLOW_LOCATION);
 
-    public static final float FLUID_MIN = 4.0F / 16.0F;
-    public static final float FLUID_MAX = 12.0F / 16.0F;
+    public static final float FLUID_MIN = 4.5F / 16.0F;
+    public static final float FLUID_MAX = 11.5F / 16.0F;
     public static final float FLUID_BASE_Y = 1.0F / 16.0F;
-    public static final float FLUID_MAX_HEIGHT = 10.0F / 16.0F;
+    public static final float FLUID_MAX_HEIGHT = 10.5F / 16.0F;
 
-    private static final float BRACE_MIN_XZ = 5F / 16.0F;
-    private static final float BRACE_MAX_XZ = 11.25F / 16.0F;
-    private static final float BRACE_BOTTOM_Y = 12F / 16.0F;
-    private static final float BRACE_TOP_Y = 14.25F / 16.0F;
+    private static final float BRACE_MIN_XZ = 4.9F / 16.0F;
+    private static final float BRACE_MAX_XZ = 11.1F / 16.0F;
+    private static final float BRACE_BOTTOM_Y = 11.95F / 16.0F;
+    private static final float BRACE_TOP_Y = 14.05F / 16.0F;
     private static final float BRACE_STRETCH = 1.001F;
 
     private static final float LID_EXT_MIN_XZ = 6.0F / 16.0F;
@@ -88,7 +89,13 @@ public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar> {
 
         if (amount > 0 && aspectColor != -1) {
             submitFluid(
-                    amount, jar.capacity(), aspectColor, light, ANIMATED_GLOW_MATERIAL.sprite(), poseStack, buffers);
+                    amount,
+                    jar.capacity(),
+                    aspectColor,
+                    LightTexture.FULL_BRIGHT,
+                    ANIMATED_GLOW_MATERIAL.sprite(),
+                    poseStack,
+                    buffers);
         }
         if (hasFilter && filterTexture != null) {
             submitFilterLabel(facing, filterTexture, filterColor, jar.getBlockPos(), poseStack, buffers, light);
