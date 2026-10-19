@@ -10,7 +10,10 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -22,83 +25,91 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class CloudRingClientHandler {
-    private static final double JUMP_VELOCITY = 0.75;
-    private static final float JUMP_BOOST_BONUS = 0.1F;
-    private static final float SPRINT_BOOST = 0.2F;
-    private static final float SOUND_VOLUME = 0.1F;
-    private static final int POOF_COUNT = 8;
-
     private static final int MIN_AIRBORNE_TICKS = 2;
+    private static final double HALF = 0.5;
+    private static final int PUFF_COUNT = 8;
+    private static final double PUFF_HEIGHT = 0.5;
+    private static final float SOUND_VOLUME = 0.1F;
+    private static final float SOUND_PITCH_BASE = 1.0F;
+    private static final float SOUND_PITCH_NOISE = 0.05F;
+    private static final double JUMP_VELOCITY = 0.75;
+    private static final double JUMP_BOOST_STEP = 0.1;
+    private static final double SPRINT_IMPULSE = 0.2;
 
-    private static boolean airJumpUsed;
-    private static boolean jumpWasDown;
+    private static boolean extraJumpSpent;
+    private static boolean jumpHeld;
     private static int airborneTicks;
 
     private CloudRingClientHandler() {}
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        LocalPlayer player = Minecraft.getInstance().player;
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
         if (player == null
                 || !ModList.get().isLoaded(TTIds.CURIOS)
                 || !ThaumaturgeCuriosCompat.isCurioEquipped(player, TTItems.CLOUD_RING.get())) {
-            airJumpUsed = false;
-            jumpWasDown = false;
-            airborneTicks = 0;
+            reset();
             return;
         }
-        boolean jumpDown = Minecraft.getInstance().options.keyJump.isDown();
-        boolean jumpPressed = jumpDown && !jumpWasDown;
-        jumpWasDown = jumpDown;
+        boolean down = minecraft.options.keyJump.isDown();
+        boolean pressed = down && !jumpHeld;
+        jumpHeld = down;
         if (player.onGround() || player.isInWater()) {
-            airJumpUsed = false;
+            extraJumpSpent = false;
             airborneTicks = 0;
             return;
         }
         airborneTicks++;
-        if (jumpPressed && !airJumpUsed && airborneTicks >= MIN_AIRBORNE_TICKS) {
-            airJump(player);
-            airJumpUsed = true;
+        if (pressed && !extraJumpSpent && airborneTicks >= MIN_AIRBORNE_TICKS) {
+            extraJumpSpent = true;
+            performExtraJump(player);
         }
     }
 
-    private static void airJump(LocalPlayer player) {
-        for (int i = 0; i < POOF_COUNT; i++) {
-            player.level()
-                    .addParticle(
-                            ParticleTypes.POOF,
-                            player.getX() + (player.getRandom().nextFloat() - 0.5) * player.getBbWidth(),
-                            player.getY() + 0.5,
-                            player.getZ() + (player.getRandom().nextFloat() - 0.5) * player.getBbWidth(),
-                            0.0,
-                            0.0,
-                            0.0);
-        }
-        player.level()
-                .playLocalSound(
-                        player.getX(),
-                        player.getY(),
-                        player.getZ(),
-                        SoundEvents.PLAYER_ATTACK_SWEEP,
-                        SoundSource.PLAYERS,
-                        SOUND_VOLUME,
-                        1.0F + (float) player.getRandom().nextGaussian() * 0.05F,
-                        false);
-        double velocityY = JUMP_VELOCITY;
-        if (player.hasEffect(MobEffects.JUMP)) {
-            velocityY += (player.getEffect(MobEffects.JUMP).getAmplifier() + 1) * JUMP_BOOST_BONUS;
-        }
-        Vec3 movement = player.getDeltaMovement();
-        double velocityX = movement.x;
-        double velocityZ = movement.z;
+    private static void reset() {
+        extraJumpSpent = false;
+        jumpHeld = false;
+        airborneTicks = 0;
+    }
+
+    private static void performExtraJump(LocalPlayer player) {
+        Vec3 motion = player.getDeltaMovement();
+        Vec3 launched = new Vec3(motion.x, launchSpeed(player), motion.z);
         if (player.isSprinting()) {
-            float yaw = player.getYRot() * Mth.DEG_TO_RAD;
-            velocityX -= Mth.sin(yaw) * SPRINT_BOOST;
-            velocityZ += Mth.cos(yaw) * SPRINT_BOOST;
+            float heading = player.getYRot() * Mth.DEG_TO_RAD;
+            launched = launched.add(-Mth.sin(heading) * SPRINT_IMPULSE, 0.0, Mth.cos(heading) * SPRINT_IMPULSE);
         }
-        player.setDeltaMovement(velocityX, velocityY, velocityZ);
+        player.setDeltaMovement(launched);
         player.resetFallDistance();
-        PacketDistributor.sendToServer(new ServerboundCloudJumpPayload());
         CommonHooks.onLivingJump(player);
+        PacketDistributor.sendToServer(new ServerboundCloudJumpPayload());
+        Level level = player.level();
+        RandomSource random = player.getRandom();
+        puff(level, player, random);
+        float pitch = SOUND_PITCH_BASE + (float) random.nextGaussian() * SOUND_PITCH_NOISE;
+        level.playLocalSound(
+                player.getX(),
+                player.getY(),
+                player.getZ(),
+                SoundEvents.PLAYER_ATTACK_SWEEP,
+                SoundSource.PLAYERS,
+                SOUND_VOLUME,
+                pitch,
+                false);
+    }
+
+    private static double launchSpeed(LocalPlayer player) {
+        MobEffectInstance boost = player.getEffect(MobEffects.JUMP);
+        return boost == null ? JUMP_VELOCITY : JUMP_VELOCITY + JUMP_BOOST_STEP * (boost.getAmplifier() + 1);
+    }
+
+    private static void puff(Level level, LocalPlayer player, RandomSource random) {
+        double y = player.getY() + PUFF_HEIGHT;
+        for (int i = 0; i < PUFF_COUNT; i++) {
+            double x = player.getX() + (random.nextDouble() - HALF) * player.getBbWidth();
+            double z = player.getZ() + (random.nextDouble() - HALF) * player.getBbWidth();
+            level.addParticle(ParticleTypes.POOF, x, y, z, 0.0, 0.0, 0.0);
+        }
     }
 }
