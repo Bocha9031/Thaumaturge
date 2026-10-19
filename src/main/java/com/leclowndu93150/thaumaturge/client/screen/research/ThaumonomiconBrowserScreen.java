@@ -340,20 +340,28 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         PlayerResearch knowledge = PlayerResearchAccess.of(minecraft.player);
         categoriesOtherVisible.clear();
         addonShift = 0;
-        int limit = (int) Math.floor((screenY - CATEGORY_AVAILABLE_HEIGHT_PADDING) / (double) CATEGORY_BUTTON_STRIDE_Y);
         int count = 0;
         for (Holder.Reference<IResearchCategory> ref : categoriesOther) {
             if (!isCategoryUnlocked(knowledge, ref)) continue;
             count++;
-            if (count <= limit + catScrollPos && count - 1 >= catScrollPos) {
+        }
+        TabWindow tabWindow = tabWindow(
+                count,
+                catScrollPos,
+                screenY - CATEGORY_AVAILABLE_HEIGHT_PADDING,
+                CATEGORY_BUTTON_STRIDE_Y);
+        catScrollPos = tabWindow.firstIndex();
+        catScrollMax = tabWindow.maxScroll();
+        addonShift = tabWindow.verticalShift();
+        int visibleEnd = tabWindow.firstIndex() + tabWindow.visibleCount();
+        int index = 0;
+        for (Holder.Reference<IResearchCategory> ref : categoriesOther) {
+            if (!isCategoryUnlocked(knowledge, ref)) continue;
+            if (index >= tabWindow.firstIndex() && index < visibleEnd) {
                 categoriesOtherVisible.add(ref);
             }
+            index++;
         }
-        if (count > limit || count < catScrollPos) {
-            addonShift = (screenY - CATEGORY_AVAILABLE_HEIGHT_PADDING) % CATEGORY_BUTTON_STRIDE_Y / 2;
-        }
-        catScrollMax = count - limit;
-        if (catScrollPos > catScrollMax) catScrollPos = Math.max(0, catScrollMax);
         invisibleEntries.clear();
         guiBoundsLeft = 99999;
         guiBoundsTop = 99999;
@@ -383,6 +391,16 @@ public final class ThaumonomiconBrowserScreen extends AbstractTTScreen {
         if (guiBoundsRight == -99999) guiBoundsRight = 0;
         if (guiBoundsBottom == -99999) guiBoundsBottom = 0;
     }
+
+    static TabWindow tabWindow(int count, int scroll, int availableHeight, int rowStride) {
+        int visibleCount = Math.max(0, availableHeight / rowStride);
+        int maxScroll = Math.max(0, count - visibleCount);
+        int firstIndex = Math.min(Math.max(0, scroll), maxScroll);
+        int verticalShift = count > visibleCount ? availableHeight % rowStride / 2 : 0;
+        return new TabWindow(firstIndex, visibleCount, maxScroll, verticalShift);
+    }
+
+    record TabWindow(int firstIndex, int visibleCount, int maxScroll, int verticalShift) {}
 
     private boolean isCategoryUnlocked(PlayerResearch knowledge, Holder.Reference<IResearchCategory> ref) {
         Optional<ResourceLocation> gate = ref.value().requiredResearch();
