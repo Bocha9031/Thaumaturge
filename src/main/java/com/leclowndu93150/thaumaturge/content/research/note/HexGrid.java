@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 
@@ -38,6 +39,9 @@ public final class HexGrid {
     }
 
     public static List<Hex> ring(int radius) {
+        if (radius <= 0) {
+            return List.of(new Hex(0, 0));
+        }
         List<Hex> result = new ArrayList<>();
         Hex hex = new Hex(NEIGHBOURS[4][0] * radius, NEIGHBOURS[4][1] * radius);
         for (int side = 0; side < 6; side++) {
@@ -60,14 +64,15 @@ public final class HexGrid {
 
     public static List<Hex> distributeRing(int radius, int entries, RandomSource random) {
         List<Hex> ring = ring(radius);
-        List<Hex> result = new ArrayList<>();
-        float spacing = ring.size() / (float) entries;
-        float pos = random.nextInt(ring.size());
-        for (int i = 0; i < entries; i++) {
-            result.add(ring.get(Math.round(pos) % ring.size()));
-            pos += spacing;
+        int picks = Math.min(entries, ring.size());
+        if (picks <= 0) {
+            return List.of();
         }
-        return result;
+        int first = random.nextInt(ring.size());
+        double spacing = (double) ring.size() / picks;
+        return IntStream.range(0, picks)
+                .mapToObj(slot -> ring.get(Math.floorMod(first + (int) Math.round(slot * spacing), ring.size())))
+                .toList();
     }
 
     public static Hex pixelToHex(float x, float y, float size) {
