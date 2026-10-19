@@ -91,6 +91,7 @@ class MirrorInboxCutoffTest {
         assertTrue(source.inbox().insertItem(0, offered, false).isEmpty());
         assertEquals(12, source.inbox().getStackInSlot(0).getCount());
 
+        source.count = 1;
         source.serverTick(level, SOURCE_POS);
 
         assertTrue(source.inbox().getStackInSlot(0).isEmpty());
@@ -98,7 +99,7 @@ class MirrorInboxCutoffTest {
         assertEquals(1, queued.size());
         assertEquals(Items.STONE, queued.getFirst().getItem());
         assertEquals(12, queued.getFirst().getCount());
-        assertEquals(1, source.stress);
+        assertEquals(1, source.instability);
     }
 
     @Test
@@ -128,8 +129,8 @@ class MirrorInboxCutoffTest {
         pair(source, target);
         ItemStack offered = new ItemStack(Items.STONE, 4);
         source.inbox().insertItem(0, offered, false);
-        target.paired = false;
-        assertFalse(source.pairingIntact());
+        target.linked = false;
+        assertFalse(source.isLinkValidSimple());
         assertSame(offered, source.inbox().insertItem(0, offered, true));
 
         when(level.addFreshEntity(any(ItemEntity.class))).thenReturn(true);
@@ -148,8 +149,8 @@ class MirrorInboxCutoffTest {
     }
 
     private void pair(BlockEntityMirror source, BlockEntityMirror target) {
-        source.paired = true;
-        target.paired = true;
+        source.linked = true;
+        target.linked = true;
         source.link = GlobalPos.of(Level.OVERWORLD, target.getBlockPos());
         target.link = GlobalPos.of(Level.OVERWORLD, source.getBlockPos());
     }

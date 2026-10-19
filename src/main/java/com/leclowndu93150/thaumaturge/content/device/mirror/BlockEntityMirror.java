@@ -172,14 +172,18 @@ public final class BlockEntityMirror extends BlockEntityMirrorBase {
     }
 
     private boolean acceptsInboxItems() {
-        return level != null && !level.isClientSide() && partnerAvailable() && pairingIntact();
+        return level != null && !level.isClientSide() && linkedMirror() != null;
     }
 
     private @Nullable BlockEntityMirror linkedMirror() {
-        if (!partnerAvailable() || !verifyPairing()) {
+        if (link == null) {
             return null;
         }
-        return partner() instanceof BlockEntityMirror mirror ? mirror : null;
+        ServerLevel targetLevel = targetLevel();
+        if (targetLevel == null || !targetLevel.hasChunkAt(link.pos()) || !isLinkValidSimple()) {
+            return null;
+        }
+        return target() instanceof BlockEntityMirror mirror ? mirror : null;
     }
 
     private final class MirrorInbox extends ItemStackHandler {
