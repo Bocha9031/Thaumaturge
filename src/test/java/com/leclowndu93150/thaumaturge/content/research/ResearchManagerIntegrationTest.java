@@ -84,7 +84,7 @@ final class ResearchManagerIntegrationTest {
 
         assertFalse(ResearchManager.advanceStage(player, CHILD));
         assertEquals(0, knowledge.stageOf(CHILD));
-        assertEquals(0, knowledge.rawKnowledge(KnowledgeType.OBSERVATION, null));
+        assertEquals(0, knowledge.knowledgePoints(KnowledgeType.OBSERVATION, null));
         verify(player, never()).giveExperiencePoints(anyInt());
 
         assertTrue(ResearchManager.complete(player, PARENT));
@@ -92,20 +92,20 @@ final class ResearchManagerIntegrationTest {
         assertTrue(ResearchManager.advanceStage(player, CHILD));
         assertEquals(1, knowledge.stageOf(CHILD));
         assertFalse(knowledge.hasCompleted(CHILD));
-        assertEquals(16, knowledge.rawKnowledge(KnowledgeType.OBSERVATION, null));
+        assertEquals(16, knowledge.knowledgePoints(KnowledgeType.OBSERVATION, null));
         assertTrue(knowledge.takeSyncPending());
 
         assertTrue(ResearchManager.advanceStage(player, CHILD));
         assertTrue(knowledge.hasCompleted(CHILD));
         assertEquals(3, knowledge.stageOf(CHILD));
-        assertEquals(112, knowledge.rawKnowledge(KnowledgeType.OBSERVATION, null));
+        assertEquals(112, knowledge.knowledgePoints(KnowledgeType.OBSERVATION, null));
         assertTrue(knowledge.hasFlag(CHILD, ResearchFlag.POPUP));
         assertTrue(knowledge.hasFlag(CHILD, ResearchFlag.RESEARCH));
         assertTrue(knowledge.takeSyncPending());
         verify(player, times(2)).giveExperiencePoints(5);
 
         assertFalse(ResearchManager.advanceStage(player, CHILD));
-        assertEquals(112, knowledge.rawKnowledge(KnowledgeType.OBSERVATION, null));
+        assertEquals(112, knowledge.knowledgePoints(KnowledgeType.OBSERVATION, null));
         assertFalse(knowledge.takeSyncPending());
         verify(player, times(2)).giveExperiencePoints(5);
     }

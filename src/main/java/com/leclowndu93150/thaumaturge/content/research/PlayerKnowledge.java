@@ -1,7 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.research;
 
-import com.leclowndu93150.thaumaturge.api.capability.IPlayerKnowledge;
 import com.leclowndu93150.thaumaturge.api.capability.KnowledgeType;
+import com.leclowndu93150.thaumaturge.api.capability.PlayerResearch;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchFlag;
 import com.leclowndu93150.thaumaturge.api.capability.ResearchStatus;
 import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
@@ -27,7 +27,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-public final class PlayerKnowledge implements IPlayerKnowledge {
+public final class PlayerKnowledge implements PlayerResearch {
     public static final MapCodec<PlayerKnowledge> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                     ResearchRecord.CODEC
                             .listOf()
@@ -111,7 +111,7 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public void clear() {
+    public void wipe() {
         research.clear();
         completed.clear();
         stages.clear();
@@ -120,15 +120,15 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public ResearchStatus researchStatus(ResourceLocation res) {
-        if (!isResearchKnown(res)) {
+    public ResearchStatus status(ResourceLocation res) {
+        if (!knows(res)) {
             return ResearchStatus.UNKNOWN;
         }
         return completed.contains(res) ? ResearchStatus.COMPLETE : ResearchStatus.IN_PROGRESS;
     }
 
     @Override
-    public boolean isResearchComplete(ResourceLocation res) {
+    public boolean hasCompleted(ResourceLocation res) {
         return res != null && completed.contains(res);
     }
 
@@ -143,17 +143,17 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public boolean isResearchKnown(ResourceLocation res) {
+    public boolean knows(ResourceLocation res) {
         return res != null && research.contains(res);
     }
 
     @Override
-    public boolean isResearchKnown(ResourceLocation res, int minimumStage) {
-        return isResearchKnown(res) && researchStage(res) >= minimumStage;
+    public boolean hasReachedStage(ResourceLocation res, int minimumStage) {
+        return knows(res) && stageOf(res) >= minimumStage;
     }
 
     @Override
-    public int researchStage(ResourceLocation res) {
+    public int stageOf(ResourceLocation res) {
         if (res == null || !research.contains(res)) {
             return -1;
         }
@@ -162,7 +162,7 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public boolean setResearchStage(ResourceLocation res, int stage) {
+    public boolean setStage(ResourceLocation res, int stage) {
         if (res == null || !research.contains(res) || stage <= 0) {
             return false;
         }
@@ -171,13 +171,13 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public boolean addResearch(ResourceLocation res) {
+    public boolean learn(ResourceLocation res) {
         if (res == null) return false;
         return research.add(res);
     }
 
     @Override
-    public boolean removeResearch(ResourceLocation res) {
+    public boolean forget(ResourceLocation res) {
         if (res == null) return false;
         boolean removed = research.remove(res);
         if (removed) {
@@ -189,19 +189,19 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public Set<ResourceLocation> researchList() {
+    public Set<ResourceLocation> knownEntries() {
         return Collections.unmodifiableSet(research);
     }
 
     @Override
-    public boolean setResearchFlag(ResourceLocation res, ResearchFlag flag) {
+    public boolean addFlag(ResourceLocation res, ResearchFlag flag) {
         if (res == null || flag == null) return false;
         return flags.computeIfAbsent(res, k -> EnumSet.noneOf(ResearchFlag.class))
                 .add(flag);
     }
 
     @Override
-    public boolean clearResearchFlag(ResourceLocation res, ResearchFlag flag) {
+    public boolean removeFlag(ResourceLocation res, ResearchFlag flag) {
         if (res == null || flag == null) return false;
         EnumSet<ResearchFlag> set = flags.get(res);
         if (set == null) return false;
@@ -213,14 +213,14 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public boolean hasResearchFlag(ResourceLocation res, ResearchFlag flag) {
+    public boolean hasFlag(ResourceLocation res, ResearchFlag flag) {
         if (res == null || flag == null) return false;
         EnumSet<ResearchFlag> set = flags.get(res);
         return set != null && set.contains(flag);
     }
 
     @Override
-    public boolean addKnowledge(KnowledgeType type, ResourceKey<IResearchCategory> category, int amount) {
+    public boolean addKnowledgePoints(KnowledgeType type, ResourceKey<IResearchCategory> category, int amount) {
         if (type == null || amount == 0) return false;
         KnowledgeKey key = new KnowledgeKey(type, category == null ? null : category.location());
         int prev = knowledge.getOrDefault(key, 0);
@@ -235,18 +235,18 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     @Override
-    public int knowledge(KnowledgeType type, ResourceKey<IResearchCategory> category) {
-        return rawKnowledge(type, category) / type.progression();
+    public int knowledgeLevel(KnowledgeType type, ResourceKey<IResearchCategory> category) {
+        return knowledgePoints(type, category) / type.progression();
     }
 
     @Override
-    public int rawKnowledge(KnowledgeType type, ResourceKey<IResearchCategory> category) {
+    public int knowledgePoints(KnowledgeType type, ResourceKey<IResearchCategory> category) {
         KnowledgeKey key = new KnowledgeKey(type, category == null ? null : category.location());
         return knowledge.getOrDefault(key, 0);
     }
 
     @Override
-    public void sync(ServerPlayer player) {
+    public void queueSync(ServerPlayer player) {
         syncPending = true;
     }
 
@@ -271,7 +271,7 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
     }
 
     public void copyFrom(PlayerKnowledge other) {
-        clear();
+        wipe();
         research.addAll(other.research);
         completed.addAll(other.completed);
         stages.putAll(other.stages);
@@ -290,7 +290,7 @@ public final class PlayerKnowledge implements IPlayerKnowledge {
                     }
                     holder.unwrapKey().map(ResourceKey::location).ifPresent(id -> {
                         if (!research.contains(id) && ResearchUnlockConditions.passes(player, this, id)) {
-                            addResearch(id);
+                            learn(id);
                         }
                     });
                 }));

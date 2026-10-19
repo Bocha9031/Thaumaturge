@@ -44,6 +44,6 @@ final class PlayerKnowledgeSemanticsTest {
         assertEquals(ResearchStatus.UNKNOWN, research.status(ENTRY));
         assertEquals(-1, research.stageOf(ENTRY));
         assertFalse(research.hasFlag(ENTRY, ResearchFlag.PAGE));
-        assertFalse(backend.isResearchComplete(ENTRY));
+        assertFalse(backend.hasCompleted(ENTRY));
     }
 }

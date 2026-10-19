@@ -44,7 +44,7 @@ public final class ResearchDiscoveryBackendTest {
             ScanBindings bindings = new ScanBindings();
 
             assertTrue(bindings.progressResearch(player, NON_ENTRY_SCAN));
-            assertEquals(ResearchStatus.COMPLETE, backend.researchStatus(NON_ENTRY_SCAN));
+            assertEquals(ResearchStatus.COMPLETE, backend.status(NON_ENTRY_SCAN));
             assertTrue(backend.takeSyncPending());
 
             assertFalse(bindings.progressResearch(player, NON_ENTRY_SCAN));
@@ -76,7 +76,7 @@ public final class ResearchDiscoveryBackendTest {
                     .thenReturn(true);
             ResearchProgressionEvents.recordCrafted(player, new ItemStack(Items.DIAMOND));
             assertTrue(backend.knows(craftedKey));
-            assertEquals(ResearchStatus.IN_PROGRESS, backend.researchStatus(craftedKey));
+            assertEquals(ResearchStatus.IN_PROGRESS, backend.status(craftedKey));
             assertTrue(backend.takeSyncPending());
 
             ResearchProgressionEvents.recordCrafted(player, new ItemStack(Items.DIAMOND));
