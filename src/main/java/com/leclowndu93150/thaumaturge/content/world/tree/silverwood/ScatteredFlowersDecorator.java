@@ -3,8 +3,8 @@ package com.leclowndu93150.thaumaturge.content.world.tree.silverwood;
 import com.leclowndu93150.thaumaturge.registry.TTTreePlacers;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import java.util.HashMap;
-import java.util.Map;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
@@ -25,9 +25,9 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
                             .forGetter(decorator -> decorator.flower))
                     .apply(instance, ScatteredFlowersDecorator::new));
 
-    private static final int ATTEMPTS = 18;
-    private static final int SPREAD = 8;
-    private static final int RISE = 4;
+    private static final int FLOWER_MAX_COUNT = 18;
+    private static final int FLOWER_BOX_HALF_WIDTH = 7;
+    private static final int FLOWER_BOX_HALF_HEIGHT = 3;
 
     private final Block flower;
 
@@ -42,11 +42,12 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
 
     @Override
     public void place(TreeDecorator.Context context) {
-        if (context.logs().isEmpty()) {
+        ObjectArrayList<BlockPos> logs = context.logs();
+        if (logs.isEmpty()) {
             return;
         }
         placeAround(
-                trunkFoot(context),
+                findFoot(logs),
                 context.random(),
                 context::isAir,
                 spot -> context.level().isStateAtPosition(spot.below(), ScatteredFlowersDecorator::isValidSoil),
@@ -59,11 +60,11 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
             Predicate<BlockPos> isAir,
             Predicate<BlockPos> hasSoil,
             Consumer<BlockPos> placeFlower) {
-        for (int attempt = 0; attempt < ATTEMPTS; attempt++) {
+        for (int attempt = 0; attempt < FLOWER_MAX_COUNT; attempt++) {
             BlockPos spot = foot.offset(
-                    random.nextInt(SPREAD) - random.nextInt(SPREAD),
-                    random.nextInt(RISE) - random.nextInt(RISE),
-                    random.nextInt(SPREAD) - random.nextInt(SPREAD));
+                    spread(random, FLOWER_BOX_HALF_WIDTH),
+                    spread(random, FLOWER_BOX_HALF_HEIGHT),
+                    spread(random, FLOWER_BOX_HALF_WIDTH));
             if (isAir.test(spot) && hasSoil.test(spot)) {
                 placeFlower.accept(spot);
             }
@@ -74,18 +75,35 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
         return state.is(Blocks.GRASS_BLOCK) || state.is(BlockTags.SAND);
     }
 
-    private static BlockPos trunkFoot(TreeDecorator.Context context) {
-        Map<BlockPos, Integer> heights = new HashMap<>();
-        Map<BlockPos, Integer> floors = new HashMap<>();
-        for (BlockPos log : context.logs()) {
-            BlockPos column = new BlockPos(log.getX(), 0, log.getZ());
-            heights.merge(column, 1, Integer::sum);
-            floors.merge(column, log.getY(), Math::min);
+    private static int spread(RandomSource random, int halfSize) {
+        return random.nextInt(halfSize + 1) - random.nextInt(halfSize + 1);
+    }
+
+    static BlockPos findFoot(ObjectArrayList<BlockPos> logs) {
+        Long2IntOpenHashMap counts = new Long2IntOpenHashMap();
+        for (BlockPos log : logs) {
+            counts.addTo(BlockPos.asLong(log.getX(), 0, log.getZ()), 1);
         }
-        BlockPos trunk = heights.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .orElseThrow()
-                .getKey();
-        return trunk.atY(floors.get(trunk));
+        BlockPos trunk = null;
+        int best = 0;
+        for (BlockPos log : logs) {
+            int count = counts.get(BlockPos.asLong(log.getX(), 0, log.getZ()));
+            if (count > best || (count == best && isBefore(log, trunk))) {
+                best = count;
+                trunk = log;
+            }
+        }
+        BlockPos foot = trunk;
+        for (BlockPos log : logs) {
+            if (log.getX() == trunk.getX() && log.getZ() == trunk.getZ() && log.getY() < foot.getY()) {
+                foot = log;
+            }
+        }
+        return foot;
+    }
+
+    private static boolean isBefore(BlockPos candidate, BlockPos current) {
+        return candidate.getX() < current.getX()
+                || (candidate.getX() == current.getX() && candidate.getZ() < current.getZ());
     }
 }
