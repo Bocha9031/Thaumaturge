@@ -131,6 +131,7 @@ public final class BlockEntityFocalManipulator extends AbstractSyncedBlockEntity
             }
         }
         crystals = cost;
+        ticks = 0;
         visTotal =
                 summary.complexity() * VIS_PER_COMPLEXITY + (float) tier.get().complexity() / VIS_PER_BUDGET_DIVISOR;
         vis = visTotal;
@@ -152,7 +153,11 @@ public final class BlockEntityFocalManipulator extends AbstractSyncedBlockEntity
     }
 
     private void tickServer(ServerLevel server) {
-        if (!inscribing() || ++ticks % DRAIN_INTERVAL != 0) {
+        if (!inscribing()) {
+            return;
+        }
+        ticks = advanceWorkPulse(ticks);
+        if (ticks != 0) {
             return;
         }
         if (!FocusItems.isFocus(focusStack())) {
@@ -173,6 +178,10 @@ public final class BlockEntityFocalManipulator extends AbstractSyncedBlockEntity
         if (vis <= 0.0F) {
             finish(server);
         }
+    }
+
+    static int advanceWorkPulse(int pulse) {
+        return pulse + 1 >= DRAIN_INTERVAL ? 0 : pulse + 1;
     }
 
     private float drain(ServerLevel server, float amount) {
