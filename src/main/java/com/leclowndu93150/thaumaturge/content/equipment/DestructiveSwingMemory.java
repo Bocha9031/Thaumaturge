@@ -21,7 +21,11 @@ public final class DestructiveSwingMemory {
     public @Nullable Direction takeFace(ResourceKey<Level> dimension, BlockPos pos) {
         Swing swing = last;
         last = null;
-        return swing != null && swing.dimension().equals(dimension) && swing.pos().equals(pos) ? swing.face() : null;
+        return swing != null
+                        && swing.dimension().equals(dimension)
+                        && swing.pos().equals(pos)
+                ? swing.face()
+                : null;
     }
 
     private record Swing(ResourceKey<Level> dimension, BlockPos pos, Direction face) {}

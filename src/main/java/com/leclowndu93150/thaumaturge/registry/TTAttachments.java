@@ -105,7 +105,9 @@ public final class TTAttachments {
             register("grapple_id", () -> AttachmentType.builder(() -> -1).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<DestructiveSwingMemory>> DESTRUCTIVE_SWING =
-            register("destructive_swing", () -> AttachmentType.builder(DestructiveSwingMemory::new).build());
+            register(
+                    "destructive_swing",
+                    () -> AttachmentType.builder(DestructiveSwingMemory::new).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> DONATOR_CAPE = register(
             "donator_cape",
