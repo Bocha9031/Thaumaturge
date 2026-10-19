@@ -86,8 +86,8 @@ public final class FluxRiftRenderer extends EntityRenderer<EntityFluxRift> {
         if (count < 2) {
             return;
         }
-        FluxRiftGeometry.Tube tube = FluxRiftGeometry.build(
-                outline, widths, entity.stabilityValue(), entity.tickCount + partialTicks);
+        FluxRiftGeometry.Tube tube =
+                FluxRiftGeometry.build(outline, widths, entity.stabilityValue(), entity.tickCount + partialTicks);
         boolean goggles = Minecraft.getInstance().player != null
                 && GogglesAccess.wearsRevealingGear(Minecraft.getInstance().player);
         Matrix4f pose = poseStack.last().pose();

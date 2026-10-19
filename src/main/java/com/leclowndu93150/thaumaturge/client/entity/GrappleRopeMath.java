@@ -31,10 +31,7 @@ final class GrappleRopeMath {
             double x = envelope * Math.sin(distance / WAVE_LENGTH_X * Mth.TWO_PI - drift);
             double y = envelope * Math.sin(distance / WAVE_LENGTH_Y * Mth.TWO_PI - drift);
             double z = envelope * Math.sin(distance / WAVE_LENGTH_Z * Mth.TWO_PI - drift);
-            points.add(new Vec3(
-                    hookToThrower.x * along + x,
-                    hookToThrower.y * along + y,
-                    hookToThrower.z * along + z));
+            points.add(new Vec3(hookToThrower.x * along + x, hookToThrower.y * along + y, hookToThrower.z * along + z));
         }
         return points;
     }
