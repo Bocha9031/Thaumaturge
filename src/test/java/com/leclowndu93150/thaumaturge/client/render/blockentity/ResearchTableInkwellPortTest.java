@@ -1,143 +1,73 @@
 package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.RETURNS_SELF;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.leclowndu93150.thaumaturge.client.golem.GolemMeshes;
-import com.leclowndu93150.thaumaturge.client.model.mesh.TTMesh;
-import com.leclowndu93150.thaumaturge.client.model.mesh.TTMeshLoader;
-import com.leclowndu93150.thaumaturge.client.model.mesh.TTMeshPart;
+import com.leclowndu93150.thaumaturge.client.entity.TTModelLayers;
+import com.leclowndu93150.thaumaturge.client.model.entity.ResearchTableModel;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import javax.imageio.ImageIO;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceManager;
 import org.joml.Vector3f;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 class ResearchTableInkwellPortTest {
-    private static final ResourceLocation MESH_ID =
-            ResourceLocation.fromNamespaceAndPath("thaumaturge", "models/mesh/research_inkwell.ttmesh");
-    private static final ResourceLocation TEXTURE_ID =
-            ResourceLocation.fromNamespaceAndPath("thaumaturge", "textures/entity/research_inkwell.png");
     private static final int LIGHT = 15728880;
-    private static final int WHITE = 0xFFFFFFFF;
+    private static final ResourceLocation TABLE_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath("thaumaturge", "textures/entity/restable2.png");
 
     @Test
-    void sourceInkwellMeshAndTextureLoadWithAllMaterialParts() throws Exception {
-        Path assets = Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets");
-        ResourceManager resources = mock(ResourceManager.class);
-        when(resources.openAsReader(any(ResourceLocation.class))).thenAnswer(call -> {
-            ResourceLocation id = call.getArgument(0);
-            return Files.newBufferedReader(assets.resolve(id.getNamespace()).resolve(id.getPath()));
-        });
-
-        TTMesh mesh = TTMeshLoader.load(resources, MESH_ID);
-
-        assertEquals(
-                List.of("glass", "brass", "ink"),
-                mesh.parts().stream().map(TTMeshPart::name).toList());
-        assertEquals(
-                List.of(32, 48, 16),
-                mesh.parts().stream().map(TTMeshPart::quadCount).toList());
-        assertEquals(96, mesh.parts().stream().mapToInt(TTMeshPart::quadCount).sum());
-        assertEquals(
-                List.of("", "", ""),
-                mesh.parts().stream().map(TTMeshPart::materialSlot).toList());
-
-        BufferedImage texture = ImageIO.read(assets.resolve(TEXTURE_ID.getNamespace())
-                .resolve(TEXTURE_ID.getPath())
-                .toFile());
-        assertEquals(64, texture.getWidth());
-        assertEquals(32, texture.getHeight());
-        texture.flush();
-    }
-
-    @Test
-    void brassRimAndLidHaveOutwardWindingWithOpaqueTextureCoverage() throws Exception {
-        TTMesh mesh = loadMesh();
-        TTMeshPart brass = mesh.parts().stream()
-                .filter(part -> part.name().equals("brass"))
-                .findFirst()
-                .orElseThrow();
-        Path texturePath = Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets")
-                .resolve(TEXTURE_ID.getNamespace())
-                .resolve(TEXTURE_ID.getPath());
-        BufferedImage texture = ImageIO.read(texturePath.toFile());
-        try {
-            for (int quad = 0; quad < brass.quadCount(); quad++) {
-                int position = quad * 12;
-                Vector3f first = new Vector3f(
-                        brass.positions()[position], brass.positions()[position + 1], brass.positions()[position + 2]);
-                Vector3f second = new Vector3f(
-                        brass.positions()[position + 3],
-                        brass.positions()[position + 4],
-                        brass.positions()[position + 5]);
-                Vector3f third = new Vector3f(
-                        brass.positions()[position + 6],
-                        brass.positions()[position + 7],
-                        brass.positions()[position + 8]);
-                Vector3f outward = new Vector3f(
-                        brass.normals()[position], brass.normals()[position + 1], brass.normals()[position + 2]);
-                Vector3f face = second.sub(first).cross(third.sub(first));
-                assertTrue(face.dot(outward) > 0.0F, "Brass face points inward: " + quad);
-
-                int uv = quad * 8;
-                float u = (brass.uvs()[uv] + brass.uvs()[uv + 2] + brass.uvs()[uv + 4]) / 3.0F;
-                float v = (brass.uvs()[uv + 1] + brass.uvs()[uv + 3] + brass.uvs()[uv + 5]) / 3.0F;
-                int pixel = texture.getRGB((int) (u * texture.getWidth()), (int) ((1.0F - v) * texture.getHeight()));
-                assertEquals(255, pixel >>> 24, "Brass face samples a transparent texel: " + quad);
-            }
-        } finally {
-            texture.flush();
-        }
-    }
-
-    @Test
-    void rendererGatesMeshDrawOnScribeToolsAndUsesSourceTexture() throws Exception {
-        TTMesh mesh = loadMesh();
+    void proceduralInkwellPartRendersOnlyWhenScribeToolsArePresent() {
+        BlockEntityRendererProvider.Context context = mock(BlockEntityRendererProvider.Context.class);
+        ResearchTableModel model = new ResearchTableModel(ResearchTableModel.createLayer().bakeRoot());
+        when(context.bakeLayer(TTModelLayers.RESEARCH_TABLE)).thenReturn(model.root);
+        ResearchTableRenderer renderer = new ResearchTableRenderer(context);
         MultiBufferSource buffers = mock(MultiBufferSource.class);
-        VertexConsumer buffer = mock(VertexConsumer.class);
+        VertexConsumer buffer = mock(VertexConsumer.class, RETURNS_SELF);
         when(buffers.getBuffer(any(RenderType.class))).thenReturn(buffer);
 
-        try (MockedStatic<GolemMeshes> meshes = mockStatic(GolemMeshes.class)) {
-            meshes.when(() -> GolemMeshes.get(MESH_ID)).thenReturn(mesh);
+        renderer.renderInkwell(false, new PoseStack(), buffers, LIGHT);
+        verifyNoInteractions(buffers);
 
-            ResearchTableRenderer.renderInkwell(false, new PoseStack(), buffers, LIGHT);
-            meshes.verifyNoInteractions();
-            verifyNoInteractions(buffers);
+        renderer.renderInkwell(true, new PoseStack(), buffers, LIGHT);
 
-            ResearchTableRenderer.renderInkwell(true, new PoseStack(), buffers, LIGHT);
-
-            meshes.verify(() -> GolemMeshes.get(MESH_ID));
-            meshes.verify(
-                    () -> GolemMeshes.renderPart(
-                            any(TTMeshPart.class), any(PoseStack.Pose.class), same(buffer), eq(LIGHT), eq(WHITE)),
-                    times(3));
-            verify(buffers).getBuffer(RenderType.entityCutout(TEXTURE_ID));
-        }
+        assertNotNull(model.inkwell);
+        verify(buffers).getBuffer(RenderType.entityCutout(TABLE_TEXTURE));
+        verify(buffer, times(24))
+                .addVertex(
+                        anyFloat(), anyFloat(), anyFloat(), anyInt(), anyFloat(), anyFloat(), anyInt(), anyInt(),
+                        anyFloat(), anyFloat(), anyFloat());
     }
 
     @Test
-    void existingFacingTransformMatchesSourceForEveryHorizontalDirection() {
+    void deletedSeparateInkwellAssetsAreNotPackaged() {
+        Path assets = Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets", "thaumaturge");
+
+        assertFalse(Files.exists(assets.resolve("models/mesh/research_inkwell.ttmesh")));
+        assertFalse(Files.exists(assets.resolve("textures/entity/research_inkwell.png")));
+    }
+
+    @Test
+    void existingFacingTransformMatchesTheNativePoseForEveryHorizontalDirection() {
         for (Direction facing : List.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST)) {
             PoseStack source = new PoseStack();
             BlockFacingPose.northBased(source, facing);
@@ -146,13 +76,12 @@ class ResearchTableInkwellPortTest {
 
             PoseStack nativePose = new PoseStack();
             nativePose.mulPose(Axis.XP.rotationDegrees(180.0F));
-            float yaw =
-                    switch (facing) {
-                        case NORTH -> 270.0F;
-                        case SOUTH -> 90.0F;
-                        case WEST -> 180.0F;
-                        default -> 0.0F;
-                    };
+            float yaw = switch (facing) {
+                case NORTH -> 270.0F;
+                case SOUTH -> 90.0F;
+                case WEST -> 180.0F;
+                default -> 0.0F;
+            };
             nativePose.mulPose(Axis.YP.rotationDegrees(yaw));
 
             for (float[] point : List.of(
@@ -166,15 +95,5 @@ class ResearchTableInkwellPortTest {
                 assertEquals(sourceResult.z, nativeResult.z, 1.0E-6F, facing.toString());
             }
         }
-    }
-
-    private static TTMesh loadMesh() throws Exception {
-        Path assets = Path.of(System.getProperty("thaumaturge.testResourceRoot"), "assets");
-        ResourceManager resources = mock(ResourceManager.class);
-        when(resources.openAsReader(any(ResourceLocation.class))).thenAnswer(call -> {
-            ResourceLocation id = call.getArgument(0);
-            return Files.newBufferedReader(assets.resolve(id.getNamespace()).resolve(id.getPath()));
-        });
-        return TTMeshLoader.load(resources, MESH_ID);
     }
 }
