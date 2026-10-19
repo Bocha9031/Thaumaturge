@@ -926,7 +926,7 @@ public final class TTBlocks {
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.STONE)
                     .strength(0.5F)
-                    .sound(SoundType.STONE)
+                    .sound(SoundType.GLASS)
                     .randomTicks()
                     .lightLevel(state -> state.getValue(BlockVisBattery.CHARGE)));
 

@@ -19,6 +19,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.ticks.LevelChunkTicks;
 import net.minecraft.world.ticks.LevelTicks;
@@ -27,6 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 class BlockVisBatteryTest {
+    @Test
+    void usesGlassSounds() {
+        assertEquals(SoundType.GLASS, TTBlocks.VIS_BATTERY.get().defaultBlockState().getSoundType());
+    }
+
     @Test
     void redstoneWakeClearsDelayedBatteryTick() {
         ServerLevel level = mock(ServerLevel.class);
