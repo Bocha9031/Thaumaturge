@@ -41,7 +41,7 @@ class NodeDevicePortTest {
     }
 
     @Test
-    void catastrophicTransducerFailurePreservesNodeHostBlock() throws Exception {
+    void catastrophicTransducerFailureDoesNotDestroyNearbyBlocks() throws Exception {
         BlockPos nodePos = new BlockPos(4, 70, 9);
         ServerLevel level = mock(ServerLevel.class);
         BlockState hostState = TTBlocks.SILVERWOOD_NODE_LOG.get().defaultBlockState();
@@ -69,7 +69,7 @@ class NodeDevicePortTest {
                         nodePos.getY() + 0.5,
                         nodePos.getZ() + 0.5,
                         3.0F,
-                        Level.ExplosionInteraction.BLOCK);
+                        Level.ExplosionInteraction.NONE);
         verify(level, never()).removeBlock(nodePos, false);
     }
 }

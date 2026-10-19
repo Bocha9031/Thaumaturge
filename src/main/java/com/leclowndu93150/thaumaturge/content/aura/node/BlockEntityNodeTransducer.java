@@ -184,7 +184,7 @@ public final class BlockEntityNodeTransducer extends BlockEntity {
             node.removeDepleted(level, nodePos);
         }
         Vec3 centre = Vec3.atCenterOf(nodePos);
-        level.explode(null, centre.x, centre.y, centre.z, 3.0F, Level.ExplosionInteraction.BLOCK);
+        level.explode(null, centre.x, centre.y, centre.z, 3.0F, Level.ExplosionInteraction.NONE);
         RandomSource random = level.getRandom();
         for (int attempt = 0; attempt < 50; attempt++) {
             BlockPos target = NodeScatter.around(nodePos, 7, random);
