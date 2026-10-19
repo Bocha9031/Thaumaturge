@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.entity;
 
 import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
+import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -20,7 +21,8 @@ public abstract class AbstractTaintacle extends AbstractRootedTaint {
     private static final int SUBSTRATE_CHECK_INTERVAL = 20;
     private static final float STARVE_DAMAGE = 1.0F;
     private static final float FLAIL_MAX = 3.0F;
-    private static final float FLAIL_DECAY = 0.01F;
+    private static final float FLAIL_DECAY = 0.977F;
+    private static final float FLAIL_SETTLED = 0.01F;
     private static final double FOLLOW_RANGE = 12.0;
 
     public float flailIntensity = 1.0F;
@@ -64,9 +66,12 @@ public abstract class AbstractTaintacle extends AbstractRootedTaint {
 
     @Override
     protected void tickStrikeAnimation() {
-        if (this.flailIntensity > 1.0F) {
-            this.flailIntensity -= FLAIL_DECAY;
-        }
+        float excess = this.flailIntensity - 1.0F;
+        flailTo(excess > FLAIL_SETTLED ? 1.0F + excess * FLAIL_DECAY : 1.0F);
+    }
+
+    private void flailTo(float intensity) {
+        this.flailIntensity = Math.max(1.0F, intensity);
     }
 
     @Override
@@ -79,5 +84,10 @@ public abstract class AbstractTaintacle extends AbstractRootedTaint {
 
     public float enrage() {
         return 0.0F;
+    }
+
+    @Override
+    protected void onStrike(ServerLevel level) {
+        this.playSound(TTSounds.TENTACLE.get(), this.getSoundVolume(), this.getVoicePitch());
     }
 }
