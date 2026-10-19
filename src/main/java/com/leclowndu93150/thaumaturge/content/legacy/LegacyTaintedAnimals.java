@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTMobTraits;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -59,13 +60,13 @@ public final class LegacyTaintedAnimals {
         List<Entity> riders = List.copyOf(legacy.getPassengers());
         Entity vehicle = legacy.getVehicle();
         float health = legacy.getHealth();
-        legacy.ejectPassengers();
-        legacy.stopRiding();
         replacement.restoreFrom(legacy);
+        // Keep the legacy entity alive until NeoForge accepts the replacement.
+        // A fresh identity lets both entities coexist during that attempt.
+        replacement.setUUID(UUID.randomUUID());
         if (mapping.spiderling()) {
             replacement.setData(TTAttachments.LEGACY_TAINT_SPIDERLING, true);
         }
-        legacy.discard();
         if (!level.addFreshEntity(replacement)) {
             Thaumaturge.LOGGER.error(
                     "Could not add {} replacing legacy {} at {}",
@@ -74,6 +75,9 @@ public final class LegacyTaintedAnimals {
                     legacy.blockPosition());
             return false;
         }
+        legacy.ejectPassengers();
+        legacy.stopRiding();
+        legacy.discard();
         MobTraits.add(replacement, TTMobTraits.TAINTED);
         replacement.setHealth(Math.min(health, replacement.getMaxHealth()));
         for (Entity rider : riders) {
