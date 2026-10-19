@@ -21,7 +21,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import org.joml.Matrix4f;
@@ -43,15 +42,15 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
     private static final float BOB_BLEND_TICKS = 15.0F;
     private static final float SPIN_Z_DIVISOR = 4.0F;
     private static final float TILT = 45.0F;
-    private static final float JITTER_SCALE = 0.01F;
-    private static final float GLOW_RED = 0.8F;
-    private static final float GLOW_GREEN = 0.1F;
-    private static final float GLOW_BLUE = 1.0F;
-    private static final long HALO_SEED = 245L;
-    private static final int HALO_FANS_FANCY = 20;
-    private static final int HALO_FANS_FAST = 10;
-    private static final float HALO_FADE_TICKS = 500.0F;
-    private static final float HALO_RAMP_TICKS = 50.0F;
+    private static final float JITTER_SCALE = 0.025F;
+    private static final float CRAFT_SWAY = 2.2F;
+    private static final float HALO_GROW_TICKS = 80.0F;
+    private static final float HALO_TURN_TICKS = 1600.0F;
+    private static final float HALO_CORE_ALPHA = 0.85F;
+    private static final int HALO_TIP_RGB = 0xE23CC9;
+    private static final int HALO_FANCY_SPIKES = 40;
+    private static final int HALO_FAST_SPIKES = 14;
+    private static final float[] HALO_SPIKES = InfusionMatrixRenderMath.buildSpikes();
 
     private static final RenderType GLOW_NORMAL = TTRenderTypes.entityAdditiveEmissive(TEX_NORMAL);
     private static final RenderType GLOW_ANCIENT = TTRenderTypes.entityAdditiveEmissive(TEX_ANCIENT);
@@ -59,7 +58,6 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
     private static final RenderType HALO_TYPE = TTRenderTypes.SPARKLE_CULLED;
 
     private final MatrixCubeModel model;
-    private final RandomSource haloRandom = RandomSource.create();
 
     public InfusionMatrixRenderer(BlockEntityRendererProvider.Context context) {
         this.model = new MatrixCubeModel(context.bakeLayer(TTModelLayers.MATRIX_CUBE));
@@ -85,8 +83,7 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
 
         RenderType type = RenderType.entityCutout(texture);
         RenderType glowType = glowTypeFor(texture);
-        float instability = Math.min(
-                6.0F, 1.0F + (stability < 0.0F ? -stability * 0.66F : 1.0F) * (Math.min(craftTicks, 50) / 50.0F));
+        float instability = InfusionMatrixRenderMath.instability(stability, craftTicks);
         poseStack.pushPose();
         float craftBlend = Math.min(craftTicks, BOB_BLEND_TICKS) / BOB_BLEND_TICKS;
         float bob = Mth.lerp(
@@ -105,36 +102,27 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
                     float jx = 0.0F;
                     float jy = 0.0F;
                     float jz = 0.0F;
-                    if (active) {
-                        jx = Mth.sin((animationTime + a * 10) / 15.0F) * JITTER_SCALE * startUp * instability;
-                        jy = Mth.sin((animationTime + b * 10) / 14.0F) * JITTER_SCALE * startUp * instability;
-                        jz = Mth.sin((animationTime + c * 10) / 13.0F) * JITTER_SCALE * startUp * instability;
-                    }
+                    int index = a << 2 | b << 1 | c;
+                    float jitter = active ? JITTER_SCALE * startUp * instability : 0.0F;
+                    jx = offset(a)
+                            * jitter
+                            * InfusionMatrixRenderMath.drift(animationTime, index, InfusionMatrixRenderMath.SALT_X);
+                    jy = offset(b)
+                            * jitter
+                            * InfusionMatrixRenderMath.drift(animationTime, index, InfusionMatrixRenderMath.SALT_Y);
+                    jz = offset(c)
+                            * jitter
+                            * InfusionMatrixRenderMath.drift(animationTime, index, InfusionMatrixRenderMath.SALT_Z);
                     int aa = a == 0 ? -1 : 1;
                     int bb = b == 0 ? -1 : 1;
                     int cc = c == 0 ? -1 : 1;
                     poseStack.pushPose();
                     poseStack.translate(jx + aa * CUBE_OFFSET, jy + bb * CUBE_OFFSET, jz + cc * CUBE_OFFSET);
-                    if (a > 0) {
-                        poseStack.mulPose(Axis.XP.rotationDegrees(90.0F));
-                    }
-                    if (b > 0) {
-                        poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
-                    }
-                    if (c > 0) {
-                        poseStack.mulPose(Axis.ZP.rotationDegrees(90.0F));
-                    }
+                    poseStack.mulPose(Axis.XP.rotationDegrees(quarterTurn(index, InfusionMatrixRenderMath.SALT_X)));
+                    poseStack.mulPose(Axis.YP.rotationDegrees(quarterTurn(index, InfusionMatrixRenderMath.SALT_Y)));
+                    poseStack.mulPose(Axis.ZP.rotationDegrees(quarterTurn(index, InfusionMatrixRenderMath.SALT_Z)));
                     poseStack.scale(CUBE_SCALE, CUBE_SCALE, CUBE_SCALE);
-                    renderCube(
-                            poseStack,
-                            buffers,
-                            type,
-                            glowType,
-                            light,
-                            active,
-                            animationTime,
-                            startUp,
-                            a * 2 + b * 3 + c * 4);
+                    renderCube(poseStack, buffers, type, glowType, light, active, animationTime, startUp, index + 1);
                     poseStack.popPose();
                 }
             }
@@ -145,7 +133,7 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
         poseStack.popPose();
         poseStack.popPose();
         if (crafting) {
-            drawHalo(craftTicks, fancyGraphics, poseStack, buffers);
+            drawHalo(craftTicks, fancyGraphics, startUp, poseStack, buffers);
         }
     }
 
@@ -160,14 +148,14 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
             float startUp,
             int phase) {
         model.cube.render(poseStack, buffers.getBuffer(type), light, OverlayTexture.NO_OVERLAY, -1);
-        if (active) {
-            float glowAlpha = (Mth.sin((animationTime + phase) / 4.0F) * 0.1F + 0.2F) * startUp;
+        float glowAlpha = InfusionMatrixRenderMath.glow(animationTime, startUp, phase);
+        if (glowAlpha > 0.0F) {
             model.glow.render(
                     poseStack,
                     buffers.getBuffer(glowType),
                     LightTexture.FULL_BRIGHT,
                     OverlayTexture.NO_OVERLAY,
-                    ARGB32.colorFromFloat(glowAlpha, GLOW_RED, GLOW_GREEN, GLOW_BLUE));
+                    ARGB32.color(Math.round(Math.clamp(glowAlpha, 0.0F, 1.0F) * 255.0F), 0xC54CFF));
         }
     }
 
@@ -201,40 +189,53 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
         return GLOW_NORMAL;
     }
 
-    private void drawHalo(int craftTicks, boolean fancyGraphics, PoseStack poseStack, MultiBufferSource buffers) {
-        int fans = fancyGraphics ? HALO_FANS_FANCY : HALO_FANS_FAST;
-        float f1 = craftTicks / HALO_FADE_TICKS;
-        float ramp = Math.min(craftTicks, HALO_RAMP_TICKS) / HALO_RAMP_TICKS;
-        float centerAlpha = Math.max(0.0F, 1.0F - f1);
+    private void drawHalo(
+            int craftTicks, boolean fancyGraphics, float startUp, PoseStack poseStack, MultiBufferSource buffers) {
+        float fade = Math.max(0.0F, 1.0F - craftTicks / HALO_TURN_TICKS);
+        float coreAlpha = HALO_CORE_ALPHA * fade * startUp;
+        float grow = Math.min(craftTicks, HALO_GROW_TICKS) / HALO_GROW_TICKS;
+        if (coreAlpha <= 0.0F || grow <= 0.0F) {
+            return;
+        }
+        int spikes = fancyGraphics ? HALO_FANCY_SPIKES : HALO_FAST_SPIKES;
+        float reach = 1.6F * grow;
+        int coreColor = ARGB32.colorFromFloat(coreAlpha, 1.0F, 1.0F, 1.0F);
+        int tipColor = ARGB32.color(0, HALO_TIP_RGB);
         poseStack.pushPose();
         poseStack.translate(0.5F, 0.5F, 0.5F);
-        haloRandom.setSeed(HALO_SEED);
+        poseStack.mulPose(Axis.YP.rotationDegrees(craftTicks / HALO_TURN_TICKS * 360.0F));
         VertexConsumer buffer = buffers.getBuffer(HALO_TYPE);
-        for (int i = 0; i < fans; i++) {
-            poseStack.mulPose(Axis.XP.rotationDegrees(haloRandom.nextFloat() * 360.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(haloRandom.nextFloat() * 360.0F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(haloRandom.nextFloat() * 360.0F));
-            poseStack.mulPose(Axis.XP.rotationDegrees(haloRandom.nextFloat() * 360.0F));
-            poseStack.mulPose(Axis.YP.rotationDegrees(haloRandom.nextFloat() * 360.0F));
-            poseStack.mulPose(Axis.ZP.rotationDegrees(haloRandom.nextFloat() * 360.0F + f1 * 360.0F));
-            float fa = (haloRandom.nextFloat() * 20.0F + 5.0F) / 20.0F * ramp;
-            float f4 = (haloRandom.nextFloat() * 2.0F + 1.0F) / 20.0F * ramp;
-            Matrix4f mat = poseStack.last().pose();
-            float bx1 = -0.866F * f4;
-            float bz1 = -0.5F * f4;
-            float bx2 = 0.866F * f4;
-            float bz3 = f4;
-            buffer.addVertex(mat, 0.0F, 0.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, centerAlpha);
-            buffer.addVertex(mat, bx1, fa, bz1).setColor(1.0F, 0.0F, 1.0F, 0.0F);
-            buffer.addVertex(mat, bx2, fa, bz1).setColor(1.0F, 0.0F, 1.0F, 0.0F);
-            buffer.addVertex(mat, 0.0F, 0.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, centerAlpha);
-            buffer.addVertex(mat, bx2, fa, bz1).setColor(1.0F, 0.0F, 1.0F, 0.0F);
-            buffer.addVertex(mat, 0.0F, fa, bz3).setColor(1.0F, 0.0F, 1.0F, 0.0F);
-            buffer.addVertex(mat, 0.0F, 0.0F, 0.0F).setColor(1.0F, 1.0F, 1.0F, centerAlpha);
-            buffer.addVertex(mat, 0.0F, fa, bz3).setColor(1.0F, 0.0F, 1.0F, 0.0F);
-            buffer.addVertex(mat, bx1, fa, bz1).setColor(1.0F, 0.0F, 1.0F, 0.0F);
+        float stride = HALO_SPIKES.length / (float) HALO_FANCY_SPIKES;
+        for (int spike = 0; spike < spikes; spike++) {
+            int base = spike * (int) stride + 3;
+            for (int corner = 0; corner < 3; corner++) {
+                int from = base + corner * 3;
+                int to = base + (corner + 1) % 3 * 3;
+                Matrix4f matrix = poseStack.last().pose();
+                buffer.addVertex(matrix, 0.0F, 0.0F, 0.0F).setColor(coreColor);
+                buffer.addVertex(
+                                matrix,
+                                HALO_SPIKES[to] * reach,
+                                HALO_SPIKES[to + 1] * reach,
+                                HALO_SPIKES[to + 2] * reach)
+                        .setColor(tipColor);
+                buffer.addVertex(
+                                matrix,
+                                HALO_SPIKES[from] * reach,
+                                HALO_SPIKES[from + 1] * reach,
+                                HALO_SPIKES[from + 2] * reach)
+                        .setColor(tipColor);
+            }
         }
         poseStack.popPose();
+    }
+
+    private static float offset(int flag) {
+        return flag == 1 ? CUBE_OFFSET : -CUBE_OFFSET;
+    }
+
+    private static float quarterTurn(int index, int salt) {
+        return InfusionMatrixRenderMath.quarterTurns(index, salt) * 90.0F;
     }
 
     @Override
