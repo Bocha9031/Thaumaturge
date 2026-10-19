@@ -36,7 +36,7 @@ public final class InfusionMatrixRenderer implements BlockEntityRenderer<BlockEn
     private static final float CORE_SCALE = 12.0F / 16.0F;
     private static final float ACTIVE_LIFT = 0.3F;
     private static final int IDLE_BOB_PERIOD = 40;
-    private static final float IDLE_BOB_DIVISOR = 4.5F;
+    private static final float IDLE_BOB_DIVISOR = 9.0F;
     private static final int CRAFT_BOB_PERIOD = 25;
     private static final float CRAFT_BOB_DIVISOR = 3.5F;
     private static final float BOB_BLEND_TICKS = 15.0F;
