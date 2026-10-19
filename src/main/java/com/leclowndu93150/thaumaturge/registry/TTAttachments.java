@@ -234,6 +234,9 @@ public final class TTAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> TAINT_LEGACY_IMPORTED = register(
             "taint_legacy_imported",
             () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> LEGACY_TAINT_SPIDERLING = register(
+            "legacy_taint_spiderling",
+            () -> AttachmentType.builder(() -> false).serialize(Codec.BOOL).build());
 
     private TTAttachments() {}
 

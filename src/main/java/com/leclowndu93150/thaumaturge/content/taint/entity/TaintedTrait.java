@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.api.entity.trait.MobTrait;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraitGoals;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraitModifiers;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
+import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import java.util.Map;
 import net.minecraft.core.Holder;
 import net.minecraft.world.entity.LivingEntity;
@@ -56,6 +57,10 @@ public final class TaintedTrait implements MobTrait {
 
     @Override
     public void modifiers(LivingEntity mob, MobTraitModifiers modifiers) {
+        if (mob.getData(TTAttachments.LEGACY_TAINT_SPIDERLING)) {
+            legacySpiderlingModifiers(modifiers);
+            return;
+        }
         TaintedProfile profile = TaintedProfile.of(mob.getType());
         if (profile == null || profile.attributes().isEmpty()) {
             modifiers.add(Attributes.MAX_HEALTH, TAINTED_HEALTH, AttributeModifier.Operation.ADD_VALUE);
@@ -65,6 +70,13 @@ public final class TaintedTrait implements MobTrait {
         for (Map.Entry<Holder<Attribute>, Double> entry : profile.attributes().entrySet()) {
             modifiers.setBase(entry.getKey(), entry.getValue());
         }
+    }
+
+    static void legacySpiderlingModifiers(MobTraitModifiers modifiers) {
+        modifiers.setBase(Attributes.MAX_HEALTH, 5.0);
+        modifiers.setBase(Attributes.ATTACK_DAMAGE, 2.0);
+        modifiers.setBase(Attributes.FOLLOW_RANGE, 12.0);
+        modifiers.setBase(Attributes.SCALE, 0.4);
     }
 
     @Override

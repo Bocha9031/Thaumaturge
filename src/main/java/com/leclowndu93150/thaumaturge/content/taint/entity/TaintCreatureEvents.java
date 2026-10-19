@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.content.entity.construct.EntityOwnedConstr
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitEngine;
 import com.leclowndu93150.thaumaturge.content.taint.effect.FluxTaintExposure;
 import com.leclowndu93150.thaumaturge.content.taint.spread.TaintSplosion;
+import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import com.leclowndu93150.thaumaturge.registry.TTMobTraits;
 import net.minecraft.server.level.ServerLevel;
@@ -143,6 +144,10 @@ public final class TaintCreatureEvents {
 
     @SubscribeEvent
     public static void onExperienceDrop(LivingExperienceDropEvent event) {
+        if (event.getEntity().getData(TTAttachments.LEGACY_TAINT_SPIDERLING)) {
+            event.setDroppedExperience(2);
+            return;
+        }
         if (MobTraits.has(event.getEntity(), TTMobTraits.TAINT_BROOD.getKey())) {
             event.setDroppedExperience(BROOD_EXPERIENCE);
         }

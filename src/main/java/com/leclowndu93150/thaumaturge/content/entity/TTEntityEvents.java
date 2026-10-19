@@ -17,7 +17,14 @@ import com.leclowndu93150.thaumaturge.content.taint.entity.EntityTaintSporeSwarm
 import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import net.minecraft.world.entity.SpawnPlacementTypes;
+import net.minecraft.world.entity.animal.Chicken;
+import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -113,6 +120,20 @@ public final class TTEntityEvents {
 
     @SubscribeEvent
     public static void onAttributes(EntityAttributeCreationEvent event) {
+        event.put(
+                TTEntities.LEGACY_TAINT_SPIDER.get(), Spider.createAttributes().build());
+        event.put(
+                TTEntities.LEGACY_TAINT_CREEPER.get(),
+                Creeper.createAttributes().build());
+        event.put(TTEntities.LEGACY_TAINT_COW.get(), Cow.createAttributes().build());
+        event.put(TTEntities.LEGACY_TAINT_PIG.get(), Pig.createAttributes().build());
+        event.put(
+                TTEntities.LEGACY_TAINT_CHICKEN.get(),
+                Chicken.createAttributes().build());
+        event.put(TTEntities.LEGACY_TAINT_SHEEP.get(), Sheep.createAttributes().build());
+        event.put(
+                TTEntities.LEGACY_TAINT_VILLAGER.get(),
+                Villager.createAttributes().build());
         event.put(
                 TTEntities.ELDRITCH_HIEROPHANT.get(),
                 EntityEldritchHierophant.createAttributes().build());

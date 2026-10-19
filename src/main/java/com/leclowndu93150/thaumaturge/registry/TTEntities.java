@@ -32,6 +32,13 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.animal.Chicken;
+import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.animal.Sheep;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.entity.npc.Villager;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -214,6 +221,58 @@ public final class TTEntities {
                             .sized(0.9F, 0.9F)
                             .clientTrackingRange(8)
                             .updateInterval(20));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<Spider>> LEGACY_TAINT_SPIDER = register(
+            "taint_spider",
+            () -> EntityType.Builder.of(Spider::new, MobCategory.MONSTER)
+                    .sized(1.4F, 0.9F)
+                    .noSummon()
+                    .eyeHeight(0.65F)
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
+    public static final DeferredHolder<EntityType<?>, EntityType<Creeper>> LEGACY_TAINT_CREEPER = register(
+            "taint_creeper",
+            () -> EntityType.Builder.of(Creeper::new, MobCategory.MONSTER)
+                    .sized(0.6F, 1.7F)
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
+    public static final DeferredHolder<EntityType<?>, EntityType<Cow>> LEGACY_TAINT_COW = register(
+            "taint_cow",
+            () -> EntityType.Builder.of(Cow::new, MobCategory.MONSTER)
+                    .sized(0.9F, 1.3F)
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
+    public static final DeferredHolder<EntityType<?>, EntityType<Pig>> LEGACY_TAINT_PIG = register(
+            "taint_pig",
+            () -> EntityType.Builder.of(Pig::new, MobCategory.MONSTER)
+                    .sized(0.9F, 0.9F)
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
+    public static final DeferredHolder<EntityType<?>, EntityType<Chicken>> LEGACY_TAINT_CHICKEN = register(
+            "taint_chicken",
+            () -> EntityType.Builder.of(Chicken::new, MobCategory.MONSTER)
+                    .sized(0.5F, 0.8F)
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
+    public static final DeferredHolder<EntityType<?>, EntityType<Sheep>> LEGACY_TAINT_SHEEP = register(
+            "taint_sheep",
+            () -> EntityType.Builder.of(Sheep::new, MobCategory.MONSTER)
+                    .sized(0.9F, 1.3F)
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
+    public static final DeferredHolder<EntityType<?>, EntityType<Villager>> LEGACY_TAINT_VILLAGER = register(
+            "taint_villager",
+            () -> EntityType.Builder.<Villager>of((type, level) -> new Villager(type, level), MobCategory.MONSTER)
+                    .sized(0.6F, 1.95F)
+                    .eyeHeight(1.62F)
+                    .noSummon()
+                    .clientTrackingRange(8)
+                    .updateInterval(3));
 
     public static final DeferredHolder<EntityType<?>, EntityType<SpellSprite>> SPELL_SPRITE = register(
             "spell_sprite",
