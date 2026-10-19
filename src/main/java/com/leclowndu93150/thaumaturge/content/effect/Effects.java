@@ -368,59 +368,59 @@ public final class Effects {
                         pos.z,
                         TTSounds.POOF.get(),
                         SoundSource.BLOCKS,
-                        0.4F,
-                        1.0F + (float) rand.nextGaussian() * 0.05F);
+                        0.35F,
+                        1.0F + (rand.nextFloat() - rand.nextFloat()) * 0.1F);
             }
-            int puffs = 6 + rand.nextInt(3) + 2;
-            for (int a = 0; a < puffs; a++) {
-                double vx = (0.05F + rand.nextFloat() * 0.05F) * (rand.nextBoolean() ? -1 : 1);
-                double vy = (0.05F + rand.nextFloat() * 0.05F) * (rand.nextBoolean() ? -1 : 1);
-                double vz = (0.05F + rand.nextFloat() * 0.05F) * (rand.nextBoolean() ? -1 : 1);
-                if (side != null) {
-                    vx += side.getStepX() * 0.1F;
-                    vy += side.getStepY() * 0.1F;
-                    vz += side.getStepZ() * 0.1F;
-                }
-                float pr = Mth.clamp(r * (1.0F + (float) rand.nextGaussian() * 0.1F), 0.0F, 1.0F);
-                float pg = Mth.clamp(g * (1.0F + (float) rand.nextGaussian() * 0.1F), 0.0F, 1.0F);
-                float pb = Mth.clamp(b * (1.0F + (float) rand.nextGaussian() * 0.1F), 0.0F, 1.0F);
+            Vec3 sidePush = side == null ? Vec3.ZERO : new Vec3(side.getStepX(), side.getStepY(), side.getStepZ()).scale(0.12);
+            for (int a = 0; a < 10; a++) {
+                Vec3 launch = new Vec3(signedSpeed(rand, 0.04, 0.07), signedSpeed(rand, 0.04, 0.07), signedSpeed(rand, 0.04, 0.07))
+                        .add(sidePush);
+                Vec3 start = pos.add(launch.scale(1.5));
+                float pr = Mth.clamp(r + (float) (rand.nextGaussian() * 0.06), 0.0F, 1.0F);
+                float pg = Mth.clamp(g + (float) (rand.nextGaussian() * 0.06), 0.0F, 1.0F);
+                float pb = Mth.clamp(b + (float) (rand.nextGaussian() * 0.06), 0.0F, 1.0F);
+                Vec3 drift = launch.scale(0.5);
                 spawn(
                         level,
                         TTParticles.colorOf(TTParticles.PUFF, pr, pg, pb),
-                        pos.x + vx * 2.0,
-                        pos.y + vy * 2.0,
-                        pos.z + vz * 2.0,
-                        vx / 2.0,
-                        vy / 2.0,
-                        vz / 2.0);
+                        start.x,
+                        start.y,
+                        start.z,
+                        drift.x,
+                        drift.y,
+                        drift.z);
             }
             if (fancy) {
-                int motes = 2 + rand.nextInt(3);
-                for (int a = 0; a < motes; a++) {
-                    double vx = (0.025F + rand.nextFloat() * 0.025F) * (rand.nextBoolean() ? -1 : 1);
-                    double vy = (0.025F + rand.nextFloat() * 0.025F) * (rand.nextBoolean() ? -1 : 1);
-                    double vz = (0.025F + rand.nextFloat() * 0.025F) * (rand.nextBoolean() ? -1 : 1);
-                    wispyMotes(level, new Vec3(pos.x + vx * 2.0, pos.y + vy * 2.0, pos.z + vz * 2.0))
-                            .motion(vx, vy, vz)
-                            .age(15 + rand.nextInt(10))
+                for (int a = 0; a < 4; a++) {
+                    float heading = rand.nextFloat() * Mth.TWO_PI;
+                    wispyMotes(level, pos)
+                            .motion(Mth.cos(heading) * 0.025, 0.01, Mth.sin(heading) * 0.025)
+                            .age(30)
                             .randomColor()
-                            .gravity(-0.01F)
+                            .gravity(-0.012F)
                             .send();
                 }
-                spawn(level, TTParticles.colorOf(TTParticles.FLASH, 1.0F, 0.9F, 1.0F), pos.x, pos.y, pos.z);
+                spawn(level, TTParticles.colorOf(TTParticles.FLASH, 0.93F, 0.86F, 1.0F), pos.x, pos.y, pos.z);
             }
-            int wisps = (fancy ? 2 : 0) + rand.nextInt(3);
+            int wisps = rand.nextInt(fancy ? 5 : 3);
+            float wr = Mth.lerp(0.5F, r, 1.0F);
+            float wg = Mth.lerp(0.5F, g, 0.22F);
+            float wb = Mth.lerp(0.5F, b, 0.72F);
             for (int a = 0; a < wisps; a++) {
                 curlyWisp(level, pos)
-                        .color(
-                                (0.9F + rand.nextFloat() * 0.1F + r) / 2.0F,
-                                (0.1F + g) / 2.0F,
-                                (0.5F + rand.nextFloat() * 0.1F + b) / 2.0F)
-                        .alpha(0.75F)
+                        .motion(signedSpeed(rand, 0.02, 0.04), signedSpeed(rand, 0.02, 0.04), signedSpeed(rand, 0.02, 0.04))
+                        .color(wr, wg, wb)
+                        .alpha(0.65F)
+                        .scale(0.55F)
                         .side(side)
                         .seed(a)
                         .send();
             }
+        }
+
+        private static double signedSpeed(RandomSource random, double base, double spread) {
+            double speed = base + random.nextDouble() * spread;
+            return random.nextBoolean() ? -speed : speed;
         }
     }
 
@@ -1790,12 +1790,11 @@ public final class Effects {
         }
 
         public void send() {
-            RandomSource rand = level.getRandom();
             spawn(level, TTParticles.PECH_CURSE.get(), pos.x, pos.y, pos.z);
             wispyMotes(level, pos)
-                    .age(10 + rand.nextInt(10))
+                    .motion(0.0, 0.01, 0.0)
                     .randomColor()
-                    .gravity(-0.01F)
+                    .gravity(-0.015F)
                     .send();
         }
     }
