@@ -6,6 +6,7 @@ import com.leclowndu93150.thaumaturge.compat.curio.ThaumaturgeCuriosCompat;
 import com.leclowndu93150.thaumaturge.mixin.server.network.ServerGamePacketListenerImplAccessor;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -20,14 +21,13 @@ import net.neoforged.neoforge.common.NeoForgeMod;
 
 public final class HoverManager {
     public static final int FUEL_INTERVAL_TICKS = 360;
+    private static final ResourceLocation FLIGHT_MODIFIER_ID = TTIds.rl("hover_flight");
+    private static final double FLIGHT_MODIFIER_VALUE = 1.0;
     private static final int HUM_INTERVAL_TICKS = 24;
     private static final float TOGGLE_VOLUME = 0.33F;
     private static final float HUM_VOLUME = 0.05F;
     private static final float HUM_PITCH_SPREAD = 0.05F;
     private static final double IDLE_FALL_DAMPING = 0.75;
-    private static final double FLIGHT_GRANT = 1.0;
-    private static final AttributeModifier FLIGHT_MODIFIER =
-            new AttributeModifier(TTIds.rl("hover_flight"), FLIGHT_GRANT, AttributeModifier.Operation.ADD_VALUE);
 
     private HoverManager() {}
 
@@ -116,8 +116,9 @@ public final class HoverManager {
 
     private static void keepAloft(ServerPlayer player) {
         AttributeInstance flight = player.getAttribute(NeoForgeMod.CREATIVE_FLIGHT);
-        if (flight != null && !flight.hasModifier(FLIGHT_MODIFIER.id())) {
-            flight.addTransientModifier(FLIGHT_MODIFIER);
+        if (flight != null && !flight.hasModifier(FLIGHT_MODIFIER_ID)) {
+            flight.addTransientModifier(new AttributeModifier(
+                    FLIGHT_MODIFIER_ID, FLIGHT_MODIFIER_VALUE, AttributeModifier.Operation.ADD_VALUE));
         }
         Abilities abilities = player.getAbilities();
         if (!abilities.flying && !player.onGround()) {
@@ -129,7 +130,7 @@ public final class HoverManager {
     private static void land(ServerPlayer player) {
         AttributeInstance flight = player.getAttribute(NeoForgeMod.CREATIVE_FLIGHT);
         if (flight != null) {
-            flight.removeModifier(FLIGHT_MODIFIER.id());
+            flight.removeModifier(FLIGHT_MODIFIER_ID);
         }
         Abilities abilities = player.getAbilities();
         if (abilities.flying && !player.getAbilities().mayfly) {
