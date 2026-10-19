@@ -244,12 +244,20 @@ public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar> {
             float nx,
             float ny,
             float nz) {
-        float minV = 1 - FLUID_BASE_Y;
-        float maxV = minV - yTop;
-        addVertex(buffer, pose, x0, FLUID_BASE_Y, z0, FLUID_MIN, maxV, color, light, nx, ny, nz);
-        addVertex(buffer, pose, x1, FLUID_BASE_Y, z1, FLUID_MAX, maxV, color, light, nx, ny, nz);
-        addVertex(buffer, pose, x1, yTop, z1, FLUID_MAX, minV, color, light, nx, ny, nz);
-        addVertex(buffer, pose, x0, yTop, z0, FLUID_MIN, minV, color, light, nx, ny, nz);
+        float bottomV = fluidSideBottomV();
+        float topV = fluidSideTopV(yTop);
+        addVertex(buffer, pose, x0, FLUID_BASE_Y, z0, FLUID_MIN, bottomV, color, light, nx, ny, nz);
+        addVertex(buffer, pose, x1, FLUID_BASE_Y, z1, FLUID_MAX, bottomV, color, light, nx, ny, nz);
+        addVertex(buffer, pose, x1, yTop, z1, FLUID_MAX, topV, color, light, nx, ny, nz);
+        addVertex(buffer, pose, x0, yTop, z0, FLUID_MIN, topV, color, light, nx, ny, nz);
+    }
+
+    static float fluidSideBottomV() {
+        return 1.0F - FLUID_BASE_Y;
+    }
+
+    static float fluidSideTopV(float height) {
+        return 1.0F - height;
     }
 
     public static void addVertex(
