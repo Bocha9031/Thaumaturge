@@ -192,8 +192,8 @@ public final class InfusionEnchantmentEvents {
             return;
         }
         event.setCanceled(true);
-        held.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
         EnchantMining.breakFurthest(level, pos, state, player);
+        held.hurtAndBreak(1, player, EquipmentSlot.MAINHAND);
     }
 
     @SubscribeEvent
