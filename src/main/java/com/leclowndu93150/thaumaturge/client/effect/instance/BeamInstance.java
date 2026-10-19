@@ -19,23 +19,25 @@ public final class BeamInstance implements IFXInstance {
     private static final int FADE_TICKS = 4;
     private static final float BASE_OPACITY = 0.4F;
     private static final float FADE_STEP = 0.1F;
+    private static final double SAME_SOURCE_DISTANCE_SQR = 0.01;
 
     private final int sourceEntityId;
     private final boolean entityAnchored;
     private final boolean withSource;
     private final int beamType;
+    private final Vec3 requestedSource;
     private double sourceX;
     private double sourceY;
     private double sourceZ;
     private double prevSourceX;
     private double prevSourceY;
     private double prevSourceZ;
-    private final double targetX;
-    private final double targetY;
-    private final double targetZ;
-    private final double prevTargetX;
-    private final double prevTargetY;
-    private final double prevTargetZ;
+    private double targetX;
+    private double targetY;
+    private double targetZ;
+    private double prevTargetX;
+    private double prevTargetY;
+    private double prevTargetZ;
     private final float colorR;
     private final float colorG;
     private final float colorB;
@@ -49,7 +51,7 @@ public final class BeamInstance implements IFXInstance {
     private float prevPitch;
     private int age;
     private int hitTicks;
-    private final int maxAge;
+    private int maxAge;
     private float prevSize;
     private boolean expired;
 
@@ -96,6 +98,7 @@ public final class BeamInstance implements IFXInstance {
         this.sourceEntityId = sourceEntityId;
         this.entityAnchored = sourceEntityId != BeamPayloadIds.NO_ENTITY;
         this.withSource = withSource;
+        this.requestedSource = new Vec3(sx, sy, sz);
         this.sourceX = sx;
         this.sourceY = sy;
         this.sourceZ = sz;
@@ -167,6 +170,29 @@ public final class BeamInstance implements IFXInstance {
     @Override
     public boolean isExpired() {
         return this.expired;
+    }
+
+    public boolean sameSourceAs(BeamInstance other) {
+        if (this.beamType != other.beamType || this.withSource != other.withSource) {
+            return false;
+        }
+        if (this.entityAnchored || other.entityAnchored) {
+            return this.entityAnchored && other.entityAnchored && this.sourceEntityId == other.sourceEntityId;
+        }
+        return this.requestedSource.distanceToSqr(other.requestedSource) < SAME_SOURCE_DISTANCE_SQR;
+    }
+
+    public void refresh(BeamInstance newer) {
+        this.prevTargetX = this.targetX;
+        this.prevTargetY = this.targetY;
+        this.prevTargetZ = this.targetZ;
+        this.targetX = newer.targetX;
+        this.targetY = newer.targetY;
+        this.targetZ = newer.targetZ;
+        this.maxAge = Math.max(this.maxAge, this.age + newer.maxAge);
+        this.hitTicks = Math.max(this.hitTicks, newer.hitTicks);
+        this.expired = false;
+        refreshGeometry();
     }
 
     public int beamType() {

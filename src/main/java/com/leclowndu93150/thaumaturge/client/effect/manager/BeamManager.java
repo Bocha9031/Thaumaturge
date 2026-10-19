@@ -38,14 +38,27 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
     private BeamManager() {}
 
     public static void addArc(ArcInstance instance) {
-        ARCS.add(instance);
+        if (!instance.isExpired()) {
+            ARCS.add(instance);
+        }
     }
 
     public static void addBolt(BoltInstance instance) {
-        BOLTS.add(instance);
+        if (!instance.isExpired()) {
+            BOLTS.add(instance);
+        }
     }
 
     public static void addBeam(BeamInstance instance) {
+        if (instance.isExpired()) {
+            return;
+        }
+        for (BeamInstance existing : BEAMS) {
+            if (existing.sameSourceAs(instance)) {
+                existing.refresh(instance);
+                return;
+            }
+        }
         BEAMS.add(instance);
     }
 
