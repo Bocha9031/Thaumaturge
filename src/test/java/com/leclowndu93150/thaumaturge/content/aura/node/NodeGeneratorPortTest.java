@@ -68,6 +68,21 @@ class NodeGeneratorPortTest {
     }
 
     @Test
+    void terrainSurveyCountsIndependentTraitsButOnlyOneExclusiveCategory() {
+        List<NodeGenerator.TerrainRule> rules = List.of(
+                new NodeGenerator.TerrainRule(state -> true, 1, List.of(), true),
+                new NodeGenerator.TerrainRule(state -> true, 1, List.of(), true),
+                new NodeGenerator.TerrainRule(state -> true, 1, List.of(), false));
+        int[] counts = new int[rules.size()];
+
+        NodeGenerator.classify(Blocks.WATER.defaultBlockState(), counts, rules);
+
+        assertEquals(1, counts[0]);
+        assertEquals(0, counts[1]);
+        assertEquals(1, counts[2]);
+    }
+
+    @Test
     void taintedNodeStrengthRoundsBeforeApplyingTheSecondMultiplier() {
         assertEquals(152, NodeGenerator.boostTaintedStrength(101));
         assertEquals(228, NodeGenerator.boostTaintedStrength(NodeGenerator.boostTaintedStrength(101)));

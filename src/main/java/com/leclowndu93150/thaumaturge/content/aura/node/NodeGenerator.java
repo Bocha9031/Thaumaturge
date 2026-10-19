@@ -72,16 +72,20 @@ public final class NodeGenerator {
             new TerrainRule(
                     state -> state.getFluidState().is(FluidTags.WATER),
                     COMMON_SURVEY_THRESHOLD,
-                    List.of(TTAspects.AQUA)),
+                    List.of(TTAspects.AQUA),
+                    true),
             new TerrainRule(
                     state -> state.getFluidState().is(FluidTags.LAVA),
                     COMMON_SURVEY_THRESHOLD,
-                    List.of(TTAspects.IGNIS, TTAspects.TERRA)),
+                    List.of(TTAspects.IGNIS, TTAspects.TERRA),
+                    true),
             new TerrainRule(
                     state -> state.is(Blocks.STONE) || state.is(Blocks.DEEPSLATE),
                     STONE_SURVEY_THRESHOLD,
-                    List.of(TTAspects.TERRA)),
-            new TerrainRule(state -> state.is(BlockTags.LEAVES), COMMON_SURVEY_THRESHOLD, List.of(TTAspects.HERBA)));
+                    List.of(TTAspects.TERRA),
+                    true),
+            new TerrainRule(
+                    state -> state.is(BlockTags.LEAVES), COMMON_SURVEY_THRESHOLD, List.of(TTAspects.HERBA), false));
     private static final List<RollStage> PIPELINE = List.of(
             NodeGenerator::chooseType,
             NodeGenerator::chooseModifier,
@@ -523,12 +527,7 @@ public final class NodeGenerator {
                 }
                 for (int dy = -SURVEY_RADIUS; dy <= SURVEY_RADIUS; dy++) {
                     BlockState state = level.getBlockState(cursor.set(x, origin.getY() + dy, z));
-                    for (int ruleIndex = 0; ruleIndex < SURVEY_RULES.size(); ruleIndex++) {
-                        if (SURVEY_RULES.get(ruleIndex).matcher().test(state)) {
-                            counts[ruleIndex]++;
-                            break;
-                        }
-                    }
+                    classify(state, counts, SURVEY_RULES);
                 }
             }
         }
@@ -538,6 +537,20 @@ public final class NodeGenerator {
                 for (ResourceKey<IAspect> aspect : rule.aspects()) {
                     put(draft.tally, context.pools().registry(), aspect, 1);
                 }
+            }
+        }
+    }
+
+    static void classify(BlockState state, int[] counts, List<TerrainRule> rules) {
+        boolean alreadyClaimed = false;
+        for (int index = 0; index < rules.size(); index++) {
+            TerrainRule rule = rules.get(index);
+            if (rule.exclusive() && alreadyClaimed) {
+                continue;
+            }
+            if (rule.matcher().test(state)) {
+                counts[index]++;
+                alreadyClaimed |= rule.exclusive();
             }
         }
     }
@@ -577,7 +590,8 @@ public final class NodeGenerator {
 
     private record BonusDraw(int primals, int compounds) {}
 
-    private record TerrainRule(Predicate<BlockState> matcher, int threshold, List<ResourceKey<IAspect>> aspects) {}
+    record TerrainRule(
+            Predicate<BlockState> matcher, int threshold, List<ResourceKey<IAspect>> aspects, boolean exclusive) {}
 
     private static final class Draft {
         private final Map<Holder<IAspect>, Integer> tally = new LinkedHashMap<>();
