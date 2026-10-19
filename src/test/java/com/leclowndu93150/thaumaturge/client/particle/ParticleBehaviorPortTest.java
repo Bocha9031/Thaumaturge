@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.leclowndu93150.thaumaturge.client.particle.support.BoltLineShape;
 import com.leclowndu93150.thaumaturge.content.particle.BoltParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BoreSparkleParticleOptions;
+import com.leclowndu93150.thaumaturge.content.particle.StabilizerRuneParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VentParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VisSparkleParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.WispParticleOptions;
@@ -278,6 +279,40 @@ final class ParticleBehaviorPortTest {
         assertEquals(0.0, velocity.z, 1.0E-12);
         assertEquals(660, TaintSplosionParticle.lifetime(0.0));
         assertEquals(66, TaintSplosionParticle.lifetime(1.0));
+    }
+
+    @Test
+    void stabilizerRuneClampsNonpositiveLifetimesAndStartsWithItsFadedAlpha() throws Exception {
+        ClientLevel level = mock(ClientLevel.class);
+        for (int life : new int[] {0, -1}) {
+            StabilizerRuneParticle particle = construct(
+                    StabilizerRuneParticle.class,
+                    new Class<?>[] {
+                        ClientLevel.class,
+                        double.class,
+                        double.class,
+                        double.class,
+                        double.class,
+                        double.class,
+                        double.class,
+                        StabilizerRuneParticleOptions.class,
+                        ParticleSheet.class
+                    },
+                    level,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    new StabilizerRuneParticleOptions(life),
+                    null);
+            assertEquals(1, particle.getLifetime());
+
+            Field alpha = Particle.class.getDeclaredField("alpha");
+            alpha.setAccessible(true);
+            assertEquals(0.3F, alpha.getFloat(particle), 1.0E-6F);
+        }
     }
 
     @Test
