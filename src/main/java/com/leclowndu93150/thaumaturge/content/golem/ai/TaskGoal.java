@@ -161,5 +161,8 @@ public abstract class TaskGoal extends Goal {
             task.end();
         }
         task.release();
+        if (golem.getTask() == task) {
+            golem.setTask(null);
+        }
     }
 }
