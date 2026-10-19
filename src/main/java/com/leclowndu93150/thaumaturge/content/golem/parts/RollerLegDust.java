@@ -16,7 +16,7 @@ import net.minecraft.world.phys.Vec3;
 public final class RollerLegDust implements IGolemPartAbility {
     private static final double BRISK_SPEED = 0.25D;
     private static final double BRISK_SPEED_SQR = BRISK_SPEED * BRISK_SPEED;
-    private static final double GROUND_PROBE = 0.2D;
+    private static final double GROUND_PROBE = 0.05D;
     private static final double BASE_LIFT = 0.1D;
     private static final double CENTER = 0.5D;
     private static final double BACKWARD_FLING = 4.0D;
@@ -39,7 +39,7 @@ public final class RollerLegDust implements IGolemPartAbility {
             return;
         }
         AABB box = body.getBoundingBox();
-        BlockPos under = BlockPos.containing(body.getX(), body.getY() - GROUND_PROBE, body.getZ());
+        BlockPos under = groundPosition(body.getX(), box.minY, body.getZ());
         BlockState ground = level.getBlockState(under);
         if (ground.isAir() || ground.getRenderShape() == RenderShape.INVISIBLE) {
             return;
@@ -55,5 +55,9 @@ public final class RollerLegDust implements IGolemPartAbility {
 
     static boolean isBrisk(double movedX, double movedY, double movedZ) {
         return movedX * movedX + movedY * movedY + movedZ * movedZ > BRISK_SPEED_SQR;
+    }
+
+    static BlockPos groundPosition(double x, double feetY, double z) {
+        return BlockPos.containing(x, feetY - GROUND_PROBE, z);
     }
 }
