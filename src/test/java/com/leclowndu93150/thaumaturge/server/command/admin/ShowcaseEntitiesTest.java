@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.leclowndu93150.thaumaturge.content.entity.AbstractTaintacle;
+import com.leclowndu93150.thaumaturge.content.entity.boss.EntityCultistPortalGreater;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +36,21 @@ class ShowcaseEntitiesTest {
         assertTrue(event.isCanceled());
         assertEquals(1, entity.tickCount);
         verify(entity).setDeltaMovement(Vec3.ZERO);
+    }
+
+    @Test
+    void frozenTaintacleIsPlacedAtItsFullyEmergedPose() {
+        AbstractTaintacle taintacle = mock(AbstractTaintacle.class);
+        when(taintacle.getBbHeight()).thenReturn(3.0F);
+
+        assertEquals(30, ShowcaseEntities.displayTickCount(taintacle));
+    }
+
+    @Test
+    void frozenGreaterPortalStartsAtItsFullyGrownScale() {
+        EntityCultistPortalGreater portal = mock(EntityCultistPortalGreater.class);
+
+        assertEquals(50, ShowcaseEntities.displayTickCount(portal));
     }
 
     @Test

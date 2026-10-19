@@ -1,7 +1,10 @@
 package com.leclowndu93150.thaumaturge.server.command.admin;
 
 import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.content.entity.AbstractTaintacle;
+import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
 import com.leclowndu93150.thaumaturge.content.entity.EntityFluxRift;
+import com.leclowndu93150.thaumaturge.content.entity.boss.EntityCultistPortalGreater;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
@@ -38,6 +41,10 @@ public final class ShowcaseEntities {
             mob.setNoAi(true);
             mob.setPersistenceRequired();
         }
+        if (entity instanceof EntityCultistPortalLesser portal) {
+            portal.setActive(true);
+            portal.activeCounter = 50;
+        }
         if (entity instanceof LivingEntity living) {
             living.setHealth(living.getMaxHealth());
         }
@@ -61,7 +68,7 @@ public final class ShowcaseEntities {
             if (entity instanceof EntityFluxRift rift && rift.outline.isEmpty()) {
                 rift.resize(rift.currentSize());
             }
-            entity.tickCount = 1;
+            entity.tickCount = displayTickCount(entity);
             entity.setDeltaMovement(Vec3.ZERO);
             entity.setYHeadRot(entity.getYRot());
             entity.setYBodyRot(entity.getYRot());
@@ -71,6 +78,18 @@ public final class ShowcaseEntities {
             }
             event.setCanceled(true);
         }
+    }
+
+    static int displayTickCount(Entity entity) {
+        if (entity instanceof AbstractTaintacle) {
+            // The model animates its emergence from the ground based on entity age.
+            return (int) Math.ceil(entity.getBbHeight() * 10.0F);
+        }
+        if (entity instanceof EntityCultistPortalGreater) {
+            // The portal renderer scales from zero over its first 50 ticks.
+            return 50;
+        }
+        return 1;
     }
 
     @SubscribeEvent
