@@ -6,6 +6,7 @@ import com.leclowndu93150.thaumaturge.mixin.world.entity.monster.SlimeAccessor;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -13,14 +14,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
-import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Slime;
@@ -28,9 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.phys.AABB;
-import org.jspecify.annotations.Nullable;
 
 public final class ThaumicSlime extends Slime {
     public static final int PARTICLE_COLOR = 0xB200FF;
@@ -38,9 +35,12 @@ public final class ThaumicSlime extends Slime {
 
     private static final EntityDataAccessor<Integer> DATA_LAUNCHED =
             SynchedEntityData.defineId(ThaumicSlime.class, EntityDataSerializers.INT);
+    private static final int[] SPAWN_SIZES = {1, 2, 4};
     private static final int LAUNCH_TICKS = 10;
     private static final int LAUNCHED_BONUS_REACH = 2;
     private static final float ATTACK_REACH_FACTOR = 0.6F;
+
+    private boolean sizeAssigned;
 
     public ThaumicSlime(EntityType<? extends ThaumicSlime> type, Level level) {
         super(type, level);
@@ -69,6 +69,7 @@ public final class ThaumicSlime extends Slime {
     public void setSize(int size, boolean updateHealth) {
         super.setSize(size, updateHealth);
         this.xpReward = size + 2;
+        sizeAssigned = true;
     }
 
     @Override
@@ -108,6 +109,9 @@ public final class ThaumicSlime extends Slime {
             accessor.thaumaturge$setWasOnGround(true);
         }
         super.tick();
+        if (!level().isClientSide() && !sizeAssigned) {
+            setSize(spawnSize(random), true);
+        }
         if (landing) {
             if (this.level().isClientSide()) {
                 spawnGooParticles(size, size * 2);
@@ -158,6 +162,12 @@ public final class ThaumicSlime extends Slime {
     }
 
     @Override
+    public void readAdditionalSaveData(CompoundTag input) {
+        super.readAdditionalSaveData(input);
+        entityData.set(DATA_LAUNCHED, 0);
+    }
+
+    @Override
     public void remove(Entity.RemovalReason reason) {
         int size = this.getSize();
         if (this.level() instanceof ServerLevel server && size > 1 && this.isDeadOrDying()) {
@@ -181,16 +191,8 @@ public final class ThaumicSlime extends Slime {
         super.remove(reason);
     }
 
-    @Override
-    public @Nullable SpawnGroupData finalizeSpawn(
-            ServerLevelAccessor level,
-            DifficultyInstance difficulty,
-            MobSpawnType reason,
-            @Nullable SpawnGroupData groupData) {
-        int sizeBits = 1 + level.getRandom().nextInt(3);
-        int size = 1 << sizeBits;
-        this.setSize(size, true);
-        return groupData;
+    static int spawnSize(RandomSource random) {
+        return SPAWN_SIZES[random.nextInt(SPAWN_SIZES.length)];
     }
 
     public static boolean checkSpawnRules(
