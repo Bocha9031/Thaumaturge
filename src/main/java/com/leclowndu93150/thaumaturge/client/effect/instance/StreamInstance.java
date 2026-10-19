@@ -54,7 +54,7 @@ public abstract class StreamInstance implements IFXInstance {
     private double motionY;
     private double motionZ;
     private int dissolveStart = -1;
-    private boolean expired;
+    private boolean targetMissing;
 
     protected StreamInstance(double sx, double sy, double sz, int color, int waveSeed, float scale) {
         this.originX = sx;
@@ -103,7 +103,11 @@ public abstract class StreamInstance implements IFXInstance {
 
     @Override
     public final boolean isExpired() {
-        return this.expired;
+        return expired(this.age, this.maxAge, this.length, this.targetMissing);
+    }
+
+    static boolean expired(int age, int maxAge, int length, boolean targetMissing) {
+        return targetMissing || age >= maxAge || length < 1;
     }
 
     @Override
@@ -112,13 +116,12 @@ public abstract class StreamInstance implements IFXInstance {
         if (level == null) {
             return;
         }
-        if (this.age++ >= this.maxAge || this.length < 1) {
-            this.expired = true;
+        if (isExpired()) {
             return;
         }
         Vec3 target = seekTarget(level);
         if (target == null) {
-            this.expired = true;
+            this.targetMissing = true;
             return;
         }
         this.motionY += RISE_PER_TICK;
@@ -159,6 +162,7 @@ public abstract class StreamInstance implements IFXInstance {
             this.trail.remove(0);
         }
         afterStep(level);
+        this.age++;
     }
 
     protected final void clampMotion(double limit) {
