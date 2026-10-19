@@ -264,7 +264,7 @@ public final class BlockEntityGolemBuilder extends AbstractSyncedBlockEntity imp
         if (world != null) {
             int slot = 0;
             for (ItemStack component : components) {
-                available[slot++] = InvHelper.checkAdjacentChests(world, worldPosition, component);
+                available[slot++] = InvHelper.neighboursHold(world, worldPosition, component);
             }
         }
         return available;
@@ -282,10 +282,12 @@ public final class BlockEntityGolemBuilder extends AbstractSyncedBlockEntity imp
             return abandonJob();
         }
         ItemStack[] components = props.components().toArray(ItemStack[]::new);
-        if (!InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(level, worldPosition, player, true, components)) {
+        if (!InvHelper.takeFromNeighboursOrPlayer(level, worldPosition, player, true, components)) {
             return abandonJob();
         }
-        InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(level, worldPosition, player, false, components);
+        if (!InvHelper.takeFromNeighboursOrPlayer(level, worldPosition, player, false, components)) {
+            return abandonJob();
+        }
         int total = COST_PER_TRAIT * props.traits().size();
         for (ItemStack component : components) {
             total += component.getCount();

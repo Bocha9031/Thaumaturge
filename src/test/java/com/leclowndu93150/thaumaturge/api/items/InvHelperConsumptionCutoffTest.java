@@ -39,7 +39,7 @@ class InvHelperConsumptionCutoffTest {
         chest.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 1));
         inventory.setItem(0, new ItemStack(Items.IRON_INGOT, 4));
         ItemStack wanted = new ItemStack(Items.IRON_INGOT, 4);
-        assertTrue(InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(level, BlockPos.ZERO, player, false, wanted));
+        assertTrue(InvHelper.takeFromNeighboursOrPlayer(level, BlockPos.ZERO, player, false, wanted));
         assertTrue(chest.getStackInSlot(0).isEmpty());
         assertEquals(1, inventory.getItem(0).getCount());
         assertEquals(4, wanted.getCount());
@@ -50,10 +50,10 @@ class InvHelperConsumptionCutoffTest {
         chest.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 4));
         inventory.setItem(0, new ItemStack(Items.IRON_INGOT, 7));
         ItemStack wanted = new ItemStack(Items.IRON_INGOT, 4);
-        assertTrue(InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(level, BlockPos.ZERO, player, true, wanted));
+        assertTrue(InvHelper.takeFromNeighboursOrPlayer(level, BlockPos.ZERO, player, true, wanted));
         assertEquals(4, chest.getStackInSlot(0).getCount());
         assertEquals(7, inventory.getItem(0).getCount());
-        assertTrue(InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(level, BlockPos.ZERO, player, false, wanted));
+        assertTrue(InvHelper.takeFromNeighboursOrPlayer(level, BlockPos.ZERO, player, false, wanted));
         assertTrue(chest.getStackInSlot(0).isEmpty());
         assertEquals(7, inventory.getItem(0).getCount());
     }
@@ -63,7 +63,7 @@ class InvHelperConsumptionCutoffTest {
         chest.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 2));
         inventory.setItem(0, new ItemStack(Items.IRON_INGOT, 2));
         ItemStack wanted = new ItemStack(Items.IRON_INGOT, 4);
-        assertFalse(InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(level, BlockPos.ZERO, player, false, wanted));
+        assertFalse(InvHelper.takeFromNeighboursOrPlayer(level, BlockPos.ZERO, player, false, wanted));
         assertEquals(2, chest.getStackInSlot(0).getCount());
         assertEquals(2, inventory.getItem(0).getCount());
     }
@@ -76,8 +76,45 @@ class InvHelperConsumptionCutoffTest {
         when(refusing.extractItem(anyInt(), anyInt(), anyBoolean())).thenReturn(ItemStack.EMPTY);
         when(level.getCapability(Capabilities.ItemHandler.BLOCK, BlockPos.ZERO.below(), Direction.UP))
                 .thenReturn(refusing);
-        assertFalse(InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(
+        assertFalse(InvHelper.takeFromNeighboursOrPlayer(
                 level, BlockPos.ZERO, player, false, new ItemStack(Items.IRON_INGOT, 4)));
         assertTrue(inventory.getItem(0).isEmpty());
+    }
+
+    @Test
+    void competingIngredientsFailWithoutMutatingEitherSource() {
+        chest.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 5));
+        inventory.setItem(0, new ItemStack(Items.IRON_INGOT, 2));
+
+        assertFalse(InvHelper.takeFromNeighboursOrPlayer(
+                level,
+                BlockPos.ZERO,
+                player,
+                false,
+                new ItemStack(Items.IRON_INGOT, 4),
+                new ItemStack(Items.IRON_INGOT, 4)));
+
+        assertEquals(5, chest.getStackInSlot(0).getCount());
+        assertEquals(2, inventory.getItem(0).getCount());
+    }
+
+    @Test
+    void unexpectedShortExtractionRollsBackNeighborAndPlayerTogether() {
+        ItemStackHandler shortExtracting = new ItemStackHandler(1) {
+            @Override
+            public ItemStack extractItem(int slot, int amount, boolean simulate) {
+                return super.extractItem(slot, Math.max(0, amount - 1), simulate);
+            }
+        };
+        shortExtracting.setStackInSlot(0, new ItemStack(Items.IRON_INGOT, 3));
+        inventory.setItem(0, new ItemStack(Items.IRON_INGOT, 4));
+        when(level.getCapability(Capabilities.ItemHandler.BLOCK, BlockPos.ZERO.below(), Direction.UP))
+                .thenReturn(shortExtracting);
+
+        assertFalse(InvHelper.takeFromNeighboursOrPlayer(
+                level, BlockPos.ZERO, player, false, new ItemStack(Items.IRON_INGOT, 4)));
+
+        assertEquals(3, shortExtracting.getStackInSlot(0).getCount());
+        assertEquals(4, inventory.getItem(0).getCount());
     }
 }

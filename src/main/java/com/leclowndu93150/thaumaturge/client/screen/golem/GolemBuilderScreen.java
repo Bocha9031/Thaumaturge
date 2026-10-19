@@ -449,7 +449,7 @@ public final class GolemBuilderScreen extends AbstractTTContainerScreen<MenuGole
             cost += components.get(i).getCount();
             owns[i] = builder != null && builder.hasStuff != null && builder.hasStuff.length > i && builder.hasStuff[i];
             if (!owns[i] && player != null) {
-                owns[i] = InvHelper.isPlayerCarryingAmount(player, components.get(i), true);
+                owns[i] = InvHelper.playerHolds(player, components.get(i), true);
             }
             if (!owns[i]) {
                 allFound = false;

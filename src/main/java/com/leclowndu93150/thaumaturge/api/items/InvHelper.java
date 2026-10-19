@@ -4,7 +4,9 @@ import com.leclowndu93150.thaumaturge.api.transaction.SnapshotJournal;
 import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
 import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,6 +24,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.ItemHandlerHelper;
 import org.jspecify.annotations.Nullable;
 
@@ -248,7 +251,7 @@ public final class InvHelper {
 
     /** Returns whether adjacent inventories, excluding the top, hold the requested amount. */
     public static boolean neighboursHold(Level level, BlockPos pos, ItemStack wanted) {
-        return checkAdjacentChests(level, pos, wanted);
+        return countNeighbours(level, pos, wanted, ItemMatch.ITEM_OR_TAG) >= wanted.getCount();
     }
 
     /** Returns whether the player's main inventory holds the requested amount. */
@@ -275,6 +278,28 @@ public final class InvHelper {
     /** Removes the requested amount from the player's main inventory, or makes no change. */
     public static boolean takeFromPlayer(Player player, ItemStack wanted, boolean byTag) {
         return drainPlayer(player, wanted, byTag, false);
+    }
+
+    /**
+     * Removes the requested stack from adjacent inventories, excluding the top face.
+     * The operation is atomic and fails without mutation if the amount is unavailable or
+     * any required provider cannot be safely restored after a failed extraction.
+     */
+    public static boolean takeFromNeighbours(Level level, BlockPos pos, ItemStack wanted) {
+        return !level.isClientSide() && takeFromSources(level, pos, null, false, wanted);
+    }
+
+    /**
+     * Draws each ingredient from adjacent inventories first, then the player's main inventory.
+     * Each ingredient must be independently available from either the adjacent inventories or
+     * the player. The complete draw is atomic across all ingredients.
+     *
+     * <p>Simulation can inspect any item-handler provider. An executing draw fails closed if
+     * it would need to mutate a provider that does not implement {@link IItemHandlerModifiable}.
+     */
+    public static boolean takeFromNeighboursOrPlayer(
+            Level level, BlockPos pos, Player player, boolean simulate, ItemStack... wanted) {
+        return (simulate || !level.isClientSide()) && takeFromSources(level, pos, player, simulate, wanted);
     }
 
     /** Finds the first accepted candidate using modern immutable match rules. */
@@ -649,57 +674,31 @@ public final class InvHelper {
     /**
      * @return whether inventories adjacent to the position, ignoring the top, together hold
      *         the stack's count of matching items
+     * @deprecated use {@link #neighboursHold(Level, BlockPos, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean checkAdjacentChests(Level level, BlockPos pos, ItemStack stack) {
-        int needed = stack.getCount();
-        for (Direction face : Direction.values()) {
-            if (face == Direction.UP) {
-                continue;
-            }
-            needed -= countTotalItemsIn(level, pos.relative(face), face.getOpposite(), stack.copy(), BASE_TAGS);
-            if (needed <= 0) {
-                return true;
-            }
-        }
-        return false;
+        return neighboursHold(level, pos, stack);
     }
 
     /**
      * Removes the stack's count of matching items from inventories adjacent to the position.
      *
      * @return whether the full amount was consumed
+     * @deprecated use {@link #takeFromNeighbours(Level, BlockPos, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean consumeFromAdjacentChests(Level level, BlockPos pos, ItemStack stack) {
-        ItemStack remaining = stack.copy();
-        for (Direction face : Direction.values()) {
-            if (face == Direction.UP || remaining.isEmpty()) {
-                continue;
-            }
-            ItemStack removed =
-                    removeStackFrom(level, pos.relative(face), face.getOpposite(), remaining, BASE_TAGS, false);
-            remaining.setCount(remaining.getCount() - removed.getCount());
-        }
-        return remaining.isEmpty();
+        return takeFromNeighbours(level, pos, stack);
     }
 
     /**
      * @return whether the player's main inventory holds the stack's count of matching items
+     * @deprecated use {@link #playerHolds(Player, ItemStack, boolean)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean isPlayerCarryingAmount(Player player, ItemStack stack, boolean useTags) {
-        if (stack.isEmpty()) {
-            return false;
-        }
-        int needed = stack.getCount();
-        InvFilter filter = new InvFilter(false, stack.isComponentsPatchEmpty(), useTags, false).setRelaxedComponents();
-        for (ItemStack held : player.getInventory().items) {
-            if (areItemStacksEqual(held, stack, filter)) {
-                needed -= held.getCount();
-                if (needed <= 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return playerHolds(player, stack, useTags);
     }
 
     /**
@@ -707,7 +706,9 @@ public final class InvHelper {
      *
      * @param skipCheck whether to skip the carrying pre-check
      * @return whether the full amount was consumed
+     * @deprecated use {@link #takeFromPlayer(Player, ItemStack, boolean)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean consumePlayerItem(Player player, ItemStack stack, boolean skipCheck, boolean useTags) {
         return drainPlayer(player, stack, useTags, skipCheck);
     }
@@ -800,30 +801,192 @@ public final class InvHelper {
      *
      * @param simulate whether to only check availability
      * @return whether every stack is available or was consumed
+     * @deprecated use {@link #takeFromNeighboursOrPlayer(Level, BlockPos, Player, boolean, ItemStack...)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean consumeItemsFromAdjacentInventoryOrPlayer(
             Level level, BlockPos pos, Player player, boolean simulate, ItemStack... items) {
-        for (ItemStack stack : items) {
-            if (!checkAdjacentChests(level, pos, stack) && !isPlayerCarryingAmount(player, stack, true)) {
+        return takeFromNeighboursOrPlayer(level, pos, player, simulate, items);
+    }
+
+    private static boolean takeFromSources(
+            Level level, BlockPos pos, @Nullable Player player, boolean simulate, ItemStack... wantedStacks) {
+        List<HandlerSource> sources = neighbourSources(level, pos);
+        List<PlannedPlayerDrain> playerDrains = new ArrayList<>();
+        List<PlannedHandlerDrain> handlerDrains = new ArrayList<>();
+        List<ItemStack> virtualPlayer = player == null ? List.of() : copyStacks(player.getInventory().items);
+        for (ItemStack wanted : wantedStacks) {
+            if (wanted.isEmpty()) {
+                continue;
+            }
+            int neighbourCount = countInSources(sources, wanted, ItemMatch.ITEM_OR_TAG);
+            boolean playerCanSupply = player != null && playerHolds(player, wanted, true);
+            if (neighbourCount < wanted.getCount() && !playerCanSupply) {
+                return false;
+            }
+
+            int remaining = wanted.getCount();
+            for (HandlerSource source : sources) {
+                for (int slot = 0; slot < source.slots().size() && remaining > 0; slot++) {
+                    ItemStack held = source.slots().get(slot);
+                    if (held.isEmpty() || !ItemMatch.ITEM_OR_TAG.test(wanted, held)) {
+                        continue;
+                    }
+                    int amount = Math.min(remaining, held.getCount());
+                    handlerDrains.add(new PlannedHandlerDrain(source.handler(), slot, wanted.copy(), amount));
+                    held.shrink(amount);
+                    remaining -= amount;
+                }
+                if (remaining == 0) {
+                    break;
+                }
+            }
+
+            if (remaining > 0 && player != null) {
+                ItemMatch match = playerMatch(wanted, true);
+                if (countMatching(virtualPlayer, wanted, match) < remaining) {
+                    return false;
+                }
+                playerDrains.add(new PlannedPlayerDrain(wanted.copy(), remaining));
+                drainVirtualPlayer(virtualPlayer, wanted, match, remaining);
+                remaining = 0;
+            }
+            if (remaining > 0) {
                 return false;
             }
         }
-        if (!simulate) {
-            for (ItemStack stack : items) {
-                ItemStack remaining = stack.copy();
-                for (Direction face : Direction.values()) {
-                    if (face == Direction.UP || remaining.isEmpty()) {
-                        continue;
-                    }
-                    ItemStack removed =
-                            removeStackFrom(level, pos.relative(face), face.getOpposite(), remaining, BASE_TAGS, false);
-                    remaining.shrink(removed.getCount());
-                }
-                if (!remaining.isEmpty() && !consumePlayerItem(player, remaining, true, true)) {
+
+        if (simulate) {
+            return true;
+        }
+        for (PlannedHandlerDrain drain : handlerDrains) {
+            if (!(drain.handler() instanceof IItemHandlerModifiable)) {
+                return false;
+            }
+        }
+
+        Map<IItemHandlerModifiable, HandlerSnapshotJournal> journals = new IdentityHashMap<>();
+        try (Transaction transaction = Transaction.openRoot()) {
+            PlayerInventoryJournal playerJournal = null;
+            if (player != null && !playerDrains.isEmpty()) {
+                playerJournal = new PlayerInventoryJournal(player.getInventory());
+                playerJournal.updateSnapshots(transaction);
+            }
+            for (PlannedHandlerDrain drain : handlerDrains) {
+                IItemHandlerModifiable handler = (IItemHandlerModifiable) drain.handler();
+                HandlerSnapshotJournal journal = journals.computeIfAbsent(handler, HandlerSnapshotJournal::new);
+                journal.updateSnapshots(transaction);
+                ItemStack extracted = handler.extractItem(drain.slot(), drain.amount(), false);
+                if (extracted.isEmpty()
+                        || extracted.getCount() != drain.amount()
+                        || !ItemMatch.ITEM_OR_TAG.test(drain.wanted(), extracted)) {
                     return false;
                 }
             }
+            if (playerJournal != null) {
+                for (PlannedPlayerDrain drain : playerDrains) {
+                    if (playerJournal.drain(
+                                    drain.wanted(), playerMatch(drain.wanted(), true), drain.amount(), transaction)
+                            != drain.amount()) {
+                        return false;
+                    }
+                }
+            }
+            transaction.commit();
+            return true;
         }
-        return true;
+    }
+
+    private static void drainVirtualPlayer(List<ItemStack> stacks, ItemStack wanted, ItemMatch match, int amount) {
+        int remaining = amount;
+        for (ItemStack held : stacks) {
+            if (remaining <= 0) {
+                return;
+            }
+            if (!held.isEmpty() && match.test(wanted, held)) {
+                int taken = Math.min(remaining, held.getCount());
+                held.shrink(taken);
+                remaining -= taken;
+            }
+        }
+    }
+
+    private static int countMatching(List<ItemStack> stacks, ItemStack wanted, ItemMatch match) {
+        int count = 0;
+        for (ItemStack stack : stacks) {
+            if (!stack.isEmpty() && match.test(wanted, stack)) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    private static List<ItemStack> copyStacks(List<ItemStack> stacks) {
+        return stacks.stream().map(ItemStack::copy).toList();
+    }
+
+    private static int countNeighbours(Level level, BlockPos pos, ItemStack wanted, ItemMatch match) {
+        return countInSources(neighbourSources(level, pos), wanted, match);
+    }
+
+    private static int countInSources(List<HandlerSource> sources, ItemStack wanted, ItemMatch match) {
+        int count = 0;
+        for (HandlerSource source : sources) {
+            count += countMatching(source.slots(), wanted, match);
+        }
+        return count;
+    }
+
+    private static List<HandlerSource> neighbourSources(Level level, BlockPos pos) {
+        List<HandlerSource> sources = new ArrayList<>();
+        Map<IItemHandler, Boolean> seen = new IdentityHashMap<>();
+        for (Direction face : Direction.values()) {
+            if (face == Direction.UP) {
+                continue;
+            }
+            BlockPos neighbour = pos.relative(face);
+            if (!level.hasChunkAt(neighbour)) {
+                continue;
+            }
+            IItemHandler handler = getItemHandlerAt(level, neighbour, face.getOpposite());
+            if (handler != null && seen.put(handler, Boolean.TRUE) == null) {
+                sources.add(new HandlerSource(handler, copyHandlerStacks(handler)));
+            }
+        }
+        return sources;
+    }
+
+    private static List<ItemStack> copyHandlerStacks(IItemHandler handler) {
+        List<ItemStack> stacks = new ArrayList<>(handler.getSlots());
+        for (int slot = 0; slot < handler.getSlots(); slot++) {
+            stacks.add(handler.getStackInSlot(slot).copy());
+        }
+        return stacks;
+    }
+
+    private record HandlerSource(IItemHandler handler, List<ItemStack> slots) {}
+
+    private record PlannedHandlerDrain(IItemHandler handler, int slot, ItemStack wanted, int amount) {}
+
+    private record PlannedPlayerDrain(ItemStack wanted, int amount) {}
+
+    private static final class HandlerSnapshotJournal extends SnapshotJournal<List<ItemStack>> {
+        private final IItemHandlerModifiable handler;
+
+        private HandlerSnapshotJournal(IItemHandlerModifiable handler) {
+            this.handler = handler;
+        }
+
+        @Override
+        protected List<ItemStack> createSnapshot() {
+            return copyHandlerStacks(handler);
+        }
+
+        @Override
+        protected void revertToSnapshot(List<ItemStack> snapshot) {
+            for (int slot = 0; slot < snapshot.size(); slot++) {
+                handler.setStackInSlot(slot, snapshot.get(slot).copy());
+            }
+        }
     }
 }

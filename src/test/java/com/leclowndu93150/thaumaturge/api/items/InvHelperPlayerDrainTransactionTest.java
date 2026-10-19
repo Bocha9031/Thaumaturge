@@ -38,18 +38,18 @@ class InvHelperPlayerDrainTransactionTest {
     }
 
     @Test
-    void failedCheckedDrainPreservesInventoryButSkipCheckCommitsAvailablePartial() {
+    void failedCheckedDrainPreservesInventory() {
         inventory.setItem(0, new ItemStack(Items.IRON_INGOT, 2));
         ItemStack original = inventory.getItem(0);
         ItemStack wanted = new ItemStack(Items.IRON_INGOT, 4);
 
-        assertFalse(InvHelper.consumePlayerItem(player, wanted, false, false));
+        assertFalse(InvHelper.takeFromPlayer(player, wanted, false));
         assertSame(original, inventory.getItem(0));
         assertEquals(2, original.getCount());
         assertEquals(2, inventory.getItem(0).getCount());
 
-        assertFalse(InvHelper.consumePlayerItem(player, wanted, true, false));
-        assertTrue(inventory.getItem(0).isEmpty());
+        assertFalse(InvHelper.takeFromPlayer(player, wanted, false));
+        assertEquals(2, inventory.getItem(0).getCount());
     }
 
     @Test

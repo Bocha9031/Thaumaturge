@@ -103,16 +103,16 @@ class GolemBuilderCutoffTest {
                 var inventory = mockStatic(InvHelper.class)) {
             access.when(() -> PlayerResearchAccess.of(player)).thenReturn(research);
             inventory
-                    .when(() -> InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(
+                    .when(() -> InvHelper.takeFromNeighboursOrPlayer(
                             eq(level), eq(BlockPos.ZERO), eq(player), eq(true), any(ItemStack[].class)))
                     .thenReturn(inputsAvailable);
             inventory
-                    .when(() -> InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(
+                    .when(() -> InvHelper.takeFromNeighboursOrPlayer(
                             eq(level), eq(BlockPos.ZERO), eq(player), eq(false), any(ItemStack[].class)))
                     .thenReturn(true);
             boolean started = builder.beginAssembly(design, player);
             inventory.verify(
-                    () -> InvHelper.consumeItemsFromAdjacentInventoryOrPlayer(
+                    () -> InvHelper.takeFromNeighboursOrPlayer(
                             eq(level), eq(BlockPos.ZERO), eq(player), eq(false), any(ItemStack[].class)),
                     times(started ? 1 : 0));
             return started;
@@ -209,11 +209,11 @@ class GolemBuilderCutoffTest {
         when(props.components()).thenReturn(List.of(dirt, stone));
         try (var inventory = mockStatic(InvHelper.class)) {
             inventory
-                    .when(() -> InvHelper.checkAdjacentChests(level, BlockPos.ZERO, dirt))
+                    .when(() -> InvHelper.neighboursHold(level, BlockPos.ZERO, dirt))
                     .thenReturn(true);
             assertArrayEquals(new boolean[] {true, false}, builder.stockedComponents(props));
-            inventory.verify(() -> InvHelper.checkAdjacentChests(level, BlockPos.ZERO, dirt));
-            inventory.verify(() -> InvHelper.checkAdjacentChests(level, BlockPos.ZERO, stone));
+            inventory.verify(() -> InvHelper.neighboursHold(level, BlockPos.ZERO, dirt));
+            inventory.verify(() -> InvHelper.neighboursHold(level, BlockPos.ZERO, stone));
         }
         BlockEntityGolemBuilder detached = new BlockEntityGolemBuilder(
                 BlockPos.ZERO, TTBlocks.GOLEM_BUILDER.get().defaultBlockState());
