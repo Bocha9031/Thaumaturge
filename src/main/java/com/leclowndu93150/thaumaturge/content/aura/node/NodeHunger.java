@@ -40,8 +40,8 @@ final class NodeHunger {
     private static final double ITEM_RANGE_PADDING = 0.5;
     private static final double MINIMUM_PULL_DISTANCE = 1.0E-4;
     private static final float DEVOUR_DAMAGE = 1.0F;
-    private static final float RANGE_PALE_DIVISOR = 3.0F;
-    private static final float RANGE_AVERAGE_NUMERATOR = 2.0F;
+    private static final int RANGE_PALE_DIVISOR = 3;
+    private static final int RANGE_AVERAGE_NUMERATOR = 2;
     private static final double SIDEWAYS_DRAG = 0.15;
     private static final double UPRIGHT_DRAG = 0.25;
     private static final double MAW_RADIUS_SQUARED = 2.0;
@@ -64,6 +64,11 @@ final class NodeHunger {
         }
         int minimum = ThaumaturgeCommonConfig.HUNGRY_NODE_MINIMUM_BLOCK_EAT_RANGE.get();
         int maximum = Math.max(minimum, ThaumaturgeCommonConfig.HUNGRY_NODE_MAXIMUM_BLOCK_EAT_RANGE.get());
+        return scaledEatRange(minimum, maximum, modifier);
+    }
+
+    static int scaledEatRange(int minimum, int maximum, @Nullable NodeModifier modifier) {
+        maximum = Math.max(minimum, maximum);
         int span = maximum - minimum;
         if (modifier == NodeModifier.BRIGHT) {
             return maximum;
@@ -72,8 +77,8 @@ final class NodeHunger {
             return minimum;
         }
         return modifier == NodeModifier.PALE
-                ? minimum + Math.round(span / RANGE_PALE_DIVISOR)
-                : minimum + Math.round(span * RANGE_AVERAGE_NUMERATOR / RANGE_PALE_DIVISOR);
+                ? minimum + span / RANGE_PALE_DIVISOR
+                : minimum + span * RANGE_AVERAGE_NUMERATOR / RANGE_PALE_DIVISOR;
     }
 
     static boolean eatDue(int counter) {
