@@ -39,7 +39,7 @@ final class RiftSegmentSweep {
 
     private void eraseBlockAlong(ServerLevel level, EntityFluxRift rift, Vec3 start, Vec3 end) {
         BlockHitResult hit =
-                level.clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, rift));
+                level.clip(new ClipContext(start, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, rift));
         if (hit.getType() != HitResult.Type.BLOCK) {
             return;
         }

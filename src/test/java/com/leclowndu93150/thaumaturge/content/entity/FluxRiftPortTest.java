@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -18,9 +19,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -113,6 +119,29 @@ class FluxRiftPortTest {
         verify(level).hasChunkAt(any(BlockPos.class));
         verify(level, never()).clip(any(ClipContext.class));
         verify(level, never()).getEntities(any(EntityFluxRift.class), any(AABB.class));
+    }
+
+    @Test
+    void sweepUsesOutlineShapeEvenWhenBlockHasNoCollisionShape() {
+        EntityFluxRift rift = rift();
+        rift.resize(6);
+        ServerLevel level = mock(ServerLevel.class);
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(true);
+        when(level.damageSources()).thenReturn(mock(DamageSources.class));
+        when(level.getEntities(eq(rift), any(AABB.class))).thenReturn(List.of());
+        BlockState shortGrass = Blocks.SHORT_GRASS.defaultBlockState();
+        assertTrue(shortGrass.getCollisionShape(level, BlockPos.ZERO).isEmpty());
+        when(level.clip(any(ClipContext.class))).thenAnswer(invocation -> {
+            ClipContext context = invocation.getArgument(0);
+            assertFalse(context.getBlockShape(shortGrass, level, BlockPos.ZERO).isEmpty());
+            BlockHitResult miss = mock(BlockHitResult.class);
+            when(miss.getType()).thenReturn(HitResult.Type.MISS);
+            return miss;
+        });
+
+        new RiftSegmentSweep().tick(level, rift);
+
+        verify(level).clip(any(ClipContext.class));
     }
 
     @Test
