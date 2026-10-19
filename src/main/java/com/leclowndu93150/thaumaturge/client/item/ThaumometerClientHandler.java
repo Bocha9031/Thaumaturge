@@ -15,7 +15,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
@@ -65,7 +64,8 @@ public final class ThaumometerClientHandler {
 
     private static boolean holdsThaumometer(LocalPlayer player) {
         Item thaumometer = TTItems.THAUMOMETER.get();
-        return player.getMainHandItem().is(thaumometer) || player.getOffhandItem().is(thaumometer);
+        return player.getMainHandItem().is(thaumometer)
+                || player.getOffhandItem().is(thaumometer);
     }
 
     private static void tickScanning(Minecraft minecraft, LocalPlayer player) {
@@ -162,5 +162,4 @@ public final class ThaumometerClientHandler {
                     RUNE_GRAVITY);
         }
     }
-
 }
