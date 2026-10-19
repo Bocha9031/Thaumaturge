@@ -32,11 +32,7 @@ public final class FluxRiftRenderer extends EntityRenderer<EntityFluxRift> {
             RenderStateShard.ADDITIVE_TRANSPARENCY,
             RenderStateShard.NO_DEPTH_TEST,
             RenderStateShard.COLOR_WRITE);
-    private static final RenderType RIFT_SOLID_TYPE = riftType(
-            "tt_rift_solid",
-            RenderStateShard.TRANSLUCENT_TRANSPARENCY,
-            RenderStateShard.LEQUAL_DEPTH_TEST,
-            RenderStateShard.COLOR_DEPTH_WRITE);
+    private static final RenderType RIFT_CORE_TYPE = riftCoreType();
 
     private static final int GLOW_PASSES = 3;
     private static final float[] GLOW_SCALES = {2.2F, 1.75F, 1.4F};
@@ -71,6 +67,34 @@ public final class FluxRiftRenderer extends EntityRenderer<EntityFluxRift> {
                         .createCompositeState(false));
     }
 
+    private static RenderType riftCoreType() {
+        return RenderType.create(
+                "tt_rift_core",
+                DefaultVertexFormat.POSITION,
+                VertexFormat.Mode.QUADS,
+                1536,
+                false,
+                false,
+                RenderType.CompositeState.builder()
+                        .setShaderState(new RenderStateShard.ShaderStateShard(TTShaders::ender))
+                        .setTextureState(RenderStateShard.MultiTextureStateShard.builder()
+                                .add(END_PORTAL, false, false)
+                                .add(END_PORTAL, false, false)
+                                .build())
+                        .setTransparencyState(RenderStateShard.NO_TRANSPARENCY)
+                        .setDepthTestState(RenderStateShard.LEQUAL_DEPTH_TEST)
+                        .setWriteMaskState(RenderStateShard.COLOR_DEPTH_WRITE)
+                        .setCullState(RenderStateShard.NO_CULL)
+                        .createCompositeState(false));
+    }
+
+    static RenderType renderTypeForPass(int pass, boolean goggles) {
+        if (pass >= GLOW_PASSES) {
+            return RIFT_CORE_TYPE;
+        }
+        return pass == GLOW_PASSES - 1 && goggles ? RIFT_GLOW_NO_DEPTH_TYPE : RIFT_GLOW_TYPE;
+    }
+
     @Override
     public void render(
             EntityFluxRift entity,
@@ -92,10 +116,9 @@ public final class FluxRiftRenderer extends EntityRenderer<EntityFluxRift> {
                 && GogglesAccess.wearsRevealingGear(Minecraft.getInstance().player);
         Matrix4f pose = poseStack.last().pose();
         for (int pass = 0; pass < GLOW_PASSES; pass++) {
-            RenderType type = pass == GLOW_PASSES - 1 && goggles ? RIFT_GLOW_NO_DEPTH_TYPE : RIFT_GLOW_TYPE;
-            renderTube(buffers.getBuffer(type), pose, tube, GLOW_SCALES[pass]);
+            renderTube(buffers.getBuffer(renderTypeForPass(pass, goggles)), pose, tube, GLOW_SCALES[pass]);
         }
-        renderTube(buffers.getBuffer(RIFT_SOLID_TYPE), pose, tube, 1.0F);
+        renderTube(buffers.getBuffer(renderTypeForPass(GLOW_PASSES, goggles)), pose, tube, 1.0F);
     }
 
     @Override
