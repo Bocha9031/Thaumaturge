@@ -2617,15 +2617,13 @@ public final class TTModelProvider implements DataProvider {
     private static final int INSET_DEPTH = 2;
     private static final int INSET_ALL_EXPOSED = 63;
 
-    private void insetBlock(Block block, String textureName, boolean staticAllExposedModel) {
+    private void insetBlock(Block block, String textureName, boolean allExposedItemDisplay) {
         ResourceLocation texture = TTIds.rl("block/" + textureName);
         MultiPartGenerator generator = MultiPartGenerator.multiPart(block);
         for (int mask = 0; mask <= INSET_ALL_EXPOSED; mask++) {
             ResourceLocation model = TTIds.rl("block/" + textureName + "_inset_" + mask);
             int finalMask = mask;
-            if (!staticAllExposedModel || mask != INSET_ALL_EXPOSED) {
-                modelOutput.accept(model, () -> insetModel(texture, finalMask));
-            }
+            modelOutput.accept(model, () -> insetModel(texture, finalMask, allExposedItemDisplay));
             Condition.TerminalCondition condition = Condition.condition();
             for (Direction dir : Direction.values()) {
                 condition = condition.term(BlockEldritchInset.EXPOSED.get(dir), insetExposed(mask, dir));
@@ -2640,7 +2638,7 @@ public final class TTModelProvider implements DataProvider {
         return (mask & (1 << dir.get3DDataValue())) != 0;
     }
 
-    private static JsonElement insetModel(ResourceLocation texture, int mask) {
+    private static JsonElement insetModel(ResourceLocation texture, int mask, boolean allExposedItemDisplay) {
         JsonObject root = new JsonObject();
         JsonObject textures = new JsonObject();
         textures.addProperty("particle", texture.toString());
@@ -2672,7 +2670,38 @@ public final class TTModelProvider implements DataProvider {
         JsonArray elements = new JsonArray();
         elements.add(element);
         root.add("elements", elements);
+        if (mask == INSET_ALL_EXPOSED && allExposedItemDisplay) {
+            root.add("display", insetItemDisplay());
+        }
         return root;
+    }
+
+    private static JsonObject insetItemDisplay() {
+        JsonObject display = new JsonObject();
+        display.add("gui", displayTransform(30, -135, 0, 0, 0, 0, 0.8F));
+        display.add("thirdperson_righthand", displayTransform(75, 45, 0, 0, 3, 0, 0.5F));
+        display.add("thirdperson_lefthand", displayTransform(75, 45, 0, 0, 3, 0, 0.5F));
+        display.add("firstperson_righthand", displayTransform(0, 45, 0, 0, 0, 0, 0.5F));
+        display.add("firstperson_lefthand", displayTransform(0, -45, 0, 0, 0, 0, 0.5F));
+        display.add("ground", displayTransform(0, 0, 0, 0, 2.5F, 0, 0.35F));
+        return display;
+    }
+
+    private static JsonObject displayTransform(
+            float rotX, float rotY, float rotZ, float moveX, float moveY, float moveZ, float scale) {
+        JsonObject transform = new JsonObject();
+        transform.add("rotation", floatTriple(rotX, rotY, rotZ));
+        transform.add("translation", floatTriple(moveX, moveY, moveZ));
+        transform.add("scale", floatTriple(scale, scale, scale));
+        return transform;
+    }
+
+    private static JsonArray floatTriple(float x, float y, float z) {
+        JsonArray values = new JsonArray();
+        values.add(x);
+        values.add(y);
+        values.add(z);
+        return values;
     }
 
     private static JsonArray insetCoords(int x, int y, int z) {
