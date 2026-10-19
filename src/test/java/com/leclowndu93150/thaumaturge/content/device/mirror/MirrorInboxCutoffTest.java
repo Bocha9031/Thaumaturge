@@ -31,6 +31,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.ICapabilityProvider;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -162,7 +163,7 @@ class MirrorInboxCutoffTest {
     private ICapabilityProvider<BlockEntity, Direction, IItemHandler> itemProvider(RegisterCapabilitiesEvent event) {
         return Mockito.mockingDetails(event).getInvocations().stream()
                 .filter(call -> call.getMethod().getName().equals("registerBlockEntity"))
-                .filter(call -> call.getArgument(0) == net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK)
+                .filter(call -> call.getArgument(0) == Capabilities.ItemHandler.BLOCK)
                 .filter(call -> call.getArgument(1) == TTBlockEntities.MIRROR.get())
                 .map(call -> (ICapabilityProvider<BlockEntity, Direction, IItemHandler>) call.getArgument(2))
                 .findFirst()

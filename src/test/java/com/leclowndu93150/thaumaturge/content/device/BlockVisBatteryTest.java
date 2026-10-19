@@ -30,7 +30,8 @@ import org.mockito.MockedStatic;
 class BlockVisBatteryTest {
     @Test
     void usesGlassSounds() {
-        assertEquals(SoundType.GLASS, TTBlocks.VIS_BATTERY.get().defaultBlockState().getSoundType());
+        assertEquals(
+                SoundType.GLASS, TTBlocks.VIS_BATTERY.get().defaultBlockState().getSoundType());
     }
 
     @Test
