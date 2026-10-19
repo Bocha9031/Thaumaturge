@@ -114,10 +114,14 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
     private void applyAuraTouch(ServerLevel server) {
         double radius = getArea() * FLUX_TAINT_RADIUS_MULT;
         for (LivingEntity target : server.getEntitiesOfClass(
-                LivingEntity.class, this.getBoundingBox().inflate(radius), e -> e != this && !MobTraits.isTainted(e))) {
+                LivingEntity.class, this.getBoundingBox().inflate(radius), e -> canAfflict(this, e))) {
             target.addEffect(new MobEffectInstance(
                     TTMobEffects.FLUX_TAINT, FLUX_TAINT_TICKS, Math.max(0, getArea() - 1), true, false, false));
         }
+    }
+
+    static boolean canAfflict(LivingEntity seed, LivingEntity target) {
+        return target != seed && target.isAlive() && !target.isSpectator() && !MobTraits.isTainted(target);
     }
 
     @Override
