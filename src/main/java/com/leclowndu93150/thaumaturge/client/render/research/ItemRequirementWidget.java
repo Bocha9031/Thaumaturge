@@ -40,9 +40,6 @@ public final class ItemRequirementWidget {
     private static final int CHECKMARK_SIZE = 10;
 
     private static final long CYCLE_SECONDS = 1000L;
-    private static final int DAMAGE_SENTINEL = 32767;
-    private static final int DAMAGE_CYCLE_DIVISOR = 5000;
-
     private ItemRequirementWidget() {}
 
     public static int stride(int requirementCount) {
@@ -144,21 +141,6 @@ public final class ItemRequirementWidget {
         Holder<Item> holder = requirement.items().get(index);
         ItemStack stack = new ItemStack(holder);
         stack.applyComponents(requirement.components());
-        return cycleDamageable(stack);
-    }
-
-    private static ItemStack cycleDamageable(ItemStack stack) {
-        if (stack.isEmpty() || !stack.isDamageableItem()) {
-            return stack;
-        }
-        int maxDamage = stack.getMaxDamage();
-        if (maxDamage <= 0 || stack.getDamageValue() != DAMAGE_SENTINEL) {
-            return stack;
-        }
-        int divisor = Math.max(1, DAMAGE_CYCLE_DIVISOR / maxDamage);
-        int damage = (int) Math.floorMod(System.currentTimeMillis() / (long) divisor, (long) maxDamage);
-        ItemStack copy = stack.copy();
-        copy.setDamageValue(damage);
-        return copy;
+        return stack;
     }
 }
