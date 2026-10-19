@@ -56,6 +56,17 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
     private static final float MIN_COST_MULT = 0.5F;
     private static final float ESSENTIA_STARVE_PENALTY = 0.25F;
     private static final int ESSENTIA_FX_RANGE_TICKS = 12;
+    private static final int CLIENT_SOURCE_BASE_COUNT = 3;
+    private static final int CLIENT_SPARKLE_ODDS = 3;
+    private static final float SPARKLE_VIOLET_RED = 0.62F;
+    private static final float SPARKLE_PURPLE_RED = 0.45F;
+    private static final float SPARKLE_GREEN = 0.18F;
+    private static final float SPARKLE_BLUE_MIN = 0.75F;
+    private static final float SPARKLE_BLUE_SPAN = 0.25F;
+    private static final double PEDESTAL_CENTER = 0.5;
+    private static final double CRUMB_ITEM_SPOT_LIFT = 0.3;
+    private static final double CRUMB_ITEM_SPOT_RADIUS = 0.08;
+    private static final double CRUMB_ITEM_KICK = 0.02;
     private static final double GOGGLES_TEXT_Y_OFFSET = 1.5;
 
     private static final DecimalFormat STABILITY_FORMAT = new DecimalFormat("#######.##");
@@ -502,47 +513,49 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
     }
 
     private void spawnPullFX(RandomSource rand, BlockPos loc, ItemStack stack) {
-        double tx = worldPosition.getX() + 0.5;
-        double ty = worldPosition.getY() - 0.5;
-        double tz = worldPosition.getZ() + 0.5;
-        if (rand.nextInt(3) == 0) {
+        Vec3 goal = new Vec3(worldPosition.getX() + 0.5, worldPosition.getY() - 0.5, worldPosition.getZ() + 0.5);
+        if (rand.nextInt(CLIENT_SPARKLE_ODDS) == 0) {
+            float red = Mth.lerp(rand.nextFloat(), SPARKLE_PURPLE_RED, SPARKLE_VIOLET_RED);
+            float blue = SPARKLE_BLUE_MIN + rand.nextFloat() * SPARKLE_BLUE_SPAN;
             level.addParticle(
-                    new BoreSparkleParticleOptions(
-                            tx, ty, tz, 0.4F + rand.nextFloat() * 0.2F, 0.2F, 0.6F + rand.nextFloat() * 0.3F),
-                    loc.getX() + rand.nextFloat(),
-                    loc.getY() + rand.nextFloat() + 1.0F,
-                    loc.getZ() + rand.nextFloat(),
+                    new BoreSparkleParticleOptions(goal.x, goal.y, goal.z, red, SPARKLE_GREEN, blue),
+                    loc.getX() + rand.nextDouble(),
+                    loc.getY() + 1.0 + rand.nextDouble(),
+                    loc.getZ() + rand.nextDouble(),
                     0.0,
                     0.0,
                     0.0);
             return;
         }
-        ItemStack template = new ItemStack(stack.getItem());
+        ItemStack template = stack.copyWithCount(1);
         if (stack.getItem() instanceof BlockItem) {
-            for (int a = 0; a < 4; a++) {
+            for (int a = 0; a < CLIENT_SOURCE_BASE_COUNT; a++) {
                 level.addParticle(
-                        new InfusionCrumbsParticleOptions(template, tx, ty, tz, 0.0, 0.0, 0.0),
-                        loc.getX() + rand.nextFloat(),
-                        loc.getY() + rand.nextFloat() + 1.0F,
-                        loc.getZ() + rand.nextFloat(),
+                        new InfusionCrumbsParticleOptions(template, goal.x, goal.y, goal.z, 0.0, 0.0, 0.0),
+                        loc.getX() + rand.nextDouble(),
+                        loc.getY() + 1.0 + rand.nextDouble(),
+                        loc.getZ() + rand.nextDouble(),
                         0.0,
                         0.0,
                         0.0);
             }
         } else {
-            for (int a = 0; a < 4; a++) {
+            for (int a = 0; a < CLIENT_SOURCE_BASE_COUNT; a++) {
+                double x = loc.getX() + PEDESTAL_CENTER + rand.nextGaussian() * CRUMB_ITEM_SPOT_RADIUS;
+                double y = loc.getY() + 1.0 + CRUMB_ITEM_SPOT_LIFT + rand.nextGaussian() * CRUMB_ITEM_SPOT_RADIUS;
+                double z = loc.getZ() + PEDESTAL_CENTER + rand.nextGaussian() * CRUMB_ITEM_SPOT_RADIUS;
                 level.addParticle(
                         new InfusionCrumbsParticleOptions(
                                 template,
-                                tx,
-                                ty,
-                                tz,
-                                rand.nextGaussian() * 0.03F,
-                                rand.nextGaussian() * 0.03F,
-                                rand.nextGaussian() * 0.03F),
-                        loc.getX() + 0.4F + rand.nextFloat() * 0.2F,
-                        loc.getY() + 1.23F + rand.nextFloat() * 0.2F,
-                        loc.getZ() + 0.4F + rand.nextFloat() * 0.2F,
+                                goal.x,
+                                goal.y,
+                                goal.z,
+                                rand.nextGaussian() * CRUMB_ITEM_KICK,
+                                rand.nextGaussian() * CRUMB_ITEM_KICK,
+                                rand.nextGaussian() * CRUMB_ITEM_KICK),
+                        x,
+                        y,
+                        z,
                         0.0,
                         0.0,
                         0.0);
