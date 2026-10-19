@@ -327,12 +327,14 @@ public final class InfusionEnchantmentEvents {
         }
     }
 
-    private static int settledLight(ServerLevel level, BlockPos pos) {
+    static int settledLight(ServerLevel level, BlockPos pos) {
         int light = level.getRawBrightness(pos, 0);
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (Direction direction : Direction.values()) {
             cursor.setWithOffset(pos, direction);
-            light = Math.max(light, level.getRawBrightness(cursor, 0) - 1);
+            if (level.hasChunkAt(cursor)) {
+                light = Math.max(light, level.getRawBrightness(cursor, 0) - 1);
+            }
         }
         return light;
     }
