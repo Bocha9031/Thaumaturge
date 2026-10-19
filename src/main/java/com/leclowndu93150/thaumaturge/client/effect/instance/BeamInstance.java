@@ -5,16 +5,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
-import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 public final class BeamInstance implements IFXInstance {
     private static final int HIT_DURATION = 6;
-    private static final double HAND_SIDE_X = 0.066;
-    private static final double HAND_DROP = 0.06;
-    private static final double HAND_SIDE_Z = 0.04;
-    private static final double LOOK_LEAD = 0.3;
-    private static final double ANCHOR_LIFT = 0.25;
     private static final float GROW_TICKS = 4.0F;
     private static final int FADE_TICKS = 4;
     private static final float BASE_OPACITY = 0.4F;
@@ -125,11 +120,12 @@ public final class BeamInstance implements IFXInstance {
         this.prevSourceZ = this.sourceZ;
         this.prevYaw = this.rotYaw;
         this.prevPitch = this.rotPitch;
-        Entity anchor = resolveAnchor();
+        LivingEntity anchor = this.entityAnchored ? BeamAnchor.find(this.sourceEntityId) : null;
         if (anchor != null) {
-            this.sourceX = anchor.getX();
-            this.sourceY = anchor.getY() + anchorHeight(anchor);
-            this.sourceZ = anchor.getZ();
+            Vec3 castPoint = BeamAnchor.castPoint(anchor, 1.0F);
+            this.sourceX = castPoint.x;
+            this.sourceY = castPoint.y;
+            this.sourceZ = castPoint.z;
         }
         refreshGeometry();
         unwindAngles();
@@ -140,19 +136,6 @@ public final class BeamInstance implements IFXInstance {
             this.expired = true;
         }
         if (this.age < this.maxAge) this.age++;
-    }
-
-    private Entity resolveAnchor() {
-        if (!this.entityAnchored) {
-            return null;
-        }
-        ClientLevel level = Minecraft.getInstance().level;
-        Entity entity = level != null ? level.getEntity(this.sourceEntityId) : null;
-        return entity != null && entity.isAlive() ? entity : null;
-    }
-
-    private static double anchorHeight(Entity entity) {
-        return entity.getBbHeight() / 2.0 + ANCHOR_LIFT;
     }
 
     private void refreshGeometry() {
@@ -252,32 +235,14 @@ public final class BeamInstance implements IFXInstance {
     }
 
     public Vec3 sourcePos(float partial) {
-        Entity anchor = resolveAnchor();
+        LivingEntity anchor = this.entityAnchored ? BeamAnchor.find(this.sourceEntityId) : null;
         if (anchor != null) {
-            Vec3 lead = anchor.getViewVector(1.0F).scale(LOOK_LEAD);
-            Vec3 before = handAnchor(anchor, anchor.xOld, anchor.yOld, anchor.zOld, anchor.yRotO)
-                    .add(lead);
-            Vec3 now = handAnchor(
-                            anchor,
-                            anchor.getX(),
-                            anchor.getY(),
-                            anchor.getZ(),
-                            Mth.lerp(partial, anchor.yRotO, anchor.getYRot()))
-                    .add(lead);
-            return before.lerp(now, partial);
+            return BeamAnchor.castPoint(anchor, partial);
         }
         return new Vec3(
                 Mth.lerp(partial, this.prevSourceX, this.sourceX),
                 Mth.lerp(partial, this.prevSourceY, this.sourceY),
                 Mth.lerp(partial, this.prevSourceZ, this.sourceZ));
-    }
-
-    private static Vec3 handAnchor(Entity entity, double x, double y, double z, float yawDegrees) {
-        double yawRad = Math.toRadians(yawDegrees);
-        return new Vec3(
-                x - Math.cos(yawRad) * HAND_SIDE_X,
-                y + anchorHeight(entity) - HAND_DROP,
-                z - Math.sin(yawRad) * HAND_SIDE_Z);
     }
 
     public Vec3 targetPos(float partial) {
@@ -319,9 +284,12 @@ public final class BeamInstance implements IFXInstance {
     }
 
     public float worldRotation(float partial) {
-        long worldTime = Minecraft.getInstance().level != null
-                ? Minecraft.getInstance().level.getGameTime()
-                : 0;
+        long worldTime = this.levelTime();
         return worldTime % (360 / this.rotationSpeed) * this.rotationSpeed + this.rotationSpeed * partial;
+    }
+
+    private long levelTime() {
+        ClientLevel level = Minecraft.getInstance().level;
+        return level != null ? level.getGameTime() : 0L;
     }
 }
