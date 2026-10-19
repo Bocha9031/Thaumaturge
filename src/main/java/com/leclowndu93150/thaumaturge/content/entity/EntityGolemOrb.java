@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
+import com.leclowndu93150.thaumaturge.content.particle.SparkParticleOptions;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -30,10 +31,18 @@ public class EntityGolemOrb extends ThrowableProjectile implements ISidedHurt {
     private static final float RED_DAMAGE_FACTOR = 1.0F;
     private static final float WHITE_DAMAGE_FACTOR = 0.6F;
     private static final float PICK_RADIUS = 0.5F;
-    private static final double HOMING_ACCEL = 0.2;
-    private static final float HOMING_CLAMP = 0.25F;
+    private static final double HOMING_STEER_GAIN = 0.3;
+    private static final double HOMING_MIN_DISTANCE = 1.0;
+    private static final double HOMING_MAX_AXIS_SPEED = 0.25;
     private static final float EYE_OFFSET = 0.1F;
     private static final int NO_TARGET = -1;
+    private static final int RED_SPARK_COLOR = 0xFF5040;
+    private static final int WHITE_SPARK_COLOR = 0xD8E4FF;
+    private static final float SPARK_ALPHA = 0.9F;
+    private static final float SPARK_SCALE = 2.0F;
+    private static final int SPARK_COUNT = 8;
+    private static final double SPARK_SPREAD = 0.15;
+    private static final double SPARK_SPEED = 0.02;
 
     public EntityGolemOrb(EntityType<? extends EntityGolemOrb> type, Level level) {
         super(type, level);
@@ -84,21 +93,27 @@ public class EntityGolemOrb extends ThrowableProjectile implements ISidedHurt {
             this.discard();
             return;
         }
-        super.tick();
-        LivingEntity target = this.isRemoved() ? null : this.target();
+        LivingEntity target = this.target();
         if (target != null) {
-            double distSq = this.distanceToSqr(target);
-            if (distSq > 0.0) {
-                double dx = (target.getX() - this.getX()) / distSq;
-                double dy = (target.getY() + target.getBbHeight() * 0.6 - this.getY()) / distSq;
-                double dz = (target.getZ() - this.getZ()) / distSq;
-                Vec3 movement = this.getDeltaMovement().add(dx * HOMING_ACCEL, dy * HOMING_ACCEL, dz * HOMING_ACCEL);
-                this.setDeltaMovement(
-                        Mth.clamp((float) movement.x, -HOMING_CLAMP, HOMING_CLAMP),
-                        Mth.clamp((float) movement.y, -HOMING_CLAMP, HOMING_CLAMP),
-                        Mth.clamp((float) movement.z, -HOMING_CLAMP, HOMING_CLAMP));
-            }
+            this.home(target);
         }
+        super.tick();
+    }
+
+    private void home(LivingEntity target) {
+        Vec3 aim = new Vec3(target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ());
+        Vec3 offset = aim.subtract(this.position());
+        double distance = offset.length();
+        if (distance <= 0.0) {
+            return;
+        }
+        Vec3 steer = offset.scale(HOMING_STEER_GAIN / (distance * Math.max(distance, HOMING_MIN_DISTANCE)));
+        Vec3 movement = this.getDeltaMovement().add(steer);
+        this.setDeltaMovement(capAxis(movement.x), capAxis(movement.y), capAxis(movement.z));
+    }
+
+    private static double capAxis(double speed) {
+        return Mth.clamp(speed, -HOMING_MAX_AXIS_SPEED, HOMING_MAX_AXIS_SPEED);
     }
 
     @Override
@@ -120,7 +135,7 @@ public class EntityGolemOrb extends ThrowableProjectile implements ISidedHurt {
     protected void onHit(HitResult result) {
         super.onHit(result);
         if (this.level() instanceof ServerLevel server && !this.isRemoved()) {
-            this.impact(server);
+            this.impact(server, result.getLocation());
         }
     }
 
@@ -135,8 +150,19 @@ public class EntityGolemOrb extends ThrowableProjectile implements ISidedHurt {
         }
     }
 
-    private void impact(ServerLevel level) {
+    private void impact(ServerLevel level, Vec3 at) {
         this.playVaried(level, TTSounds.SHOCK.get());
+        int color = this.isRed() ? RED_SPARK_COLOR : WHITE_SPARK_COLOR;
+        level.sendParticles(
+                new SparkParticleOptions(color, SPARK_ALPHA, SPARK_SCALE),
+                at.x,
+                at.y,
+                at.z,
+                SPARK_COUNT,
+                SPARK_SPREAD,
+                SPARK_SPREAD,
+                SPARK_SPREAD,
+                SPARK_SPEED);
         this.discard();
     }
 
