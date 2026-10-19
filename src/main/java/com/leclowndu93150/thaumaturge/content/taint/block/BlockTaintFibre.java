@@ -10,6 +10,7 @@ import com.leclowndu93150.thaumaturge.content.taint.effect.FluxTaintExposure;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.mojang.serialization.MapCodec;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -72,6 +73,7 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
     private static final int GROWTH4_THRESHOLD = 47;
 
     private static final int CONTACT_ONE_IN = 750;
+    private final Map<BlockState, VoxelShape> shapes;
 
     public BlockTaintFibre(Properties properties) {
         super(properties);
@@ -86,6 +88,11 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
                 .setValue(GROWTH2, false)
                 .setValue(GROWTH3, false)
                 .setValue(GROWTH4, false));
+        Map<BlockState, VoxelShape> stateShapes = new HashMap<>();
+        for (BlockState state : stateDefinition.getPossibleStates()) {
+            stateShapes.put(state, outline(state));
+        }
+        this.shapes = Map.copyOf(stateShapes);
     }
 
     private static Map<Direction, BooleanProperty> createFaceMap() {
@@ -115,6 +122,10 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return shapes.get(state);
+    }
+
+    private static VoxelShape outline(BlockState state) {
         VoxelShape shape = Shapes.empty();
         if (state.getValue(UP)) shape = Shapes.or(shape, SHAPE_UP);
         if (state.getValue(DOWN)) shape = Shapes.or(shape, SHAPE_DOWN);
