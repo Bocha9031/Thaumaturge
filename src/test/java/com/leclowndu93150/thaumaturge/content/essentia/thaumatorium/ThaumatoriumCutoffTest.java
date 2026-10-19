@@ -183,7 +183,7 @@ class ThaumatoriumCutoffTest {
         machine.insert(order, 2, Direction.EAST, false);
         try (var output = mockStatic(InvHelper.class)) {
             tick(machine, 5);
-            output.verify(() -> InvHelper.ejectStackAt(
+            output.verify(() -> InvHelper.eject(
                     eq(level),
                     eq(BlockPos.ZERO),
                     eq(Direction.NORTH),

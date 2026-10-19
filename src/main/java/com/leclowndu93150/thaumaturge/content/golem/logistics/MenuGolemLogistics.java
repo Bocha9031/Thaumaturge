@@ -203,7 +203,7 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
                     || !player.getUUID().equals(seal.owner())) {
                 continue;
             }
-            IItemHandler handler = InvHelper.getItemHandlerAt(
+            IItemHandler handler = InvHelper.handlerAt(
                     level, seal.pos().pos(), seal.pos().face());
             if (handler == null) {
                 continue;

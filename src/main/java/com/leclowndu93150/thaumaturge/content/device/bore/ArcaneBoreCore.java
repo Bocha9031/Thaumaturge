@@ -218,8 +218,8 @@ public final class ArcaneBoreCore {
         }
         for (Direction face : Direction.values()) {
             BlockPos side = host.borePos().relative(face);
-            if (InvHelper.getItemHandlerAt(level, side, face.getOpposite()) != null) {
-                ItemStack remainder = InvHelper.insertStackAt(level, side, face.getOpposite(), stack, false);
+            if (InvHelper.handlerAt(level, side, face.getOpposite()) != null) {
+                ItemStack remainder = InvHelper.insertAt(level, side, face.getOpposite(), stack, false);
                 if (remainder.isEmpty()) {
                     return;
                 }

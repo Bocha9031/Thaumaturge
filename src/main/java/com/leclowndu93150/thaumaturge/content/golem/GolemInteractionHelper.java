@@ -76,7 +76,7 @@ public final class GolemInteractionHelper {
                 stack = golem.hands().hold(stack);
             }
             if (!stack.isEmpty()) {
-                InvHelper.dropItemAtEntity(golem.level(), stack, golem.asEntity());
+                InvHelper.dropAt(golem.level(), stack, golem.asEntity());
             }
             inventory.setItem(slot, ItemStack.EMPTY);
         }

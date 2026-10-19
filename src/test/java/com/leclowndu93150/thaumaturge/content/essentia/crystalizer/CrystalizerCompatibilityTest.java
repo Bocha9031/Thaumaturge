@@ -217,7 +217,7 @@ class CrystalizerCompatibilityTest {
                 })) {
             crystals.when(() -> EssentiaCrystalAccess.create(fire, 1)).thenReturn(crystal);
             inventory
-                    .when(() -> InvHelper.insertStackAt(level, BlockPos.ZERO.west(), Direction.EAST, crystal, false))
+                    .when(() -> InvHelper.insertAt(level, BlockPos.ZERO.west(), Direction.EAST, crystal, false))
                     .thenReturn(crystal);
             tick(machine);
             assertNull(machine.aspectKey());
@@ -235,7 +235,7 @@ class CrystalizerCompatibilityTest {
             verify(level, never()).blockEvent(any(), any(), anyInt(), anyInt());
             when(level.hasNeighborSignal(BlockPos.ZERO)).thenReturn(false);
             inventory
-                    .when(() -> InvHelper.insertStackAt(level, BlockPos.ZERO.west(), Direction.EAST, crystal, false))
+                    .when(() -> InvHelper.insertAt(level, BlockPos.ZERO.west(), Direction.EAST, crystal, false))
                     .thenReturn(ItemStack.EMPTY);
             machine.loadAdditional(tag, registries);
             tick(machine);

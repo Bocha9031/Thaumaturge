@@ -277,7 +277,7 @@ class ThaumatoriumCompatibilityTest {
         assertEquals(2, machine.insert(order, 5, Direction.EAST, false));
         try (var output = mockStatic(InvHelper.class)) {
             for (int tick = 0; tick < 5; tick++) tick(machine);
-            output.verify(() -> InvHelper.ejectStackAt(
+            output.verify(() -> InvHelper.eject(
                     eq(level),
                     eq(BlockPos.ZERO),
                     eq(Direction.NORTH),

@@ -38,7 +38,7 @@ public final class BlockEntityHungryChest extends ChestBlockEntity {
                 continue;
             }
             ItemStack original = item.getItem();
-            ItemStack leftovers = InvHelper.insertStackAt(level, pos, Direction.UP, original.copy(), false);
+            ItemStack leftovers = InvHelper.insertAt(level, pos, Direction.UP, original.copy(), false);
             if (leftovers.getCount() != original.getCount()) {
                 item.playSound(
                         SoundEvents.GENERIC_EAT,

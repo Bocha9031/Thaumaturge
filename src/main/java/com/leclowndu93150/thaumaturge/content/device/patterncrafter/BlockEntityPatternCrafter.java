@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.device.patterncrafter;
 
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.ItemMatch;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
@@ -99,8 +100,8 @@ public final class BlockEntityPatternCrafter extends AbstractSyncedBlockEntity {
             power += AuraHelper.drainVis(server, pos, VIS_DRAIN, false);
         }
         int inputCount = PATTERN_INPUT_COUNTS[patternType];
-        IItemHandler above = InvHelper.getItemHandlerAt(server, pos.above(), Direction.DOWN);
-        IItemHandler below = InvHelper.getItemHandlerAt(server, pos.below(), Direction.UP);
+        IItemHandler above = InvHelper.handlerAt(server, pos.above(), Direction.DOWN);
+        IItemHandler below = InvHelper.handlerAt(server, pos.below(), Direction.UP);
         if (above == null || below == null) {
             return;
         }
@@ -108,8 +109,8 @@ public final class BlockEntityPatternCrafter extends AbstractSyncedBlockEntity {
             ItemStack resource = above.getStackInSlot(slot);
             if (resource.isEmpty()) continue;
             ItemStack testStack = resource.copyWithCount(inputCount);
-            ItemStack removed = InvHelper.removeStackFrom(
-                    server, pos.above(), Direction.DOWN, testStack.copy(), InvHelper.InvFilter.STRICT, true);
+            ItemStack removed = InvHelper.extractAt(
+                    server, pos.above(), Direction.DOWN, testStack.copy(), ItemMatch.EXACT, true);
             if (removed.getCount() != inputCount) continue;
             CraftResult result = craft(server, testStack);
             if (result == null || power < 1.0F) continue;
@@ -126,8 +127,7 @@ public final class BlockEntityPatternCrafter extends AbstractSyncedBlockEntity {
             for (ItemStack remainder : result.remainders) {
                 InvHelper.insertStack(below, remainder.copy(), false);
             }
-            InvHelper.removeStackFrom(
-                    server, pos.above(), Direction.DOWN, testStack, InvHelper.InvFilter.STRICT, false);
+            InvHelper.extractAt(server, pos.above(), Direction.DOWN, testStack, ItemMatch.EXACT, false);
             server.blockEvent(pos, state.getBlock(), SPIN_EVENT, 0);
             power--;
             setChanged();
