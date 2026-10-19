@@ -66,6 +66,7 @@ public final class BaubleEvents {
         if (charm.isEmpty()) {
             return;
         }
+        event.setCanceled(true);
         player.awardStat(Stats.ITEM_USED.get(Items.TOTEM_OF_UNDYING));
         CriteriaTriggers.USED_TOTEM.trigger(player, charm);
         player.setHealth(1.0F);
@@ -74,7 +75,6 @@ public final class BaubleEvents {
         player.addEffect(
                 new MobEffectInstance(MobEffects.ABSORPTION, UNDYING_ABSORPTION_TICKS, UNDYING_EFFECT_AMPLIFIER));
         player.level().broadcastEntityEvent(player, TOTEM_EVENT);
-        event.setCanceled(true);
     }
 
     @SubscribeEvent
