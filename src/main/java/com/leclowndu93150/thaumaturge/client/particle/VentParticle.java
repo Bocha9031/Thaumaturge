@@ -8,97 +8,102 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
 public final class VentParticle extends TTParticle {
-    private static final int FRAME_COUNT = 6;
-    private static final float BASE_ALPHA = 0.4F;
-    private static final float FRICTION = 0.85F;
-    private static final float GROW_RATE = 1.15F;
-    private static final float GROW_RATE_VARIANT = 1.2F;
-    private static final float HEADING_SPEED = 0.125F;
-    private static final float HEADING_JITTER = 0.0375F;
-    private static final float RISE_ACCEL = 0.0025F;
+    private static final int FIRST_SMOKE_FRAME = 1;
+    private static final int SAFETY_LIFETIME = 80;
+    private static final float SIZE_UNIT = 0.3F;
+    private static final float START_FRACTION_BASE = 0.05F;
+    private static final float START_FRACTION_RANGE = 0.1F;
+    private static final float GROWTH = 1.15F;
+    private static final float VARIANT_GROWTH = 1.2F;
+    private static final float START_ALPHA = 0.4F;
+    private static final int FRAME_SPAN = 4;
+    private static final double LAUNCH_SPEED = 0.125;
+    private static final double SCATTER = 0.0375;
+    private static final float DRAG = 0.85F;
+    private static final double RISE = 0.0025;
+    private static final double VARIANT_DRIFT = 0.0075;
+    private static final float VARIANT_SHADE = 0.05F;
+    private static final double MIN_DIRECTION = 1.0E-6;
+    private static final float HITBOX = 0.02F;
+    private static final float MIN_FULL_SIZE = 0.05F;
     private static final int NEAR_RANGE = 25;
     private static final int FAR_RANGE = 50;
 
-    private final boolean variant;
-    private final float fullScale;
-    private final float riseAccel;
-    private float growth;
+    private final float fullSize;
+    private final float growth;
+    private final double verticalDrift;
+    private float size;
 
     private VentParticle(
             ClientLevel level, double x, double y, double z, VentParticleOptions options, ParticleSheet sheet) {
-        super(level, x, y, z, options.vx(), options.vy(), options.vz(), sheet);
-        this.variant = options.variant();
-        this.fullScale = options.scale();
-        this.growth = (this.random.nextFloat() * 0.1F + 0.05F) * this.fullScale;
-        this.lifetime = Integer.MAX_VALUE;
+        super(level, x, y, z, 0.0, 0.0, 0.0, sheet);
+        this.fullSize = Math.max(MIN_FULL_SIZE, options.scale() * SIZE_UNIT);
+        this.size = this.fullSize * (START_FRACTION_BASE + this.random.nextFloat() * START_FRACTION_RANGE);
+        this.quadSize = this.size;
+        this.lifetime = SAFETY_LIFETIME;
         this.hasPhysics = true;
-        this.friction = FRICTION;
-        this.setSize(0.02F, 0.02F);
-        setColor(options.color());
-        if (this.variant) {
-            this.rCol = Mth.clamp(this.rCol + (float) this.random.nextGaussian() * 0.05F, 0.0F, 1.0F);
-            this.gCol = Mth.clamp(this.gCol + (float) this.random.nextGaussian() * 0.05F, 0.0F, 1.0F);
-            this.bCol = Mth.clamp(this.bCol + (float) this.random.nextGaussian() * 0.05F, 0.0F, 1.0F);
-            this.riseAccel = (float) (this.random.nextGaussian() * 0.0075);
+        this.friction = DRAG;
+        setSize(HITBOX, HITBOX);
+        int color = options.color();
+        if (options.variant()) {
+            this.growth = VARIANT_GROWTH;
+            this.verticalDrift = this.random.nextGaussian() * VARIANT_DRIFT;
+            setColor(shade(ARGB32.red(color)), shade(ARGB32.green(color)), shade(ARGB32.blue(color)));
+            this.xd = options.vx();
+            this.yd = options.vy();
+            this.zd = options.vz();
         } else {
-            this.riseAccel = RISE_ACCEL;
-            aimAlong(options.vx(), options.vy(), options.vz());
+            this.growth = GROWTH;
+            this.verticalDrift = RISE;
+            setColor(color);
+            launch(options.vx(), options.vy(), options.vz());
         }
-        removeIfFarFromCamera(x, y, z);
+        refresh();
     }
 
-    private void aimAlong(double vx, double vy, double vz) {
-        Vec3 direction = new Vec3(vx, vy, vz);
-        if (direction.lengthSqr() < 1.0E-12) {
+    private float shade(int channel) {
+        return Mth.clamp(channel / 255.0F + (float) this.random.nextGaussian() * VARIANT_SHADE, 0.0F, 1.0F);
+    }
+
+    private void launch(double dx, double dy, double dz) {
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (length < MIN_DIRECTION) {
+            this.xd = dx;
+            this.yd = dy;
+            this.zd = dz;
             return;
         }
-        direction = direction.normalize();
-        this.xd = (direction.x + this.random.nextGaussian() * signedJitter()) * HEADING_SPEED;
-        this.yd = (direction.y + this.random.nextGaussian() * signedJitter()) * HEADING_SPEED;
-        this.zd = (direction.z + this.random.nextGaussian() * signedJitter()) * HEADING_SPEED;
-    }
-
-    private double signedJitter() {
-        return this.random.nextBoolean() ? -HEADING_JITTER : HEADING_JITTER;
-    }
-
-    private void removeIfFarFromCamera(double x, double y, double z) {
-        Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
-        if (!camera.isInitialized()) {
-            return;
-        }
-        int range =
-                Minecraft.getInstance().options.graphicsMode().get() == GraphicsStatus.FAST ? NEAR_RANGE : FAR_RANGE;
-        Vec3 cameraPosition = camera.getPosition();
-        if (cameraPosition.distanceToSqr(x, y, z) > (double) range * range) {
-            remove();
-        }
+        this.xd = (dx / length + this.random.nextGaussian() * SCATTER) * LAUNCH_SPEED;
+        this.yd = (dy / length + this.random.nextGaussian() * SCATTER) * LAUNCH_SPEED;
+        this.zd = (dz / length + this.random.nextGaussian() * SCATTER) * LAUNCH_SPEED;
     }
 
     @Override
     public void tick() {
-        this.yd += this.riseAccel;
+        this.yd += this.verticalDrift;
         super.tick();
-        if (this.removed) {
-            return;
-        }
-        this.growth = Math.min(this.growth * (this.variant ? GROW_RATE_VARIANT : GROW_RATE), this.fullScale);
-        if (this.growth >= this.fullScale) {
-            remove();
-        }
     }
 
     @Override
     protected void update() {
-        float grown = this.growth / this.fullScale;
-        this.alpha = BASE_ALPHA * (1.0F - grown);
-        this.quadSize = 0.3F * this.growth;
-        frame((int) (1.0F + grown * 4.0F));
+        this.quadSize = this.size;
+        refresh();
+        this.size *= this.growth;
+        if (this.size >= this.fullSize) {
+            remove();
+        }
+    }
+
+    private void refresh() {
+        float grown = Mth.clamp(this.quadSize / this.fullSize, 0.0F, 1.0F);
+        this.alpha = START_ALPHA * (1.0F - grown);
+        frame(FIRST_SMOKE_FRAME + (int) (grown * FRAME_SPAN));
     }
 
     @Override
@@ -106,11 +111,20 @@ public final class VentParticle extends TTParticle {
         return TTParticleLayers.translucent(this.sheet);
     }
 
+    static boolean beyondSpawnRange(double x, double y, double z, Camera camera, boolean fastGraphics) {
+        if (!camera.isInitialized()) {
+            return false;
+        }
+        int range = fastGraphics ? NEAR_RANGE : FAR_RANGE;
+        Vec3 cameraPosition = camera.getPosition();
+        return cameraPosition.distanceToSqr(x, y, z) > (double) range * range;
+    }
+
     public static final class Provider implements ParticleProvider<VentParticleOptions> {
         private static final ParticleSheet SHEET = TTParticleSheets.sheet("vent");
 
         @Override
-        public Particle createParticle(
+        public @Nullable Particle createParticle(
                 VentParticleOptions options,
                 ClientLevel level,
                 double x,
@@ -119,7 +133,15 @@ public final class VentParticle extends TTParticle {
                 double vx,
                 double vy,
                 double vz) {
-            RandomSource random = level.getRandom();
+            Minecraft minecraft = Minecraft.getInstance();
+            if (beyondSpawnRange(
+                    x,
+                    y,
+                    z,
+                    minecraft.gameRenderer.getMainCamera(),
+                    minecraft.options.graphicsMode().get() == GraphicsStatus.FAST)) {
+                return null;
+            }
             return new VentParticle(level, x, y, z, options, SHEET);
         }
     }

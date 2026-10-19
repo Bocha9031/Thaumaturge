@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,17 +22,14 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.Particle;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 final class ParticleBehaviorPortTest {
     @Test
@@ -212,38 +208,46 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
-    void ventDoesNotCullBeforeMainCameraInitialization() throws Exception {
-        ClientLevel level = mock(ClientLevel.class);
+    void ventCullingUsesGraphicsRangeAndSkipsUninitializedCamera() {
         Camera camera = mock(Camera.class);
         when(camera.isInitialized()).thenReturn(false);
-        GameRenderer renderer = mock(GameRenderer.class);
-        when(renderer.getMainCamera()).thenReturn(camera);
-        Minecraft minecraft = mock(Minecraft.class);
-        java.lang.reflect.Field rendererField = Minecraft.class.getField("gameRenderer");
-        rendererField.setAccessible(true);
-        rendererField.set(minecraft, renderer);
+        assertFalse(VentParticle.beyondSpawnRange(1000.0, 0.0, 0.0, camera, true));
+        verify(camera, never()).getPosition();
 
-        try (MockedStatic<Minecraft> minecraftStatic = mockStatic(Minecraft.class)) {
-            minecraftStatic.when(Minecraft::getInstance).thenReturn(minecraft);
-            VentParticle vent = construct(
-                    VentParticle.class,
-                    new Class<?>[] {
-                        ClientLevel.class,
-                        double.class,
-                        double.class,
-                        double.class,
-                        VentParticleOptions.class,
-                        ParticleSheet.class
-                    },
-                    level,
-                    1000.0,
-                    0.0,
-                    0.0,
-                    new VentParticleOptions(1.0, 0.0, 0.0, 0xFFFFFFFF, 1.0F, false),
-                    null);
-            assertTrue(vent.isAlive());
-            verify(camera, never()).getPosition();
+        when(camera.isInitialized()).thenReturn(true);
+        when(camera.getPosition()).thenReturn(Vec3.ZERO);
+        assertFalse(VentParticle.beyondSpawnRange(25.0, 0.0, 0.0, camera, true));
+        assertTrue(VentParticle.beyondSpawnRange(25.01, 0.0, 0.0, camera, true));
+        assertFalse(VentParticle.beyondSpawnRange(50.0, 0.0, 0.0, camera, false));
+        assertTrue(VentParticle.beyondSpawnRange(50.01, 0.0, 0.0, camera, false));
+    }
+
+    @Test
+    void ventClampsZeroScaleAndStillFinishesGrowing() throws Exception {
+        VentParticle vent = construct(
+                VentParticle.class,
+                new Class<?>[] {
+                    ClientLevel.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    VentParticleOptions.class,
+                    ParticleSheet.class
+                },
+                mock(ClientLevel.class),
+                0.0,
+                0.0,
+                0.0,
+                new VentParticleOptions(0.0, 0.0, 0.0, 0xFFFFFFFF, 0.0F, false),
+                null);
+
+        Field fullSize = VentParticle.class.getDeclaredField("fullSize");
+        fullSize.setAccessible(true);
+        assertEquals(0.05F, fullSize.getFloat(vent), 1.0E-6F);
+        for (int tick = 0; tick < 80 && vent.isAlive(); tick++) {
+            invokeUpdate(vent);
         }
+        assertFalse(vent.isAlive());
     }
 
     @Test
