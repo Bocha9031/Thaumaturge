@@ -11,18 +11,22 @@ import com.leclowndu93150.thaumaturge.client.screen.research.EntryDetailScreen.A
 import com.leclowndu93150.thaumaturge.compat.jei.ingredient.AspectIngredientType;
 import java.util.Optional;
 import mezz.jei.api.gui.builder.IClickableIngredientFactory;
+import mezz.jei.api.gui.handlers.IGlobalGuiHandler;
 import mezz.jei.api.gui.handlers.IScreenHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IClickableIngredient;
 import net.minecraft.core.Holder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 
 class ThaumonomiconGuiHandlerTest {
     private IScreenHandler<EntryDetailScreen> handler;
+    private IGlobalGuiHandler globalHandler;
     private final EntryDetailScreen screen = mock(EntryDetailScreen.class);
     private final IClickableIngredientFactory factory = mock(IClickableIngredientFactory.class);
 
@@ -35,6 +39,10 @@ class ThaumonomiconGuiHandlerTest {
                 ArgumentCaptor.forClass((Class) IScreenHandler.class);
         verify(registration).addGuiScreenHandler(eq(EntryDetailScreen.class), capture.capture());
         handler = capture.getValue();
+        ArgumentCaptor<IGlobalGuiHandler> globalCapture = ArgumentCaptor.forClass(IGlobalGuiHandler.class);
+        verify(registration).addGlobalGuiHandler(globalCapture.capture());
+        globalHandler = globalCapture.getValue();
+        assertSame(handler, globalHandler);
     }
 
     @Test
@@ -69,6 +77,25 @@ class ThaumonomiconGuiHandlerTest {
                 handler.getClickableIngredientUnderMouse(factory, screen, 110, 125)
                         .orElseThrow());
         verify(screen, never()).aspectUnderMouse(anyDouble(), anyDouble());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void globalLookupUsesTheActiveResearchScreen() {
+        ItemStack stack = new ItemStack(Items.STONE, 5);
+        when(screen.itemUnderMouse(110, 125)).thenReturn(new ItemHit(stack, 109, 120));
+        IClickableIngredientFactory.IBuilder<ItemStack> builder = mock(IClickableIngredientFactory.IBuilder.class);
+        IClickableIngredient<ItemStack> ingredient = mock(IClickableIngredient.class);
+        when(factory.createBuilder(stack)).thenReturn(builder);
+        when(builder.buildWithArea(109, 120, 16, 16)).thenReturn(Optional.of(ingredient));
+
+        try (MockedStatic<Minecraft> minecraftStatic = mockStatic(Minecraft.class)) {
+            Minecraft minecraft = mock(Minecraft.class);
+            minecraft.screen = screen;
+            minecraftStatic.when(Minecraft::getInstance).thenReturn(minecraft);
+
+            assertSame(ingredient, globalHandler.getClickableIngredientUnderMouse(factory, 110, 125).orElseThrow());
+        }
     }
 
     @Test
