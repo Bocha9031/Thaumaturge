@@ -317,7 +317,7 @@ public class EntityTurretCrossbow extends EntityOwnedConstruct implements Ranged
 
     @Override
     public void move(MoverType type, Vec3 movement) {
-        super.move(type, new Vec3(movement.x / moveDamping(), movement.y, movement.z / moveDamping()));
+        super.move(type, dampHorizontalMovement(type, movement, moveDamping()));
     }
 
     protected double moveDamping() {

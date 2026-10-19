@@ -328,7 +328,7 @@ public class EntityArcaneBore extends EntityOwnedConstruct implements ArcaneBore
 
     @Override
     public void move(MoverType type, Vec3 movement) {
-        super.move(type, new Vec3(movement.x / MOVE_DAMPING, movement.y, movement.z / MOVE_DAMPING));
+        super.move(type, dampHorizontalMovement(type, movement, MOVE_DAMPING));
     }
 
     public boolean isActive() {

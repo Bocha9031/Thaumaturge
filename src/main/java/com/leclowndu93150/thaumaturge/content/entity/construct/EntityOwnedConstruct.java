@@ -18,6 +18,7 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.player.Player;
@@ -25,6 +26,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.scores.PlayerTeam;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public abstract class EntityOwnedConstruct extends PathfinderMob implements OwnableEntity {
@@ -37,6 +39,13 @@ public abstract class EntityOwnedConstruct extends PathfinderMob implements Owna
     private static final float JOLT_PITCH_SCALE = 20.0F;
 
     private boolean commissioned;
+
+    static Vec3 dampHorizontalMovement(MoverType type, Vec3 movement, double divisor) {
+        if (type != MoverType.SELF) {
+            return movement;
+        }
+        return new Vec3(movement.x / divisor, movement.y, movement.z / divisor);
+    }
 
     protected EntityOwnedConstruct(EntityType<? extends EntityOwnedConstruct> type, Level level) {
         super(type, level);
