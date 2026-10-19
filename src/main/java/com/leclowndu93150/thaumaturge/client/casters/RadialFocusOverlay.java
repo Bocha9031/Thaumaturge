@@ -48,6 +48,7 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
     private static final long SCALE_UP_MS = 150L;
     private static final long SCALE_DOWN_MS = 250L;
     private static final long HUD_SCALE_MS = 150L;
+    private static final long MAX_ANIMATION_DELTA_MS = 100L;
     private static final int TOOLTIP_X_OFFSET = -4;
     private static final int TOOLTIP_Y_OFFSET = 20;
     private static final int INVENTORY_SIZE = 36;
@@ -158,7 +159,7 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
     }
 
     private static float radialChange(long time, long lastTime, long total) {
-        return (float) (time - lastTime) / (float) total;
+        return RadialFocusMotion.change(time, lastTime, total, MAX_ANIMATION_DELTA_MS);
     }
 
     private void getFociInfo(Minecraft mc) {
@@ -212,6 +213,9 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
     }
 
     private void renderRadialHud(GuiGraphics graphics, Minecraft mc, float partialTicks, long time) {
+        if (CasterKeyHandler.radialActive && mc.mouseHandler.isMouseGrabbed()) {
+            mc.mouseHandler.releaseMouse();
+        }
         ItemStack casterStack = mc.player.getMainHandItem();
         if (!(casterStack.getItem() instanceof FocusCaster)) {
             casterStack = mc.player.getOffhandItem();
