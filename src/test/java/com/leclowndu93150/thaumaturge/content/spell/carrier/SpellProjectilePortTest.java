@@ -43,6 +43,7 @@ class SpellProjectilePortTest {
         assertEquals(new Vec3(-0.9D, 1.53D, 2.7D), projectile.getDeltaMovement());
         assertEquals(new Vec3(3.05D, 4.0D, 5.0D), projectile.position());
         assertEquals(1, getInt(projectile, "bounces"));
+        assertTrue(isHurtMarked(projectile));
         verify(level).playSound(null, 3.05D, 4.0D, 5.0D, SoundEvents.SLIME_JUMP_SMALL, SoundSource.NEUTRAL, 0.4F, 1.3F);
     }
 
@@ -111,8 +112,15 @@ class SpellProjectilePortTest {
             assertEquals(2.0D, projectile.getDeltaMovement().length(), 1.0E-9D);
             assertTrue(projectile.getDeltaMovement().x > 0.0D);
             assertTrue(projectile.getDeltaMovement().z > 0.0D);
+            assertTrue(isHurtMarked(projectile));
             targeting.verify(() -> SpellTargeting.canSee(level, projectile.position(), blocked, projectile));
         }
+    }
+
+    private static boolean isHurtMarked(SpellProjectile projectile) throws Exception {
+        Field field = net.minecraft.world.entity.Entity.class.getDeclaredField("hurtMarked");
+        field.setAccessible(true);
+        return field.getBoolean(projectile);
     }
 
     private static void setInt(SpellProjectile projectile, String fieldName, int value) throws Exception {

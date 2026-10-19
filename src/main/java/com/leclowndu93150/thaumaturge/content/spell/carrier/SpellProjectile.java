@@ -214,6 +214,7 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
                         face.getStepY() * BOUNCE_CLEARANCE,
                         face.getStepZ() * BOUNCE_CLEARANCE);
         setPos(clear.x, clear.y, clear.z);
+        hurtMarked = true;
         if (!level().isClientSide()) {
             level().playSound(
                             null,
@@ -252,6 +253,7 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         double angle = Math.acos(Mth.clamp(heading.dot(wanted), -1.0, 1.0));
         if (angle <= MAX_TURN_PER_TICK) {
             setDeltaMovement(wanted.scale(speed));
+            hurtMarked = true;
             return;
         }
         Vec3 pivot = heading.cross(wanted);
@@ -261,6 +263,7 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         Vec3 sideways = pivot.normalize().cross(heading);
         Vec3 turned = heading.scale(Math.cos(MAX_TURN_PER_TICK)).add(sideways.scale(Math.sin(MAX_TURN_PER_TICK)));
         setDeltaMovement(turned.normalize().scale(speed));
+        hurtMarked = true;
     }
 
     private void refreshQuarry(ServerLevel server, LivingEntity owner, Vec3 velocity) {
