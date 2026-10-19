@@ -31,7 +31,7 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
     private static final ResourceLocation TEXTURE = TTIds.rl("textures/entity/grappler.png");
     private static final ResourceLocation ROPE = TTIds.rl("textures/misc/rope.png");
     private static final RenderType ROPE_TYPE = TTRenderTypes.fxTranslucent(ROPE);
-    private static final RenderType GLOW_TYPE = TTRenderTypes.fxAdditiveBlurred(ParticleTextures.GOLEM_ORB_BLUE);
+    private static final RenderType GLOW_TYPE = TTRenderTypes.fxAdditiveBlurred(ParticleTextures.ORB_GLOW);
 
     private static final double ROPE_RADIUS = 0.022;
     private static final int ROPE_SIDES = 6;
@@ -39,9 +39,14 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
     private static final double TANGENT_EPSILON = 1.0E-8;
     private static final float ROPE_V_STEP = 0.5F;
     private static final int EMISSIVE_LIGHT = 0x00F000DC;
-    private static final float GLOW_ALPHA = 0.21F;
     private static final float GLOW_HALF = 0.5F;
-
+    private static final float GLOW_PULSE_TICKS = 24.0F;
+    private static final float GLOW_BASE_SCALE = 0.45F;
+    private static final float GLOW_PULSE_SCALE = 0.08F;
+    private static final float HAND_SIDE = 0.32F;
+    private static final float HAND_FORWARD = 0.55F;
+    private static final float HAND_DROP = 0.28F;
+    private static final float BODY_MIDDLE = 0.5F;
     private final GrapplerModel model;
 
     public GrappleRenderer(EntityRendererProvider.Context context) {
@@ -61,28 +66,28 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
         super.render(entity, entityYaw, partialTicks, poseStack, buffers, packedLight);
         float yaw = Mth.rotLerp(partialTicks, entity.yRotO, entity.getYRot());
         float pitch = Mth.lerp(partialTicks, entity.xRotO, entity.getXRot());
+        float age = entity.tickCount + partialTicks;
         int ticks = entity.tickCount;
         List<Vec3> points = new ArrayList<>();
-        calcPoints(entity.getOwner(), entity, partialTicks, points);
+        calcPoints(entity.getOwner(), entity, partialTicks, age, points);
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(yaw - 90.0F));
         poseStack.mulPose(Axis.ZP.rotationDegrees(pitch));
         model.root.render(
                 poseStack, buffers.getBuffer(RenderType.entityCutout(TEXTURE)), packedLight, OverlayTexture.NO_OVERLAY);
         poseStack.popPose();
-        float bob = Mth.sin(ticks / 5.0F) * 0.2F + 0.2F;
-        float glowScale = 1.0F + bob;
-        int frame = ticks % ParticleTextures.GOLEM_ORB_FRAMES;
-        float u0 = StripUv.u0(frame, ParticleTextures.GOLEM_ORB_FRAMES);
-        float u1 = StripUv.u1(frame, ParticleTextures.GOLEM_ORB_FRAMES);
+        int frame = Math.floorMod(ticks, ParticleTextures.ORB_GLOW_FRAMES);
+        float u0 = StripUv.u0(frame, ParticleTextures.ORB_GLOW_FRAMES);
+        float u1 = StripUv.u1(frame, ParticleTextures.ORB_GLOW_FRAMES);
         float v0 = StripUv.V0;
         float v1 = StripUv.V1;
-        int glowTint = ARGB32.colorFromFloat(GLOW_ALPHA, 1.0F, 1.0F, 1.0F);
-        float half = GLOW_HALF * glowScale;
+        float glowScale = GLOW_BASE_SCALE + GLOW_PULSE_SCALE * Mth.sin(age / GLOW_PULSE_TICKS * Mth.TWO_PI);
+        int glowTint = ARGB32.colorFromFloat(0.35F, 0.94F, 0.94F, 1.0F);
         Vec3 glowOrigin = entity.getPosition(partialTicks);
         LateWorldRenderQueue.enqueue(glowOrigin, (latePose, lateBuffers) -> {
             latePose.mulPose(this.entityRenderDispatcher.cameraOrientation());
-            writeGlow(lateBuffers.getBuffer(GLOW_TYPE), latePose.last().pose(), half, u0, v0, u1, v1, glowTint);
+            latePose.scale(glowScale, glowScale, glowScale);
+            writeGlow(lateBuffers.getBuffer(GLOW_TYPE), latePose.last().pose(), GLOW_HALF, u0, v0, u1, v1, glowTint);
         });
         if (points.size() > 2) {
             submitRope(buffers.getBuffer(ROPE_TYPE), poseStack.last().pose(), points, packedLight);
@@ -205,41 +210,28 @@ public final class GrappleRenderer extends EntityRenderer<EntityGrapple> {
         return rings;
     }
 
-    private static void calcPoints(Entity thrower, EntityGrapple grapple, float partialTicks, List<Vec3> points) {
+    private static void calcPoints(
+            Entity thrower, EntityGrapple grapple, float partialTicks, float age, List<Vec3> points) {
         if (thrower == null) {
             return;
         }
-        double tx = Mth.lerp(partialTicks, thrower.xOld, thrower.getX());
-        double ty = Mth.lerp(partialTicks, thrower.yOld, thrower.getY());
-        double tz = Mth.lerp(partialTicks, thrower.zOld, thrower.getZ());
+        Vec3 end = ropeEnd(grapple, thrower, partialTicks).subtract(grapple.getPosition(partialTicks));
+        points.addAll(GrappleRopeMath.points(end, grapple.ampl, age));
+    }
+
+    private static Vec3 ropeEnd(EntityGrapple grapple, Entity owner, float partialTicks) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (thrower == minecraft.getCameraEntity()
+        if (owner == minecraft.getCameraEntity()
                 && minecraft.options.getCameraType().isFirstPerson()) {
-            double yaw = Mth.rotLerp(partialTicks, thrower.yRotO, thrower.getYRot());
-            int handSign = grapple.getHand() == InteractionHand.MAIN_HAND ? 1 : -1;
-            double px = -Mth.cos((float) ((yaw - 0.5) / 180.0 * Math.PI)) * 0.1F * handSign;
-            double pz = -Mth.sin((float) ((yaw - 0.5) / 180.0 * Math.PI)) * 0.1F * handSign;
-            Vec3 look = thrower.getLookAngle();
-            tx += px + look.x / 5.0;
-            ty += thrower.getEyeHeight() / 2.6 + look.y / 5.0;
-            tz += pz + look.z / 5.0;
+            Vec3 eye = owner.getEyePosition(partialTicks);
+            Vec3 look = owner.getViewVector(partialTicks);
+            Vec3 right = new Vec3(-look.z, 0.0, look.x);
+            double rightLength = right.length();
+            right = rightLength > TANGENT_EPSILON ? right.scale(1.0 / rightLength) : new Vec3(1.0, 0.0, 0.0);
+            Vec3 down = look.cross(right);
+            double side = grapple.getHand() == InteractionHand.MAIN_HAND ? HAND_SIDE : -HAND_SIDE;
+            return eye.add(look.scale(HAND_FORWARD)).add(right.scale(side)).add(down.scale(HAND_DROP));
         }
-        double gx = Mth.lerp(partialTicks, grapple.xOld, grapple.getX());
-        double gy = Mth.lerp(partialTicks, grapple.yOld, grapple.getY());
-        double gz = Mth.lerp(partialTicks, grapple.zOld, grapple.getZ());
-        Vec3 end = new Vec3(tx - gx, ty - gy + thrower.getBbHeight() / 2.0F, tz - gz);
-        float length = (float) (end.length() * 5.0);
-        int steps = (int) length;
-        points.add(Vec3.ZERO);
-        for (int step = 1; step < steps - 1; step++) {
-            float dist = step * (length / steps);
-            float damp = 1.0F - step / (steps * 1.25F);
-            double dx = (tx - gx) / steps * step + Mth.sin(dist / 10.0F) * grapple.ampl * damp;
-            double dy = (ty - gy + thrower.getBbHeight() / 2.0F) / steps * step
-                    + Mth.sin(dist / 8.0F) * grapple.ampl * damp;
-            double dz = (tz - gz) / steps * step + Mth.sin(dist / 6.0F) * grapple.ampl * damp;
-            points.add(new Vec3(dx, dy, dz));
-        }
-        points.add(end);
+        return owner.getPosition(partialTicks).add(0.0, owner.getBbHeight() * BODY_MIDDLE, 0.0);
     }
 }
