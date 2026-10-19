@@ -52,8 +52,7 @@ public final class ProvideBehavior implements ISealBehavior {
             return true;
         }
         ItemMatch matching = ItemMatchSettings.of(seal);
-        boolean listed = filter.get().stacks().stream()
-                .anyMatch(slot -> !slot.isEmpty() && matching.test(slot, stack));
+        boolean listed = filter.get().stacks().stream().anyMatch(slot -> !slot.isEmpty() && matching.test(slot, stack));
         return filter.get().isBlacklist() != listed;
     }
 
@@ -103,8 +102,7 @@ public final class ProvideBehavior implements ISealBehavior {
             if (destination == null
                     || destination.distSqr(at.pos()) >= SERVICE_RANGE * SERVICE_RANGE
                     || !supplies(seal, request.wanted())
-                    || InvHelper.count(store, request.wanted(), ItemMatch.EXACT)
-                            < minimumStock) {
+                    || InvHelper.count(store, request.wanted(), ItemMatch.EXACT) < minimumStock) {
                 continue;
             }
             ISealEntity requester = request.requestingSeal();
@@ -187,8 +185,7 @@ public final class ProvideBehavior implements ISealBehavior {
         if (amount <= 0) {
             return;
         }
-        ItemStack taken =
-                InvHelper.extract(store, wanted.copyWithCount(amount), ItemMatch.EXACT, false);
+        ItemStack taken = InvHelper.extract(store, wanted.copyWithCount(amount), ItemMatch.EXACT, false);
         if (taken.isEmpty()) {
             return;
         }

@@ -87,7 +87,8 @@ public final class EmptyBehavior implements ISealBehavior {
                         level, at.pos(), at.face(), InvHelper.capped(wanted, room), matching, false);
                 ItemStack spill = golem.hands().hold(taken);
                 if (!spill.isEmpty()) {
-                    InvHelper.eject(level, at.pos().relative(at.face()), at.face().getOpposite(), spill);
+                    InvHelper.eject(
+                            level, at.pos().relative(at.face()), at.face().getOpposite(), spill);
                 }
                 HandlingSound.play(golem, HandlingSound.HIGH);
                 golem.animateSwing();

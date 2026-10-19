@@ -7,14 +7,8 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
@@ -41,10 +35,17 @@ public final class InvHelper {
      * Comparison flags for filter matching.
      *
      * @since 1.0.0
+     * @deprecated use immutable {@link ItemMatch} instances
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static final class InvFilter {
-        /** Compares item, damage and all components exactly. */
-        public static final InvFilter STRICT = new InvFilter(false, false, false, false);
+        /**
+         * Compares item, damage and all components exactly.
+         *
+         * @deprecated use {@link ItemMatch#EXACT}
+         */
+        @Deprecated(since = "1.1.0", forRemoval = true)
+        public static final InvFilter STRICT = new InvFilter(ItemMatch.EXACT);
 
         private final boolean ignoreDamage;
         private final boolean ignoreComponents;
@@ -52,11 +53,20 @@ public final class InvHelper {
         private final boolean useMod;
         private boolean relaxedComponents;
 
+        private InvFilter(ItemMatch match) {
+            this.ignoreDamage = match.anyDamage();
+            this.ignoreComponents = match.anyComponents();
+            this.useTags = match.sharedTag();
+            this.useMod = match.sameMod();
+            this.relaxedComponents = match.componentSubset();
+        }
+
+        /**
+         * @deprecated use {@link ItemMatch#ItemMatch(boolean, boolean, boolean, boolean, boolean)}
+         */
+        @Deprecated(since = "1.1.0", forRemoval = true)
         public InvFilter(boolean ignoreDamage, boolean ignoreComponents, boolean useTags, boolean useMod) {
-            this.ignoreDamage = ignoreDamage;
-            this.ignoreComponents = ignoreComponents;
-            this.useTags = useTags;
-            this.useMod = useMod;
+            this(new ItemMatch(ignoreDamage, ignoreComponents, false, useTags, useMod));
         }
 
         /**
@@ -64,7 +74,9 @@ public final class InvHelper {
          * second, which may carry extras.
          *
          * @return this filter
+         * @deprecated use {@link ItemMatch#withComponentSubset(boolean)}
          */
+        @Deprecated(since = "1.1.0", forRemoval = true)
         public InvFilter setRelaxedComponents() {
             this.relaxedComponents = true;
             return this;
@@ -81,7 +93,7 @@ public final class InvHelper {
 
     /** Returns the item handler exposed at a block face. */
     public static @Nullable IItemHandler handlerAt(Level level, BlockPos pos, @Nullable Direction side) {
-        return getItemHandlerAt(level, pos, side);
+        return level.getCapability(Capabilities.ItemHandler.BLOCK, pos, side);
     }
 
     /**
@@ -89,9 +101,11 @@ public final class InvHelper {
      * @param pos   the block to query
      * @param side  the side to access from, or null for the unsided handler
      * @return the item handler there, or null when absent
+     * @deprecated use {@link #handlerAt(Level, BlockPos, Direction)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static @Nullable IItemHandler getItemHandlerAt(Level level, BlockPos pos, @Nullable Direction side) {
-        return level.getCapability(Capabilities.ItemHandler.BLOCK, pos, side);
+        return handlerAt(level, pos, side);
     }
 
     /**
@@ -110,59 +124,65 @@ public final class InvHelper {
      * Inserts a stack into the inventory at a position.
      *
      * @return the remainder that did not fit
+     * @deprecated use {@link #insertAt(Level, BlockPos, Direction, ItemStack, boolean)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack insertStackAt(
             Level level, BlockPos pos, Direction side, ItemStack stack, boolean simulate) {
-        IItemHandler inventory = getItemHandlerAt(level, pos, side);
-        return inventory != null ? insertStack(inventory, stack, simulate) : stack;
+        return insertAt(level, pos, side, stack, simulate);
     }
 
     /** Inserts a stack at a block face and returns its uninserted remainder. */
     public static ItemStack insertAt(Level level, BlockPos pos, Direction side, ItemStack stack, boolean simulate) {
-        return insertStackAt(level, pos, side, stack, simulate);
+        IItemHandler inventory = handlerAt(level, pos, side);
+        return inventory != null ? insertStack(inventory, stack, simulate) : stack;
     }
 
     /**
      * @return a copy of the portion of the stack the inventory can accept
+     * @deprecated use {@link #acceptedPortion(Level, BlockPos, Direction, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack hasRoomFor(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        ItemStack rejected = insertStackAt(level, pos, side, stack.copy(), true);
-        if (rejected.isEmpty()) {
-            return stack.copy();
-        }
-        ItemStack accepted = stack.copy();
-        accepted.setCount(stack.getCount() - rejected.getCount());
-        return accepted;
+        return acceptedPortion(level, pos, side, stack);
     }
 
     /** Returns a copy containing the portion that could be accepted at a block face. */
     public static ItemStack acceptedPortion(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        return hasRoomFor(level, pos, side, stack);
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack rejected = insertAt(level, pos, side, stack, true);
+        int accepted = stack.getCount() - (rejected.isEmpty() ? 0 : rejected.getCount());
+        return accepted <= 0 ? ItemStack.EMPTY : stack.copyWithCount(accepted);
     }
 
     /**
      * @return whether the inventory can accept at least one item of the stack
+     * @deprecated use {@link #acceptsAny(Level, BlockPos, Direction, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean hasRoomForSome(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        ItemStack rejected = insertStackAt(level, pos, side, stack.copy(), true);
-        return stack.getCount() == 0 || rejected.getCount() != stack.getCount();
+        return acceptsAny(level, pos, side, stack);
     }
 
     /** Returns whether at least one item (or an empty stack) could be accepted at a block face. */
     public static boolean acceptsAny(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        return hasRoomForSome(level, pos, side, stack);
+        return stack.isEmpty() || !acceptedPortion(level, pos, side, stack).isEmpty();
     }
 
     /**
      * @return whether the inventory can accept the whole stack
+     * @deprecated use {@link #acceptsAll(Level, BlockPos, Direction, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean hasRoomForAll(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        return insertStackAt(level, pos, side, stack.copy(), true).isEmpty();
+        return acceptsAll(level, pos, side, stack);
     }
 
     /** Returns whether the complete stack could be accepted at a block face. */
     public static boolean acceptsAll(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        return hasRoomForAll(level, pos, side, stack);
+        return stack.isEmpty() || insertAt(level, pos, side, stack, true).isEmpty();
     }
 
     /** Counts matching items in a handler. */
@@ -231,22 +251,38 @@ public final class InvHelper {
 
     /** Inserts into the adjacent inventory, dropping any remainder into the world. */
     public static void eject(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        ejectStackAt(level, pos, side, stack);
+        ItemStack remainder = insertAt(level, pos.relative(side), side.getOpposite(), stack, false);
+        dropRemainder(level, pos, side, remainder);
     }
 
     /** Inserts into the adjacent inventory and returns the remainder when one is present. */
     public static ItemStack ejectOrReturn(Level level, BlockPos pos, Direction side, ItemStack stack) {
-        return ejectStackAt(level, pos, side, stack, true);
+        ItemStack remainder = insertAt(level, pos.relative(side), side.getOpposite(), stack, false);
+        if (handlerAt(level, pos.relative(side), side.getOpposite()) != null) {
+            return remainder;
+        }
+        dropRemainder(level, pos, side, remainder);
+        return ItemStack.EMPTY;
     }
 
     /** Drops an item at an entity's chest height on the logical server. */
     public static void dropAt(Level level, ItemStack stack, Entity entity) {
-        dropItemAtEntity(level, stack, entity);
+        if (!level.isClientSide() && !stack.isEmpty()) {
+            level.addFreshEntity(new ItemEntity(
+                    level, entity.getX(), entity.getY() + entity.getEyeHeight() / 2.0F, entity.getZ(), stack.copy()));
+        }
     }
 
     /** Returns a copy capped to the requested count. */
     public static ItemStack capped(ItemStack stack, int limit) {
-        return copyLimitedStack(stack, limit);
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack copy = stack.copy();
+        if (copy.getCount() > limit) {
+            copy.setCount(limit);
+        }
+        return copy;
     }
 
     /** Returns whether adjacent inventories, excluding the top, hold the requested amount. */
@@ -339,91 +375,34 @@ public final class InvHelper {
 
     /**
      * @return the total count of matching items in the handler
+     * @deprecated use {@link #count(IItemHandler, ItemStack, ItemMatch)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static int countTotalItemsIn(@Nullable IItemHandler inventory, ItemStack stack, InvFilter filter) {
-        int count = 0;
-        if (inventory != null) {
-            for (int index = 0; index < inventory.getSlots(); index++) {
-                ItemStack held = inventory.getStackInSlot(index);
-                if (!held.isEmpty() && areItemStacksEqual(stack, held, filter)) {
-                    count += held.getCount();
-                }
-            }
-        }
-        return count;
+        return count(inventory, stack, itemMatch(filter));
     }
 
     /**
      * @return the total count of matching items in the inventory at a position
+     * @deprecated use {@link #countAt(Level, BlockPos, Direction, ItemStack, ItemMatch)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static int countTotalItemsIn(Level level, BlockPos pos, Direction side, ItemStack stack, InvFilter filter) {
-        return countTotalItemsIn(getItemHandlerAt(level, pos, side), stack, filter);
+        return countAt(level, pos, side, stack, itemMatch(filter));
     }
 
     /**
      * Compares two stacks under the filter's flags. Counts are ignored.
+     * @deprecated use {@link ItemMatch#test(ItemStack, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean areItemStacksEqual(ItemStack first, ItemStack second, InvFilter filter) {
-        if (first.isEmpty() || second.isEmpty()) {
-            return first.isEmpty() && second.isEmpty();
-        }
-        if (filter.useMod) {
-            return itemId(first).getNamespace().equals(itemId(second).getNamespace());
-        }
-        if (filter.useTags) {
-            return first.getItem() == second.getItem() || shareTag(first, second);
-        }
-        if (first.getItem() != second.getItem()) {
-            return false;
-        }
-        if (!filter.ignoreDamage && first.getDamageValue() != second.getDamageValue()) {
-            return false;
-        }
-        if (filter.ignoreComponents) {
-            return true;
-        }
-        if (filter.relaxedComponents) {
-            return componentsContainedIn(first, second);
-        }
-        return componentsEqualIgnoringDamage(first, second, filter.ignoreDamage);
+        return itemMatch(filter).test(first, second);
     }
 
-    private static ResourceLocation itemId(ItemStack stack) {
-        return BuiltInRegistries.ITEM.getKey(stack.getItem());
-    }
-
-    private static boolean shareTag(ItemStack first, ItemStack second) {
-        return first.getItem().builtInRegistryHolder().tags().anyMatch(second::is);
-    }
-
-    private static boolean componentsContainedIn(ItemStack first, ItemStack second) {
-        for (DataComponentType<?> type : first.getComponents().keySet()) {
-            if (!Objects.equals(
-                    first.getComponents().get(type), second.getComponents().get(type))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean componentsEqualIgnoringDamage(ItemStack first, ItemStack second, boolean ignoreDamage) {
-        if (!ignoreDamage) {
-            return ItemStack.isSameItemSameComponents(first, second);
-        }
-        DataComponentMap firstComponents = first.getComponents();
-        DataComponentMap secondComponents = second.getComponents();
-        for (DataComponentType<?> type : firstComponents.keySet()) {
-            if (type != DataComponents.DAMAGE
-                    && !Objects.equals(firstComponents.get(type), secondComponents.get(type))) {
-                return false;
-            }
-        }
-        for (DataComponentType<?> type : secondComponents.keySet()) {
-            if (type != DataComponents.DAMAGE && !firstComponents.keySet().contains(type)) {
-                return false;
-            }
-        }
-        return true;
+    private static ItemMatch itemMatch(InvFilter filter) {
+        return new ItemMatch(
+                filter.ignoreDamage, filter.ignoreComponents, filter.relaxedComponents, filter.useTags, filter.useMod);
     }
 
     /**
@@ -435,183 +414,97 @@ public final class InvHelper {
      * @param filter       the comparison flags
      * @param leaveOne     whether the last item of a kind must stay behind
      * @return the first matching stack, or an empty stack
+     * @deprecated use {@link StackFilter#firstAccepted(IItemHandler, boolean)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack findFirstMatchFromFilter(
             List<ItemStack> filterStacks, boolean blacklist, IItemHandler inv, InvFilter filter, boolean leaveOne) {
-        slots:
-        for (int index = 0; index < inv.getSlots(); index++) {
-            ItemStack held = inv.getStackInSlot(index);
-            if (held.isEmpty()) {
-                continue;
-            }
-            ItemStack candidate = copyLimitedStack(held, held.getMaxStackSize());
-            if (candidate.isEmpty() || (leaveOne && countTotalItemsIn(inv, candidate, filter) < 2)) {
-                continue;
-            }
-            boolean allow = false;
-            boolean allEmpty = true;
-            for (ItemStack ghost : filterStacks) {
-                if (ghost.isEmpty()) {
-                    continue;
-                }
-                allEmpty = false;
-                boolean matches = areItemStacksEqual(ghost, candidate, filter);
-                if (blacklist) {
-                    if (matches) {
-                        continue slots;
-                    }
-                    allow = true;
-                } else if (matches) {
-                    return candidate;
-                }
-            }
-            if (blacklist && (allow || allEmpty)) {
-                return candidate;
-            }
-        }
-        return ItemStack.EMPTY;
+        return StackFilter.of(filterStacks, blacklist, itemMatch(filter)).firstAccepted(inv, leaveOne);
     }
 
     /**
      * @return whether a stack passes a ghost-stack filter
+     * @deprecated use {@link StackFilter#accepts(ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static boolean matchesFilters(
             List<ItemStack> filterStacks, boolean blacklist, ItemStack stack, InvFilter filter) {
-        if (stack.isEmpty()) {
-            return false;
-        }
-        boolean allow = false;
-        boolean allEmpty = true;
-        for (ItemStack ghost : filterStacks) {
-            if (ghost.isEmpty()) {
-                continue;
-            }
-            allEmpty = false;
-            boolean matches = areItemStacksEqual(ghost, stack, filter);
-            if (blacklist) {
-                if (matches) {
-                    return false;
-                }
-                allow = true;
-            } else if (matches) {
-                return true;
-            }
-        }
-        return blacklist && (allow || allEmpty);
+        return StackFilter.of(filterStacks, blacklist, itemMatch(filter)).accepts(stack);
     }
 
     /**
      * Finds the first candidate stack that passes a ghost-stack filter.
      *
      * @return the matching stack, or an empty stack
+     * @deprecated use {@link StackFilter#firstAccepted(List)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack findFirstMatchFromFilter(
             List<ItemStack> filterStacks,
             List<Integer> filterSizes,
             boolean blacklist,
             List<ItemStack> candidates,
             InvFilter filter) {
-        return findFirstMatchFromFilterWithSize(filterStacks, filterSizes, blacklist, candidates, filter)
-                .stack();
+        return new StackFilter(filterStacks, filterSizes, blacklist, itemMatch(filter)).firstAccepted(candidates);
     }
 
     /**
      * Finds the first candidate stack that passes a ghost-stack filter, with the matching
      * slot's size limit.
+     * @deprecated use {@link StackFilter#firstAcceptedWithLimit(List)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static FilterMatch findFirstMatchFromFilterWithSize(
             List<ItemStack> filterStacks,
             List<Integer> filterSizes,
             boolean blacklist,
             List<ItemStack> candidates,
             InvFilter filter) {
-        candidates:
-        for (ItemStack candidate : candidates) {
-            if (candidate.isEmpty()) {
-                continue;
-            }
-            boolean allow = false;
-            boolean allEmpty = true;
-            for (int slot = 0; slot < filterStacks.size(); slot++) {
-                ItemStack ghost = filterStacks.get(slot);
-                if (ghost.isEmpty()) {
-                    continue;
-                }
-                allEmpty = false;
-                boolean matches = areItemStacksEqual(ghost, candidate, filter);
-                if (blacklist) {
-                    if (matches) {
-                        continue candidates;
-                    }
-                    allow = true;
-                } else if (matches) {
-                    return new FilterMatch(candidate, filterSizes.get(slot));
-                }
-            }
-            if (blacklist && (allow || allEmpty)) {
-                return new FilterMatch(candidate, 0);
-            }
-        }
-        return new FilterMatch(ItemStack.EMPTY, 0);
+        return new StackFilter(filterStacks, filterSizes, blacklist, itemMatch(filter))
+                .firstAcceptedWithLimit(candidates);
     }
 
     /**
      * @return a copy of the stack, capped at the given count
+     * @deprecated use {@link #capped(ItemStack, int)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack copyLimitedStack(ItemStack stack, int limit) {
-        if (stack.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        ItemStack copy = stack.copy();
-        if (copy.getCount() > limit) {
-            copy.setCount(limit);
-        }
-        return copy;
+        return capped(stack, limit);
     }
 
     /**
      * Removes up to the stack's count of matching items from the inventory at a position.
      *
      * @return the removed items, or an empty stack
+     * @deprecated use {@link #extractAt(Level, BlockPos, Direction, ItemStack, ItemMatch, boolean)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack removeStackFrom(
             Level level, BlockPos pos, Direction side, ItemStack stack, InvFilter filter, boolean simulate) {
-        return removeStackFrom(getItemHandlerAt(level, pos, side), stack, filter, simulate);
+        return extractAt(level, pos, side, stack, itemMatch(filter), simulate);
     }
 
     /**
      * Removes up to the stack's count of matching items from a handler.
      *
      * @return the removed items, or an empty stack
+     * @deprecated use {@link #extract(IItemHandler, ItemStack, ItemMatch, boolean)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack removeStackFrom(
             @Nullable IItemHandler inventory, ItemStack stack, InvFilter filter, boolean simulate) {
-        if (inventory == null || stack.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-        int amount = stack.getCount();
-        int removed = 0;
-        for (int index = 0; index < inventory.getSlots() && removed < amount; index++) {
-            ItemStack held = inventory.getStackInSlot(index);
-            if (!held.isEmpty() && areItemStacksEqual(stack, held, filter)) {
-                removed +=
-                        inventory.extractItem(index, amount - removed, simulate).getCount();
-            }
-        }
-        if (removed == 0) {
-            return ItemStack.EMPTY;
-        }
-        ItemStack out = stack.copy();
-        out.setCount(removed);
-        return out;
+        return extract(inventory, stack, itemMatch(filter), simulate);
     }
 
     /**
      * Pushes a stack into the inventory beyond the given side, spilling the remainder into
      * the world as an item entity.
+     * @deprecated use {@link #eject(Level, BlockPos, Direction, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static void ejectStackAt(Level level, BlockPos pos, Direction side, ItemStack out) {
-        ejectStackAt(level, pos, side, out, false);
+        eject(level, pos, side, out);
     }
 
     /**
@@ -619,14 +512,22 @@ public final class InvHelper {
      * is returned instead of spilled when an inventory exists there.
      *
      * @return the remainder in smart mode, otherwise an empty stack
+     * @deprecated use {@link #ejectOrReturn(Level, BlockPos, Direction, ItemStack)} or {@link #eject(Level, BlockPos, Direction, ItemStack)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static ItemStack ejectStackAt(Level level, BlockPos pos, Direction side, ItemStack out, boolean smart) {
-        ItemStack remainder = insertStackAt(level, pos.relative(side), side.getOpposite(), out, false);
-        if (smart && getItemHandlerAt(level, pos.relative(side), side.getOpposite()) != null) {
-            return remainder;
-        }
+        return smart ? ejectOrReturn(level, pos, side, out) : dropEjected(level, pos, side, out);
+    }
+
+    private static ItemStack dropEjected(Level level, BlockPos pos, Direction side, ItemStack out) {
+        ItemStack remainder = insertAt(level, pos.relative(side), side.getOpposite(), out, false);
+        dropRemainder(level, pos, side, remainder);
+        return ItemStack.EMPTY;
+    }
+
+    private static void dropRemainder(Level level, BlockPos pos, Direction side, ItemStack remainder) {
         if (remainder.isEmpty()) {
-            return ItemStack.EMPTY;
+            return;
         }
         BlockPos spawnPos = pos;
         BlockPos target = pos.relative(side);
@@ -641,35 +542,32 @@ public final class InvHelper {
                 remainder);
         entity.setDeltaMovement(0.3 * side.getStepX(), 0.3 * side.getStepY(), 0.3 * side.getStepZ());
         level.addFreshEntity(entity);
-        return ItemStack.EMPTY;
     }
 
     /**
      * @return the total count of matching dropped items around a position
+     * @deprecated use {@link #countDropped(Level, BlockPos, ItemStack, double, ItemMatch)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static int countStackInWorld(Level level, BlockPos pos, ItemStack stack, double range, InvFilter filter) {
-        int count = 0;
-        AABB area = new AABB(pos).inflate(range);
-        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, area)) {
-            if (!item.getItem().isEmpty() && areItemStacksEqual(stack, item.getItem(), filter)) {
-                count += item.getItem().getCount();
-            }
-        }
-        return count;
+        return countDropped(level, pos, stack, range, itemMatch(filter));
     }
 
     /**
      * Drops a stack at an entity's chest height. Server side only.
+     * @deprecated use {@link #dropAt(Level, ItemStack, Entity)}
      */
+    @Deprecated(since = "1.1.0", forRemoval = true)
     public static void dropItemAtEntity(Level level, ItemStack stack, Entity entity) {
-        if (!level.isClientSide() && !stack.isEmpty()) {
-            level.addFreshEntity(new ItemEntity(
-                    level, entity.getX(), entity.getY() + entity.getEyeHeight() / 2.0F, entity.getZ(), stack.copy()));
-        }
+        dropAt(level, stack, entity);
     }
 
-    /** Matches by item identity or shared tag. */
-    public static final InvFilter BASE_TAGS = new InvFilter(false, false, true, false);
+    /**
+     * Matches by item identity or shared tag.
+     * @deprecated use {@link ItemMatch#ITEM_OR_TAG}
+     */
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    public static final InvFilter BASE_TAGS = new InvFilter(ItemMatch.ITEM_OR_TAG);
 
     /**
      * @return whether inventories adjacent to the position, ignoring the top, together hold
@@ -948,7 +846,7 @@ public final class InvHelper {
             if (!level.hasChunkAt(neighbour)) {
                 continue;
             }
-            IItemHandler handler = getItemHandlerAt(level, neighbour, face.getOpposite());
+            IItemHandler handler = handlerAt(level, neighbour, face.getOpposite());
             if (handler != null && seen.put(handler, Boolean.TRUE) == null) {
                 sources.add(new HandlerSource(handler, copyHandlerStacks(handler)));
             }

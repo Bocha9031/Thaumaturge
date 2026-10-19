@@ -95,7 +95,8 @@ public final class BreakBehavior extends CellWorkBehavior {
         if (form.isEmpty()) {
             return filter.isBlacklist();
         }
-        return StackFilter.of(filter.stacks(), filter.isBlacklist(), ItemMatchSettings.of(seal)).accepts(form);
+        return StackFilter.of(filter.stacks(), filter.isBlacklist(), ItemMatchSettings.of(seal))
+                .accepts(form);
     }
 
     private static ItemStack itemForm(Level level, BlockPos pos, BlockState state) {

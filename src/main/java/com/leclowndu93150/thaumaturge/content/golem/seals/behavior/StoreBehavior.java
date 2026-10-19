@@ -148,7 +148,6 @@ public final class StoreBehavior implements ISealBehavior {
         if (!InvHelper.acceptsAny(level, at.pos(), at.face(), carried.stack())) {
             return false;
         }
-        return !limited(seal, carried)
-                || InvHelper.count(inventory, carried.stack(), matching) < carried.sizeLimit();
+        return !limited(seal, carried) || InvHelper.count(inventory, carried.stack(), matching) < carried.sizeLimit();
     }
 }

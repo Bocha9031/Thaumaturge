@@ -109,8 +109,8 @@ public final class BlockEntityPatternCrafter extends AbstractSyncedBlockEntity {
             ItemStack resource = above.getStackInSlot(slot);
             if (resource.isEmpty()) continue;
             ItemStack testStack = resource.copyWithCount(inputCount);
-            ItemStack removed = InvHelper.extractAt(
-                    server, pos.above(), Direction.DOWN, testStack.copy(), ItemMatch.EXACT, true);
+            ItemStack removed =
+                    InvHelper.extractAt(server, pos.above(), Direction.DOWN, testStack.copy(), ItemMatch.EXACT, true);
             if (removed.getCount() != inputCount) continue;
             CraftResult result = craft(server, testStack);
             if (result == null || power < 1.0F) continue;
