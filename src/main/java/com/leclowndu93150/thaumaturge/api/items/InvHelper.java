@@ -45,20 +45,22 @@ public final class InvHelper {
          * @deprecated use {@link ItemMatch#EXACT}
          */
         @Deprecated(since = "1.1.0", forRemoval = true)
-        public static final InvFilter STRICT = new InvFilter(ItemMatch.EXACT);
+        public static final InvFilter STRICT = new InvFilter(ItemMatch.EXACT, true);
 
+        private final boolean shared;
         private final boolean ignoreDamage;
         private final boolean ignoreComponents;
         private final boolean useTags;
         private final boolean useMod;
         private boolean relaxedComponents;
 
-        private InvFilter(ItemMatch match) {
+        private InvFilter(ItemMatch match, boolean shared) {
             this.ignoreDamage = match.anyDamage();
             this.ignoreComponents = match.anyComponents();
             this.useTags = match.sharedTag();
             this.useMod = match.sameMod();
             this.relaxedComponents = match.componentSubset();
+            this.shared = shared;
         }
 
         /**
@@ -66,7 +68,7 @@ public final class InvHelper {
          */
         @Deprecated(since = "1.1.0", forRemoval = true)
         public InvFilter(boolean ignoreDamage, boolean ignoreComponents, boolean useTags, boolean useMod) {
-            this(new ItemMatch(ignoreDamage, ignoreComponents, false, useTags, useMod));
+            this(new ItemMatch(ignoreDamage, ignoreComponents, false, useTags, useMod), false);
         }
 
         /**
@@ -78,6 +80,9 @@ public final class InvHelper {
          */
         @Deprecated(since = "1.1.0", forRemoval = true)
         public InvFilter setRelaxedComponents() {
+            if (shared) {
+                return new InvFilter(new ItemMatch(ignoreDamage, ignoreComponents, true, useTags, useMod), false);
+            }
             this.relaxedComponents = true;
             return this;
         }
@@ -567,7 +572,7 @@ public final class InvHelper {
      * @deprecated use {@link ItemMatch#ITEM_OR_TAG}
      */
     @Deprecated(since = "1.1.0", forRemoval = true)
-    public static final InvFilter BASE_TAGS = new InvFilter(ItemMatch.ITEM_OR_TAG);
+    public static final InvFilter BASE_TAGS = new InvFilter(ItemMatch.ITEM_OR_TAG, true);
 
     /**
      * @return whether inventories adjacent to the position, ignoring the top, together hold

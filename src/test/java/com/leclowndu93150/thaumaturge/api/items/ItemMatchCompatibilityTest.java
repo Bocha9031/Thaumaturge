@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -15,6 +17,31 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import org.junit.jupiter.api.Test;
 
 class ItemMatchCompatibilityTest {
+    @Test
+    void legacySharedFiltersReturnRelaxedCopiesInsteadOfMutatingGlobalConstants() throws Exception {
+        Class<?> filterType = Class.forName(InvHelper.class.getName() + "$InvFilter");
+        Field strictField = filterType.getField("STRICT");
+        Object strict = strictField.get(null);
+        Method relax = filterType.getMethod("setRelaxedComponents");
+        Field relaxedComponents = filterType.getDeclaredField("relaxedComponents");
+        relaxedComponents.setAccessible(true);
+        Object relaxedStrict = relax.invoke(strict);
+
+        assertNotSame(strict, relaxedStrict);
+        assertFalse(relaxedComponents.getBoolean(strict));
+        assertTrue(relaxedComponents.getBoolean(relaxedStrict));
+        assertFalse(legacyMatches(filterType, strict, plainIron(), namedIron()));
+        assertTrue(legacyMatches(filterType, relaxedStrict, plainIron(), namedIron()));
+        assertSame(relaxedStrict, relax.invoke(relaxedStrict));
+
+        Field baseTagsField = InvHelper.class.getField("BASE_TAGS");
+        Object baseTags = baseTagsField.get(null);
+        Object relaxedBaseTags = relax.invoke(baseTags);
+        assertNotSame(baseTags, relaxedBaseTags);
+        assertFalse(relaxedComponents.getBoolean(baseTags));
+        assertTrue(relaxedComponents.getBoolean(relaxedBaseTags));
+    }
+
     @Test
     void exactMatchIgnoresCountButRespectsItemComponentsAndDamage() {
         ItemStack first = new ItemStack(Items.IRON_SWORD, 1);
@@ -89,5 +116,21 @@ class ItemMatchCompatibilityTest {
         assertTrue(InvHelper.takeFromPlayer(player, new ItemStack(Items.IRON_INGOT, 4), false));
         assertTrue(inventory.getItem(0).isEmpty());
         assertEquals(1, inventory.getItem(1).getCount());
+    }
+
+    private static boolean legacyMatches(Class<?> filterType, Object filter, ItemStack first, ItemStack second)
+            throws Exception {
+        Method compare = InvHelper.class.getMethod("areItemStacksEqual", ItemStack.class, ItemStack.class, filterType);
+        return (boolean) compare.invoke(null, first, second, filter);
+    }
+
+    private static ItemStack plainIron() {
+        return new ItemStack(Items.IRON_INGOT);
+    }
+
+    private static ItemStack namedIron() {
+        ItemStack stack = plainIron();
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal("named"));
+        return stack;
     }
 }
