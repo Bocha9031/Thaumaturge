@@ -104,6 +104,7 @@ class InfusionRareNuggetParityTest {
         when(player.getUUID()).thenReturn(UUID.randomUUID());
         when(player.getMainHandItem()).thenReturn(held);
         when(held.getEnchantmentLevel(any())).thenReturn(0);
+        when(held.isCorrectToolForDrops(state)).thenReturn(true);
         List<ItemEntity> drops = new ArrayList<>(List.of(mock(ItemEntity.class)));
         BlockDropsEvent event = event(level, state, player, drops);
         Item cluster = mock(Item.class);
@@ -125,6 +126,39 @@ class InfusionRareNuggetParityTest {
             randomOrder.verify(random).nextDouble();
         }
         assertEquals(1, drops.size());
+    }
+
+    @Test
+    void refiningDoesNotChangeDropsWhenToolCannotHarvestBlock() {
+        RandomSource random = mock(RandomSource.class);
+        ServerLevel level = level(random);
+        BlockState state = mock(BlockState.class);
+        Player player = mock(Player.class);
+        ItemStack held = mock(ItemStack.class);
+        ItemEntity drop = mock(ItemEntity.class);
+        List<ItemEntity> drops = new ArrayList<>(List.of(drop));
+        when(player.getUUID()).thenReturn(UUID.randomUUID());
+        when(player.getMainHandItem()).thenReturn(held);
+        when(held.isCorrectToolForDrops(state)).thenReturn(false);
+        BlockDropsEvent event = event(level, state, player, drops);
+        Item cluster = mock(Item.class);
+
+        try (MockedStatic<InfusionEnchantmentHelper> enchantments = mockStatic(InfusionEnchantmentHelper.class);
+                MockedStatic<RefiningResults> refiningResults = mockStatic(RefiningResults.class)) {
+            enchantments
+                    .when(() -> InfusionEnchantmentHelper.has(held, InfusionEnchantment.REFINING))
+                    .thenReturn(true);
+            enchantments
+                    .when(() -> InfusionEnchantmentHelper.level(held, InfusionEnchantment.REFINING))
+                    .thenReturn(1);
+            refiningResults.when(() -> RefiningResults.clusterFor(state)).thenReturn(cluster);
+
+            InfusionEnchantmentEvents.onBlockDrops(event);
+        }
+
+        verify(drop, never()).setItem(any());
+        verify(random, never()).nextFloat();
+        assertEquals(List.of(drop), drops);
     }
 
     @Test

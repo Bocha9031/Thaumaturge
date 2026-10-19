@@ -252,10 +252,10 @@ public final class InfusionEnchantmentEvents {
         ItemStack held = player.getMainHandItem();
 
         if (InfusionEnchantmentHelper.has(held, InfusionEnchantment.REFINING)) {
-            int fortune = 1 + cappedLevel(held, InfusionEnchantment.REFINING);
-            float chance = fortune * REFINING_CHANCE_PER_LEVEL;
+            int rank = cappedLevel(held, InfusionEnchantment.REFINING);
             Item cluster = RefiningResults.clusterFor(state);
-            if (cluster != null) {
+            if (cluster != null && (held.isCorrectToolForDrops(state) || hasSilkTouch(level, held))) {
+                float chance = (1 + rank) * REFINING_CHANCE_PER_LEVEL;
                 boolean changed = false;
                 for (ItemEntity drop : event.getDrops()) {
                     if (level.getRandom().nextFloat() <= chance) {
@@ -266,11 +266,13 @@ public final class InfusionEnchantmentEvents {
                 if (changed) {
                     level.playSound(
                             null,
-                            pos,
+                            pos.getX() + 0.5,
+                            pos.getY() + 0.5,
+                            pos.getZ() + 0.5,
                             SoundEvents.EXPERIENCE_ORB_PICKUP,
-                            SoundSource.PLAYERS,
+                            SoundSource.BLOCKS,
                             0.2F,
-                            0.7F + level.getRandom().nextFloat() * 0.2F);
+                            0.75F + level.getRandom().nextFloat() * 0.2F);
                 }
             }
         }
@@ -430,13 +432,7 @@ public final class InfusionEnchantmentEvents {
     }
 
     private static void addRareNugget(BlockDropsEvent event, ServerLevel level, BlockState state) {
-        boolean silk = event.getBreaker() instanceof Player p
-                && p.getMainHandItem()
-                                .getEnchantmentLevel(level.registryAccess()
-                                        .lookupOrThrow(Registries.ENCHANTMENT)
-                                        .getOrThrow(Enchantments.SILK_TOUCH))
-                        > 0;
-        if (silk) {
+        if (event.getBreaker() instanceof Player player && hasSilkTouch(level, player.getMainHandItem())) {
             return;
         }
         double chance = rareNuggetChance(state);
@@ -451,6 +447,13 @@ public final class InfusionEnchantmentEvents {
                         pos.getY() + 0.5,
                         pos.getZ() + 0.5,
                         new ItemStack(TTItems.NUGGET_QUARTZ.get())));
+    }
+
+    private static boolean hasSilkTouch(ServerLevel level, ItemStack stack) {
+        return stack.getEnchantmentLevel(level.registryAccess()
+                        .lookupOrThrow(Registries.ENCHANTMENT)
+                        .getOrThrow(Enchantments.SILK_TOUCH))
+                > 0;
     }
 
     private static double rareNuggetChance(BlockState state) {

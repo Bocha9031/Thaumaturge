@@ -173,6 +173,7 @@ class InfusionEnchantmentRankCapTest {
         BlockState state = mock(BlockState.class);
         Player player = mock(Player.class);
         ItemStack tool = stackWithLevel(InfusionEnchantment.REFINING, Integer.MAX_VALUE);
+        when(tool.isCorrectToolForDrops(state)).thenReturn(true);
         ItemEntity drop = mock(ItemEntity.class);
         ItemStack originalDrop = new ItemStack(Items.RAW_IRON);
         when(drop.getItem()).thenReturn(originalDrop);
