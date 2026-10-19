@@ -19,9 +19,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderOwner;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -107,6 +109,42 @@ class NodeTypeBehaviorPortTest {
             NodeBiomeSpread.tick(level, node(NodeType.PURE), BlockPos.ZERO, 50);
             taint.verify(() -> TaintBiomeManager.replaceColumn(level, new BlockPos(2, 0, 2), TTBiomes.MAGICAL_FOREST));
             verify(random, org.mockito.Mockito.times(4)).nextInt(8);
+        }
+    }
+
+    @Test
+    void darkBiomeSpreadSkipsColumnsAlreadyEerie() {
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        HolderOwner<Biome> owner = new HolderOwner<>() {};
+        Holder<Biome> biome = Holder.Reference.createStandAlone(owner, TTBiomes.EERIE);
+        when(level.dimension()).thenReturn(Level.OVERWORLD);
+        when(level.getRandom()).thenReturn(random);
+        when(level.hasChunkAt(BlockPos.ZERO)).thenReturn(true);
+        when(level.getBiome(BlockPos.ZERO)).thenReturn(biome);
+        when(random.nextInt(12)).thenReturn(0);
+
+        try (MockedStatic<TaintBiomeManager> taint = mockStatic(TaintBiomeManager.class)) {
+            NodeBiomeSpread.tick(level, node(NodeType.DARK), BlockPos.ZERO, 50);
+            taint.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void darkBiomeSpreadReplacesOtherLoadedColumns() {
+        ServerLevel level = mock(ServerLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        HolderOwner<Biome> owner = new HolderOwner<>() {};
+        Holder<Biome> biome = Holder.Reference.createStandAlone(owner, TTBiomes.MAGICAL_FOREST);
+        when(level.dimension()).thenReturn(Level.OVERWORLD);
+        when(level.getRandom()).thenReturn(random);
+        when(level.hasChunkAt(BlockPos.ZERO)).thenReturn(true);
+        when(level.getBiome(BlockPos.ZERO)).thenReturn(biome);
+        when(random.nextInt(12)).thenReturn(0);
+
+        try (MockedStatic<TaintBiomeManager> taint = mockStatic(TaintBiomeManager.class)) {
+            NodeBiomeSpread.tick(level, node(NodeType.DARK), BlockPos.ZERO, 50);
+            taint.verify(() -> TaintBiomeManager.replaceColumn(level, BlockPos.ZERO, TTBiomes.EERIE));
         }
     }
 }

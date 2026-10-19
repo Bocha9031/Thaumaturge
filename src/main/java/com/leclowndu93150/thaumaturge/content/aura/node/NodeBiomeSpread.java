@@ -59,7 +59,7 @@ final class NodeBiomeSpread {
     }
 
     private static void eerie(ServerLevel level, BlockPos sample) {
-        if (level.hasChunkAt(sample)) {
+        if (level.hasChunkAt(sample) && !level.getBiome(sample).is(TTBiomes.EERIE)) {
             TaintBiomeManager.replaceColumn(level, sample, TTBiomes.EERIE);
         }
     }
