@@ -34,14 +34,15 @@ public enum NodeComponentProvider implements IBlockComponentProvider {
 
     @Override
     public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-        if (!JadeConfig.shouldShow(config, JadeConfig.NODES, accessor)) return;
-        if (!(accessor.getBlockEntity() instanceof BlockEntityNode node)) {
-            return;
-        }
         Player player = accessor.getPlayer();
-        if (!GogglesAccess.wearsRevealingGear(player)
-                && !(player.getMainHandItem().getItem() instanceof ThaumometerItem)
-                && !(player.getOffhandItem().getItem() instanceof ThaumometerItem)) {
+        boolean holdingThaumometer = player != null
+                && (player.getMainHandItem().getItem() instanceof ThaumometerItem
+                        || player.getOffhandItem().getItem() instanceof ThaumometerItem);
+        if (!config.get(JadeConfig.CATEGORY)
+                || !JadeConfig.shouldShowNodes(
+                        config.getEnum(JadeConfig.NODES), GogglesAccess.wearsRevealingGear(player), holdingThaumometer))
+            return;
+        if (!(accessor.getBlockEntity() instanceof BlockEntityNode node)) {
             return;
         }
         if (node instanceof BlockEntityJarNode

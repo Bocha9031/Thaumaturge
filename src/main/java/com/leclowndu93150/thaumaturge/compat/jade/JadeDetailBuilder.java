@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.compat.jade;
 
-import com.leclowndu93150.thaumaturge.api.aspect.AspectComponents;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
@@ -28,7 +27,7 @@ final class JadeDetailBuilder {
 
     Component aspectName(Holder<IAspect> aspect) {
         return AspectPools.isDiscovered(player, aspect)
-                ? AspectComponents.trueName(aspect)
+                ? JadeComponents.coloredAspectName(aspect)
                 : Component.translatable("tooltip.thaumaturge.aspect.unknown");
     }
 

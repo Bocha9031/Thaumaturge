@@ -3,10 +3,13 @@ package com.leclowndu93150.thaumaturge.compat.jade;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectComponents;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
+import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import java.util.List;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextColor;
 import snownee.jade.api.ITooltip;
 
 final class JadeComponents {
@@ -41,11 +44,21 @@ final class JadeComponents {
                 list.append(Component.translatable("jade.thaumaturge.aspect_separator"));
             }
             AspectInstance entry = entries.get(i);
-            list.append(Component.translatable(
-                    "jade.thaumaturge.aspect_amount", AspectComponents.name(entry.aspect()), entry.amount()));
+            list.append(aspectLabel(entry));
         }
         return firstLine
                 ? Component.translatable(key, list)
                 : Component.literal("  ").append(list);
+    }
+
+    static Component aspectLabel(AspectInstance entry) {
+        return Component.translatable(
+                "jade.thaumaturge.aspect_amount", coloredAspectName(entry.aspect()), entry.amount());
+    }
+
+    static Component coloredAspectName(Holder<IAspect> aspect) {
+        return AspectComponents.trueName(aspect)
+                .withStyle(style ->
+                        style.withColor(TextColor.fromRgb(aspect.value().color())));
     }
 }

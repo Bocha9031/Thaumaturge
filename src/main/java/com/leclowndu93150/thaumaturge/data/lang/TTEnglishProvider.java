@@ -1747,6 +1747,7 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("config.jade.plugin_thaumaturge.essentia", "Essentia Contents");
         add("config.jade.plugin_thaumaturge.machine", "Machine Progress");
         add("config.jade.plugin_thaumaturge.golem", "Golem Info");
+        add("config.jade.plugin_thaumaturge.machine_icon", "Multiblock Preview Icon");
         addJadeMode("nodes", "Aura Nodes");
         addJadeMode("golems", "Golems");
         addJadeMode("vis_relays", "Vis Relays");
@@ -1775,6 +1776,8 @@ public final class TTEnglishProvider extends LanguageProvider {
         addJadeMode("everfull_urns", "Everfull Urns");
         addJadeMode("infernal_furnaces", "Infernal Furnaces");
         addJadeMode("focal_manipulators", "Focal Manipulators");
+        addJadeMode("mirrors", "Magic Mirrors");
+        addJadeMode("essentia_mirrors", "Essentia Mirrors");
         add("config.jade.thaumaturge", "Thaumcraft");
         add("config.jade.plugin_thaumaturge.display", "Thaumcraft Overlay Information");
         add("jade.thaumaturge.essentia.none", "Essentia: None");
@@ -1813,6 +1816,10 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("jade.thaumaturge.focal.focus", "Focus: %s");
         add("jade.thaumaturge.focal.focus_inserted", "Focus inserted");
         add("jade.thaumaturge.focal.no_focus", "No focus inserted");
+        add("jade.thaumaturge.mirror.linked", "Link established");
+        add("jade.thaumaturge.mirror.unlinked", "Not linked");
+        add("jade.thaumaturge.mirror.destination", "Destination: %s at %s, %s, %s");
+        add("jade.thaumaturge.mirror.instability", "Instability: %s");
         add("jade.thaumaturge.relay.linked", "Linked");
         add("jade.thaumaturge.golem.xp", "Experience: %s / %s");
         add("jade.thaumaturge.brain_jar.experience", "Experience: %s / %s");
@@ -1845,10 +1852,10 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("jade.thaumaturge.advanced_furnace.status.waiting_vis", "Waiting for vis");
         add("jade.thaumaturge.advanced_furnace.status.storage_full", "Essentia storage full");
         add("jade.thaumaturge.advanced_furnace.input", "Input: %s");
-        add("jade.thaumaturge.advanced_furnace.input_cost", "Input cost: %s Ignis, %s Perditio, %s Aqua");
-        add("jade.thaumaturge.advanced_furnace.ignis", "Ignis: %s / %s");
-        add("jade.thaumaturge.advanced_furnace.perditio", "Perditio: %s / %s");
-        add("jade.thaumaturge.advanced_furnace.aqua", "Aqua: %s / %s");
+        add("jade.thaumaturge.advanced_furnace.input_cost", "Input cost: %s %s, %s %s, %s %s");
+        add("jade.thaumaturge.advanced_furnace.ignis", "%s: %s / %s");
+        add("jade.thaumaturge.advanced_furnace.perditio", "%s: %s / %s");
+        add("jade.thaumaturge.advanced_furnace.aqua", "%s: %s / %s");
         add("jade.thaumaturge.machine.heat", "Heat: %s%%");
         add("jade.thaumaturge.transducer.status.0", "No node below");
         add("jade.thaumaturge.transducer.status.1", "Transducing");

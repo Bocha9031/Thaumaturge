@@ -1,11 +1,15 @@
 package com.leclowndu93150.thaumaturge.compat.jade;
 
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
+import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.content.aura.node.BlockEntityNode;
 import com.leclowndu93150.thaumaturge.content.aura.node.BlockEntityNodeTransducer;
 import com.leclowndu93150.thaumaturge.content.aura.relay.BlockEntityVisRelay;
 import com.leclowndu93150.thaumaturge.content.device.BlockEntityVoidSiphon;
 import com.leclowndu93150.thaumaturge.content.device.fluxscrubber.BlockEntityFluxScrubber;
+import com.leclowndu93150.thaumaturge.content.device.mirror.BlockEntityMirror;
+import com.leclowndu93150.thaumaturge.content.device.mirror.BlockEntityMirrorBase;
+import com.leclowndu93150.thaumaturge.content.device.mirror.BlockEntityMirrorEssentia;
 import com.leclowndu93150.thaumaturge.content.essentia.advancedfurnace.BlockEntityAdvancedAlchemicalFurnace;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntitySmelter;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.SmelterGauge;
@@ -51,6 +55,7 @@ final class JadeMachineDetails {
         int progress = machine.scaled(SmelterGauge.COOK, 100);
         int burn = machine.scaled(SmelterGauge.FUEL, 100);
         data.summary(progress > 0 || burn > 0 ? "jade.thaumaturge.state.processing" : "jade.thaumaturge.state.idle");
+        if (!machine.essentiaStock.isEmpty()) data.storage(machine.essentiaStock, 0, false);
         if (progress > 0) data.detail("jade.thaumaturge.machine.progress", progress);
         if (burn > 0) data.detail("jade.thaumaturge.machine.heat", burn);
     }
@@ -67,21 +72,35 @@ final class JadeMachineDetails {
             data.detail(
                     "jade.thaumaturge.advanced_furnace.input_cost",
                     cost * BlockEntityAdvancedAlchemicalFurnace.HEAT_PER_ASPECT,
+                    aspectName(machine, data, TTAspects.IGNIS),
                     cost,
-                    cost);
+                    aspectName(machine, data, TTAspects.PERDITIO),
+                    cost,
+                    aspectName(machine, data, TTAspects.AQUA));
         }
         data.detail(
                 "jade.thaumaturge.advanced_furnace.ignis",
+                aspectName(machine, data, TTAspects.IGNIS),
                 machine.heat(),
                 BlockEntityAdvancedAlchemicalFurnace.MAX_POWER);
         data.detail(
                 "jade.thaumaturge.advanced_furnace.perditio",
+                aspectName(machine, data, TTAspects.PERDITIO),
                 machine.perditio(),
                 BlockEntityAdvancedAlchemicalFurnace.MAX_POWER);
         data.detail(
                 "jade.thaumaturge.advanced_furnace.aqua",
+                aspectName(machine, data, TTAspects.AQUA),
                 machine.aqua(),
                 BlockEntityAdvancedAlchemicalFurnace.MAX_POWER);
+    }
+
+    private static Component aspectName(
+            BlockEntityAdvancedAlchemicalFurnace machine, JadeDetailBuilder data, ResourceKey<IAspect> aspect) {
+        return data.aspectName(machine.getLevel()
+                .registryAccess()
+                .lookupOrThrow(IAspect.REGISTRY_KEY)
+                .getOrThrow(aspect));
     }
 
     private static String advancedFurnaceStatus(BlockEntityAdvancedAlchemicalFurnace machine, int cost) {
@@ -158,6 +177,29 @@ final class JadeMachineDetails {
         if (machine.focusStack().isEmpty()) data.summary("jade.thaumaturge.focal.no_focus");
         else if (machine.name().isEmpty()) data.summary("jade.thaumaturge.focal.focus_inserted");
         else data.summary("jade.thaumaturge.focal.focus", machine.name());
+    }
+
+    static void mirror(BlockEntityMirror mirror, JadeDetailBuilder data) {
+        mirrorLink(mirror, data);
+        data.detail("jade.thaumaturge.mirror.instability", mirror.instability);
+    }
+
+    static void essentiaMirror(BlockEntityMirrorEssentia mirror, JadeDetailBuilder data) {
+        mirrorLink(mirror, data);
+        data.detail("jade.thaumaturge.mirror.instability", mirror.instability);
+    }
+
+    private static void mirrorLink(BlockEntityMirrorBase mirror, JadeDetailBuilder data) {
+        boolean linked = mirror.linked && mirror.link != null;
+        data.summary(linked ? "jade.thaumaturge.mirror.linked" : "jade.thaumaturge.mirror.unlinked");
+        if (linked) {
+            data.detail(
+                    "jade.thaumaturge.mirror.destination",
+                    mirror.link.dimension().location(),
+                    mirror.link.pos().getX(),
+                    mirror.link.pos().getY(),
+                    mirror.link.pos().getZ());
+        }
     }
 
     private static void progress(JadeDetailBuilder data, int value, int maximum) {

@@ -6,6 +6,10 @@ import com.leclowndu93150.thaumaturge.content.crucible.BlockEntityCrucible;
 import com.leclowndu93150.thaumaturge.content.device.BlockEntityEverfullUrn;
 import com.leclowndu93150.thaumaturge.content.device.BlockEntityVoidSiphon;
 import com.leclowndu93150.thaumaturge.content.device.fluxscrubber.BlockEntityFluxScrubber;
+import com.leclowndu93150.thaumaturge.content.device.mirror.BlockEntityMirror;
+import com.leclowndu93150.thaumaturge.content.device.mirror.BlockEntityMirrorEssentia;
+import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchObelisk;
+import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEntityEldritchObelisk;
 import com.leclowndu93150.thaumaturge.content.essentia.BlockEntityCentrifuge;
 import com.leclowndu93150.thaumaturge.content.essentia.advancedfurnace.BlockEntityAdvancedAlchemicalFurnace;
 import com.leclowndu93150.thaumaturge.content.essentia.crystalizer.BlockEntityEssentiaCrystalizer;
@@ -81,7 +85,10 @@ final class JadeBlockProviderHolder {
             new JadeBlockHandler<>(
                     BlockEntityInfernalFurnace.class, JadeConfig.INFERNAL_FURNACES, JadeMachineDetails::furnace),
             new JadeBlockHandler<>(
-                    BlockEntityFocalManipulator.class, JadeConfig.FOCAL_MANIPULATORS, JadeMachineDetails::focal));
+                    BlockEntityFocalManipulator.class, JadeConfig.FOCAL_MANIPULATORS, JadeMachineDetails::focal),
+            new JadeBlockHandler<>(BlockEntityMirror.class, JadeConfig.MIRRORS, JadeMachineDetails::mirror),
+            new JadeBlockHandler<>(
+                    BlockEntityMirrorEssentia.class, JadeConfig.ESSENTIA_MIRRORS, JadeMachineDetails::essentiaMirror));
     private static final Map<Block, Class<? extends BlockEntity>> CONTROLLERS = Map.of(
             TTBlocks.PLACEHOLDER_IRON_BARS.get(),
             BlockEntityGolemBuilder.class,
@@ -107,6 +114,12 @@ final class JadeBlockProviderHolder {
     private JadeBlockProviderHolder() {}
 
     static @Nullable BlockEntity resolve(BlockAccessor accessor) {
+        if (accessor.getBlockState().getBlock() instanceof BlockEldritchObelisk) {
+            BlockPos basePos = BlockEldritchObelisk.basePos(accessor.getBlockState(), accessor.getPosition());
+            if (!accessor.getLevel().hasChunkAt(basePos)) return null;
+            BlockEntity base = accessor.getLevel().getBlockEntity(basePos);
+            if (base instanceof BlockEntityEldritchObelisk) return base;
+        }
         BlockEntityThaumatorium thaumatorium = resolveThaumatorium(accessor);
         if (thaumatorium != null) return thaumatorium;
         BlockEntityAdvancedAlchemicalFurnace furnace = AdvancedFurnaceJadeAccess.resolve(accessor);

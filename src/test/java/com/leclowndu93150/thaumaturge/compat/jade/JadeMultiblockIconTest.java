@@ -5,9 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.leclowndu93150.thaumaturge.content.crucible.BlockEntityCrucible;
+import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchObelisk;
+import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEntityEldritchObelisk;
 import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.BlockEntityThaumatorium;
 import com.leclowndu93150.thaumaturge.content.essentia.thaumatorium.BlockEntityThaumatoriumTop;
 import com.leclowndu93150.thaumaturge.content.golem.press.BlockEntityGolemBuilder;
+import com.leclowndu93150.thaumaturge.content.infernalfurnace.BlockEntityInfernalFurnace;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -17,6 +20,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.Test;
@@ -47,6 +51,24 @@ class JadeMultiblockIconTest {
         fixture.check(CONTROLLER, TTBlocks.THAUMATORIUM.get(), fixture.controller);
         fixture.check(CONTROLLER.above(), TTBlocks.THAUMATORIUM_TOP.get(), mock(BlockEntityThaumatoriumTop.class));
         fixture.check(CONTROLLER.below(), TTBlocks.CRUCIBLE.get(), mock(BlockEntityCrucible.class));
+    }
+
+    @Test
+    void infernalFurnacePlaceholderUsesTheControllerItemPreview() {
+        Fixture fixture = new Fixture(mock(BlockEntityInfernalFurnace.class), TTBlocks.INFERNAL_FURNACE.get());
+        fixture.check(CONTROLLER.offset(1, 0, 0), TTBlocks.NETHER_BRICKS_PLACEHOLDER.get(), null);
+        fixture.check(CONTROLLER.offset(0, 0, 1), TTBlocks.OBSIDIAN_PLACEHOLDER.get(), null);
+    }
+
+    @Test
+    void everyObeliskPartUsesTheBaseEntityPreview() {
+        Fixture fixture = new Fixture(mock(BlockEntityEldritchObelisk.class), TTBlocks.ELDRITCH_OBELISK.get());
+        for (int part = 0; part < BlockEldritchObelisk.PART_COUNT; part++) {
+            BlockPos pos = CONTROLLER.above(part);
+            BlockState state =
+                    TTBlocks.ELDRITCH_OBELISK.get().defaultBlockState().setValue(BlockEldritchObelisk.PART, part);
+            fixture.check(pos, TTBlocks.ELDRITCH_OBELISK.get(), part == 0 ? fixture.controller : null, state);
+        }
     }
 
     @Test
@@ -84,10 +106,14 @@ class JadeMultiblockIconTest {
         }
 
         private BlockAccessor accessor(BlockPos pos, Block part, BlockEntity entity) {
+            return accessor(pos, part, entity, part.defaultBlockState());
+        }
+
+        private BlockAccessor accessor(BlockPos pos, Block part, BlockEntity entity, BlockState state) {
             BlockAccessor accessor = mock(BlockAccessor.class);
             when(accessor.getLevel()).thenReturn(level);
             when(accessor.getPosition()).thenReturn(pos);
-            when(accessor.getBlockState()).thenReturn(part.defaultBlockState());
+            when(accessor.getBlockState()).thenReturn(state);
             when(accessor.getBlockEntity()).thenReturn(entity);
             when(accessor.getHitResult())
                     .thenReturn(new BlockHitResult(Vec3.atCenterOf(pos), Direction.NORTH, pos, false));
@@ -95,8 +121,12 @@ class JadeMultiblockIconTest {
         }
 
         private void check(BlockPos pos, Block part, BlockEntity entity) {
+            check(pos, part, entity, part.defaultBlockState());
+        }
+
+        private void check(BlockPos pos, Block part, BlockEntity entity, BlockState state) {
             clearInvocations(builder);
-            BlockAccessor original = accessor(pos, part, entity);
+            BlockAccessor original = accessor(pos, part, entity, state);
 
             assertSame(remapped, callback.onRayTrace(original.getHitResult(), original, original));
             verify(builder).from(original);
