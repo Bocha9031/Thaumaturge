@@ -186,10 +186,10 @@ class PotionSprayerConduitCutoffTest {
         verify(source, never()).extract(any(), anyInt(), any(), anyBoolean());
         when(source.pullThreshold()).thenReturn(128);
         tick(machine, 5, true);
-        assertEquals(1, machine.essentiaStored().amountOf(aspect));
+        assertEquals(0, machine.essentiaStored().amountOf(aspect));
         assertEquals(EssentiaPull.of(aspect, 128), machine.pull(null));
         assertEquals(EssentiaPull.NONE, machine.pull(Direction.EAST));
-        verify(source).extract(aspect, 1, Direction.WEST, false);
+        verify(source, never()).extract(any(), anyInt(), any(), anyBoolean());
         verify(level, never()).getCapability(EssentiaCapabilities.CONDUIT, BlockPos.ZERO.east(), Direction.WEST);
     }
 
@@ -205,17 +205,17 @@ class PotionSprayerConduitCutoffTest {
             effects.when(() -> Effects.vent(eq(level), any())).thenReturn(vent);
             tick(machine, 1, false);
             assertEquals(0, machine.sprayShots());
-            verify(level).playSound(null, BlockPos.ZERO, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.25F, 2.0F);
-            effects.verify(() -> Effects.vent(level, new Vec3(1.05, 0.5, 0.5)), times(6));
-            verify(vent, times(6)).motion(0.12, 0.0, 0.0);
-            verify(vent, times(6)).scale(1.2F);
+            verify(level).playSound(null, BlockPos.ZERO, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, 0.25F, 2.6F);
+            effects.verify(() -> Effects.vent(level, new Vec3(0.9, 0.4, 0.4)), times(7));
+            verify(vent, times(7)).motion(0.25, 0.0, 0.0);
+            verify(vent, times(7)).scale(4.0F);
             tick(machine, 15, false);
-            verify(vent, times(44)).send();
+            verify(vent, times(49)).send();
             clearInvocations(vent);
             tick(machine, 1, false);
             verifyNoInteractions(vent);
             verify(level, times(1))
-                    .playSound(null, BlockPos.ZERO, SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.25F, 2.0F);
+                    .playSound(null, BlockPos.ZERO, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, 0.25F, 2.6F);
         }
         var area = ArgumentCaptor.forClass(AABB.class);
         verify(level).getEntitiesOfClass(eq(LivingEntity.class), area.capture(), any());

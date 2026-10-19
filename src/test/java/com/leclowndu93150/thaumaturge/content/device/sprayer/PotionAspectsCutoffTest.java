@@ -17,7 +17,6 @@ import net.minecraft.core.MappedRegistry;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -83,11 +82,14 @@ class PotionAspectsCutoffTest {
     }
 
     @Test
-    void waterNeedsOnlyFiveAquaAndUnknownContentsUseFiveEachFallback() {
+    void waterAndUnknownContentsUseFiveEachFallbackWhenNoBrewingRouteExists() {
+        brewing(List.of());
         AspectList water = PotionAspects.of(level, potion(Potions.WATER));
-        assertEquals(1, water.size());
-        assertEquals(5, water.amountOf(aqua));
-        verify(level, never()).potionBrewing();
+        assertEquals(2, water.size());
+        assertEquals(5, water.amountOf(magic));
+        assertEquals(5, water.amountOf(alkimia));
+        assertEquals(0, water.amountOf(aqua));
+        verify(level).potionBrewing();
         AspectList fallback = PotionAspects.of(level, new ItemStack(Items.POTION));
         assertEquals(2, fallback.size());
         assertEquals(5, fallback.amountOf(magic));
@@ -110,29 +112,22 @@ class PotionAspectsCutoffTest {
     }
 
     @Test
-    void routeChoosesFirstRecipeLowestItemIdAndDeduplicatesRepeatedIngredients() {
+    void routeCollectsEveryBrewingBranchAndDeduplicatesRepeatedIngredients() {
         brewing(List.of(
                 mix(Potions.AWKWARD, Potions.SWIFTNESS, Items.REDSTONE, Items.SUGAR),
                 mix(Potions.WATER, Potions.SWIFTNESS, Items.GLOWSTONE_DUST),
                 mix(Potions.WATER, Potions.AWKWARD, Items.SUGAR, Items.REDSTONE)));
-        Item chosen = BuiltInRegistries.ITEM.getId(Items.REDSTONE) < BuiltInRegistries.ITEM.getId(Items.SUGAR)
-                ? Items.REDSTONE
-                : Items.SUGAR;
         try (var index = mockStatic(AspectIndexAccess.class)) {
-            index.when(() -> AspectIndexAccess.of(any(ItemStack.class))).thenAnswer(call -> {
-                ItemStack reagent = call.getArgument(0);
-                assertTrue(reagent.is(chosen));
-                return AspectList.EMPTY.add(aqua, 3);
-            });
+            index.when(() -> AspectIndexAccess.of(any(ItemStack.class))).thenReturn(AspectList.EMPTY.add(aqua, 3));
             AspectList recipe = PotionAspects.of(level, potion(Potions.SWIFTNESS));
-            assertEquals(2, recipe.amountOf(aqua));
-            assertEquals(2, recipe.amountOf(alkimia));
-            index.verify(() -> AspectIndexAccess.of(any(ItemStack.class)), times(1));
+            assertEquals(4, recipe.amountOf(aqua));
+            assertEquals(4, recipe.amountOf(alkimia));
+            index.verify(() -> AspectIndexAccess.of(any(ItemStack.class)), times(3));
         }
     }
 
     @Test
-    void recipeCapKeepsCompoundBiasAndBrewingCyclesTerminate() {
+    void recipeCapDropsEarliestLowestAmountsAndBrewingCyclesTerminate() {
         brewing(List.of(mix(Potions.SWIFTNESS, Potions.SWIFTNESS, Items.SUGAR)));
         AspectList all = AspectList.EMPTY.add(compound, 3);
         for (Holder<IAspect> primal : primals) all = all.add(primal, 3);
@@ -141,8 +136,11 @@ class PotionAspectsCutoffTest {
             index.when(() -> AspectIndexAccess.of(any(ItemStack.class))).thenReturn(indexed);
             AspectList recipe = PotionAspects.of(level, potion(Potions.SWIFTNESS));
             assertEquals(10, recipe.size());
-            assertEquals(2, recipe.amountOf(compound));
+            assertEquals(0, recipe.amountOf(compound));
             assertEquals(2, recipe.amountOf(alkimia));
+            assertEquals(0, recipe.amountOf(primals.get(0)));
+            assertEquals(0, recipe.amountOf(primals.get(1)));
+            assertEquals(2, recipe.amountOf(primals.get(2)));
             index.verify(() -> AspectIndexAccess.of(any(ItemStack.class)), times(1));
         }
     }
