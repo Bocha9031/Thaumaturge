@@ -56,6 +56,17 @@ public final class TaintSeedRegistry extends SavedData {
         }
     }
 
+    public void moveSeed(BlockPos previous, BlockPos current) {
+        boolean changed = previous != null && !previous.equals(current) && seeds.remove(previous);
+        if (!seeds.contains(current)) {
+            seeds.add(current.immutable());
+            changed = true;
+        }
+        if (changed) {
+            setDirty();
+        }
+    }
+
     public void removeSeed(BlockPos pos) {
         if (seeds.remove(pos)) {
             setDirty();

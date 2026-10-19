@@ -18,6 +18,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractTaintSeed extends AbstractRootedTaint {
     private static final int SPREAD_INTERVAL = 20;
@@ -37,7 +38,7 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
 
     public float attackAnim;
 
-    private boolean registered;
+    private @Nullable BlockPos registeredPosition;
 
     protected AbstractTaintSeed(EntityType<? extends AbstractTaintSeed> type, Level level) {
         super(type, level);
@@ -71,9 +72,10 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
 
     @Override
     protected void rootedServerStep(ServerLevel server) {
-        if (!registered) {
-            TaintSeedRegistry.get(server).addSeed(this.blockPosition());
-            registered = true;
+        BlockPos position = this.blockPosition();
+        if (!position.equals(registeredPosition)) {
+            TaintSeedRegistry.get(server).moveSeed(registeredPosition, position);
+            registeredPosition = position.immutable();
         }
         if (this.tickCount % SPREAD_INTERVAL != 0) {
             return;
@@ -120,8 +122,9 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
 
     @Override
     public void remove(Entity.RemovalReason reason) {
-        if (this.level() instanceof ServerLevel server) {
-            TaintSeedRegistry.get(server).removeSeed(this.blockPosition());
+        if (this.level() instanceof ServerLevel server && registeredPosition != null) {
+            TaintSeedRegistry.get(server).removeSeed(registeredPosition);
+            registeredPosition = null;
         }
         super.remove(reason);
     }
