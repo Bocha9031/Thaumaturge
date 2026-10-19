@@ -71,20 +71,27 @@ final class LocateSubcommand implements AdminSubcommand {
             return 0;
         }
         BlockPos pos = result.get();
-        String coordinatesText = pos.getX() + " " + pos.getY() + " " + pos.getZ();
-        Component coordinates = Component.translatable("chat.coordinates", pos.getX(), pos.getY(), pos.getZ())
-                .withStyle(style -> style.withColor(ChatFormatting.GREEN)
-                        .withUnderlined(true)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, coordinatesText))
-                        .withHoverEvent(new HoverEvent(
-                                HoverEvent.Action.SHOW_TEXT,
-                                Component.translatable("commands.thaumaturge.locate.node.copy"))));
+        Component coordinates = coordinates(pos);
         int distance = (int) Math.round(Math.sqrt(pos.distSqr(origin)));
         source.sendSuccess(
                 () -> Component.translatable(
                         "commands.thaumaturge.locate.node.found", nodeTypeName(type), coordinates, distance),
                 false);
         return Command.SINGLE_SUCCESS;
+    }
+
+    static Component coordinates(BlockPos pos) {
+        return Component.translatable("chat.coordinates", pos.getX(), pos.getY(), pos.getZ())
+                .withStyle(style -> style.withColor(ChatFormatting.GREEN)
+                        .withUnderlined(true)
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, teleportCommand(pos)))
+                        .withHoverEvent(new HoverEvent(
+                                HoverEvent.Action.SHOW_TEXT,
+                                Component.translatable("commands.thaumaturge.locate.node.copy"))));
+    }
+
+    static String teleportCommand(BlockPos pos) {
+        return "/tp " + pos.getX() + " " + pos.getY() + " " + pos.getZ();
     }
 
     private static Component nodeTypeName(NodeType type) {
