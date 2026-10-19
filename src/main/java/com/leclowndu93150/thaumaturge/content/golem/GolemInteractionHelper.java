@@ -41,11 +41,13 @@ public final class GolemInteractionHelper {
                 Thaumaturge.LOGGER.error("Golem left-click at {} failed", pos, e);
             }
         } else {
-            if (shouldMoveForPlacement(player.getMainHandItem(), pos, face, golem.asEntity().getBoundingBox())) {
-                golem.asEntity().setPos(
-                        golem.asEntity().getX() + face.getStepX(),
-                        golem.asEntity().getY() + face.getStepY(),
-                        golem.asEntity().getZ() + face.getStepZ());
+            if (shouldMoveForPlacement(
+                    player.getMainHandItem(), pos, face, golem.asEntity().getBoundingBox())) {
+                golem.asEntity()
+                        .setPos(
+                                golem.asEntity().getX() + face.getStepX(),
+                                golem.asEntity().getY() + face.getStepY(),
+                                golem.asEntity().getZ() + face.getStepZ());
                 player.moveTo(
                         golem.asEntity().getX(),
                         golem.asEntity().getY(),

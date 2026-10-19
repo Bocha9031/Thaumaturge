@@ -27,7 +27,10 @@ class GolemInteractionHelperPortTest {
     @Test
     void nonBlockItemsNeverTriggerPlacementRelocation() {
         assertFalse(GolemInteractionHelper.shouldMoveForPlacement(
-                new ItemStack(Items.STICK), BlockPos.ZERO, Direction.EAST, new AABB(0.8D, 0.2D, 0.2D, 1.4D, 0.9D, 0.8D)));
+                new ItemStack(Items.STICK),
+                BlockPos.ZERO,
+                Direction.EAST,
+                new AABB(0.8D, 0.2D, 0.2D, 1.4D, 0.9D, 0.8D)));
     }
 
     @Test
