@@ -241,7 +241,13 @@ public final class SpellBat extends Monster implements TraceableEntity, IEntityW
                 HUNT_RANGE,
                 living -> living != this
                         && allies == SpellTargeting.isAlly(master, living)
+                        && (!(living instanceof Player player)
+                                || allowsPlayerTarget(allies, player.getAbilities().invulnerable))
                         && !(living instanceof SpellBat));
+    }
+
+    static boolean allowsPlayerTarget(boolean allies, boolean invulnerable) {
+        return allies || !invulnerable;
     }
 
     private void strike(ServerLevel level, LivingEntity prey, Vec3 aim) {
