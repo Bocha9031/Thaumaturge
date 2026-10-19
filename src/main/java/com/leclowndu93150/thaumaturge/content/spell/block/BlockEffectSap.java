@@ -80,6 +80,11 @@ public final class BlockEffectSap extends Block {
     }
 
     @Override
+    protected void tick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        level.removeBlock(pos, false);
+    }
+
+    @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         float h = random.nextFloat() * 0.33F;
         spawnSpark(
