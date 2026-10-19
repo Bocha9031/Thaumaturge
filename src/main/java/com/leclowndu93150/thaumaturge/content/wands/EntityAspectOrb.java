@@ -12,10 +12,8 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -131,7 +129,10 @@ public class EntityAspectOrb extends Entity {
             ResourceKey<IAspect> key = getAspect();
             Holder<IAspect> holder = key == null
                     ? null
-                    : level().registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY).get(key).orElse(null);
+                    : level().registryAccess()
+                            .lookupOrThrow(IAspect.REGISTRY_KEY)
+                            .get(key)
+                            .orElse(null);
             cachedColor = holder == null ? UNTINTED : holder.value().color();
         }
         return cachedColor;
@@ -172,7 +173,10 @@ public class EntityAspectOrb extends Entity {
         if (isInLava()) {
             setDeltaMovement(spread(level(), LAVA_TOSS_SIDEWAYS), LAVA_TOSS_UP, spread(level(), LAVA_TOSS_SIDEWAYS));
             if (!level().isClientSide()) {
-                playSound(SoundEvents.GENERIC_EXTINGUISH_FIRE, FIZZ_VOLUME, FIZZ_PITCH_BASE + random.nextFloat() * FIZZ_PITCH_SPREAD);
+                playSound(
+                        SoundEvents.GENERIC_EXTINGUISH_FIRE,
+                        FIZZ_VOLUME,
+                        FIZZ_PITCH_BASE + random.nextFloat() * FIZZ_PITCH_SPREAD);
             }
         } else if (isInWater()) {
             setDeltaMovement(
@@ -235,7 +239,8 @@ public class EntityAspectOrb extends Entity {
     }
 
     private boolean hasRoom(Player player, ResourceKey<IAspect> aspect) {
-        return !WandVisHelper.findWandInHotbarWithRoom(player, aspect, getValue()).isEmpty();
+        return !WandVisHelper.findWandInHotbarWithRoom(player, aspect, getValue())
+                .isEmpty();
     }
 
     private void pullToward(Player player) {
@@ -266,7 +271,15 @@ public class EntityAspectOrb extends Entity {
         player.takeXpDelay = PICKUP_DELAY_TICKS;
         player.take(this, 1);
         float pitch = CHIME_PITCH_BASE + random.nextFloat() * CHIME_PITCH_SPREAD;
-        level().playSound(null, getX(), getY(), getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, getSoundSource(), CHIME_VOLUME, pitch);
+        level().playSound(
+                        null,
+                        getX(),
+                        getY(),
+                        getZ(),
+                        SoundEvents.EXPERIENCE_ORB_PICKUP,
+                        getSoundSource(),
+                        CHIME_VOLUME,
+                        pitch);
         discard();
     }
 

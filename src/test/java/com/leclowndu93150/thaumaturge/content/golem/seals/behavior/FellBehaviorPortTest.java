@@ -16,8 +16,8 @@ class FellBehaviorPortTest {
         FellBehavior behavior = new FellBehavior();
         Task task = Task.atBlock(null, BlockPos.ZERO);
 
-        boolean complete = behavior.completeTask(
-                mock(ServerLevel.class), mock(ISealEntity.class), mock(IGolemAPI.class), task);
+        boolean complete =
+                behavior.completeTask(mock(ServerLevel.class), mock(ISealEntity.class), mock(IGolemAPI.class), task);
 
         assertTrue(complete);
         assertTrue(task.isEnded());

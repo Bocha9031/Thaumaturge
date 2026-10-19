@@ -260,10 +260,11 @@ public final class BlockEntityPotionSprayer extends AbstractSyncedBlockEntity im
         int puffs = mistLeft / MIST_PUFF_DIVISOR;
         for (int puff = 0; puff < puffs; puff++) {
             Vec3 at = mouth.add(jitter(random), jitter(random), jitter(random));
-            Vec3 motion = out.scale(MIST_SPEED).add(
-                    random.nextGaussian() * MIST_SPREAD,
-                    random.nextGaussian() * MIST_SPREAD,
-                    random.nextGaussian() * MIST_SPREAD);
+            Vec3 motion = out.scale(MIST_SPEED)
+                    .add(
+                            random.nextGaussian() * MIST_SPREAD,
+                            random.nextGaussian() * MIST_SPREAD,
+                            random.nextGaussian() * MIST_SPREAD);
             Effects.vent(serverLevel, at)
                     .motion(motion.x, motion.y, motion.z)
                     .color(color)

@@ -23,8 +23,8 @@ import org.jspecify.annotations.Nullable;
 public final class BlockDioptra extends BaseEntityBlock {
     public static final MapCodec<BlockDioptra> CODEC = simpleCodec(BlockDioptra::new);
 
-    private static final int GRID_CENTER_INDEX = BlockEntityDioptra.GRID_SIZE * (BlockEntityDioptra.GRID_SIZE / 2)
-            + BlockEntityDioptra.GRID_SIZE / 2;
+    private static final int GRID_CENTER_INDEX =
+            BlockEntityDioptra.GRID_SIZE * (BlockEntityDioptra.GRID_SIZE / 2) + BlockEntityDioptra.GRID_SIZE / 2;
     private static final float SIGNAL_SPAN = 14.0F;
 
     public BlockDioptra(BlockBehaviour.Properties properties) {

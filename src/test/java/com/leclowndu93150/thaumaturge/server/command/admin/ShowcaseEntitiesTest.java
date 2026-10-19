@@ -8,9 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.leclowndu93150.thaumaturge.content.entity.AbstractTaintacle;
+import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
 import com.leclowndu93150.thaumaturge.content.entity.EntityTaintSeed;
 import com.leclowndu93150.thaumaturge.content.entity.EntityTaintSeedPrime;
-import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
 import com.leclowndu93150.thaumaturge.content.entity.boss.EntityCultistPortalGreater;
 import com.leclowndu93150.thaumaturge.content.entity.boss.hierophant.EntityHierophantCrescent;
 import com.leclowndu93150.thaumaturge.content.entity.boss.hierophant.EntityHierophantHammer;

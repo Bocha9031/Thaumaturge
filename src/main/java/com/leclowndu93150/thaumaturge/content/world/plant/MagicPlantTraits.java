@@ -33,20 +33,14 @@ public final class MagicPlantTraits {
             0.0F);
     public static final PlantAura VISHROOM_SPORES = new PlantAura(
             List.of(new WispyMoteParticleOptions(
-                    VISHROOM_SPORE_COLOR,
-                    VISHROOM_SPORE_LIFETIME,
-                    0.0F,
-                    WispyMoteParticleOptions.NO_ENTITY)),
+                    VISHROOM_SPORE_COLOR, VISHROOM_SPORE_LIFETIME, 0.0F, WispyMoteParticleOptions.NO_ENTITY)),
             VISHROOM_SPORE_CHANCE,
             VISHROOM_CAP_HEIGHT,
             VISHROOM_SPORE_SPREAD,
             VISHROOM_SPORE_DRIFT);
     public static final PlantAura SHIMMERLEAF_GLINTS = new PlantAura(
             List.of(new WispyMoteParticleOptions(
-                    SHIMMERLEAF_GLINT_COLOR,
-                    SHIMMERLEAF_GLINT_LIFETIME,
-                    0.0F,
-                    WispyMoteParticleOptions.NO_ENTITY)),
+                    SHIMMERLEAF_GLINT_COLOR, SHIMMERLEAF_GLINT_LIFETIME, 0.0F, WispyMoteParticleOptions.NO_ENTITY)),
             SHIMMERLEAF_GLINT_CHANCE,
             SHIMMERLEAF_LEAF_HEIGHT,
             SHIMMERLEAF_GLINT_SPREAD,

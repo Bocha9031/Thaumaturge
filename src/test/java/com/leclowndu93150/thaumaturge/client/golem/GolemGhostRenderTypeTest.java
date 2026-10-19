@@ -8,7 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
 class GolemGhostRenderTypeTest {
-    private static final ResourceLocation TEXTURE = ResourceLocation.withDefaultNamespace("textures/entity/pig/pig.png");
+    private static final ResourceLocation TEXTURE =
+            ResourceLocation.withDefaultNamespace("textures/entity/pig/pig.png");
     private static final int GHOST_TINT = 0x26FFFFFF;
 
     @Test
@@ -21,8 +22,7 @@ class GolemGhostRenderTypeTest {
     @Test
     void xrayGeometryStillIgnoresDepthAndOpaqueGeometryKeepsCutoutRendering() {
         assertSame(
-                TTRenderTypes.entityTranslucentNoDepth(TEXTURE),
-                GolemRenderer.renderType(TEXTURE, true, GHOST_TINT));
+                TTRenderTypes.entityTranslucentNoDepth(TEXTURE), GolemRenderer.renderType(TEXTURE, true, GHOST_TINT));
         assertSame(RenderType.entityCutout(TEXTURE), GolemRenderer.renderType(TEXTURE, false, -1));
     }
 }

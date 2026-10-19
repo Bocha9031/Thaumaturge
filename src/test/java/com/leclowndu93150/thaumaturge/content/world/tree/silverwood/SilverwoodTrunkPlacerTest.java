@@ -15,5 +15,4 @@ final class SilverwoodTrunkPlacerTest {
         assertEquals(3.2 * Math.sqrt(0.96), SilverwoodTrunkPlacer.layerRadius(1, 4), TOLERANCE);
         assertEquals(1.92, SilverwoodTrunkPlacer.layerRadius(4, 4), TOLERANCE);
     }
-
 }

@@ -124,7 +124,14 @@ public final class DioptraRenderer implements BlockEntityRenderer<BlockEntityDio
     }
 
     private static void skirt(
-            VertexConsumer buffer, PoseStack.Pose pose, byte[] grid, Palette palette, int fromColumn, int fromRow, int toColumn, int toRow) {
+            VertexConsumer buffer,
+            PoseStack.Pose pose,
+            byte[] grid,
+            Palette palette,
+            int fromColumn,
+            int fromRow,
+            int toColumn,
+            int toRow) {
         skirtPoint(buffer, pose, palette, fromColumn, fromRow, BASE_Y, 0.0F, 0.0F, 1.0F);
         skirtPoint(
                 buffer,
@@ -244,8 +251,7 @@ public final class DioptraRenderer implements BlockEntityRenderer<BlockEntityDio
         float ripple(int column, int row) {
             float distance = Mth.sqrt(Mth.square(column - CENTER) + Mth.square(row - CENTER));
             return RIPPLE_FLOOR
-                    + RIPPLE_DEPTH
-                            * (0.5F + 0.5F * Mth.sin(distance * RIPPLE_WAVENUMBER - time * RIPPLE_SPEED));
+                    + RIPPLE_DEPTH * (0.5F + 0.5F * Mth.sin(distance * RIPPLE_WAVENUMBER - time * RIPPLE_SPEED));
         }
     }
 }

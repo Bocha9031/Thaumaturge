@@ -17,8 +17,10 @@ class HarvestBehaviorCompatibilityTest {
                 {"replant":[{"taskloc":%d,"taskface":1,"farmland":true}]}
                 """.formatted(position));
 
-        var behavior = HarvestBehavior.CODEC.codec().parse(JsonOps.INSTANCE, legacy).getOrThrow();
-        var encoded = HarvestBehavior.CODEC.codec()
+        var behavior =
+                HarvestBehavior.CODEC.codec().parse(JsonOps.INSTANCE, legacy).getOrThrow();
+        var encoded = HarvestBehavior.CODEC
+                .codec()
                 .encodeStart(JsonOps.INSTANCE, behavior)
                 .getOrThrow()
                 .getAsJsonObject();
@@ -38,15 +40,21 @@ class HarvestBehaviorCompatibilityTest {
                 {"replant_sites":[{"pos":%d}],"replant":[{"taskloc":%d}]}
                 """.formatted(currentPosition, legacyPosition));
 
-        var behavior = HarvestBehavior.CODEC.codec().parse(JsonOps.INSTANCE, saved).getOrThrow();
-        var encoded = HarvestBehavior.CODEC.codec()
+        var behavior =
+                HarvestBehavior.CODEC.codec().parse(JsonOps.INSTANCE, saved).getOrThrow();
+        var encoded = HarvestBehavior.CODEC
+                .codec()
                 .encodeStart(JsonOps.INSTANCE, behavior)
                 .getOrThrow()
                 .getAsJsonObject();
 
         assertEquals(
                 currentPosition,
-                encoded.getAsJsonArray("replant_sites").get(0).getAsJsonObject().get("pos").getAsLong());
+                encoded.getAsJsonArray("replant_sites")
+                        .get(0)
+                        .getAsJsonObject()
+                        .get("pos")
+                        .getAsLong());
     }
 
     @Test
@@ -55,14 +63,20 @@ class HarvestBehaviorCompatibilityTest {
                 {"replant":[{"taskloc":[12,64,-4]}]}
                 """);
 
-        var behavior = HarvestBehavior.CODEC.codec().parse(JsonOps.INSTANCE, legacy).getOrThrow();
-        var encoded = HarvestBehavior.CODEC.codec()
+        var behavior =
+                HarvestBehavior.CODEC.codec().parse(JsonOps.INSTANCE, legacy).getOrThrow();
+        var encoded = HarvestBehavior.CODEC
+                .codec()
                 .encodeStart(JsonOps.INSTANCE, behavior)
                 .getOrThrow()
                 .getAsJsonObject();
 
         assertEquals(
                 new BlockPos(12, 64, -4).asLong(),
-                encoded.getAsJsonArray("replant_sites").get(0).getAsJsonObject().get("pos").getAsLong());
+                encoded.getAsJsonArray("replant_sites")
+                        .get(0)
+                        .getAsJsonObject()
+                        .get("pos")
+                        .getAsLong());
     }
 }

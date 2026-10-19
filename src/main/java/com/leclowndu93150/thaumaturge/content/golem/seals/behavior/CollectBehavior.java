@@ -45,7 +45,10 @@ public final class CollectBehavior implements ISealBehavior {
     }
 
     private static boolean isLoose(ItemEntity item) {
-        return item.isAlive() && item.onGround() && !item.hasPickUpDelay() && !item.getItem().isEmpty();
+        return item.isAlive()
+                && item.onGround()
+                && !item.hasPickUpDelay()
+                && !item.getItem().isEmpty();
     }
 
     private static boolean wanted(ISealEntity seal, ItemStack stack) {

@@ -53,7 +53,10 @@ class SealSettingValuesTest {
 
         assertTrue(decoded.get(BreakBehavior.SILK_TOUCH));
 
-        var encoded = codec.encodeStart(JsonOps.INSTANCE, decoded).result().orElseThrow().getAsJsonObject();
+        var encoded = codec.encodeStart(JsonOps.INSTANCE, decoded)
+                .result()
+                .orElseThrow()
+                .getAsJsonObject();
         assertTrue(encoded.get("silk_touch").getAsBoolean());
         assertFalse(encoded.has("psilk"));
     }
@@ -62,8 +65,7 @@ class SealSettingValuesTest {
     void canonicalValueTakesPrecedenceOverFormerKey() {
         var codec = SealSettingValues.codec(sealType(BreakBehavior.SILK_TOUCH)).codec();
         SealSettingValues decoded = codec.parse(
-                        JsonOps.INSTANCE,
-                        JsonParser.parseString("{\"silk_touch\":false,\"psilk\":true}"))
+                        JsonOps.INSTANCE, JsonParser.parseString("{\"silk_touch\":false,\"psilk\":true}"))
                 .result()
                 .orElseThrow();
 
@@ -75,13 +77,17 @@ class SealSettingValuesTest {
         for (SealSetting setting : RENAMED_SETTINGS) {
             var codec = SealSettingValues.codec(sealType(setting)).codec();
             String formerKey = setting.formerKey();
-            SealSettingValues decoded = codec.parse(JsonOps.INSTANCE, JsonParser.parseString("{\"" + formerKey + "\":true}"))
+            SealSettingValues decoded = codec.parse(
+                            JsonOps.INSTANCE, JsonParser.parseString("{\"" + formerKey + "\":true}"))
                     .result()
                     .orElseThrow();
 
             assertTrue(decoded.get(setting), setting.key());
 
-            var encoded = codec.encodeStart(JsonOps.INSTANCE, decoded).result().orElseThrow().getAsJsonObject();
+            var encoded = codec.encodeStart(JsonOps.INSTANCE, decoded)
+                    .result()
+                    .orElseThrow()
+                    .getAsJsonObject();
             assertTrue(encoded.get(setting.key()).getAsBoolean(), setting.key());
             assertFalse(encoded.has(formerKey), formerKey);
         }

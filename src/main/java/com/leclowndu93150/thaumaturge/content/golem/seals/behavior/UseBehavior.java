@@ -23,9 +23,9 @@ public final class UseBehavior implements ISealBehavior {
             new SealSetting("bare_handed", "gui.thaumaturge.seal.setting.emptyhand", false).readingAlso("pemptyhand");
     public static final SealSetting SNEAKING =
             new SealSetting("sneaking", "gui.thaumaturge.seal.setting.sneak", false).readingAlso("psneak");
-    public static final SealSetting REQUEST_ITEMS =
-            new SealSetting("request_items", "gui.thaumaturge.seal.setting.provision_whitelist", false)
-                    .readingAlso("ppro");
+    public static final SealSetting REQUEST_ITEMS = new SealSetting(
+                    "request_items", "gui.thaumaturge.seal.setting.provision_whitelist", false)
+            .readingAlso("ppro");
 
     private static final int STAGGER = 49;
     private static final int SCAN_PERIOD = 5;

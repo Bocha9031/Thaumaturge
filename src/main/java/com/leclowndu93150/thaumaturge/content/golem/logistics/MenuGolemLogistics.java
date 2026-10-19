@@ -234,8 +234,7 @@ public final class MenuGolemLogistics extends AbstractContainerMenu {
     }
 
     static void sortByDisplayName(List<ItemStack> stacks) {
-        stacks.sort(Comparator.comparing(
-                stack -> stack.getHoverName().getString(), String.CASE_INSENSITIVE_ORDER));
+        stacks.sort(Comparator.comparing(stack -> stack.getHoverName().getString(), String.CASE_INSENSITIVE_ORDER));
     }
 
     private static ItemStack sum(ItemStack existing, ItemStack addition) {

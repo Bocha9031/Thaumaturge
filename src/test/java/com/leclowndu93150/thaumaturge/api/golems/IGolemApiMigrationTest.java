@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import org.junit.jupiter.api.Test;
 
@@ -59,8 +59,8 @@ class IGolemApiMigrationTest {
             }
             default -> InvocationHandler.invokeDefault(proxy, method, arguments);
         };
-        return (IGolemAPI) Proxy.newProxyInstance(
-                IGolemAPI.class.getClassLoader(), new Class<?>[] {IGolemAPI.class}, handler);
+        return (IGolemAPI)
+                Proxy.newProxyInstance(IGolemAPI.class.getClassLoader(), new Class<?>[] {IGolemAPI.class}, handler);
     }
 
     private static IGolemAPI modernImplementation(ModernState state) {
@@ -80,8 +80,8 @@ class IGolemApiMigrationTest {
             }
             default -> InvocationHandler.invokeDefault(proxy, method, arguments);
         };
-        return (IGolemAPI) Proxy.newProxyInstance(
-                IGolemAPI.class.getClassLoader(), new Class<?>[] {IGolemAPI.class}, handler);
+        return (IGolemAPI)
+                Proxy.newProxyInstance(IGolemAPI.class.getClassLoader(), new Class<?>[] {IGolemAPI.class}, handler);
     }
 
     private static Object invokeLegacy(IGolemAPI golem, String name, Class<?>... parameterTypes)
@@ -95,8 +95,7 @@ class IGolemApiMigrationTest {
         return invokeLegacy(golem, name, new Class<?>[] {parameterType}, new Object[] {argument});
     }
 
-    private static Object invokeLegacy(
-            IGolemAPI golem, String name, Class<?>[] parameterTypes, Object[] arguments)
+    private static Object invokeLegacy(IGolemAPI golem, String name, Class<?>[] parameterTypes, Object[] arguments)
             throws ReflectiveOperationException {
         Method method = IGolemAPI.class.getMethod(name, parameterTypes);
         return method.invoke(golem, arguments);

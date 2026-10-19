@@ -12,7 +12,11 @@ import org.jspecify.annotations.Nullable;
  * @param formerKey an older save key, read only when a saved seal has no value under {@code key}; null when there is none
  * @since 1.0.0
  */
-public record SealSetting(String key, String nameKey, boolean fallback, @Nullable String formerKey) {
+public record SealSetting(
+        String key,
+        String nameKey,
+        boolean fallback,
+        @Nullable String formerKey) {
     /**
      * Declares a setting with no former save key.
      *

@@ -16,8 +16,8 @@ import net.minecraft.world.level.block.VineBlock;
 import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraft.world.level.storage.loot.BuiltInLootTables;
 import org.jspecify.annotations.Nullable;
@@ -74,15 +74,13 @@ public final class HilltopStonesFeature extends Feature<NoneFeatureConfiguration
     }
 
     static @Nullable BlockPos groundAt(WorldGenLevel level, int x, int z) {
-        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos(
-                x, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1, z);
+        BlockPos.MutableBlockPos probe =
+                new BlockPos.MutableBlockPos(x, level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1, z);
         for (int layer = 0; layer < MAX_COVER_LAYERS && isCover(level.getBlockState(probe)); layer++) {
             probe.move(Direction.DOWN);
         }
         BlockState ground = level.getBlockState(probe);
-        return ground.is(BlockTags.DIRT)
-                        || ground.is(Blocks.GRASS_BLOCK)
-                        || ground.is(BlockTags.BASE_STONE_OVERWORLD)
+        return ground.is(BlockTags.DIRT) || ground.is(Blocks.GRASS_BLOCK) || ground.is(BlockTags.BASE_STONE_OVERWORLD)
                 ? probe.immutable()
                 : null;
     }
@@ -159,8 +157,8 @@ public final class HilltopStonesFeature extends Feature<NoneFeatureConfiguration
             if (!level.isEmptyBlock(start) || random.nextInt(VINE_ONE_IN) != 0) {
                 continue;
             }
-            BlockState vine = Blocks.VINE.defaultBlockState()
-                    .setValue(VineBlock.getPropertyForFace(side.getOpposite()), true);
+            BlockState vine =
+                    Blocks.VINE.defaultBlockState().setValue(VineBlock.getPropertyForFace(side.getOpposite()), true);
             BlockPos.MutableBlockPos strand = start.mutable();
             for (int drop = 0; drop <= VINE_MAX_DROP && level.isEmptyBlock(strand); drop++) {
                 level.setBlock(strand, vine, PLACE_FLAGS);

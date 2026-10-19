@@ -19,7 +19,8 @@ class EverfullUrnCutoffTest {
     @Test
     void preservesExistingTankAndHandlerDataWhileRejectingExternalFluidInsertion() {
         HolderLookup.Provider registries = net.minecraft.core.RegistryAccess.EMPTY;
-        var urn = new BlockEntityEverfullUrn(BlockPos.ZERO, TTBlocks.EVERFULL_URN.get().defaultBlockState());
+        var urn = new BlockEntityEverfullUrn(
+                BlockPos.ZERO, TTBlocks.EVERFULL_URN.get().defaultBlockState());
         FluidStack water = new FluidStack(Fluids.WATER, 500);
 
         assertEquals(0, urn.getTank().fill(water, IFluidHandler.FluidAction.EXECUTE));

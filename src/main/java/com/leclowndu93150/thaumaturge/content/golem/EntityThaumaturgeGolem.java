@@ -12,7 +12,6 @@ import com.leclowndu93150.thaumaturge.api.golems.accessory.GolemAccessoryBehavio
 import com.leclowndu93150.thaumaturge.api.golems.parts.IGolemArmAbility;
 import com.leclowndu93150.thaumaturge.api.golems.parts.IGolemPartAbility;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.entity.construct.ConstructFollowOwnerGoal;
 import com.leclowndu93150.thaumaturge.content.entity.construct.ConstructOwnerHurtByTargetGoal;
 import com.leclowndu93150.thaumaturge.content.entity.construct.ConstructOwnerHurtTargetGoal;

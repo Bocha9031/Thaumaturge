@@ -114,12 +114,19 @@ public final class BlockPavingStone extends BaseEntityBlock {
         LivingEntity intruder = intruders.get(random.nextInt(intruders.size()));
         double base = pos.getY() + RUNE_HEIGHT;
         double spread = Math.max(WARNING_MIN_SPREAD, intruder.getEyeY() - base);
-        emitRune(level, pos.getX() + RUNE_CENTER, base + random.nextDouble() * spread, pos.getZ() + RUNE_CENTER, random, WARNING_STYLE);
+        emitRune(
+                level,
+                pos.getX() + RUNE_CENTER,
+                base + random.nextDouble() * spread,
+                pos.getZ() + RUNE_CENTER,
+                random,
+                WARNING_STYLE);
     }
 
     private static void spawnRunes(Level level, BlockPos pos, RandomSource random, RuneStyle style) {
         for (int i = 0; i < style.count(); i++) {
-            emitRune(level, pos.getX() + RUNE_CENTER, pos.getY() + RUNE_HEIGHT, pos.getZ() + RUNE_CENTER, random, style);
+            emitRune(
+                    level, pos.getX() + RUNE_CENTER, pos.getY() + RUNE_HEIGHT, pos.getZ() + RUNE_CENTER, random, style);
         }
     }
 
@@ -127,8 +134,24 @@ public final class BlockPavingStone extends BaseEntityBlock {
         float red = style.redBase() + random.nextFloat() * style.redSpread();
         float green = style.greenBase() + random.nextFloat() * style.greenSpread();
         float blue = style.blueBase() + random.nextFloat() * style.blueSpread();
-        level.addParticle(new BlockRunesParticleOptions(red, green, blue, style.duration(), style.gravity(), false), x, y, z, 0.0, 0.0, 0.0);
+        level.addParticle(
+                new BlockRunesParticleOptions(red, green, blue, style.duration(), style.gravity(), false),
+                x,
+                y,
+                z,
+                0.0,
+                0.0,
+                0.0);
     }
 
-    private record RuneStyle(float redBase, float redSpread, float greenBase, float greenSpread, float blueBase, float blueSpread, int count, int duration, float gravity) {}
+    private record RuneStyle(
+            float redBase,
+            float redSpread,
+            float greenBase,
+            float greenSpread,
+            float blueBase,
+            float blueSpread,
+            int count,
+            int duration,
+            float gravity) {}
 }

@@ -1115,8 +1115,7 @@ public final class TTRecipeProvider extends RecipeProvider {
     }
 
     private void buildInfusionEnchantmentRecipes() {
-        infusionEnchantment(
-                        InfusionEnchantment.BURROWING, Items.STONE_AXE, Ingredient.of(Items.RABBIT_FOOT))
+        infusionEnchantment(InfusionEnchantment.BURROWING, Items.STONE_AXE, Ingredient.of(Items.RABBIT_FOOT))
                 .aspect(TTAspects.TERRA, 150)
                 .aspect(TTAspects.SENSUS, 80)
                 .save(output);
@@ -1137,9 +1136,7 @@ public final class TTRecipeProvider extends RecipeProvider {
                 .aspect(TTAspects.SENSUS, 40)
                 .save(output);
         infusionEnchantment(
-                        InfusionEnchantment.ARCING,
-                        Items.IRON_SWORD,
-                        Ingredient.of(Tags.Items.STORAGE_BLOCKS_REDSTONE))
+                        InfusionEnchantment.ARCING, Items.IRON_SWORD, Ingredient.of(Tags.Items.STORAGE_BLOCKS_REDSTONE))
                 .aspect(TTAspects.AER, 60)
                 .aspect(TTAspects.POTENTIA, 40)
                 .save(output);

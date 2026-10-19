@@ -13,11 +13,12 @@ class CropUtilsPortTest {
     @Test
     void onlySupportedCropsExposeAPlantingSupport() {
         assertEquals(Optional.of(Direction.DOWN), CropUtils.plantingSupport(Blocks.WHEAT.defaultBlockState()));
-        assertEquals(
-                Optional.of(Direction.DOWN), CropUtils.plantingSupport(Blocks.NETHER_WART.defaultBlockState()));
+        assertEquals(Optional.of(Direction.DOWN), CropUtils.plantingSupport(Blocks.NETHER_WART.defaultBlockState()));
         assertEquals(
                 Optional.of(Direction.WEST),
-                CropUtils.plantingSupport(Blocks.COCOA.defaultBlockState().setValue(CocoaBlock.FACING, Direction.WEST)));
-        assertTrue(CropUtils.plantingSupport(Blocks.SWEET_BERRY_BUSH.defaultBlockState()).isEmpty());
+                CropUtils.plantingSupport(
+                        Blocks.COCOA.defaultBlockState().setValue(CocoaBlock.FACING, Direction.WEST)));
+        assertTrue(CropUtils.plantingSupport(Blocks.SWEET_BERRY_BUSH.defaultBlockState())
+                .isEmpty());
     }
 }

@@ -50,13 +50,7 @@ public final class RollerLegDust implements IGolemPartAbility {
         Vec3 motion = body.getDeltaMovement();
         BlockParticleOption grit = new BlockParticleOption(ParticleTypes.BLOCK, ground);
         level.addParticle(
-                grit,
-                x,
-                box.minY + BASE_LIFT,
-                z,
-                -motion.x * BACKWARD_FLING,
-                UPWARD_FLING,
-                -motion.z * BACKWARD_FLING);
+                grit, x, box.minY + BASE_LIFT, z, -motion.x * BACKWARD_FLING, UPWARD_FLING, -motion.z * BACKWARD_FLING);
     }
 
     static boolean isBrisk(double movedX, double movedY, double movedZ) {

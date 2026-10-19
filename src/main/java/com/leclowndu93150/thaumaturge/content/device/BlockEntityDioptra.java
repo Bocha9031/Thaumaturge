@@ -9,8 +9,8 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
@@ -58,9 +58,8 @@ public final class BlockEntityDioptra extends AbstractSyncedBlockEntity {
         boolean changed = false;
         for (int row = 0; row < GRID_SIZE; row++) {
             for (int column = 0; column < GRID_SIZE; column++) {
-                IAuraChunk aura = AuraHelper.of(
-                        level,
-                        new ChunkPos(home.x + column - GRID_RADIUS, home.z + row - GRID_RADIUS));
+                IAuraChunk aura =
+                        AuraHelper.of(level, new ChunkPos(home.x + column - GRID_RADIUS, home.z + row - GRID_RADIUS));
                 byte step = toStep(showVis ? aura.getVis() : aura.getFlux());
                 int index = row * GRID_SIZE + column;
                 if (steps[index] != step) {

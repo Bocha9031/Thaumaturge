@@ -219,11 +219,7 @@ public final class TTConfiguredFeatures {
         HolderGetter<ConfiguredFeature<?, ?>> configured = context.lookup(Registries.CONFIGURED_FEATURE);
 
         CrownShape greatwoodShape = new CrownShape(
-                GREATWOOD_TRUNK_WIDTH,
-                GREATWOOD_TRUNK_SHARE,
-                GREATWOOD_BRANCH_SLOPE,
-                GREATWOOD_CROWN_WIDTH,
-                true);
+                GREATWOOD_TRUNK_WIDTH, GREATWOOD_TRUNK_SHARE, GREATWOOD_BRANCH_SLOPE, GREATWOOD_CROWN_WIDTH, true);
         List<TreeDecorator> greatwoodNest = List.of(new SpiderNestDecorator(
                 GREATWOOD_SPIDER_CHANCE, TTBlocks.LOG_GREATWOOD.get(), TTBlocks.LEAVES_GREATWOOD.get()));
         TreeConfiguration oakConfiguration = new TreeConfiguration.TreeConfigurationBuilder(

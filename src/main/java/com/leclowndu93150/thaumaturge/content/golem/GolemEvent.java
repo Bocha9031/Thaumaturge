@@ -86,8 +86,8 @@ public enum GolemEvent {
         for (int i = 0; i < 5; i++) {
             int ticks = 20 + random.nextInt(20);
             float scale = 0.3F + random.nextFloat() * 0.4F;
-            GolemEmoteParticleOptions options = new GolemEmoteParticleOptions(
-                    WHITE, GolemEmoteParticleOptions.ICON_HEART, ticks, scale);
+            GolemEmoteParticleOptions options =
+                    new GolemEmoteParticleOptions(WHITE, GolemEmoteParticleOptions.ICON_HEART, ticks, scale);
             double vx = random.nextGaussian() * HEART_SCATTER;
             double vz = random.nextGaussian() * HEART_SCATTER;
             double vy = random.nextDouble() * HEART_MAX_RISE;

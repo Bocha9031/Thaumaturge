@@ -41,10 +41,11 @@ public final class HarvestBehavior implements ISealBehavior {
             new SealSetting("request_seeds", "gui.thaumaturge.seal.setting.provision", false).readingAlso("ppro");
     private static final String SITES_KEY = "replant_sites";
     private static final String LEGACY_SITES_KEY = "replant";
-    public static final MapCodec<HarvestBehavior> CODEC = RecordCodecBuilder.mapCodec(instance -> instance
-            .group(
+    public static final MapCodec<HarvestBehavior> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                     ReplantSite.CODEC.listOf().optionalFieldOf(SITES_KEY).forGetter(HarvestBehavior::storedSites),
-                    ReplantSite.LEGACY_CODEC.listOf().lenientOptionalFieldOf(LEGACY_SITES_KEY)
+                    ReplantSite.LEGACY_CODEC
+                            .listOf()
+                            .lenientOptionalFieldOf(LEGACY_SITES_KEY)
                             .forGetter(behavior -> Optional.empty()))
             .apply(instance, HarvestBehavior::restore));
 
@@ -174,7 +175,10 @@ public final class HarvestBehavior implements ISealBehavior {
         BlockBreakerEngine.harvestBlock(level, hand, pos, false, 0);
         golem.grantRankExperience(1);
         golem.animateSwing();
-        if (!seal.setting(REPLANT) || seed.isEmpty() || support == null || !level.getBlockState(pos).isAir()) {
+        if (!seal.setting(REPLANT)
+                || seed.isEmpty()
+                || support == null
+                || !level.getBlockState(pos).isAir()) {
             return;
         }
         Task replant = Task.atBlock(seal.pos(), pos);
@@ -218,7 +222,8 @@ public final class HarvestBehavior implements ISealBehavior {
         }
         BlockPos pos = site.pos();
         boolean storedSideEmpty = level.getBlockState(pos.relative(stored)).isAir();
-        boolean oppositeSideEmpty = level.getBlockState(pos.relative(stored.getOpposite())).isAir();
+        boolean oppositeSideEmpty =
+                level.getBlockState(pos.relative(stored.getOpposite())).isAir();
         return resolveSupport(stored, storedSideEmpty, oppositeSideEmpty);
     }
 

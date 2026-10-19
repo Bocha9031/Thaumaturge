@@ -187,10 +187,7 @@ public final class BlockEntityLevitator extends AbstractSyncedBlockEntity {
         int range = reach.blocks();
         for (int distance = 1; distance <= range; distance++) {
             probe.setWithOffset(
-                    pos,
-                    facing.getStepX() * distance,
-                    facing.getStepY() * distance,
-                    facing.getStepZ() * distance);
+                    pos, facing.getStepX() * distance, facing.getStepY() * distance, facing.getStepZ() * distance);
             if (!level.hasChunkAt(probe) || level.getBlockState(probe).isSolidRender(level, probe)) {
                 return distance;
             }

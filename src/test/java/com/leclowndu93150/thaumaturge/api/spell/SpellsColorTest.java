@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.api.spell;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.leclowndu93150.thaumaturge.api.spell.part.SpellPartKind;
 import org.junit.jupiter.api.Test;
 

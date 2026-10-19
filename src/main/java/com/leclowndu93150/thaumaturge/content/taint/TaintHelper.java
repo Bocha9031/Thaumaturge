@@ -24,7 +24,6 @@ import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import org.jspecify.annotations.Nullable;
 
 public final class TaintHelper {
     private static final double SEED_VALIDATION_RANGE = 1.0;

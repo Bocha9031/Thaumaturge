@@ -24,7 +24,8 @@ public final class InstabilityEvents {
     public static void trigger(ServerLevel level, BlockPos matrixPos, List<BlockPos> pedestals, float stability) {
         grantInstabilityResearch(level, matrixPos);
         InstabilityOutcome.roll(level.registryAccess(), level.getRandom())
-                .ifPresent(outcome -> outcome.effect().apply(new InstabilityContext(level, matrixPos, pedestals, stability)));
+                .ifPresent(outcome ->
+                        outcome.effect().apply(new InstabilityContext(level, matrixPos, pedestals, stability)));
     }
 
     public static void trigger(ServerLevel level, BlockPos matrixPos, List<BlockPos> pedestals) {

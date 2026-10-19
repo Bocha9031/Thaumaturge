@@ -267,7 +267,8 @@ public final class ProvideBehavior implements ISealBehavior {
         level.addFreshEntity(item);
     }
 
-    static boolean hasDeliveryTarget(@Nullable Entity receiver, @Nullable BlockPos destination, @Nullable Direction face) {
+    static boolean hasDeliveryTarget(
+            @Nullable Entity receiver, @Nullable BlockPos destination, @Nullable Direction face) {
         return receiver != null || destination != null && face != null;
     }
 

@@ -28,8 +28,8 @@ import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacer;
 import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacerType;
 
 public final class SilverwoodTrunkPlacer extends TrunkPlacer {
-    public static final MapCodec<SilverwoodTrunkPlacer> CODEC = RecordCodecBuilder.mapCodec(instance ->
-            trunkPlacerParts(instance)
+    public static final MapCodec<SilverwoodTrunkPlacer> CODEC =
+            RecordCodecBuilder.mapCodec(instance -> trunkPlacerParts(instance)
                     .and(Codec.BOOL.fieldOf("grow_nodes").forGetter(placer -> placer.growNodes))
                     .and(Codec.BOOL.fieldOf("keep_apart").forGetter(placer -> placer.keepApart))
                     .apply(instance, SilverwoodTrunkPlacer::new));
@@ -56,7 +56,8 @@ public final class SilverwoodTrunkPlacer extends TrunkPlacer {
     private final boolean growNodes;
     private final boolean keepApart;
 
-    public SilverwoodTrunkPlacer(int baseHeight, int heightRandA, int heightRandB, boolean growNodes, boolean keepApart) {
+    public SilverwoodTrunkPlacer(
+            int baseHeight, int heightRandA, int heightRandB, boolean growNodes, boolean keepApart) {
         super(baseHeight, heightRandA, heightRandB);
         this.growNodes = growNodes;
         this.keepApart = keepApart;
@@ -157,7 +158,12 @@ public final class SilverwoodTrunkPlacer extends TrunkPlacer {
     }
 
     private static List<FoliagePlacer.FoliageAttachment> growCrown(
-            WorldGenLevel level, RandomSource random, TreeConfiguration config, BlockPos origin, int treeHeight, int rise) {
+            WorldGenLevel level,
+            RandomSource random,
+            TreeConfiguration config,
+            BlockPos origin,
+            int treeHeight,
+            int rise) {
         List<FoliagePlacer.FoliageAttachment> leaves = new ArrayList<>();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int fromTop = -CROWN_DROP; fromTop <= rise; fromTop++) {

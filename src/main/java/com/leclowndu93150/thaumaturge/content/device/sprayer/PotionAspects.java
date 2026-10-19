@@ -24,7 +24,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.Potion;
 import net.minecraft.world.item.alchemy.PotionContents;
-import org.jspecify.annotations.Nullable;
 
 final class PotionAspects {
     private static final int REDUCTION_PERCENT = 66;

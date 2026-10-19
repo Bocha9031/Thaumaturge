@@ -1,10 +1,10 @@
 package com.leclowndu93150.thaumaturge.content.device.patterncrafter;
 
-import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;

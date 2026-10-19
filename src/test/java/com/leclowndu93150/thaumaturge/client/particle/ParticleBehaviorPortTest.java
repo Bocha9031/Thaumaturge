@@ -497,8 +497,7 @@ final class ParticleBehaviorPortTest {
 
         Field fadeCurve = BlockMistParticle.class.getDeclaredField("FADE_CURVE");
         fadeCurve.setAccessible(true);
-        assertArrayEquals(
-                new float[] {0.0F, 0.5F, 0.4F, 0.3F, 0.2F, 0.1F, 0.0F}, (float[]) fadeCurve.get(null));
+        assertArrayEquals(new float[] {0.0F, 0.5F, 0.4F, 0.3F, 0.2F, 0.1F, 0.0F}, (float[]) fadeCurve.get(null));
     }
 
     @Test

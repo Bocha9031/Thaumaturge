@@ -73,13 +73,7 @@ public final class BlockEldritchTrap extends BaseEntityBlock {
         int duration = DURATION_BASE + random.nextInt(DURATION_SPREAD);
         BlockRunesParticleOptions rune = new BlockRunesParticleOptions(red, green, blue, duration, NO_GRAVITY, false);
         level.addParticle(
-                rune,
-                cell.getX() + CELL_CENTER,
-                cell.getY() + CELL_CENTER,
-                cell.getZ() + CELL_CENTER,
-                0.0,
-                0.0,
-                0.0);
+                rune, cell.getX() + CELL_CENTER, cell.getY() + CELL_CENTER, cell.getZ() + CELL_CENTER, 0.0, 0.0, 0.0);
     }
 
     private static int offset(RandomSource random) {

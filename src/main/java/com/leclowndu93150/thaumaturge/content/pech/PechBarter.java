@@ -25,10 +25,7 @@ public final class PechBarter {
     private PechBarter() {}
 
     public static List<ItemStack> haggle(
-            EntityPech pech,
-            ItemStack offered,
-            RandomSource random,
-            HolderLookup.Provider registries) {
+            EntityPech pech, ItemStack offered, RandomSource random, HolderLookup.Provider registries) {
         int budget = pech.getValue(offered);
         maybeTurnSour(pech, budget, random);
         budget += swing(random);
@@ -51,15 +48,16 @@ public final class PechBarter {
             return;
         }
         pech.setDomesticated(false);
-        pech.level().playSound(
-                null,
-                pech.getX(),
-                pech.getY(),
-                pech.getZ(),
-                TTSounds.PECH_TRADE.get(),
-                pech.getSoundSource(),
-                pech.getSoundVolume(),
-                pech.getVoicePitch());
+        pech.level()
+                .playSound(
+                        null,
+                        pech.getX(),
+                        pech.getY(),
+                        pech.getZ(),
+                        TTSounds.PECH_TRADE.get(),
+                        pech.getSoundSource(),
+                        pech.getSoundVolume(),
+                        pech.getVoicePitch());
     }
 
     static int swing(RandomSource random) {
@@ -79,8 +77,7 @@ public final class PechBarter {
         return Math.min(MAX_TIER, Math.max(minimumTier, gamble));
     }
 
-    private static ItemStack payRound(
-            EntityPech pech, int tier, List<PechTrades.Entry> trades, RandomSource random) {
+    private static ItemStack payRound(EntityPech pech, int tier, List<PechTrades.Entry> trades, RandomSource random) {
         if (tier == HOARD_TIER && random.nextFloat() < HOARD_PAYOUT_CHANCE) {
             ItemStack fromHoard = takeFromHoard(pech.loot, random);
             if (!fromHoard.isEmpty()) {
@@ -94,7 +91,8 @@ public final class PechBarter {
     }
 
     private static ItemStack takeFromHoard(List<ItemStack> hoard, RandomSource random) {
-        List<ItemStack> stocked = hoard.stream().filter(stack -> !stack.isEmpty()).toList();
+        List<ItemStack> stocked =
+                hoard.stream().filter(stack -> !stack.isEmpty()).toList();
         if (stocked.isEmpty()) {
             return ItemStack.EMPTY;
         }

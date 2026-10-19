@@ -17,7 +17,8 @@ class HilltopStonesFeatureTest {
     @Test
     void acceptsLevelGroundWithinThePlatformFootprint() {
         WorldGenLevel level = mock(WorldGenLevel.class);
-        when(level.getHeight(eq(Heightmap.Types.WORLD_SURFACE), anyInt(), anyInt())).thenReturn(91);
+        when(level.getHeight(eq(Heightmap.Types.WORLD_SURFACE), anyInt(), anyInt()))
+                .thenReturn(91);
         when(level.getBlockState(any(BlockPos.class))).thenReturn(Blocks.GRASS_BLOCK.defaultBlockState());
 
         assertTrue(HilltopStonesFeature.siteIsLevel(level, new BlockPos(0, 90, 0)));
@@ -27,10 +28,10 @@ class HilltopStonesFeatureTest {
     void rejectsAPlatformFootprintWithAThreeBlockRise() {
         WorldGenLevel level = mock(WorldGenLevel.class);
         when(level.getHeight(eq(Heightmap.Types.WORLD_SURFACE), anyInt(), anyInt()))
-                .thenAnswer(invocation -> invocation.getArgument(1, Integer.class) == -2
-                                && invocation.getArgument(2, Integer.class) == -2
-                        ? 94
-                        : 91);
+                .thenAnswer(invocation ->
+                        invocation.getArgument(1, Integer.class) == -2 && invocation.getArgument(2, Integer.class) == -2
+                                ? 94
+                                : 91);
         when(level.getBlockState(any(BlockPos.class))).thenReturn(Blocks.GRASS_BLOCK.defaultBlockState());
 
         assertFalse(HilltopStonesFeature.siteIsLevel(level, new BlockPos(0, 90, 0)));

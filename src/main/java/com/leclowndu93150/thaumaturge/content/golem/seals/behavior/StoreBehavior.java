@@ -72,12 +72,7 @@ public final class StoreBehavior implements ISealBehavior {
             }
             if (amount > 0) {
                 ItemStack load = golem.hands().release(carried.stack().copyWithCount(amount));
-                int delivered = deliver(
-                        level,
-                        golem,
-                        at,
-                        inventory,
-                        load);
+                int delivered = deliver(level, golem, at, inventory, load);
                 if (delivered > 0) {
                     HandlingSound.play(golem, HandlingSound.LOW);
                     golem.grantRankExperience(1);

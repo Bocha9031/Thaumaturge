@@ -22,7 +22,8 @@ class JadeBrainJarTest {
         JadeBlockDetails details = builder.build();
         assertEquals(JadeConfig.BRAIN_JARS, details.option());
         assertEquals(
-                List.of(Component.translatable("jade.thaumaturge.brain_jar.experience", 275, BlockEntityJarBrain.XP_MAX)),
+                List.of(Component.translatable(
+                        "jade.thaumaturge.brain_jar.experience", 275, BlockEntityJarBrain.XP_MAX)),
                 details.summary());
     }
 }

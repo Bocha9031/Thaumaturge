@@ -36,9 +36,7 @@ public final class BlockEntityEverfullUrn extends AbstractSyncedBlockEntity {
     private static final int PROBE_LAYERS = 3;
     private static final int PROBE_LAYER_AREA = PROBE_SIDE * PROBE_SIDE;
     private static final int CELL_COUNT = PROBE_LAYERS * PROBE_LAYER_AREA;
-    private static final int OWN_CELL = (PROBE_LAYERS / 2) * PROBE_LAYER_AREA
-            + PROBE_REACH * PROBE_SIDE
-            + PROBE_REACH;
+    private static final int OWN_CELL = (PROBE_LAYERS / 2) * PROBE_LAYER_AREA + PROBE_REACH * PROBE_SIDE + PROBE_REACH;
     private static final int FIRST_CELL = 0;
     private static final int FIRST_CAULDRON_LEVEL = 1;
     private static final int TRAIL_COLOR = 0x4AB8FF;
@@ -154,7 +152,9 @@ public final class BlockEntityEverfullUrn extends AbstractSyncedBlockEntity {
         if (state.is(Blocks.CAULDRON)) {
             level.setBlock(
                     target,
-                    Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL, FIRST_CAULDRON_LEVEL),
+                    Blocks.WATER_CAULDRON
+                            .defaultBlockState()
+                            .setValue(LayeredCauldronBlock.LEVEL, FIRST_CAULDRON_LEVEL),
                     Block.UPDATE_CLIENTS);
         } else {
             int fill = state.getValue(LayeredCauldronBlock.LEVEL);

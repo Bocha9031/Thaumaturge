@@ -166,8 +166,7 @@ public class BlockCrucible extends BaseEntityBlock {
             crucible.attemptSmelt(it);
         } else {
             if (entity.tickCount % LAVA_HURT_INTERVAL != 0) return;
-            if (entity instanceof LivingEntity e
-                    && e.hurt(level.damageSources().inFire(), 1.0F)) {
+            if (entity instanceof LivingEntity e && e.hurt(level.damageSources().inFire(), 1.0F)) {
                 entity.clearFire();
                 entity.setTicksFrozen(0);
                 level.playSound(

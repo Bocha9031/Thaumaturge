@@ -117,10 +117,11 @@ public final class ArcaneBoreCore {
         }
         Direction facing = host.boreFacing();
         int distance = host.boreActive() ? ACTIVE_AIM_DISTANCE : INACTIVE_AIM_DISTANCE;
-        Vec3 point = host.boreEye().add(
-                facing.getStepX() * (double) distance,
-                facing.getStepY() * (double) distance,
-                facing.getStepZ() * (double) distance);
+        Vec3 point = host.boreEye()
+                .add(
+                        facing.getStepX() * (double) distance,
+                        facing.getStepY() * (double) distance,
+                        facing.getStepZ() * (double) distance);
         host.aimBore(point.x, point.y, point.z, IDLE_YAW_STEP, IDLE_PITCH_STEP);
     }
 
@@ -153,9 +154,7 @@ public final class ArcaneBoreCore {
             soundDelay =
                     level.getGameTime() + SOUND_DELAY_TICKS + host.boreRandom().nextInt(2);
             host.playBoreSound(
-                    TTSounds.RUMBLE.get(),
-                    0.25F,
-                    0.9F + host.boreRandom().nextFloat() * 0.2F);
+                    TTSounds.RUMBLE.get(), 0.25F, 0.9F + host.boreRandom().nextFloat() * 0.2F);
         }
     }
 

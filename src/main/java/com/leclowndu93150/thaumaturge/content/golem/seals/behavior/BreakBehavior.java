@@ -63,7 +63,8 @@ public final class BreakBehavior extends CellWorkBehavior {
         if (task.data() > strike) {
             task.setData(task.data() - strike);
             keepAlive(task);
-            level.playSound(null, pos, state.getSoundType().getBreakSound(), SoundSource.BLOCKS, STRIKE_VOLUME, STRIKE_PITCH);
+            level.playSound(
+                    null, pos, state.getSoundType().getBreakSound(), SoundSource.BLOCKS, STRIKE_VOLUME, STRIKE_PITCH);
             level.destroyBlockProgress(crackId, pos, crackStage(workFor(level, pos, state), task.data()));
             return false;
         }

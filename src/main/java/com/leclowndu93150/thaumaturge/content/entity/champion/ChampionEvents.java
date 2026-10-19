@@ -18,7 +18,6 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSets;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
@@ -65,12 +64,13 @@ public final class ChampionEvents {
         if (weight == null || mob.getAttributeBaseValue(Attributes.MAX_HEALTH) < MIN_CHAMPION_HEALTH) {
             return false;
         }
-        return mob.getRandom().nextInt(ROLL_BOUND) <= rollModifier(
-                ThaumaturgeCommonConfig.ALLOW_CHAMPION_MOBS.get(),
-                level.getDifficulty(),
-                isSpooky(level, mob),
-                weight,
-                isBoss(mob));
+        return mob.getRandom().nextInt(ROLL_BOUND)
+                <= rollModifier(
+                        ThaumaturgeCommonConfig.ALLOW_CHAMPION_MOBS.get(),
+                        level.getDifficulty(),
+                        isSpooky(level, mob),
+                        weight,
+                        isBoss(mob));
     }
 
     static int rollModifier(boolean enabled, Difficulty difficulty, boolean spooky, int weight, boolean boss) {
@@ -91,7 +91,8 @@ public final class ChampionEvents {
     }
 
     private static boolean isBoss(Monster mob) {
-        return mob instanceof EntityThaumaturgeBoss || mob.getType().builtInRegistryHolder().is(Tags.EntityTypes.BOSSES);
+        return mob instanceof EntityThaumaturgeBoss
+                || mob.getType().builtInRegistryHolder().is(Tags.EntityTypes.BOSSES);
     }
 
     private static boolean isSpooky(Level level, Monster mob) {

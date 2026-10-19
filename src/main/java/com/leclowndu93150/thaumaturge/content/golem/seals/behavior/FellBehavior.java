@@ -30,10 +30,7 @@ public final class FellBehavior extends CellWorkBehavior {
         }
         golem.animateSwing();
         if (!EnchantMining.breakFurthest(
-                level,
-                task.pos(),
-                level.getBlockState(task.pos()),
-                TTFakePlayer.GOLEM.at(level, golem.asEntity()))) {
+                level, task.pos(), level.getBlockState(task.pos()), TTFakePlayer.GOLEM.at(level, golem.asEntity()))) {
             return retire(task);
         }
         keepAlive(task);

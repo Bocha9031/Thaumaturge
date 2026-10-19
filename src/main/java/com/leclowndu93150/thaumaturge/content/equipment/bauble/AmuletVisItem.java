@@ -45,8 +45,7 @@ public final class AmuletVisItem extends Item {
         if (topUpWand(player)) {
             return;
         }
-        if (RechargeAccess.drawFromAura(player.level(), player.getOffhandItem(), player.blockPosition(), player, 1)
-                        > 0
+        if (RechargeAccess.drawFromAura(player.level(), player.getOffhandItem(), player.blockPosition(), player, 1) > 0
                 || topUpWand(player, player.getOffhandItem())) {
             return;
         }
