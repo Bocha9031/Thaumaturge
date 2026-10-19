@@ -1,0 +1,121 @@
+package com.leclowndu93150.thaumaturge.client.entity;
+
+import java.util.List;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
+
+/** Builds the animated centerline and continuous tube frames used by the rift renderer. */
+final class FluxRiftGeometry {
+    private static final int SIDES = 6;
+    private static final int COMPONENTS = 3;
+    private static final int RING_STRIDE = SIDES * COMPONENTS;
+    private static final float STILL_STABILITY = 50.0F;
+    private static final float MAX_MOTION = 1.5F;
+    private static final float SWAY_BLOCKS = 0.035F;
+    private static final float SWAY_RATE_X = 0.05F;
+    private static final float SWAY_RATE_Y = 0.043F;
+    private static final float SWAY_RATE_Z = 0.061F;
+    private static final float SWAY_STEP = 0.45F;
+    private static final float THROB_RATE = 0.17F;
+    private static final float THROB_STEP = 0.6F;
+    private static final float THROB_DEPTH = 0.12F;
+    private static final float VERTICAL_THRESHOLD = 0.9F;
+    private static final double TANGENT_EPSILON = 1.0E-8;
+
+    private FluxRiftGeometry() {}
+
+    static Tube build(List<Vec3> outline, List<Float> widths, float stability, float time) {
+        int count = Math.min(outline.size(), widths.size());
+        float[] path = new float[count * COMPONENTS];
+        float[] radii = new float[count];
+        float[] rings = new float[count * RING_STRIDE];
+        float motion = Mth.clamp(1.0F - stability / STILL_STABILITY, 0.0F, MAX_MOTION);
+        float sway = SWAY_BLOCKS * motion;
+        float throb = THROB_DEPTH * motion;
+        for (int i = 0; i < count; i++) {
+            Vec3 point = outline.get(i);
+            int at = i * COMPONENTS;
+            path[at] = (float) point.x + sway * Mth.sin(time * SWAY_RATE_X + i * SWAY_STEP);
+            path[at + 1] = (float) point.y + sway * Mth.sin(time * SWAY_RATE_Y + i * SWAY_STEP);
+            path[at + 2] = (float) point.z + sway * Mth.sin(time * SWAY_RATE_Z + i * SWAY_STEP);
+            radii[i] = widths.get(i) * (1.0F + throb * Mth.sin(time * THROB_RATE + i * THROB_STEP));
+        }
+        buildRings(path, rings, count);
+        return new Tube(count, path, radii, rings);
+    }
+
+    private static void buildRings(float[] path, float[] rings, int count) {
+        double nx = 0.0;
+        double ny = 0.0;
+        double nz = 0.0;
+        double tx = 0.0;
+        double ty = 1.0;
+        double tz = 0.0;
+        for (int i = 0; i < count; i++) {
+            int before = Math.max(0, i - 1) * COMPONENTS;
+            int after = Math.min(count - 1, i + 1) * COMPONENTS;
+            double dx = path[after] - path[before];
+            double dy = path[after + 1] - path[before + 1];
+            double dz = path[after + 2] - path[before + 2];
+            double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (length > TANGENT_EPSILON) {
+                tx = dx / length;
+                ty = dy / length;
+                tz = dz / length;
+            }
+            if (i == 0) {
+                boolean steep = Math.abs(ty) > VERTICAL_THRESHOLD;
+                nx = steep ? 1.0 : 0.0;
+                ny = steep ? 0.0 : 1.0;
+                nz = 0.0;
+            }
+            double projection = nx * tx + ny * ty + nz * tz;
+            nx -= projection * tx;
+            ny -= projection * ty;
+            nz -= projection * tz;
+            double normalLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            if (normalLength < TANGENT_EPSILON) {
+                boolean steep = Math.abs(ty) > VERTICAL_THRESHOLD;
+                nx = steep ? 1.0 - tx * tx : -ty * tx;
+                ny = steep ? -tx * ty : 1.0 - ty * ty;
+                nz = steep ? -tx * tz : -ty * tz;
+                normalLength = Math.sqrt(nx * nx + ny * ny + nz * nz);
+            }
+            nx /= normalLength;
+            ny /= normalLength;
+            nz /= normalLength;
+            double bx = ty * nz - tz * ny;
+            double by = tz * nx - tx * nz;
+            double bz = tx * ny - ty * nx;
+            for (int side = 0; side < SIDES; side++) {
+                double angle = side * Mth.TWO_PI / SIDES;
+                double cos = Math.cos(angle);
+                double sin = Math.sin(angle);
+                int at = i * RING_STRIDE + side * COMPONENTS;
+                rings[at] = (float) (nx * cos + bx * sin);
+                rings[at + 1] = (float) (ny * cos + by * sin);
+                rings[at + 2] = (float) (nz * cos + bz * sin);
+            }
+        }
+    }
+
+    record Tube(int count, float[] path, float[] radii, float[] rings) {
+        float vertexX(int point, int side, float scale) {
+            int vertex = point * COMPONENTS;
+            int ring = point * RING_STRIDE + side * COMPONENTS;
+            return path[vertex] + rings[ring] * radii[point] * scale;
+        }
+
+        float vertexY(int point, int side, float scale) {
+            int vertex = point * COMPONENTS;
+            int ring = point * RING_STRIDE + side * COMPONENTS;
+            return path[vertex + 1] + rings[ring + 1] * radii[point] * scale;
+        }
+
+        float vertexZ(int point, int side, float scale) {
+            int vertex = point * COMPONENTS;
+            int ring = point * RING_STRIDE + side * COMPONENTS;
+            return path[vertex + 2] + rings[ring + 2] * radii[point] * scale;
+        }
+    }
+}
