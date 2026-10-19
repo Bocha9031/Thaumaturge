@@ -50,6 +50,7 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
     private static final float ORB_SPEED = 0.66F;
     private static final float ORB_SPREAD = 3.0F;
     private static final int FIREBALL_COUNT = 3;
+    private static final float FIREBALL_FAN_SPREAD = 2.5F;
     private static final int FIREBALL_LEVEL_EVENT = 1009;
 
     public int rage;
@@ -128,7 +129,7 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
             this.playSound(TTSounds.EGATTACK.get(), 1.0F, 1.0F + this.random.nextFloat() * 0.1F);
             this.level().addFreshEntity(blast);
         } else {
-            float spread = Mth.sqrt(velocity) * 0.5F;
+            float spread = fireballFanSpread(velocity);
             this.level().levelEvent(null, FIREBALL_LEVEL_EVENT, this.blockPosition(), 0);
             for (int i = 0; i < FIREBALL_COUNT; i++) {
                 Vec3 shot = new Vec3(
@@ -138,6 +139,10 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
                 this.level().addFreshEntity(fireball);
             }
         }
+    }
+
+    static float fireballFanSpread(float distanceFactor) {
+        return Mth.sqrt(distanceFactor) * FIREBALL_FAN_SPREAD;
     }
 
     @Override
