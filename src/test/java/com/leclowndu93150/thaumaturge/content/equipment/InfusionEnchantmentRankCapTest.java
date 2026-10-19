@@ -32,8 +32,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageSources;
 import net.minecraft.world.entity.LivingEntity;
@@ -235,6 +235,46 @@ class InfusionEnchantmentRankCapTest {
             assertEquals(
                     InfusionEnchantment.ESSENCE.maxLevel(),
                     generated.constructed().size());
+        }
+    }
+
+    @Test
+    void essenceSkipDoesNotDiscardUnselectedAspects() {
+        RandomSource random = mock(RandomSource.class);
+        AtomicInteger calls = new AtomicInteger();
+        when(random.nextInt(anyInt())).thenAnswer(invocation -> switch (calls.getAndIncrement()) {
+            case 0, 1, 2, 3, 4, 6 -> 0;
+            default -> 1;
+        });
+        ServerLevel level = mock(ServerLevel.class);
+        when(level.isClientSide()).thenReturn(false);
+        when(level.getRandom()).thenReturn(random);
+        Player killer = mock(Player.class);
+        LivingEntity victim = mock(LivingEntity.class);
+        ItemStack weapon = stackWithLevel(InfusionEnchantment.ESSENCE, InfusionEnchantment.ESSENCE.maxLevel());
+        DamageSource damageSource = mock(DamageSource.class);
+        when(killer.level()).thenReturn(level);
+        when(killer.getMainHandItem()).thenReturn(weapon);
+        when(victim.level()).thenReturn(level);
+        when(damageSource.getEntity()).thenReturn(killer);
+        LivingDropsEvent event = mock(LivingDropsEvent.class);
+        when(event.getSource()).thenReturn(damageSource);
+        when(event.getEntity()).thenReturn(victim);
+        List<ItemEntity> drops = new ArrayList<>();
+        when(event.getDrops()).thenReturn(drops);
+
+        AspectInstance aspect = new AspectInstance(Holder.direct(mock(IAspect.class)), 3);
+        AspectList aspects = AspectList.ofEntries(List.of(aspect));
+        try (MockedStatic<EntityAspects> entityAspects = mockStatic(EntityAspects.class);
+                MockedStatic<EssentiaCrystalFactory> crystals = mockStatic(EssentiaCrystalFactory.class);
+                MockedConstruction<ItemEntity> generated = mockConstruction(ItemEntity.class)) {
+            entityAspects.when(() -> EntityAspects.of(victim)).thenReturn(aspects);
+            crystals.when(() -> EssentiaCrystalFactory.of(aspect.aspect()))
+                    .thenReturn(new ItemStack(Items.AMETHYST_SHARD));
+
+            InfusionEnchantmentEvents.onLivingDrops(event);
+
+            assertEquals(3, generated.constructed().size());
         }
     }
 

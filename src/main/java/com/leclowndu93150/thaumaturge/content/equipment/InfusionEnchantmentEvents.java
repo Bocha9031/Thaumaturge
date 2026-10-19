@@ -28,8 +28,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -389,11 +389,7 @@ public final class InfusionEnchantmentEvents {
 
         if (list.contains(InfusionEnchantment.ESSENCE)) {
             int rank = cappedLevel(held, InfusionEnchantment.ESSENCE);
-            AspectList aspects = EntityAspects.of(victim);
-            if (!aspects.isEmpty()) {
-                distillEssence(
-                        level, player, victim, aspects, rank, list.contains(InfusionEnchantment.COLLECTOR), event);
-            }
+            distillEssence(level, player, victim, rank, list.contains(InfusionEnchantment.COLLECTOR), event);
         }
     }
 
@@ -401,18 +397,21 @@ public final class InfusionEnchantmentEvents {
             ServerLevel level,
             Player player,
             LivingEntity victim,
-            AspectList aspects,
             int rank,
             boolean collector,
             LivingDropsEvent event) {
-        AspectList remaining = aspects;
-        int produced = level.getRandom().nextInt(5) < rank ? 0 : 99;
+        var random = level.getRandom();
+        if (random.nextInt(InfusionEnchantment.ESSENCE.maxLevel()) >= rank) {
+            return;
+        }
+        AspectList remaining = EntityAspects.of(victim);
+        int produced = 0;
         double x = victim.getX();
         double y = victim.getY() + victim.getEyeHeight();
         double z = victim.getZ();
         while (produced < rank && !remaining.isEmpty()) {
             List<AspectInstance> entries = remaining.entries();
-            AspectInstance entry = entries.get(level.getRandom().nextInt(entries.size()));
+            AspectInstance entry = entries.get(random.nextInt(entries.size()));
             remaining = remaining.remove(entry.aspect(), 1);
             ItemStack crystal = EssentiaCrystalFactory.of(entry.aspect());
             if (collector) {
@@ -421,8 +420,8 @@ public final class InfusionEnchantmentEvents {
                 event.getDrops().add(new ItemEntity(level, x, y, z, crystal));
             }
             produced++;
-            if (!remaining.isEmpty() && level.getRandom().nextInt(rank) == 0) {
-                produced += 1 + level.getRandom().nextInt(2);
+            if (random.nextInt(rank) == 0) {
+                produced += 1 + random.nextInt(2);
             }
         }
     }
