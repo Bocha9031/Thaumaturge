@@ -19,4 +19,11 @@ final class WispZapGoalPortTest {
         assertEquals(0.66F, WispZapGoal.hitChance(true));
         assertEquals(0.4F, WispZapGoal.hitChance(false));
     }
+
+    @Test
+    void unavailableTargetsDecayPositiveChargeWithoutChangingRechargeDelay() {
+        assertEquals(19, WispZapGoal.decayCharge(20));
+        assertEquals(0, WispZapGoal.decayCharge(0));
+        assertEquals(-8, WispZapGoal.decayCharge(-8));
+    }
 }

@@ -61,11 +61,8 @@ public final class WispZapGoal extends Goal {
         if (visible) {
             steer(target, distanceSqr);
         }
-        if (distanceSqr > ZAP_RANGE_SQR) {
-            return;
-        }
-        if (!visible) {
-            charge = charge > 0 ? charge - 1 : charge;
+        if (distanceSqr > ZAP_RANGE_SQR || !visible) {
+            charge = decayCharge(charge);
             return;
         }
         if (++charge >= CHARGE_TO_FIRE && wisp.level() instanceof ServerLevel level) {
@@ -119,5 +116,9 @@ public final class WispZapGoal extends Goal {
 
     static float hitChance(boolean still) {
         return still ? STILL_HIT_CHANCE : MOVING_HIT_CHANCE;
+    }
+
+    static int decayCharge(int charge) {
+        return charge > 0 ? charge - 1 : charge;
     }
 }
