@@ -31,7 +31,6 @@ import net.minecraft.world.level.storage.loot.predicates.InvertedLootItemConditi
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemKilledByPlayerCondition;
-import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceWithEnchantedBonusCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
@@ -190,8 +189,9 @@ public final class TTEntityLootSubProvider extends EntityLootSubProvider {
     }
 
     private LootPool.Builder constructPool(ItemLike item, float chance) {
-        return singlePool(item).when(LootItemRandomChanceWithEnchantedBonusCondition.randomChanceAndLootingBoost(
-                this.registries, chance, CONSTRUCT_LOOTING_BONUS));
+        return singlePool(item)
+                .when(LootItemRandomChanceWithEnchantedBonusCondition.randomChanceAndLootingBoost(
+                        this.registries, chance, CONSTRUCT_LOOTING_BONUS));
     }
 
     private LootItem.Builder<?> vitiumCrystal() {
