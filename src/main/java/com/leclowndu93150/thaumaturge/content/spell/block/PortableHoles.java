@@ -16,10 +16,12 @@ public final class PortableHoles {
     private PortableHoles() {}
 
     public static boolean canOpen(Level level, BlockPos pos) {
+        if (!level.hasChunkAt(pos)) {
+            return false;
+        }
         BlockState state = level.getBlockState(pos);
-        return !state.isAir()
-                && !state.canBeReplaced()
-                && level.getBlockEntity(pos) == null
+        return (state.isAir() || !state.canBeReplaced())
+                && !state.hasBlockEntity()
                 && !state.is(TTBlockTags.PORTABLE_HOLE_BLACKLIST)
                 && !state.is(Blocks.BEDROCK)
                 && !state.is(TTBlocks.HOLE.get())
