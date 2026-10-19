@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.spell.block;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.content.particle.SparkleParticleOptions;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.serialization.TTNbt;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -20,12 +21,19 @@ public final class BlockEntityHole extends AbstractSyncedBlockEntity {
     private static final int DEFAULT_COUNTDOWN_MAX = 120;
     private static final int DIRTY_INTERVAL_TICKS = 20;
     private static final int SPARKLE_ATTEMPTS_PER_TICK = 2;
+    private static final int SPARKLE_SKIP_ODDS = 3;
+    private static final int EDGES_PER_AXIS = 4;
+    private static final int EDGE_COUNT = 12;
+    private static final int AXIS_COUNT = 3;
+    private static final int FIRST_SIDE_BIT = 1;
+    private static final int SECOND_SIDE_BIT = 2;
     private static final int RING_CELLS = 9;
     private static final int RING_SIZE = 3;
     private static final float SPARKLE_RED = 0.25F;
     private static final float SPARKLE_GREEN = 0.25F;
     private static final float SPARKLE_BLUE = 1.0F;
-    private static final float SPARKLE_ALPHA = 0.9F;
+    private static final float SPARKLE_ALPHA = 1.0F;
+    private static final Direction.Axis[] AXES = Direction.Axis.values();
 
     BlockState oldblock = Blocks.AIR.defaultBlockState();
     int countdown = 0;
@@ -109,63 +117,90 @@ public final class BlockEntityHole extends AbstractSyncedBlockEntity {
     }
 
     public static void clientTick(Level level, BlockPos pos, BlockState state, BlockEntityHole hole) {
-        for (int a = 0; a < SPARKLE_ATTEMPTS_PER_TICK; a++) {
-            hole.surroundWithSparkles(level, pos);
+        RandomSource random = level.getRandom();
+        for (int attempt = 0; attempt < SPARKLE_ATTEMPTS_PER_TICK; attempt++) {
+            hole.sparkle(level, pos, random);
         }
     }
 
-    private void surroundWithSparkles(Level level, BlockPos pos) {
-        for (Direction d1 : Direction.values()) {
-            BlockState b1 = level.getBlockState(pos.relative(d1));
-            if (b1.is(getBlockState().getBlock()) || b1.isSolidRender(level, pos.relative(d1))) {
-                continue;
-            }
-            for (Direction d2 : Direction.values()) {
-                if (d1.getAxis() == d2.getAxis()) {
-                    continue;
-                }
-                if (!level.getBlockState(pos.relative(d2)).isSolidRender(level, pos.relative(d2))
-                        && !level.getBlockState(pos.relative(d1).relative(d2))
-                                .isSolidRender(level, pos.relative(d1).relative(d2))) {
-                    continue;
-                }
-                RandomSource rand = level.getRandom();
-                float sx = 0.5F * d1.getStepX();
-                float sy = 0.5F * d1.getStepY();
-                float sz = 0.5F * d1.getStepZ();
-                if (sx == 0.0F) {
-                    sx = 0.5F * d2.getStepX();
-                }
-                if (sy == 0.0F) {
-                    sy = 0.5F * d2.getStepY();
-                }
-                if (sz == 0.0F) {
-                    sz = 0.5F * d2.getStepZ();
-                }
-                sx = sx == 0.0F ? rand.nextFloat() : sx + 0.5F;
-                sy = sy == 0.0F ? rand.nextFloat() : sy + 0.5F;
-                sz = sz == 0.0F ? rand.nextFloat() : sz + 0.5F;
-                spawnSparkle(level, pos.getX() + sx, pos.getY() + sy, pos.getZ() + sz);
-            }
-        }
-    }
-
-    private static void spawnSparkle(Level level, double x, double y, double z) {
-        RandomSource rand = level.getRandom();
-        if (rand.nextInt(6) >= 4) {
+    private void sparkle(Level level, BlockPos pos, RandomSource random) {
+        int edge = random.nextInt(EDGE_COUNT);
+        Direction.Axis free = AXES[edge / EDGES_PER_AXIS];
+        Direction.Axis first = AXES[(free.ordinal() + 1) % AXIS_COUNT];
+        Direction.Axis second = AXES[(free.ordinal() + 2) % AXIS_COUNT];
+        int firstSide = (edge & FIRST_SIDE_BIT) == 0 ? -1 : 1;
+        int secondSide = (edge & SECOND_SIDE_BIT) == 0 ? -1 : 1;
+        if (!exposed(level, pos, first, firstSide, second, secondSide)
+                || random.nextInt(SPARKLE_SKIP_ODDS) == 0) {
             return;
         }
+        double along = random.nextDouble();
+        double x = pos.getX() + offset(Direction.Axis.X, free, along, first, firstSide, secondSide);
+        double y = pos.getY() + offset(Direction.Axis.Y, free, along, first, firstSide, secondSide);
+        double z = pos.getZ() + offset(Direction.Axis.Z, free, along, first, firstSide, secondSide);
         SparkleParticleOptions data = new SparkleParticleOptions(
                 ARGB32.color(
-                        (int) ((1.0F) * 255.0F), (int) ((SPARKLE_RED) * 255.0F), (int) ((SPARKLE_GREEN) * 255.0F), (int)
-                                ((SPARKLE_BLUE) * 255.0F)),
-                0.6F + rand.nextFloat() * 0.2F,
+                        (int) (SPARKLE_ALPHA * 255.0F),
+                        (int) (SPARKLE_RED * 255.0F),
+                        (int) (SPARKLE_GREEN * 255.0F),
+                        (int) (SPARKLE_BLUE * 255.0F)),
+                0.6F + random.nextFloat() * 0.2F,
                 0,
                 1.0F,
                 0.0F,
                 2,
                 false);
         level.addParticle(data, x, y, z, 0.0, 0.0, 0.0);
+    }
+
+    private static double offset(
+            Direction.Axis axis,
+            Direction.Axis free,
+            double along,
+            Direction.Axis first,
+            int firstSide,
+            int secondSide) {
+        if (axis == free) {
+            return along;
+        }
+        return (axis == first ? firstSide : secondSide) > 0 ? 1.0 : 0.0;
+    }
+
+    private static boolean exposed(
+            Level level,
+            BlockPos pos,
+            Direction.Axis first,
+            int firstSide,
+            Direction.Axis second,
+            int secondSide) {
+        BlockPos firstNeighbour = pos.relative(first, firstSide);
+        BlockPos secondNeighbour = pos.relative(second, secondSide);
+        BlockPos diagonal = firstNeighbour.relative(second, secondSide);
+        return isExposed(
+                open(level, firstNeighbour),
+                open(level, secondNeighbour),
+                opaque(level, firstNeighbour),
+                opaque(level, secondNeighbour),
+                opaque(level, diagonal));
+    }
+
+    static boolean isExposed(
+            boolean firstOpen,
+            boolean secondOpen,
+            boolean firstOpaque,
+            boolean secondOpaque,
+            boolean diagonalOpaque) {
+        return firstOpen && (secondOpaque || diagonalOpaque)
+                || secondOpen && (firstOpaque || diagonalOpaque);
+    }
+
+    private static boolean open(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        return !state.is(TTBlocks.HOLE.get()) && !state.isSolidRender(level, pos);
+    }
+
+    private static boolean opaque(Level level, BlockPos pos) {
+        return level.getBlockState(pos).isSolidRender(level, pos);
     }
 
     @Override
