@@ -184,6 +184,7 @@ public final class TTModelProvider implements DataProvider {
         registerResearchTable();
         registerDeconstructionTable();
         registerResearchNote();
+        registerAdvancedAlchemicalFurnaceItem();
         registerConstructs();
         decorModels();
         eldritchModels();
@@ -481,6 +482,26 @@ public final class TTModelProvider implements DataProvider {
         plantModels();
         taintModels();
         containerItemModels();
+    }
+
+    private void registerAdvancedAlchemicalFurnaceItem() {
+        JsonObject model = new JsonObject();
+        model.addProperty("parent", "minecraft:builtin/entity");
+
+        JsonObject display = new JsonObject();
+        JsonObject gui = new JsonObject();
+        gui.add("rotation", floatTriple(30, 225, 0));
+        gui.add("translation", floatTriple(0, -2.75F, 0));
+        gui.add("scale", floatTriple(0.625F, 0.625F, 0.625F));
+        display.add("gui", gui);
+
+        JsonObject fixed = new JsonObject();
+        fixed.add("translation", floatTriple(0, -3.5F, 0));
+        fixed.add("scale", floatTriple(0.625F, 0.625F, 0.625F));
+        display.add("fixed", fixed);
+        model.add("display", display);
+
+        modelOutput.accept(TTIds.rl("item/advanced_alchemical_furnace"), () -> model);
     }
 
     private void registerManaPod() {
