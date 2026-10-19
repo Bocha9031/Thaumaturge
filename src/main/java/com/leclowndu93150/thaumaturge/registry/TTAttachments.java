@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.content.eldritch.encounter.LabyrinthBindin
 import com.leclowndu93150.thaumaturge.content.eldritch.portal.TransitState;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitRuntime;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitState;
+import com.leclowndu93150.thaumaturge.content.equipment.DestructiveSwingMemory;
 import com.leclowndu93150.thaumaturge.content.equipment.runic.RunicShieldState;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealWorldIndex;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealsChunkData;
@@ -102,6 +103,9 @@ public final class TTAttachments {
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> GRAPPLE_ID =
             register("grapple_id", () -> AttachmentType.builder(() -> -1).build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<DestructiveSwingMemory>> DESTRUCTIVE_SWING =
+            register("destructive_swing", () -> AttachmentType.builder(DestructiveSwingMemory::new).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<Boolean>> DONATOR_CAPE = register(
             "donator_cape",

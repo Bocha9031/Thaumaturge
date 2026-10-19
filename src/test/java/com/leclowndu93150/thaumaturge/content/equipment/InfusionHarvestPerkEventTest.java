@@ -29,17 +29,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
 class InfusionHarvestPerkEventTest {
-    @AfterEach
-    void clearRememberedSwings() {
-        InfusionEnchantmentEvents.resetSession();
-    }
-
     @Test
     void collectorKeepsFollowersInDropsWithoutSpawningBeforeExpansion() {
         ServerLevel level = mock(ServerLevel.class, org.mockito.Answers.RETURNS_DEEP_STUBS);

@@ -25,18 +25,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
 class InfusionRareNuggetParityTest {
-    @AfterEach
-    void clearRememberedSwings() {
-        InfusionEnchantmentEvents.resetSession();
-    }
-
     @Test
     void untaggedBlockDoesNotConsumeRandomness() {
         RandomSource random = mock(RandomSource.class);

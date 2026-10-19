@@ -50,17 +50,11 @@ import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
 
 class InfusionEnchantmentRankCapTest {
-    @AfterEach
-    void clearRememberedSwings() {
-        InfusionEnchantmentEvents.resetSession();
-    }
-
     @Test
     void arcingUsesDeclaredMaximumForReach() {
         Player attacker = mock(Player.class);

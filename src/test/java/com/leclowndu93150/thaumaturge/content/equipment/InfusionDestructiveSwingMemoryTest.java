@@ -1,72 +1,55 @@
 package com.leclowndu93150.thaumaturge.content.equipment;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.leclowndu93150.thaumaturge.api.items.InfusionEnchantment;
-import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.UUID;
+import com.leclowndu93150.thaumaturge.TTIds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 class InfusionDestructiveSwingMemoryTest {
-    @AfterEach
-    void clearRememberedSwings() {
-        InfusionEnchantmentEvents.resetSession();
+    @Test
+    void rememberedFaceIsReturnedOnlyForMatchingBlockAndOnlyOnce() {
+        DestructiveSwingMemory memory = new DestructiveSwingMemory();
+        ResourceKey<Level> dimension = dimension("test");
+        BlockPos pos = new BlockPos(3, 4, 5);
+        memory.remember(dimension, pos, Direction.NORTH);
+
+        assertEquals(Direction.NORTH, memory.takeFace(dimension, pos));
+        assertNull(memory.takeFace(dimension, pos));
     }
 
     @Test
-    void nullFaceClickForgetsPreviousDestructiveSwing() throws ReflectiveOperationException {
-        InfusionEnchantmentEvents.resetSession();
-        UUID playerId = UUID.randomUUID();
+    void mismatchedDimensionOrPositionDiscardsRememberedFace() {
+        DestructiveSwingMemory memory = new DestructiveSwingMemory();
+        ResourceKey<Level> dimension = dimension("test");
         BlockPos pos = new BlockPos(3, 4, 5);
-        Level level = mock(Level.class);
-        Player player = mock(Player.class);
-        ItemStack held = mock(ItemStack.class);
-        BlockState state = mock(BlockState.class);
-        when(level.isClientSide()).thenReturn(false);
-        when(level.getBlockState(pos)).thenReturn(state);
-        when(player.level()).thenReturn(level);
-        when(player.getUUID()).thenReturn(playerId);
-        when(player.isShiftKeyDown()).thenReturn(false);
-        when(player.getMainHandItem()).thenReturn(held);
-        when(held.isCorrectToolForDrops(state)).thenReturn(true);
+        memory.remember(dimension, pos, Direction.NORTH);
 
-        try (MockedStatic<InfusionEnchantmentHelper> enchantments = mockStatic(InfusionEnchantmentHelper.class)) {
-            enchantments
-                    .when(() -> InfusionEnchantmentHelper.has(held, InfusionEnchantment.DESTRUCTIVE))
-                    .thenReturn(true);
+        assertNull(memory.takeFace(dimension("other"), pos));
+        assertNull(memory.takeFace(dimension, pos));
 
-            PlayerInteractEvent.LeftClickBlock validClick =
-                    new PlayerInteractEvent.LeftClickBlock(player, pos, Direction.NORTH, Action.START);
-            InfusionEnchantmentEvents.onLeftClickBlock(validClick);
-            assertTrue(destructiveTargets().containsKey(playerId));
-
-            PlayerInteractEvent.LeftClickBlock nullFaceClick =
-                    new PlayerInteractEvent.LeftClickBlock(player, pos, null, Action.START);
-            InfusionEnchantmentEvents.onLeftClickBlock(nullFaceClick);
-
-            assertFalse(destructiveTargets().containsKey(playerId));
-        }
+        memory.remember(dimension, pos, Direction.SOUTH);
+        assertNull(memory.takeFace(dimension, pos.offset(1, 0, 0)));
+        assertNull(memory.takeFace(dimension, pos));
     }
 
-    private static Map<?, ?> destructiveTargets() throws ReflectiveOperationException {
-        Field targetsField = InfusionEnchantmentEvents.class.getDeclaredField("DESTRUCTIVE_TARGETS");
-        targetsField.setAccessible(true);
-        Object targets = targetsField.get(null);
-        return (Map<?, ?>) targets;
+    @Test
+    void forgetClearsRememberedFace() {
+        DestructiveSwingMemory memory = new DestructiveSwingMemory();
+        ResourceKey<Level> dimension = dimension("test");
+        BlockPos pos = new BlockPos(3, 4, 5);
+        memory.remember(dimension, pos, Direction.NORTH);
+        memory.forget();
+
+        assertNull(memory.takeFace(dimension, pos));
+    }
+
+    private static ResourceKey<Level> dimension(String path) {
+        return ResourceKey.create(Registries.DIMENSION, TTIds.rl(path));
     }
 }
