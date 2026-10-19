@@ -11,6 +11,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.DoublePlantBlock;
@@ -20,7 +21,6 @@ import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
-import net.minecraft.world.level.levelgen.synth.NormalNoise;
 import net.neoforged.fml.ModList;
 import org.jspecify.annotations.Nullable;
 
@@ -35,11 +35,9 @@ public final class MagicForestFloraFeature extends Feature<MagicForestFloraConfi
     private static final int MUSHROOM_STEP = 3;
     private static final int LOG_REACH = 1;
     private static final int DYNAMIC_TREES_VISHROOM_ATTEMPT_MULTIPLIER = 4;
-    private static final long FLOWER_NOISE_SEED = 0x6D61676963L;
     private static final double FLOWER_NOISE_SCALE = 48.0;
     private static final double FLOWER_NOISE_CLAMP_MAX = 0.9999;
     private static final int PLANT_FLAGS = Block.UPDATE_ALL | Block.UPDATE_KNOWN_SHAPE;
-    private static final NormalNoise FLOWER_NOISE = NormalNoise.create(RandomSource.create(FLOWER_NOISE_SEED), 0, 1.0);
 
     public MagicForestFloraFeature(Codec<MagicForestFloraConfig> codec) {
         super(codec);
@@ -135,9 +133,14 @@ public final class MagicForestFloraFeature extends Feature<MagicForestFloraConfi
     }
 
     private static BlockState pickFlower(List<BlockState> flowers, BlockPos spot) {
-        double noise = FLOWER_NOISE.getValue(spot.getX() / FLOWER_NOISE_SCALE, 0.0, spot.getZ() / FLOWER_NOISE_SCALE);
+        return flowers.get(flowerIndexAt(spot, flowers.size()));
+    }
+
+    static int flowerIndexAt(BlockPos spot, int flowerCount) {
+        double noise = Biome.BIOME_INFO_NOISE.getValue(
+                spot.getX() / FLOWER_NOISE_SCALE, spot.getZ() / FLOWER_NOISE_SCALE, false);
         double scaled = Mth.clamp((1.0 + noise) / 2.0, 0.0, FLOWER_NOISE_CLAMP_MAX);
-        return flowers.get((int) (scaled * flowers.size()));
+        return (int) (scaled * flowerCount);
     }
 
     private static boolean placeGroundCover(
