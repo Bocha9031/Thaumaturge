@@ -30,6 +30,9 @@ public final class TravellerBootsItem extends ArmorItem {
     private static final float GROUND_BOOST = 0.05F;
     private static final float JUMP_BOOST = 0.275F;
     private static final float WATER_AIR_BOOST = 0.025F;
+    private static final float VANILLA_AIR_CONTROL = 0.02F;
+    private static final float BOOSTED_AIR_CONTROL = 0.05F;
+    private static final float AIR_CONTROL_BONUS = BOOSTED_AIR_CONTROL - VANILLA_AIR_CONTROL;
     private static final float STEP_HEIGHT_BONUS = 0.4F;
     private static final AttributeModifier STEP_MODIFIER = new AttributeModifier(
             ResourceLocation.fromNamespaceAndPath(TTIds.MODID, "traveller_step"),
@@ -84,14 +87,14 @@ public final class TravellerBootsItem extends ArmorItem {
             }
             stack.set(TTDataComponents.ENERGY.get(), energy);
         }
-        boolean active =
-                RechargeAccess.storedVis(stack) > 0 && !player.getAbilities().flying && !player.isShiftKeyDown();
+        boolean active = isActive(player, stack);
+        boolean stepActive = isStepActive(player, stack);
         AttributeInstance stepHeight = player.getAttribute(Attributes.STEP_HEIGHT);
         AttributeInstance jumpHeight = player.getAttribute(Attributes.JUMP_STRENGTH);
         if (stepHeight != null) {
-            if (active && !stepHeight.hasModifier(STEP_MODIFIER.id())) {
+            if (stepActive && !stepHeight.hasModifier(STEP_MODIFIER.id())) {
                 stepHeight.addTransientModifier(STEP_MODIFIER);
-            } else if (!active && stepHeight.hasModifier(STEP_MODIFIER.id())) {
+            } else if (!stepActive && stepHeight.hasModifier(STEP_MODIFIER.id())) {
                 stepHeight.removeModifier(STEP_MODIFIER.id());
             }
         }
@@ -104,21 +107,29 @@ public final class TravellerBootsItem extends ArmorItem {
         }
     }
 
+    static boolean isActive(Player player, ItemStack boots) {
+        return RechargeAccess.storedVis(boots) > 0 && !player.getAbilities().flying;
+    }
+
+    static boolean isStepActive(Player player, ItemStack boots) {
+        return isActive(player, boots) && !player.isShiftKeyDown() && player.zza > 0.0F;
+    }
+
     public static void clientMovementTick(Player player, ItemStack stack) {
-        if (RechargeAccess.storedVis(stack) <= 0
-                || player.getAbilities().flying
-                || player.isPassenger()
-                || player.zza <= 0.0F) {
+        if (!isActive(player, stack) || player.isPassenger()) {
             return;
         }
         if (player.onGround()) {
-            float bonus = GROUND_BOOST;
-            if (player.isInWater()) {
-                bonus /= 4.0F;
+            if (player.zza > 0.0F) {
+                float bonus = player.isInWater() ? GROUND_BOOST / 4.0F : GROUND_BOOST;
+                player.moveRelative(bonus, FORWARD);
             }
-            player.moveRelative(bonus, FORWARD);
         } else if (player.isInWater()) {
-            player.moveRelative(WATER_AIR_BOOST, FORWARD);
+            if (player.zza > 0.0F) {
+                player.moveRelative(WATER_AIR_BOOST, FORWARD);
+            }
+        } else if (player.zza != 0.0F || player.xxa != 0.0F) {
+            player.moveRelative(AIR_CONTROL_BONUS, new Vec3(player.xxa, 0.0, player.zza));
         }
     }
 
