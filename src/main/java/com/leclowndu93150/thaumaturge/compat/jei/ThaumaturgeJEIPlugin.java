@@ -204,6 +204,7 @@ public final class ThaumaturgeJEIPlugin implements IModPlugin {
         categories.add(new AspectCompositionCategory(helpers.getGuiHelper(), pickIconAspect()));
         categories.add(new AspectFromStacksCategory(helpers.getGuiHelper()));
         categories.add(new MultiblockCategory(helpers.getGuiHelper()));
+        categories.add(new ResearchConstructCategory(helpers.getGuiHelper()));
         categories.add(new InfernalFurnaceCategory(helpers.getGuiHelper()));
         registration.addRecipeCategories(categories.toArray(new IRecipeCategory<?>[0]));
     }
@@ -236,6 +237,7 @@ public final class ThaumaturgeJEIPlugin implements IModPlugin {
                 MultiblockCategory.RECIPE_TYPE,
                 TTRecipeTypes.DUST_TRIGGER.get(),
                 r -> r.value() instanceof DustTriggerMultiblockRecipe);
+        registerResearchConstructs(registration);
         addInfernalFurnaceBonuses(registration);
         registerAspectInfoPages(registration);
         registerAspectFromStacksPages(registration);
@@ -311,6 +313,30 @@ public final class ThaumaturgeJEIPlugin implements IModPlugin {
         List<AspectCompositionCategory.Composition> compositions =
                 AspectCompositionCategory.collect(registry.holders().toList());
         registration.addRecipes(AspectCompositionCategory.RECIPE_TYPE, compositions);
+    }
+
+    private static void registerResearchConstructs(IRecipeRegistration registration) {
+        RegistryAccess registryAccess = clientRegistryAccess();
+        if (registryAccess == null) {
+            return;
+        }
+        List<ResearchConstructRecipe> constructs = new ArrayList<>();
+        registryAccess.lookupOrThrow(IResearchEntry.REGISTRY_KEY).listElements().forEach(holder -> {
+            IResearchEntry entry = holder.value();
+            ResourceLocation entryId = holder.key().location();
+            for (int stageIndex = 0; stageIndex < entry.stages().size(); stageIndex++) {
+                int index = stageIndex;
+                entry.stages().get(index).construct().ifPresent(construct -> {
+                    boolean duplicate = constructs.stream()
+                            .anyMatch(existing -> existing.entryId().equals(entryId)
+                                    && existing.construct().equals(construct));
+                    if (!duplicate) {
+                        constructs.add(new ResearchConstructRecipe(entryId, index, entry, construct));
+                    }
+                });
+            }
+        });
+        registration.addRecipes(ResearchConstructCategory.RECIPE_TYPE, constructs);
     }
 
     private static void registerAspectInfoPages(IRecipeRegistration registration) {
