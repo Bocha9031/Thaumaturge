@@ -98,4 +98,28 @@ final class InfusionStabilitySurveyPortTest {
         assertTrue(result.problemBlocks().contains(west));
         verify(stabiliser).penalisesPairWith(level, west, east);
     }
+
+    @Test
+    void matchingBlockOppositeAnInactiveStabiliserStillCountsAsAProblem() {
+        Level level = mock(Level.class);
+        BlockPos matrix = new BlockPos(0, 64, 0);
+        BlockPos west = matrix.west();
+        BlockPos east = matrix.east();
+        Block stabiliserBlock = mock(Block.class, withSettings().extraInterfaces(AltarStabiliser.class));
+        AltarStabiliser stabiliser = (AltarStabiliser) stabiliserBlock;
+        BlockState state = mock(BlockState.class);
+        when(state.getBlock()).thenReturn(stabiliserBlock);
+        when(state.is(TTBlockTags.INFUSION_STABILISERS)).thenReturn(false);
+        when(level.hasChunkAt(any(BlockPos.class))).thenReturn(true);
+        doReturn(Blocks.AIR.defaultBlockState()).when(level).getBlockState(any(BlockPos.class));
+        doReturn(state).when(level).getBlockState(west);
+        doReturn(state).when(level).getBlockState(east);
+        when(stabiliser.stabilisesNow(level, west)).thenReturn(true);
+        when(stabiliser.stabilisesNow(level, east)).thenReturn(false);
+
+        InfusionStabilitySurvey.Result result = InfusionStabilitySurvey.survey(level, matrix);
+
+        assertEquals(-AltarStabiliser.STANDARD_PAIR_VALUE, result.stabilityReplenish(), 0.0001F);
+        assertTrue(result.problemBlocks().contains(west));
+    }
 }

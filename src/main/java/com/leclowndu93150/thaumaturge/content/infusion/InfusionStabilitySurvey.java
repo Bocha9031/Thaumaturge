@@ -64,7 +64,7 @@ public final class InfusionStabilitySurvey {
             Level level, BlockPos pos, BlockPos mirror, Map<Block, Integer> ranks, List<BlockPos> problems) {
         Profile near = profile(level, pos);
         Profile far = profile(level, mirror);
-        if (near.identity() != far.identity() || near.amount() != far.amount()) {
+        if (!far.stabiliser() || near.identity() != far.identity() || near.amount() != far.amount()) {
             problems.add(pos);
             return -Math.max(near.amount(), far.amount());
         }
@@ -88,13 +88,15 @@ public final class InfusionStabilitySurvey {
 
     private static Profile profile(Level level, BlockPos pos) {
         if (!level.hasChunkAt(pos)) {
-            return new Profile(Blocks.AIR, AltarStabiliser.STANDARD_PAIR_VALUE, null);
+            return new Profile(Blocks.AIR, AltarStabiliser.STANDARD_PAIR_VALUE, false, null);
         }
         Block block = level.getBlockState(pos).getBlock();
-        if (block instanceof AltarStabiliser behaviour) {
-            return new Profile(normalise(behaviour.countsAs(level, pos)), behaviour.pairValue(level, pos), behaviour);
+        boolean stabiliser = isStabiliser(level, pos);
+        if (stabiliser && block instanceof AltarStabiliser behaviour) {
+            return new Profile(
+                    normalise(behaviour.countsAs(level, pos)), behaviour.pairValue(level, pos), true, behaviour);
         }
-        return new Profile(normalise(block), AltarStabiliser.STANDARD_PAIR_VALUE, null);
+        return new Profile(normalise(block), AltarStabiliser.STANDARD_PAIR_VALUE, stabiliser, null);
     }
 
     private static Block normalise(Block block) {
@@ -102,7 +104,10 @@ public final class InfusionStabilitySurvey {
     }
 
     private record Profile(
-            Block identity, float amount, @Nullable AltarStabiliser behaviour) {}
+            Block identity,
+            float amount,
+            boolean stabiliser,
+            @Nullable AltarStabiliser behaviour) {}
 
     public record Result(float stabilityReplenish, List<BlockPos> problemBlocks) {
         public Result {
