@@ -54,7 +54,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 
 public final class SpellPartBootstrap {
-    private static final int MODIFIER = 0x8590AE;
+    private static final int MODIFIER = 0x5A7894;
+    private static final int HIDDEN = 0xCDB8EE;
     private static final String LEVEL = "level";
 
     private SpellPartBootstrap() {}
@@ -103,14 +104,14 @@ public final class SpellPartBootstrap {
     private static void deliveries(BootstrapContext<SpellPart> ctx) {
         PartBuilder.of(new RayDelivery(3.0, true, RayDelivery.Visual.FLASH, 0.0F, 1))
                 .glyph("touch")
-                .color(0xAD8585)
+                .color(0xE8B4A0)
                 .complexity(2)
                 .aspect(TTAspects.AVERSIO)
                 .research("base_auromancy")
                 .register(ctx, TTSpellParts.TOUCH);
         PartBuilder.of(new RayDelivery(16.0, false, RayDelivery.Visual.ARC, 0.66F, 1))
                 .glyph("bolt")
-                .color(0xAD9885)
+                .color(0xE8D29A)
                 .complexity(5)
                 .aspect(TTAspects.POTENTIA)
                 .research("focus_bolt")
@@ -118,7 +119,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.BOLT);
         PartBuilder.of(new RayDelivery(16.0, false, RayDelivery.Visual.BEAM, 0.0F, 6))
                 .glyph("beam")
-                .color(0xC8B26E)
+                .color(0xEDE3B8)
                 .complexity(6)
                 .power(0.8F)
                 .aspect(TTAspects.LUX)
@@ -127,7 +128,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.BEAM);
         PartBuilder.of(new ProjectileDelivery(0.33F, 0.33F, 0.01, 0.0F))
                 .glyph("projectile")
-                .color(0xADAE85)
+                .color(0xD9B8C9)
                 .complexity(4)
                 .aspect(TTAspects.MOTUS)
                 .research("focus_projectile")
@@ -135,7 +136,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.PROJECTILE);
         PartBuilder.of(new ProjectileDelivery(0.75F, 0.0F, 0.05, 2.0F))
                 .glyph("lob")
-                .color(0x9A9A70)
+                .color(0xC4A98A)
                 .complexity(5)
                 .power(0.9F)
                 .aspect(TTAspects.TERRA)
@@ -143,7 +144,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.LOB);
         PartBuilder.of(new SprayDelivery(60.0F, 8, 6))
                 .glyph("spray")
-                .color(0xA9AE90)
+                .color(0xA9CFD9)
                 .complexity(5)
                 .power(0.6F)
                 .aspect(TTAspects.AER)
@@ -152,7 +153,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.SPRAY);
         PartBuilder.of(new ChainDelivery(16.0, 6.0, 0.8F, 0.5F))
                 .glyph("chain")
-                .color(0xAAAE85)
+                .color(0xC9C2E8)
                 .complexity(6)
                 .power(0.8F)
                 .aspect(TTAspects.POTENTIA)
@@ -162,7 +163,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.CHAIN);
         PartBuilder.of(new AuraDelivery(16))
                 .glyph("sprite")
-                .color(0xAE9AAE)
+                .color(0xE3C4E0)
                 .complexity(5)
                 .power(0.7F)
                 .aspect(TTAspects.AURAM)
@@ -171,14 +172,14 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.AURA);
         PartBuilder.of(new SelfDelivery())
                 .glyph("self")
-                .color(0xAE9A85)
+                .color(0xE0CDB8)
                 .complexity(1)
                 .aspect(TTAspects.HUMANUS)
                 .research("focus_aura")
                 .register(ctx, TTSpellParts.SELF);
         PartBuilder.of(new CloudDelivery())
                 .glyph("cloud")
-                .color(0x99AE85)
+                .color(0xB5D1B0)
                 .complexity(4)
                 .power(0.5F)
                 .aspect(TTAspects.ALKIMIA)
@@ -188,7 +189,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.CLOUD);
         PartBuilder.of(new MineDelivery())
                 .glyph("mine")
-                .color(0x85AE85)
+                .color(0xA8C49A)
                 .complexity(4)
                 .aspect(TTAspects.VINCULUM)
                 .research("focus_mine")
@@ -196,7 +197,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.MINE);
         PartBuilder.of(new WallDelivery(8.0))
                 .glyph("build")
-                .color(0x85A0AE)
+                .color(0xB8A58C)
                 .complexity(6)
                 .power(0.5F)
                 .aspect(TTAspects.PRAEMUNIO)
@@ -206,7 +207,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.WALL);
         PartBuilder.of(new BatDelivery())
                 .glyph("spellbat")
-                .color(0x85AEAC)
+                .color(0xA9B8DA)
                 .complexity(8)
                 .power(0.33F)
                 .aspect(TTAspects.BESTIA)
@@ -215,7 +216,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.SPELLBAT);
         PartBuilder.of(new SummonDelivery(3))
                 .glyph("summon")
-                .color(0x9A85AE)
+                .color(0x9FC7CF)
                 .complexity(9)
                 .power(0.4F)
                 .aspect(TTAspects.SPIRITUS)
@@ -224,7 +225,7 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.SPRITE);
         PartBuilder.of(new ArchitectDelivery(16.0))
                 .glyph("plan")
-                .color(0x85AE98)
+                .color(0xC2D6A0)
                 .complexity(4)
                 .aspect(TTAspects.FABRICO)
                 .research("focus_plan")
@@ -236,7 +237,6 @@ public final class SpellPartBootstrap {
     private static void strikes(BootstrapContext<SpellPart> ctx) {
         PartBuilder.of(new AspectStrikeEffect(1.0F))
                 .glyph("fire")
-                .color(0xFF5A01)
                 .complexity(2)
                 .aspect(TTAspects.IGNIS)
                 .research("base_auromancy")
@@ -246,7 +246,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.FIRE);
         PartBuilder.of(new AspectStrikeEffect(2.0F))
                 .glyph("frost")
-                .color(0xE1FFFF)
                 .complexity(2)
                 .aspect(TTAspects.GELUM)
                 .research("focus_elemental")
@@ -256,7 +255,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.FROST);
         PartBuilder.of(new AspectStrikeEffect(2.0F))
                 .glyph("air")
-                .color(0xFFFF7E)
                 .complexity(2)
                 .aspect(TTAspects.AER)
                 .research("focus_elemental")
@@ -265,7 +263,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.AIR);
         PartBuilder.of(new AspectStrikeEffect(2.0F))
                 .glyph("earth")
-                .color(0x56C000)
                 .complexity(3)
                 .aspect(TTAspects.TERRA)
                 .research("focus_elemental")
@@ -274,7 +271,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.EARTH);
         PartBuilder.of(new AspectStrikeEffect(2.0F))
                 .glyph("flux")
-                .color(0x800080)
                 .complexity(3)
                 .aspect(TTAspects.VITIUM)
                 .research("focus_flux")
@@ -283,7 +279,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.FLUX);
         PartBuilder.of(new AspectStrikeEffect(2.0F))
                 .glyph("curse")
-                .color(0x6A0005)
                 .complexity(3)
                 .aspect(TTAspects.MORTUUS)
                 .research("focus_curse")
@@ -293,7 +288,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.CURSE);
         PartBuilder.of(new AspectStrikeEffect(2.0F))
                 .glyph("heal")
-                .color(0xDE0005)
                 .complexity(3)
                 .aspect(TTAspects.VICTUS)
                 .research("focus_heal")
@@ -305,7 +299,6 @@ public final class SpellPartBootstrap {
     private static void effects(BootstrapContext<SpellPart> ctx) {
         PartBuilder.of(new AspectBurstEffect(2.0F, 0.75F))
                 .glyph("burst")
-                .color(0xFF5A01)
                 .complexity(6)
                 .chooses(AffinityReaction.STRIKE, TTAspects.IGNIS)
                 .research("focus_burst")
@@ -314,7 +307,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.BURST);
         PartBuilder.of(new ImbueEffect(3.0F))
                 .glyph("imbue")
-                .color(0xCF00FF)
                 .complexity(4)
                 .chooses(AffinityReaction.IMBUE, TTAspects.VICTUS)
                 .research("focus_imbue")
@@ -323,7 +315,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.IMBUE);
         PartBuilder.of(new BreakEffect(0.25F, 0.25F, 0.1F))
                 .glyph("break")
-                .color(0x8A4A08)
                 .complexity(3)
                 .aspect(TTAspects.PERDITIO)
                 .research("focus_break")
@@ -333,7 +324,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.BREAK);
         PartBuilder.of(new ExchangeEffect(0.25F, 0.25F, 0.1F))
                 .glyph("exchange")
-                .color(0x578357)
                 .complexity(5)
                 .aspect(TTAspects.PERMUTATIO)
                 .research("focus_exchange")
@@ -341,7 +331,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.EXCHANGE);
         PartBuilder.of(new RiftEffect())
                 .glyph("rift")
-                .color(0x2F1165)
                 .complexity(3)
                 .aspect(TTAspects.ALIENIS)
                 .research("focus_rift")
@@ -351,7 +340,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.RIFT);
         PartBuilder.of(new WardEffect(0.5F))
                 .glyph("ward")
-                .color(0xFFE8CF)
                 .complexity(4)
                 .aspect(TTAspects.ORDO)
                 .research("focus_ward")
@@ -359,7 +347,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.WARD);
         PartBuilder.of(new PrimalEffect(4.0F, 1.5F, 0.01F))
                 .glyph("primal")
-                .color(0xA5A1C1)
                 .complexity(20)
                 .vis(2.0F)
                 .aspect(TTAspects.PRAECANTATIO)
@@ -369,7 +356,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.PRIMAL);
         PartBuilder.of(new HellbatEffect(16, 32.0))
                 .glyph("hellbat")
-                .color(0xDC3502)
                 .complexity(8)
                 .aspect(TTAspects.BESTIA)
                 .research("focus_hellbat")
@@ -378,7 +364,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.HELLBAT);
         PartBuilder.of(new BlinkEffect(48.0))
                 .glyph("blink")
-                .color(0x6A2FA0)
                 .complexity(7)
                 .aspect(TTAspects.ALIENIS)
                 .research("focus_blink")
@@ -387,7 +372,6 @@ public final class SpellPartBootstrap {
                 .register(ctx, TTSpellParts.BLINK);
         PartBuilder.of(new HarvestEffect())
                 .glyph("harvest")
-                .color(0x6B8E23)
                 .complexity(4)
                 .aspect(TTAspects.HERBA)
                 .research("focus_harvest")
@@ -520,7 +504,7 @@ public final class SpellPartBootstrap {
         hierophant(ctx, TTIds.ELDRITCH_HAMMER, TTEntities.HIEROPHANT_HAMMER.get());
         PartBuilder.of(new EldritchRendEffect(0.35))
                 .glyph("flux")
-                .color(0xAC80D0)
+                .color(HIDDEN)
                 .hidden()
                 .register(ctx, ResourceKey.create(SpellPart.REGISTRY_KEY, TTIds.ELDRITCH_REND));
     }
@@ -528,7 +512,7 @@ public final class SpellPartBootstrap {
     private static void hierophant(BootstrapContext<SpellPart> ctx, ResourceLocation id, EntityType<?> spell) {
         PartBuilder.of(new HierophantDelivery(spell))
                 .glyph("flux")
-                .color(0xAC80D0)
+                .color(HIDDEN)
                 .hidden()
                 .setting("left", 0, 1, 1, 0, 0.0F)
                 .register(ctx, ResourceKey.create(SpellPart.REGISTRY_KEY, id));
