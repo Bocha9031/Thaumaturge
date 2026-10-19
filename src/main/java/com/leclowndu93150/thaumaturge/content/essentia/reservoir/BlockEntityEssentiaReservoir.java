@@ -3,7 +3,6 @@ package com.leclowndu93150.thaumaturge.content.essentia.reservoir;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.aspect.IAspectSource;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaPull;
 import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaConduit;
@@ -31,7 +30,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public final class BlockEntityEssentiaReservoir extends BlockEntity implements IEssentiaConduit, IAspectSource {
+public final class BlockEntityEssentiaReservoir extends BlockEntity implements IEssentiaConduit {
     public static final int CAPACITY = 256;
 
     private static final String ESSENTIA_KEY = "Essentia";
@@ -147,45 +146,6 @@ public final class BlockEntityEssentiaReservoir extends BlockEntity implements I
         Vec3 center = Vec3.atCenterOf(pos);
         server.explode(null, center.x, center.y, center.z, RUPTURE_EXPLOSION_RADIUS, Level.ExplosionInteraction.NONE);
         FluxPocketScatter.scatter(server, pos, total / ESSENTIA_PER_POCKET + 1);
-    }
-
-    @Override
-    public boolean accepts(Holder<IAspect> aspect) {
-        return getStoredAmount() < CAPACITY;
-    }
-
-    @Override
-    public AspectList getAspects() {
-        return contents;
-    }
-
-    @Override
-    public void setAspects(AspectList aspects) {
-        contents = keepWithinCapacity(aspects);
-        notifyChanged();
-    }
-
-    @Override
-    public int fill(Holder<IAspect> aspect, int amount) {
-        int accepted = Math.clamp(amount, 0, Math.max(0, CAPACITY - getStoredAmount()));
-        if (accepted > 0) {
-            store(aspect, accepted);
-        }
-        return amount - accepted;
-    }
-
-    @Override
-    public boolean drain(Holder<IAspect> aspect, int amount) {
-        if (amount <= 0 || contents.amountOf(aspect) < amount) {
-            return false;
-        }
-        withdraw(aspect, amount);
-        return true;
-    }
-
-    @Override
-    public boolean isBlocked() {
-        return false;
     }
 
     private void store(Holder<IAspect> aspect, int amount) {

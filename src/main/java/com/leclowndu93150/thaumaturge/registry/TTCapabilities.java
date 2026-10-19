@@ -70,8 +70,6 @@ public final class TTCapabilities {
                 event,
                 TTBlockEntities.ESSENTIA_RESERVOIR.get(),
                 (be, side) -> side == null || be.connectsOn(side) ? be : null);
-        event.registerBlockEntity(
-                AspectCapabilities.CONTAINER, TTBlockEntities.ESSENTIA_RESERVOIR.get(), (be, side) -> be);
         EssentiaCapabilities.registerConduit(
                 event,
                 TTBlockEntities.FLUX_SCRUBBER.get(),

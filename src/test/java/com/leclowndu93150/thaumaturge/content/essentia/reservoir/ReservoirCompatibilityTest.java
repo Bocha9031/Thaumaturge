@@ -6,8 +6,6 @@ import static org.mockito.Mockito.*;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectCapabilities;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
-import com.leclowndu93150.thaumaturge.api.aspect.IAspectContainer;
-import com.leclowndu93150.thaumaturge.api.aspect.IAspectSource;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaCapabilities;
@@ -34,7 +32,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.neoforged.neoforge.capabilities.ICapabilityProvider;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -202,37 +199,14 @@ class ReservoirCompatibilityTest {
     }
 
     @Test
-    void infusionSourceClipsMixedStockAndReturnsOnlyTheUnacceptedRemainder() {
-        var reservoir = reservoir();
-        reservoir.setAspects(AspectList.EMPTY.add(order, 200).add(fire, 100));
-        assertEquals(200, reservoir.getAspects().amountOf(order));
-        assertEquals(56, reservoir.getAspects().amountOf(fire));
-        assertFalse(reservoir.accepts(order));
-        assertEquals(4, reservoir.fill(order, 4));
-        assertFalse(reservoir.drain(fire, 57));
-        assertFalse(reservoir.drain(fire, 0));
-        assertTrue(reservoir.drain(fire, 56));
-        assertTrue(reservoir.accepts(fire));
-        assertEquals(4, reservoir.fill(fire, 60));
-        assertEquals(256, reservoir.getStoredAmount());
-        assertFalse(reservoir.isBlocked());
-    }
-
-    @Test
-    void actualCapabilityProviderExposesInfusionSourceForNullAndSidedQueries() {
+    void reservoirIsNotExposedAsAnAspectContainer() {
         RegisterCapabilitiesEvent event = mock(RegisterCapabilitiesEvent.class);
         TTCapabilities.onRegisterCapabilities(event);
-        var registration = mockingDetails(event).getInvocations().stream()
+        boolean exposed = mockingDetails(event).getInvocations().stream()
                 .filter(call -> call.getMethod().getName().equals("registerBlockEntity"))
-                .filter(call -> call.getArgument(0) == AspectCapabilities.CONTAINER
-                        && call.getArgument(1) == TTBlockEntities.ESSENTIA_RESERVOIR.get())
-                .findFirst()
-                .orElseThrow();
-        ICapabilityProvider<BlockEntity, Direction, IAspectContainer> provider = registration.getArgument(2);
-        var reservoir = reservoir();
-        assertSame(reservoir, provider.getCapability(reservoir, null));
-        assertSame(reservoir, provider.getCapability(reservoir, Direction.WEST));
-        assertInstanceOf(IAspectSource.class, provider.getCapability(reservoir, null));
+                .anyMatch(call -> call.getArgument(0) == AspectCapabilities.CONTAINER
+                        && call.getArgument(1) == TTBlockEntities.ESSENTIA_RESERVOIR.get());
+        assertFalse(exposed);
     }
 
     @Test
@@ -262,7 +236,7 @@ class ReservoirCompatibilityTest {
     @Test
     void smallRuptureOnlyPollutesAuraWithoutAnExplosionOrPhysicalFlux() {
         var reservoir = reservoir();
-        reservoir.fill(order, 15);
+        reservoir.insert(order, 15, Direction.EAST, false);
         try (var aura = mockStatic(AuraHelper.class);
                 var flux = mockStatic(PhysicalFlux.class)) {
             reservoir.releaseContents(BlockPos.ZERO);
