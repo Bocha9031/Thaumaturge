@@ -259,6 +259,16 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void smokeSpiralUsesOnlyItsFourActiveAtlasFrames() {
+        assertEquals(0, SmokeSpiralParticle.frameAt(0.0F));
+        assertEquals(1, SmokeSpiralParticle.frameAt(0.25F));
+        assertEquals(2, SmokeSpiralParticle.frameAt(0.5F));
+        assertEquals(3, SmokeSpiralParticle.frameAt(0.75F));
+        assertEquals(3, SmokeSpiralParticle.frameAt(1.0F));
+        assertEquals(0, SmokeSpiralParticle.frameAt(-1.0F));
+    }
+
+    @Test
     void boltInterpolatesWorldCoordinatesBeforeCameraOffsetAndFloatConversion() throws Exception {
         double originX = 16_777_216.0;
         double originY = 64.0;
