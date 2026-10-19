@@ -99,6 +99,8 @@ public final class TTCapabilities {
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK, TTBlockEntities.THAUMATORIUM.get(), (be, side) -> be.catalyst());
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK, TTBlockEntities.MIRROR.get(), (be, side) -> be.inbox());
+        event.registerBlockEntity(
                 AspectCapabilities.CONTAINER, TTBlockEntities.MIRROR_ESSENTIA.get(), (be, side) -> be);
     }
 
