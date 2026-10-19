@@ -7,15 +7,17 @@ import org.junit.jupiter.api.Test;
 
 final class EntityEldritchGolemDamageTest {
     @Test
-    void lethalDamageTriggersTheHeadlessPhaseEvenWhenDamageExactlyMatchesHealth() {
-        assertTrue(EntityEldritchGolem.isFatalUnblockedHit(false, 20.0F, 20.0F, false));
-        assertTrue(EntityEldritchGolem.isFatalUnblockedHit(false, 21.0F, 20.0F, false));
-        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, 19.0F, 20.0F, false));
+    void overkillDamageTriggersTheHeadlessPhase() {
+        assertTrue(EntityEldritchGolem.isFatalUnblockedHit(false, true, 21.0F, 20.0F, false, false));
+        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, true, 20.0F, 20.0F, false, false));
+        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, true, 19.0F, 20.0F, false, false));
     }
 
     @Test
-    void headlessAndInvulnerabilityBypassingHitsKeepTheirExistingDamagePath() {
-        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(true, 20.0F, 20.0F, false));
-        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, 20.0F, 20.0F, true));
+    void headlessDeadBypassingAndInvulnerableHitsKeepTheirExistingDamagePath() {
+        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(true, true, 21.0F, 20.0F, false, false));
+        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, false, 21.0F, 20.0F, false, false));
+        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, true, 21.0F, 20.0F, true, false));
+        assertFalse(EntityEldritchGolem.isFatalUnblockedHit(false, true, 21.0F, 20.0F, false, true));
     }
 }

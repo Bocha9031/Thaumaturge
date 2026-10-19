@@ -175,8 +175,14 @@ public class EntityEldritchGolem extends EntityThaumaturgeBoss implements Ranged
         if (!EventHooks.canEntityGrief((ServerLevel) level(), this)) {
             return;
         }
-        if (stomping && underfoot.getBlock() instanceof BlockLoot) {
-            level().destroyBlock(feet, true);
+        if (stomping) {
+            if (underfoot.getBlock() instanceof BlockLoot) {
+                level().destroyBlock(feet, true, this);
+            }
+            BlockPos belowFeet = feet.below();
+            if (level().getBlockState(belowFeet).getBlock() instanceof BlockLoot) {
+                level().destroyBlock(belowFeet, true, this);
+            }
             underfoot = level().getBlockState(feet);
         }
         float hardness = underfoot.getDestroySpeed(level(), feet);
@@ -200,15 +206,26 @@ public class EntityEldritchGolem extends EntityThaumaturgeBoss implements Ranged
     public boolean hurt(DamageSource source, float damage) {
         if (!(level() instanceof ServerLevel level)) return false;
         if (isFatalUnblockedHit(
-                isHeadless(), damage, getHealth(), source.is(DamageTypeTags.BYPASSES_INVULNERABILITY))) {
+                isHeadless(),
+                isAlive(),
+                damage,
+                getHealth(),
+                source.is(DamageTypeTags.BYPASSES_INVULNERABILITY),
+                isInvulnerableTo(source))) {
             loseHead(level);
             return false;
         }
         return super.hurt(source, damage);
     }
 
-    static boolean isFatalUnblockedHit(boolean headless, float damage, float health, boolean bypassesInvulnerability) {
-        return !headless && damage >= health && !bypassesInvulnerability;
+    static boolean isFatalUnblockedHit(
+            boolean headless,
+            boolean alive,
+            float damage,
+            float health,
+            boolean bypassesInvulnerability,
+            boolean invulnerable) {
+        return !headless && alive && damage > health && !bypassesInvulnerability && !invulnerable;
     }
 
     private void loseHead(ServerLevel level) {
