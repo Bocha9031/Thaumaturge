@@ -65,7 +65,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
     };
     private AspectList aspects = AspectList.EMPTY;
     private short heat = 0;
-    private int leakCounter = 0;
+    private int leakCounter = -LEAK_THRESHOLD;
 
     // FX Infos
     int prevcolor = 0;
