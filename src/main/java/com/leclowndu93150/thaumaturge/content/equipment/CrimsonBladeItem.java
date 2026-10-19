@@ -3,7 +3,6 @@ package com.leclowndu93150.thaumaturge.content.equipment;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -38,10 +37,7 @@ public class CrimsonBladeItem extends SwordItem {
 
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-        if (target.level() instanceof ServerLevel server
-                && (!(target instanceof Player)
-                        || !(attacker instanceof Player)
-                        || server.getServer().isPvpAllowed())) {
+        if (!target.level().isClientSide() && EquipmentCombat.canAffect(attacker, target)) {
             target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, WEAKNESS_TICKS));
             target.addEffect(new MobEffectInstance(MobEffects.HUNGER, HUNGER_TICKS));
         }
