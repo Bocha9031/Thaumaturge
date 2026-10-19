@@ -157,7 +157,6 @@ public final class TTModelProvider implements DataProvider {
     private static final Set<String> CHECKED_IN_ITEM_MODELS = Set.of(
             "advanced_alchemical_furnace",
             "bellows",
-            "flux_scrubber",
             "leaves_greatwood",
             "leaves_silverwood",
             "plank_greatwood",
@@ -199,6 +198,7 @@ public final class TTModelProvider implements DataProvider {
         registerAuraDevices(blockModels);
         registerNoiseDevices();
         TubeModels.register(blockStateOutput);
+        registerFluxScrubberModels();
         registerEssentiaReservoir();
         blockStateOutput.accept(
                 MultiVariantGenerator.multiVariant(TTBlocks.ESSENTIA_CRYSTALIZER.get(), vName("essentia_crystalizer"))
@@ -502,6 +502,38 @@ public final class TTModelProvider implements DataProvider {
         model.add("display", display);
 
         modelOutput.accept(TTIds.rl("item/advanced_alchemical_furnace"), () -> model);
+    }
+
+    private void registerFluxScrubberModels() {
+        modelOutput.accept(TTIds.rl("block/flux_scrubber"), () -> fluxScrubberModel(true));
+        modelOutput.accept(TTIds.rl("item/flux_scrubber"), () -> fluxScrubberModel(false));
+    }
+
+    private static JsonObject fluxScrubberModel(boolean hideTip) {
+        JsonObject model = new JsonObject();
+        model.addProperty("parent", "minecraft:block/block");
+        model.addProperty("loader", "thaumaturge:mesh");
+        model.addProperty("gui_light", "side");
+        model.addProperty("model", "thaumaturge:models/mesh/flux_scrubber.ttmesh");
+
+        JsonObject textures = new JsonObject();
+        textures.addProperty("texture0", "thaumaturge:block/flux_scrubber");
+        textures.addProperty("particle", "thaumaturge:block/al_furnace_side");
+        model.add("textures", textures);
+        model.addProperty("render_type", "minecraft:cutout");
+        model.addProperty("flip_v", true);
+
+        JsonObject transform = new JsonObject();
+        transform.add("translation", floatTriple(0, 0, -0.5F));
+        transform.addProperty("origin", "corner");
+        model.add("transform", transform);
+
+        if (hideTip) {
+            JsonObject visibility = new JsonObject();
+            visibility.addProperty("Tip", false);
+            model.add("visibility", visibility);
+        }
+        return model;
     }
 
     private void registerManaPod() {
