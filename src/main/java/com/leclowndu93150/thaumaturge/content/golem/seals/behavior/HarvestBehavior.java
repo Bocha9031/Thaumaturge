@@ -172,8 +172,8 @@ public final class HarvestBehavior implements ISealBehavior {
             return;
         }
         BlockBreakerEngine.harvestBlock(level, hand, pos, false, 0);
-        golem.addRankXp(1);
-        golem.swingArm();
+        golem.grantRankExperience(1);
+        golem.animateSwing();
         if (!seal.setting(REPLANT) || seed.isEmpty() || support == null || !level.getBlockState(pos).isAir()) {
             return;
         }

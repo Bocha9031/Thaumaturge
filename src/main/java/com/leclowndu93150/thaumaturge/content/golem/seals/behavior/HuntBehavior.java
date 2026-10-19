@@ -29,7 +29,7 @@ abstract class HuntBehavior implements ISealBehavior {
                 && isQuarry(level, seal, target)
                 && golem.asEntity() instanceof Mob hunter) {
             hunter.setTarget(target);
-            golem.addRankXp(1);
+            golem.grantRankExperience(1);
         }
         task.end();
         onHuntOver();

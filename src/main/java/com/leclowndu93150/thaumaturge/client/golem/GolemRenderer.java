@@ -106,7 +106,7 @@ public final class GolemRenderer extends EntityRenderer<EntityThaumaturgeGolem> 
         state.speedSq = dx * dx + dz * dz;
         state.yawDelta = entity.getYRot() - entity.yRotO;
         state.wheelRotation = entity.wheelRotation;
-        state.combat = entity.isInCombat();
+        state.combat = entity.isFighting();
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (minecraft.shouldEntityAppearGlowing(entity)) {

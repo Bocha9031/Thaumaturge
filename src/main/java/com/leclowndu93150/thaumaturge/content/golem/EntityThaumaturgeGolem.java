@@ -305,8 +305,12 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     }
 
     @Override
-    public void setProperties(IGolemProperties properties) {
+    public void applyBuild(IGolemProperties properties) {
+        if (level().isClientSide()) {
+            return;
+        }
         entityData.set(PROPS, GolemProperties.of(properties));
+        updateEntityAttributes();
     }
 
     @Override
@@ -346,7 +350,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     }
 
     @Override
-    public boolean isInCombat() {
+    public boolean isFighting() {
         return (getFlags() & FLAG_COMBAT) != 0;
     }
 
@@ -795,7 +799,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
                 properties().arms().ability().onMeleeHit(this, target);
             }
             if (target instanceof Mob mob && !mob.isAlive()) {
-                addRankXp(KILL_XP);
+                grantRankExperience(KILL_XP);
             }
         }
         return hurt;
@@ -831,18 +835,21 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     }
 
     @Override
-    public void addRankXp(int xp) {
+    public void grantRankExperience(int xp) {
         GolemProperties props = properties();
-        if (level().isClientSide() || !props.hasTrait(TTGolemTraits.SMART.get()) || props.rank() >= MAX_RANK) {
+        if (xp <= 0
+                || level().isClientSide()
+                || !props.hasTrait(TTGolemTraits.SMART.get())
+                || props.rank() >= MAX_RANK) {
             return;
         }
-        rankXp += xp;
+        rankXp = (int) Math.min((long) rankXp + xp, Integer.MAX_VALUE);
         int needed = xpForNextRank(props.rank());
         if (rankXp < needed) {
             return;
         }
         rankXp -= needed;
-        setProperties(props.withRank(props.rank() + 1));
+        entityData.set(PROPS, GolemProperties.of(props.withRank(props.rank() + 1)));
         applyStats();
         if (GolemEvent.emotesEnabled()) {
             GolemEvent.RANK_UP.broadcast(this);
@@ -859,7 +866,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     }
 
     @Override
-    public void swingArm() {
+    public void animateSwing() {
         swing(InteractionHand.MAIN_HAND, true);
     }
 
@@ -894,7 +901,7 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     public void readAdditionalSaveData(CompoundTag input) {
         HolderLookup.Provider registries = registryAccess();
         super.readAdditionalSaveData(input);
-        TTNbt.read(input, "props", GolemProperties.CODEC, registries).ifPresent(this::setProperties);
+        TTNbt.read(input, "props", GolemProperties.CODEC, registries).ifPresent(this::applyBuild);
         restrictTo(TTNbt.read(input, "homepos", BlockPos.CODEC, registries).orElse(blockPosition()), HOME_RANGE);
         entityData.set(FLAGS, (input.contains("gflags") ? input.getByte("gflags") : (byte) 0));
         rankXp = (input.contains("rankXP") ? input.getInt("rankXP") : 0);

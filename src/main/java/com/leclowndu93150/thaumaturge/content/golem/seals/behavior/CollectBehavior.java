@@ -70,7 +70,7 @@ public final class CollectBehavior implements ISealBehavior {
                 item.setItem(leftover);
             }
             HandlingSound.play(golem, HandlingSound.HIGH);
-            golem.swingArm();
+            golem.animateSwing();
         }
         task.end();
         claimedItems.forget(task);

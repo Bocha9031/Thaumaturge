@@ -94,7 +94,7 @@ public final class ItemGolemPlacer extends Item implements ISealDisplayer {
         ItemStack held = context.getItemInHand();
         GolemProperties props = held.get(TTDataComponents.GOLEM_PROPERTIES.get());
         if (props != null) {
-            golem.setProperties(props);
+            golem.applyBuild(props);
         }
         golem.setRankXp(held.getOrDefault(TTDataComponents.GOLEM_XP.get(), 0));
         EventHooks.finalizeMobSpawn(

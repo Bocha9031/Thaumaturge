@@ -94,7 +94,7 @@ public final class EmptyBehavior implements ISealBehavior {
                             level, at.pos().relative(at.face()), at.face().getOpposite(), spill);
                 }
                 HandlingSound.play(golem, HandlingSound.HIGH);
-                golem.swingArm();
+                golem.animateSwing();
             }
         }
         takings.forget(task);

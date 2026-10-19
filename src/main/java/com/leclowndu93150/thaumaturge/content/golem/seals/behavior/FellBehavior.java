@@ -28,7 +28,7 @@ public final class FellBehavior extends CellWorkBehavior {
         if (!stillMine(level, seal, task)) {
             return retire(task);
         }
-        golem.swingArm();
+        golem.animateSwing();
         if (!EnchantMining.breakFurthest(
                 level,
                 task.pos(),
@@ -37,7 +37,7 @@ public final class FellBehavior extends CellWorkBehavior {
             return retire(task);
         }
         keepAlive(task);
-        golem.addRankXp(CHOP_XP);
+        golem.grantRankExperience(CHOP_XP);
         return false;
     }
 }

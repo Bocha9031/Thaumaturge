@@ -80,8 +80,8 @@ public final class StoreBehavior implements ISealBehavior {
                         load);
                 if (delivered > 0) {
                     HandlingSound.play(golem, HandlingSound.LOW);
-                    golem.addRankXp(1);
-                    golem.swingArm();
+                    golem.grantRankExperience(1);
+                    golem.animateSwing();
                 }
             }
         }

@@ -31,11 +31,105 @@ public interface IGolemAPI {
     IGolemProperties properties();
 
     /**
+     * Whether the golem currently has an attack target. The server answers from the golem's target; a client answers from
+     * the state the server syncs, so renderers can read it.
+     *
+     * @return whether the golem is fighting
+     * @implNote The default forwards to deprecated {@link #isInCombat()} so implementations written against 1.0 keep
+     *     working. An implementation overrides this method or the legacy method.
+     * @since 1.1.0
+     */
+    @SuppressWarnings("removal")
+    default boolean isFighting() {
+        return isInCombat();
+    }
+
+    /**
+     * Swings the golem's main arm. Called on the server, the swing is sent to every player tracking the golem. A swing
+     * that is already in its first half is not restarted.
+     *
+     * @implNote The default forwards to deprecated {@link #swingArm()} so implementations written against 1.0 keep
+     *     working. An implementation overrides this method or the legacy method.
+     * @since 1.1.0
+     */
+    @SuppressWarnings("removal")
+    default void animateSwing() {
+        swingArm();
+    }
+
+    /**
+     * Awards rank experience. Server side; on a client the call does nothing.
+     *
+     * <p>Only golems with the smart trait keep it; for any other golem, and for a golem already at rank 10, the award is
+     * ignored. Experience counts within the current rank. When it reaches the threshold for the next rank, the golem
+     * goes up one rank and the surplus carries over. At most one rank is gained per award.
+     *
+     * @param amount the experience to add; zero or less is ignored
+     * @implNote The default forwards to deprecated {@link #addRankXp(int)} so implementations written against 1.0 keep
+     *     working. An implementation overrides this method or the legacy method.
+     * @since 1.1.0
+     */
+    @SuppressWarnings("removal")
+    default void grantRankExperience(int amount) {
+        addRankXp(amount);
+    }
+
+    /**
+     * Replaces the golem's build. Server side; on a client the call does nothing.
+     *
+     * <p>The build is synced to clients, and everything derived from it is recomputed as when the golem is placed. The
+     * golem's current task is stopped, and rank experience is retained.
+     *
+     * @param build the new build
+     * @implNote The default forwards to deprecated {@link #setProperties(IGolemProperties)} so implementations written
+     *     against 1.0 keep working. An implementation overrides this method or the legacy method.
+     * @since 1.1.0
+     */
+    @SuppressWarnings("removal")
+    default void applyBuild(IGolemProperties build) {
+        setProperties(build);
+    }
+
+    /**
+     * @return whether the golem currently has an attack target
+     * @deprecated use {@link #isFighting()}
+     */
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default boolean isInCombat() {
+        return isFighting();
+    }
+
+    /**
+     * Plays the main-hand swing animation for every watcher.
+     *
+     * @deprecated use {@link #animateSwing()}
+     */
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default void swingArm() {
+        animateSwing();
+    }
+
+    /**
+     * Awards rank experience. Only golems with the smart trait accumulate it; ranking up plays a sound and an emote.
+     *
+     * @param xp the experience amount
+     * @deprecated use {@link #grantRankExperience(int)}
+     */
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default void addRankXp(int xp) {
+        grantRankExperience(xp);
+    }
+
+    /**
      * Replaces the golem's build, syncs it to clients and refreshes attributes and goals derived from it.
      *
      * @param properties the new build
+     * @deprecated use {@link #applyBuild(IGolemProperties)}
      */
-    void setProperties(IGolemProperties properties);
+    @Deprecated(since = "1.1.0", forRemoval = true)
+    default void setProperties(IGolemProperties properties) {
+        applyBuild(properties);
+    }
 
     /**
      * @return the golem's carry slots
@@ -43,26 +137,9 @@ public interface IGolemAPI {
     IGolemHands hands();
 
     /**
-     * Awards rank experience. Only golems with the smart trait accumulate it; ranking up plays a sound and an emote.
-     *
-     * @param xp the experience amount
-     */
-    void addRankXp(int xp);
-
-    /**
      * @return the golem's dye colour index, from 1 to 16, or 0 when it has none
      */
     byte color();
-
-    /**
-     * Plays the main-hand swing animation for every watcher.
-     */
-    void swingArm();
-
-    /**
-     * @return whether the golem currently has an attack target
-     */
-    boolean isInCombat();
 
     /**
      * The UUID of the golem's owner, available while the owner is offline.

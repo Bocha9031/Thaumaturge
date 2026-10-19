@@ -57,12 +57,12 @@ public final class GolemInteractionHelper {
                 Thaumaturge.LOGGER.error("Golem right-click at {} failed", pos, e);
             }
         }
-        golem.addRankXp(1);
+        golem.grantRankExperience(1);
         if (!player.getMainHandItem().isEmpty() && player.getMainHandItem().getCount() <= 0) {
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
         }
         returnItems(player, golem);
-        golem.swingArm();
+        golem.animateSwing();
     }
 
     private static void returnItems(FakePlayer player, IGolemAPI golem) {

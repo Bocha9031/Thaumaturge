@@ -68,7 +68,7 @@ public final class CopperGolemRig extends HierarchicalModel<EntityThaumaturgeGol
         state.pitch = headPitch;
         state.holdingItem = !entity.getMainHandItem().isEmpty();
         state.attackTime = entity.getAttackAnim(0);
-        state.combat = entity.isInCombat();
+        state.combat = entity.isFighting();
         state.accessories = entity.getAccessories();
         setupAnim(state);
     }

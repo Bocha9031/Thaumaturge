@@ -55,7 +55,7 @@ public final class BreakBehavior extends CellWorkBehavior {
         if (!stillMine(level, seal, task)) {
             return retire(task);
         }
-        golem.swingArm();
+        golem.animateSwing();
         BlockState state = level.getBlockState(pos);
         boolean silk = seal.setting(SILK_TOUCH);
         int strike = silk ? SILK_STRIKE_POWER : STRIKE_POWER;
@@ -69,7 +69,7 @@ public final class BreakBehavior extends CellWorkBehavior {
         }
         BlockBreakerEngine.harvestBlock(level, TTFakePlayer.GOLEM.at(level, golem.asEntity()), pos, silk, NO_FORTUNE);
         level.destroyBlockProgress(crackId, pos, CRACK_CLEARED);
-        golem.addRankXp(BREAK_XP);
+        golem.grantRankExperience(BREAK_XP);
         return retire(task);
     }
 

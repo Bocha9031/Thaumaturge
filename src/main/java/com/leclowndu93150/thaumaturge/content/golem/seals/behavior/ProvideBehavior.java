@@ -196,8 +196,8 @@ public final class ProvideBehavior implements ISealBehavior {
             dropToward(level, at.pos(), at.face(), spill);
         }
         HandlingSound.play(golem, HandlingSound.HIGH);
-        golem.addRankXp(1);
-        golem.swingArm();
+        golem.grantRankExperience(1);
+        golem.animateSwing();
         if (request.requestingSeal() != null) {
             return;
         }
@@ -242,7 +242,7 @@ public final class ProvideBehavior implements ISealBehavior {
             }
         }
         HandlingSound.play(golem, HandlingSound.LOW);
-        golem.swingArm();
+        golem.animateSwing();
         request.markSpent();
     }
 
