@@ -1,5 +1,5 @@
 {
-  "parent": "minecraft:block/block",
+  "parent": "thaumaturge:item/special_block_item_base",
   "textures": {
     "particle": "thaumaturge:block/base_metal"
   }

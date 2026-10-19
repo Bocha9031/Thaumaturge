@@ -258,7 +258,7 @@ public final class TTModelProvider implements DataProvider {
         delegateItem(TTBlocks.NODE_STABILIZER_ADVANCED.get().asItem(), TTIds.rl("item/node_stabilizer_base"));
         delegateItem(TTBlocks.NODE_TRANSDUCER.get().asItem(), TTIds.rl("item/node_stabilizer_base"));
         simpleBlock(TTBlocks.JAR_NODE.get(), TTIds.rl("block/jar_normal"));
-        delegateItem(TTBlocks.JAR_NODE.get().asItem(), BLOCK_PARENT);
+        delegateItem(TTBlocks.JAR_NODE.get().asItem(), TTIds.rl("item/special_block_item_base"));
         horizontalBlock(TTBlocks.INFERNAL_FURNACE.get(), "infernal_furnace");
         simpleBlock(
                 TTBlocks.NETHER_BRICKS_PLACEHOLDER.get(), ModelLocationUtils.getModelLocation(Blocks.NETHER_BRICKS));
@@ -1031,7 +1031,7 @@ public final class TTModelProvider implements DataProvider {
 
     private void registerJar(Block block, String modelName) {
         simpleBlock(block, TTIds.rl("block/" + modelName));
-        delegateItem(block.asItem(), BLOCK_PARENT);
+        delegateItem(block.asItem(), TTIds.rl("item/special_block_item_base"));
     }
 
     private void registerAlembic(Block block) {
@@ -1425,7 +1425,7 @@ public final class TTModelProvider implements DataProvider {
 
     private void registerJarBrain() {
         simpleBlock(TTBlocks.JAR_BRAIN.get(), TTIds.rl("block/jar_normal"));
-        delegateItem(TTBlocks.JAR_BRAIN.get().asItem(), BLOCK_PARENT);
+        delegateItem(TTBlocks.JAR_BRAIN.get().asItem(), TTIds.rl("item/special_block_item_base"));
     }
 
     private void registerNoiseDevices() {
@@ -1498,7 +1498,7 @@ public final class TTModelProvider implements DataProvider {
                                         Map.of("parent", "thaumaturge:block/centrifuge_spinner")))));
 
         registerInvisibleBlock(TTBlocks.HUNGRY_CHEST.get());
-        delegateItem(TTItems.HUNGRY_CHEST.get(), BLOCK_PARENT);
+        delegateItem(TTItems.HUNGRY_CHEST.get(), TTIds.rl("item/special_block_item_base"));
     }
 
     private void registerLattice(Block block, String coreModel) {
