@@ -41,7 +41,34 @@ class NodeGeneratorPortTest {
     }
 
     @Test
-    void weightedBudgetAllocationPreservesTheExactNodeStrength() throws Exception {
+    void biomeAspectSeedChoosesOneAspectAndWeightsItWithTwoPoints() {
+        Holder<IAspect> first = Holder.direct(mock(IAspect.class));
+        Holder<IAspect> selected = Holder.direct(mock(IAspect.class));
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextInt(2)).thenReturn(1);
+
+        Map<Holder<IAspect>, Integer> seeded =
+                NodeGenerator.seedAspects(List.of(first, selected), List.of(), List.of(), random);
+
+        assertEquals(Map.of(selected, 2), seeded);
+    }
+
+    @Test
+    void missingBiomeAspectsSeedOnePrimalAndOneCompound() {
+        Holder<IAspect> firstPrimal = Holder.direct(mock(IAspect.class));
+        Holder<IAspect> selectedPrimal = Holder.direct(mock(IAspect.class));
+        Holder<IAspect> selectedCompound = Holder.direct(mock(IAspect.class));
+        RandomSource random = mock(RandomSource.class);
+        when(random.nextInt(2)).thenReturn(1, 0);
+
+        Map<Holder<IAspect>, Integer> seeded = NodeGenerator.seedAspects(
+                List.of(), List.of(firstPrimal, selectedPrimal), List.of(selectedCompound, firstPrimal), random);
+
+        assertEquals(Map.of(selectedPrimal, 1, selectedCompound, 1), seeded);
+    }
+
+    @Test
+    void weightedBudgetAddsStrengthAccordingToAspectSeeds() throws Exception {
         Holder<IAspect> first = Holder.direct(mock(IAspect.class));
         Holder<IAspect> second = Holder.direct(mock(IAspect.class));
         Holder<IAspect> third = Holder.direct(mock(IAspect.class));
@@ -50,19 +77,19 @@ class NodeGeneratorPortTest {
         tally.put(second, 1);
         tally.put(third, 1);
         RandomSource random = mock(RandomSource.class);
-        when(random.nextFloat()).thenReturn(0.5F);
+        when(random.nextInt(25)).thenReturn(0);
+        when(random.nextInt(50)).thenReturn(0);
 
         Method allocate =
                 NodeGenerator.class.getDeclaredMethod("allocateBudget", Map.class, int.class, RandomSource.class);
         allocate.setAccessible(true);
         allocate.invoke(null, tally, 17, random);
 
-        assertEquals(17, tally.values().stream().mapToInt(Integer::intValue).sum());
-        assertTrue(tally.values().stream().allMatch(amount -> amount >= 1));
+        assertEquals(Map.of(first, 10, second, 5, third, 5), tally);
     }
 
     @Test
-    void budgetBelowSeededAspectPointsDoesNotDiscardTheSeed() throws Exception {
+    void smallBudgetRetainsSeedsAndAddsOnlyWholeWeightedShares() throws Exception {
         Holder<IAspect> first = Holder.direct(mock(IAspect.class));
         Holder<IAspect> second = Holder.direct(mock(IAspect.class));
         Map<Holder<IAspect>, Integer> tally = new LinkedHashMap<>();
@@ -75,8 +102,8 @@ class NodeGeneratorPortTest {
         allocate.setAccessible(true);
         allocate.invoke(null, tally, 2, random);
 
-        assertEquals(3, tally.values().stream().mapToInt(Integer::intValue).sum());
-        assertEquals(2, tally.get(first));
+        assertEquals(4, tally.values().stream().mapToInt(Integer::intValue).sum());
+        assertEquals(3, tally.get(first));
         assertEquals(1, tally.get(second));
     }
 

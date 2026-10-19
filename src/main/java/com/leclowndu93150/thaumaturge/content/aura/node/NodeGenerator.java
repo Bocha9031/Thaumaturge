@@ -13,7 +13,6 @@ import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTDataMaps;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +44,12 @@ public final class NodeGenerator {
     private static final float REDUCED_STRENGTH_DIVISOR = 4.0F;
     private static final int STRENGTH_FLOOR = 8;
     private static final int BONUS_ASPECT_ROLLS = 3;
-    private static final float WEIGHT_FLOOR = 0.05F;
+    private static final int BIOME_SEED_POINTS = 2;
+    private static final int BOOSTED_BASE_COUNT = 2;
+    private static final int BOOSTED_WEIGHT_MIN = 50;
+    private static final int BOOSTED_WEIGHT_SPAN = 25;
+    private static final int STANDARD_WEIGHT_MIN = 25;
+    private static final int STANDARD_WEIGHT_SPAN = 50;
     private static final double BONUS_NONE_WEIGHT = 0.5;
     private static final int[] FACTORIALS = {1, 1, 2, 6};
     private static final int DESIRE_POINTS = 2;
@@ -330,6 +334,10 @@ public final class NodeGenerator {
         target.merge(aspect, 1, Integer::sum);
     }
 
+    private static Holder<IAspect> pickFrom(List<Holder<IAspect>> pool, RandomSource random) {
+        return pool.get(random.nextInt(pool.size()));
+    }
+
     private static void tallyPicks(
             Map<Holder<IAspect>, Integer> target, List<Holder<IAspect>> pool, int count, RandomSource random) {
         for (int pick = 0; pick < count; pick++) {
@@ -371,39 +379,25 @@ public final class NodeGenerator {
     }
 
     private static void allocateBudget(Map<Holder<IAspect>, Integer> target, int budget, RandomSource random) {
-        int committed = target.values().stream().mapToInt(Integer::intValue).sum();
-        int extra = Math.max(0, budget - committed);
         List<Holder<IAspect>> aspects = new ArrayList<>(target.keySet());
-        if (aspects.isEmpty() || extra == 0) {
+        if (aspects.isEmpty()) {
             return;
         }
-        double[] weights = new double[aspects.size()];
-        double weightSum = 0.0;
+        int[] weights = new int[aspects.size()];
+        int totalWeight = 0;
         for (int index = 0; index < aspects.size(); index++) {
-            weights[index] = random.nextFloat() + WEIGHT_FLOOR;
-            weightSum += weights[index];
-        }
-        int[] shares = new int[aspects.size()];
-        double[] remainders = new double[aspects.size()];
-        int assigned = 0;
-        for (int index = 0; index < aspects.size(); index++) {
-            double quota = extra * weights[index] / weightSum;
-            shares[index] = (int) quota;
-            remainders[index] = quota - shares[index];
-            assigned += shares[index];
-        }
-        List<Integer> byRemainder = new ArrayList<>(aspects.size());
-        for (int index = 0; index < aspects.size(); index++) {
-            byRemainder.add(index);
-        }
-        byRemainder.sort(
-                Comparator.comparingDouble((Integer index) -> remainders[index]).reversed());
-        int leftover = extra - assigned;
-        for (int rank = 0; rank < leftover; rank++) {
-            shares[byRemainder.get(rank % byRemainder.size())]++;
+            int baseAmount = target.get(aspects.get(index));
+            int weight = baseAmount == BOOSTED_BASE_COUNT
+                    ? BOOSTED_WEIGHT_MIN + random.nextInt(BOOSTED_WEIGHT_SPAN)
+                    : STANDARD_WEIGHT_MIN + random.nextInt(STANDARD_WEIGHT_SPAN);
+            weights[index] = weight;
+            totalWeight += weight;
         }
         for (int index = 0; index < aspects.size(); index++) {
-            target.merge(aspects.get(index), shares[index], Integer::sum);
+            int bonus = (int) ((float) weights[index] / (float) totalWeight * (float) budget);
+            if (bonus > 0) {
+                target.merge(aspects.get(index), bonus, Integer::sum);
+            }
         }
     }
 
@@ -453,36 +447,26 @@ public final class NodeGenerator {
     }
 
     private static void seedAspects(RollContext context, Draft draft) {
-        AspectPools pools = context.pools();
-        RandomSource random = context.random();
-        if (context.biome().is(TTBiomeTags.IS_TAINTED)) {
-            if (random.nextBoolean()) {
-                put(draft.tally, pools.registry(), TTAspects.PERDITIO, 2);
-                return;
-            }
-            tally(
-                    draft.tally,
-                    pools.primals().get(random.nextInt(pools.primals().size())));
-            tally(
-                    draft.tally,
-                    pools.compounds().get(random.nextInt(pools.compounds().size())));
-            return;
+        draft.tally.putAll(seedAspects(
+                context.pools().biomeSpecific(),
+                context.pools().primals(),
+                context.pools().compounds(),
+                context.random()));
+    }
+
+    static Map<Holder<IAspect>, Integer> seedAspects(
+            List<Holder<IAspect>> biomeSpecific,
+            List<Holder<IAspect>> primals,
+            List<Holder<IAspect>> compounds,
+            RandomSource random) {
+        Map<Holder<IAspect>, Integer> seeded = new LinkedHashMap<>();
+        if (!biomeSpecific.isEmpty()) {
+            seeded.put(pickFrom(biomeSpecific, random), BIOME_SEED_POINTS);
+        } else {
+            tally(seeded, pickFrom(primals, random));
+            tally(seeded, pickFrom(compounds, random));
         }
-        if (pools.biomeSpecific().isEmpty()) {
-            tally(
-                    draft.tally,
-                    pools.primals().get(random.nextInt(pools.primals().size())));
-            tally(
-                    draft.tally,
-                    pools.compounds().get(random.nextInt(pools.compounds().size())));
-            return;
-        }
-        for (Holder<IAspect> aspect : pools.biomeSpecific()) {
-            tally(draft.tally, aspect);
-        }
-        tally(
-                draft.tally,
-                pools.biomeSpecific().get(random.nextInt(pools.biomeSpecific().size())));
+        return seeded;
     }
 
     private static void addBonusAspects(RollContext context, Draft draft) {
