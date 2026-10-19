@@ -93,9 +93,18 @@ public final class HexGrid {
     }
 
     public static Hex clampToDisk(Hex hex, int radius) {
-        if (distance(new Hex(0, 0), hex) <= radius) {
+        int bound = Math.max(0, radius);
+        if (distance(new Hex(0, 0), hex) <= bound) {
             return hex;
         }
-        return new Hex(Mth.clamp(hex.q(), -radius, radius), Mth.clamp(hex.r(), -radius, radius));
+        int q = Mth.clamp(hex.q(), -bound, bound);
+        int r = Mth.clamp(hex.r(), -bound, bound);
+        int sum = q + r;
+        if (sum > bound) {
+            q = bound - r;
+        } else if (sum < -bound) {
+            q = -bound - r;
+        }
+        return new Hex(q, r);
     }
 }
