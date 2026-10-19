@@ -7,20 +7,17 @@ import com.leclowndu93150.thaumaturge.api.research.scan.ScannedEntity;
 import com.leclowndu93150.thaumaturge.api.research.scan.ScanningManager;
 import com.leclowndu93150.thaumaturge.client.effect.ClientEffects;
 import com.leclowndu93150.thaumaturge.content.item.ThaumometerItem;
-import com.leclowndu93150.thaumaturge.content.research.scan.ScanRaycastHelper;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -30,74 +27,58 @@ import org.jspecify.annotations.Nullable;
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class ThaumometerClientHandler {
     private static final int HIGHLIGHT_INTERVAL_TICKS = 5;
-    private static final double HIGHLIGHT_ENTITY_RANGE = 16.0;
-    private static final float HIGHLIGHT_ENTITY_PADDING = 5.0F;
-    private static final double WILD_RAY_RANGE = 16.0;
-    private static final int WILD_RAY_ANGLE_SPREAD = 25;
-    private static final int SCAN_RUNE_BURSTS = 10;
     private static final float RUNE_ENTITY_HEIGHT_SCALE = 15.0F;
     private static final int RUNE_BLOCK_DURATION = 15;
     private static final float RUNE_GRAVITY = 0.03F;
-    private static final float SCAN_VOLUME = 0.5F;
-    private static final float SCAN_PITCH = 1.0F;
-
     private static final int SCAN_TICK_SOUND_INTERVAL = 2;
     private static final float SCAN_TICK_VOLUME = 0.2F;
     private static final float SCAN_TICK_PITCH_BASE = 0.45F;
     private static final float SCAN_TICK_PITCH_SPREAD = 0.1F;
 
-    private static @Nullable String scanTargetKey;
+    private static final int TARGET_LOCK_TICKS = 2;
+
+    private static @Nullable TargetIdentity lockedTarget;
 
     private ThaumometerClientHandler() {}
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        Minecraft mc = Minecraft.getInstance();
-        LocalPlayer player = mc.player;
-        if (player == null || mc.level == null || mc.isPaused()) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player == null || minecraft.level == null || minecraft.isPaused()) {
             return;
         }
-        tickScanning(mc, player);
-        boolean held = player.getMainHandItem().is(TTItems.THAUMOMETER.get())
-                || player.getOffhandItem().is(TTItems.THAUMOMETER.get());
-        if (!held) {
+        tickScanning(minecraft, player);
+        if (player.tickCount % HIGHLIGHT_INTERVAL_TICKS != 0 || !holdsThaumometer(player)) {
             return;
         }
-        if (player.tickCount % HIGHLIGHT_INTERVAL_TICKS != 0) {
+        ScanTarget target = ThaumometerItem.resolveTarget(minecraft.level, player);
+        if (!ScanningManager.isStillScannable(player, target)) {
             return;
         }
-        HitResult hitResult = ScanRaycastHelper.performRaycast(player, ClipContext.Fluid.SOURCE_ONLY);
-        if (hitResult.getType() == HitResult.Type.BLOCK
-                && ScanningManager.isStillScannable(
-                        player, ScanTarget.block(((BlockHitResult) hitResult).getBlockPos()))) {
-            ClientEffects.scanHighlight(mc.level, ((BlockHitResult) hitResult).getBlockPos());
-        }
-        if (hitResult instanceof EntityHitResult result
-                && ScanningManager.isStillScannable(player, ScanTarget.entity(result.getEntity()))) {
-            ClientEffects.scanHighlight(result.getEntity());
+        if (target instanceof ScannedBlock(var pos)) {
+            ClientEffects.scanHighlight(minecraft.level, pos);
+        } else if (target instanceof ScannedEntity(var entity)) {
+            ClientEffects.scanHighlight(entity);
         }
     }
 
-    private static void tickScanning(Minecraft mc, LocalPlayer player) {
+    private static boolean holdsThaumometer(LocalPlayer player) {
+        Item thaumometer = TTItems.THAUMOMETER.get();
+        return player.getMainHandItem().is(thaumometer) || player.getOffhandItem().is(thaumometer);
+    }
+
+    private static void tickScanning(Minecraft minecraft, LocalPlayer player) {
         boolean scanning = player.isUsingItem() && player.getUseItem().is(TTItems.THAUMOMETER.get());
         if (!scanning) {
-            scanTargetKey = null;
+            lockedTarget = null;
             return;
         }
         Level level = player.level();
         int elapsed = player.getTicksUsingItem();
         ScanTarget target = ThaumometerItem.resolveTarget(level, player);
-        if (!ScanningManager.isStillScannable(player, target)) {
-            player.stopUsingItem();
-            scanTargetKey = null;
-            return;
-        }
-        String key = keyOf(target);
-        if (elapsed <= 1) {
-            scanTargetKey = key;
-        } else if (!key.equals(scanTargetKey)) {
-            player.stopUsingItem();
-            scanTargetKey = null;
+        if (!ScanningManager.isStillScannable(player, target) || !keepsTargetLocked(elapsed, target)) {
+            cancelScan(minecraft, player);
             return;
         }
         if (elapsed % SCAN_TICK_SOUND_INTERVAL == 0) {
@@ -114,19 +95,45 @@ public final class ThaumometerClientHandler {
             drawScanTickFx(level, target);
         }
         if (elapsed >= ThaumometerItem.SCAN_COMPLETE_ELAPSED_TICKS) {
-            player.stopUsingItem();
-            scanTargetKey = null;
+            cancelScan(minecraft, player);
         }
     }
 
-    private static String keyOf(ScanTarget target) {
-        if (target instanceof ScannedEntity(var entity)) {
-            return "e:" + entity.getId();
+    private static boolean keepsTargetLocked(int elapsed, ScanTarget target) {
+        TargetIdentity current = TargetIdentity.of(target);
+        if (elapsed < TARGET_LOCK_TICKS) {
+            lockedTarget = current;
+            return true;
         }
-        if (target instanceof ScannedBlock(var pos)) {
-            return "b:" + pos.asLong();
+        return current.equals(lockedTarget);
+    }
+
+    private static void cancelScan(Minecraft minecraft, LocalPlayer player) {
+        lockedTarget = null;
+        MultiPlayerGameMode gameMode = minecraft.gameMode;
+        if (gameMode != null) {
+            gameMode.releaseUsingItem(player);
+        } else {
+            player.stopUsingItem();
         }
-        return "none";
+    }
+
+    static boolean sameTarget(ScanTarget first, ScanTarget second) {
+        return TargetIdentity.of(first).equals(TargetIdentity.of(second));
+    }
+
+    private record TargetIdentity(int entityId, @Nullable BlockPos blockPos) {
+        private static final int NO_ENTITY = -1;
+
+        static TargetIdentity of(ScanTarget target) {
+            if (target instanceof ScannedEntity(var entity)) {
+                return new TargetIdentity(entity.getId(), null);
+            }
+            if (target instanceof ScannedBlock(var pos)) {
+                return new TargetIdentity(NO_ENTITY, pos.immutable());
+            }
+            return new TargetIdentity(NO_ENTITY, null);
+        }
     }
 
     private static void drawScanTickFx(Level level, ScanTarget target) {
@@ -156,13 +163,4 @@ public final class ThaumometerClientHandler {
         }
     }
 
-    private static BlockHitResult wildBlockRay(Level level, Player player) {
-        RandomSource rand = level.getRandom();
-        float pitch = player.getXRot() + rand.nextInt(WILD_RAY_ANGLE_SPREAD) - rand.nextInt(WILD_RAY_ANGLE_SPREAD);
-        float yaw = player.getYRot() + rand.nextInt(WILD_RAY_ANGLE_SPREAD) - rand.nextInt(WILD_RAY_ANGLE_SPREAD);
-        Vec3 from = player.getEyePosition();
-        Vec3 direction = Vec3.directionFromRotation(pitch, yaw);
-        Vec3 to = from.add(direction.scale(WILD_RAY_RANGE));
-        return level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.SOURCE_ONLY, player));
-    }
 }
