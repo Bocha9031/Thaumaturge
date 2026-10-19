@@ -5,6 +5,8 @@ import com.leclowndu93150.thaumaturge.client.effect.rendertype.BeamRenderType;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.GraphicsStatus;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.util.FastColor.ARGB32;
@@ -12,6 +14,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 public final class BoreDrillFx {
     private static final double BEAM_LENGTH = 5.0;
@@ -32,6 +35,8 @@ public final class BoreDrillFx {
     private static final float BEAM_SCROLL_SPEED = 0.2F;
     private static final long BEAM_SPIN_PERIOD = 72L;
     private static final float BEAM_SPIN_STEP = 5.0F;
+    private static final double VIEW_DISTANCE = 64.0;
+    private static final double FAST_VIEW_DISTANCE = 32.0;
 
     private BoreDrillFx() {}
 
@@ -67,6 +72,9 @@ public final class BoreDrillFx {
             float beamUvScroll,
             float beamSpin,
             int tipFrame) {
+        if (beyondView(poseStack, tip)) {
+            return;
+        }
         poseStack.pushPose();
         poseStack.translate(tip.x, tip.y, tip.z);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - yawDegrees));
@@ -85,6 +93,17 @@ public final class BoreDrillFx {
         poseStack.mulPose(cameraOrientation);
         renderTipFlare(tipFrame, poseStack, buffers);
         poseStack.popPose();
+    }
+
+    private static boolean beyondView(PoseStack poseStack, Vec3 tip) {
+        Vector3f cameraRelativeTip = poseStack.last().pose().transformPosition((float) tip.x, (float) tip.y, (float) tip.z, new Vector3f());
+        boolean fastGraphics = Minecraft.getInstance().options.graphicsMode().get() == GraphicsStatus.FAST;
+        return beyondView(cameraRelativeTip.x(), cameraRelativeTip.y(), cameraRelativeTip.z(), fastGraphics);
+    }
+
+    static boolean beyondView(double x, double y, double z, boolean fastGraphics) {
+        double distance = fastGraphics ? FAST_VIEW_DISTANCE : VIEW_DISTANCE;
+        return x * x + y * y + z * z > distance * distance;
     }
 
     private static void addBeamVertices(VertexConsumer buffer, Matrix4f matrix, float v0, float v1) {
