@@ -10,7 +10,6 @@ import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTLootTables;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -117,8 +116,8 @@ public final class ChampionEvents {
                 || !MobTraits.isChampion(entity)) {
             return;
         }
-        Entity killer = event.getSource().getEntity();
-        if (killer instanceof FakePlayer) {
+        Player killer = eligibleKiller(entity);
+        if (killer == null) {
             return;
         }
         int xp = XP_BASE + entity.getRandom().nextInt(XP_SPREAD);
@@ -132,9 +131,7 @@ public final class ChampionEvents {
                 .withOptionalParameter(
                         LootContextParams.DIRECT_ATTACKING_ENTITY,
                         event.getSource().getDirectEntity());
-        if (entity.getKillCredit() instanceof Player player) {
-            params.withParameter(LootContextParams.LAST_DAMAGE_PLAYER, player).withLuck(player.getLuck());
-        }
+        params.withParameter(LootContextParams.LAST_DAMAGE_PLAYER, killer).withLuck(killer.getLuck());
         server.getServer()
                 .reloadableRegistries()
                 .getLootTable(TTLootTables.CHAMPION_BAG)
@@ -148,5 +145,9 @@ public final class ChampionEvents {
                                         entity.getY() + entity.getEyeHeight(),
                                         entity.getZ(),
                                         bag)));
+    }
+
+    static Player eligibleKiller(LivingEntity entity) {
+        return entity.getKillCredit() instanceof Player player && !(player instanceof FakePlayer) ? player : null;
     }
 }

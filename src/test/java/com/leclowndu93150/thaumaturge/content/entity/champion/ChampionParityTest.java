@@ -1,6 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.entity.champion;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,6 +11,8 @@ import com.leclowndu93150.thaumaturge.content.entity.champion.trait.WardedChampi
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.common.util.FakePlayer;
 import org.junit.jupiter.api.Test;
 
 class ChampionParityTest {
@@ -32,5 +36,19 @@ class ChampionParityTest {
         new WardedChampionTrait().tick(mob);
 
         verify(mob).setAbsorptionAmount(10.0F);
+    }
+
+    @Test
+    void championRewardsRequireARealPlayerKiller() {
+        LivingEntity victim = mock(LivingEntity.class);
+        Player player = mock(Player.class);
+        when(victim.getKillCredit()).thenReturn(player);
+        assertSame(player, ChampionEvents.eligibleKiller(victim));
+
+        when(victim.getKillCredit()).thenReturn(mock(FakePlayer.class));
+        assertNull(ChampionEvents.eligibleKiller(victim));
+
+        when(victim.getKillCredit()).thenReturn(null);
+        assertNull(ChampionEvents.eligibleKiller(victim));
     }
 }
