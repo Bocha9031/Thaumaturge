@@ -44,14 +44,17 @@ public final class PechTradeBootstrap {
         add(forager, 2, Items.BLAZE_ROD);
         add(forager, 2, TTBlocks.SAPLING_GREATWOOD.get());
         add(forager, 2, Items.DRAGON_BREATH);
+        add(forager, 2, Items.COMPASS);
         add(forager, 3, Items.EXPERIENCE_BOTTLE);
         add(forager, 3, Items.EXPERIENCE_BOTTLE);
         add(forager, 3, Items.GOLDEN_APPLE);
         add(forager, 4, TTItems.THAUMIUM_PICKAXE.get());
         add(forager, 4, TTItems.THAUMIUM_AXE.get());
         add(forager, 4, TTItems.THAUMIUM_HOE.get());
+        add(forager, 4, Items.SPECTRAL_ARROW);
         add(forager, 5, Items.ENCHANTED_GOLDEN_APPLE);
         add(forager, 5, TTBlocks.SAPLING_SILVERWOOD.get());
+        add(forager, 5, Items.TOTEM_OF_UNDYING);
         add(forager, 5, TTItems.CURIO_KNOWLEDGE.get());
         register(ctx, "forager", forager);
 
