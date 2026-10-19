@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.client.casters;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.client.render.GuiBlend;
+import com.leclowndu93150.thaumaturge.client.screen.TTScreenTextures;
 import com.leclowndu93150.thaumaturge.compat.curio.ThaumaturgeCuriosCompat;
 import com.leclowndu93150.thaumaturge.content.casters.CasterManager;
 import com.leclowndu93150.thaumaturge.content.casters.FocusPouchItem;
@@ -32,16 +33,19 @@ import org.lwjgl.glfw.GLFW;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class RadialFocusOverlay implements LayeredDraw.Layer {
-    private static final ResourceLocation RADIAL_1 = TTIds.rl("textures/misc/radial.png");
-    private static final ResourceLocation RADIAL_2 = TTIds.rl("textures/misc/radial2.png");
+    private static final ResourceLocation RADIAL_1 = TTScreenTextures.RADIAL_INNER;
+    private static final ResourceLocation RADIAL_2 = TTScreenTextures.RADIAL_OUTER;
 
     private static final int RADIAL_TEX_SIZE = 256;
-    private static final float BASE_RADIUS = 16.0F;
-    private static final float RADIUS_PER_FOCUS = 2.5F;
-    private static final float RING_1_SIZE = 2.75F;
-    private static final float RING_2_SIZE = 2.55F;
-    private static final int RING_TINT = 0x80808080;
-    private static final float RING_SPIN_PERIOD = 720.0F;
+    private static final float BASE_RADIUS = 26.0F;
+    private static final float RADIUS_PER_FOCUS = 3.0F;
+    private static final float RING_1_SIZE = 4.2F;
+    private static final float RING_2_SIZE = 4.4F;
+    private static final int RING_TINT = 0xA0C0C0C8;
+    private static final float RING_1_PERIOD_TICKS = 640.0F;
+    private static final float RING_2_PERIOD_TICKS = 900.0F;
+    private static final float START_DEGREES = -90.0F;
+    private static final float SWING_DEGREES = 50.0F;
     private static final int HOVER_BOX = 10;
     private static final int ITEM_HALF = 8;
     private static final float HOVER_SCALE_MAX = 1.3F;
@@ -236,14 +240,31 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
         int cy = graphics.guiHeight() / 2;
         ItemStack tooltipStack = ItemStack.EMPTY;
 
-        float width = BASE_RADIUS + fociItem.size() * RADIUS_PER_FOCUS;
-        float ringAngle = partialTicks + mc.player.tickCount % RING_SPIN_PERIOD / 2.0F;
-        drawRing(graphics, RADIAL_1, cx, cy, ringAngle, width * RING_1_SIZE * radialHudScale);
-        drawRing(graphics, RADIAL_2, cx, cy, -ringAngle, width * RING_2_SIZE * radialHudScale);
+        float easedScale = RadialFocusMotion.easeOutCubic(radialHudScale);
+        float radius = (BASE_RADIUS + fociItem.size() * RADIUS_PER_FOCUS) * easedScale;
+        float animationTime = mc.player.tickCount + partialTicks;
+        drawRing(
+                graphics,
+                RADIAL_1,
+                cx,
+                cy,
+                animationTime / RING_1_PERIOD_TICKS * 360.0F,
+                radius * RING_1_SIZE);
+        drawRing(
+                graphics,
+                RADIAL_2,
+                cx,
+                cy,
+                -animationTime / RING_2_PERIOD_TICKS * 360.0F,
+                radius * RING_2_SIZE);
 
         ItemStack socketed = wand.socketedFocus(casterStack);
         if (FocusItems.isFocus(socketed)) {
-            graphics.renderItem(socketed.copy(), cx - ITEM_HALF, cy - ITEM_HALF);
+            graphics.pose().pushPose();
+            graphics.pose().translate(cx, cy, 0.0F);
+            graphics.pose().scale(radialHudScale, radialHudScale, 1.0F);
+            graphics.renderItem(socketed.copy(), -ITEM_HALF, -ITEM_HALF);
+            graphics.pose().popPose();
             int mx = mouseX - cx;
             int my = mouseY - cy;
             if (mx >= -HOVER_BOX && mx <= HOVER_BOX && my >= -HOVER_BOX && my <= HOVER_BOX) {
@@ -264,26 +285,26 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
             }
         }
 
-        float currentRot = -90.0F * radialHudScale;
         float pieSlice = fociItem.isEmpty() ? 0.0F : 360.0F / fociItem.size();
+        float swing = (1.0F - easedScale) * SWING_DEGREES;
+        boolean selecting = !CasterKeyHandler.radialLock && CasterKeyHandler.radialActive;
         String key = fociItem.isEmpty() ? null : foci.firstKey();
         for (int a = 0; a < fociItem.size() && key != null; a++) {
-            double xx = Mth.cos(currentRot / 180.0F * (float) Math.PI) * width;
-            double yy = Mth.sin(currentRot / 180.0F * (float) Math.PI) * width;
-            currentRot += pieSlice;
+            float angle = (START_DEGREES + a * pieSlice - swing) * Mth.DEG_TO_RAD;
+            float iconX = cx + Mth.cos(angle) * radius;
+            float iconY = cy + Mth.sin(angle) * radius;
 
             graphics.pose().pushPose();
-            graphics.pose().translate(cx, cy, 0.0F);
-            graphics.pose().scale(radialHudScale, radialHudScale, 1.0F);
-            graphics.pose().translate((int) xx, (int) yy, 0.0F);
+            graphics.pose().translate(iconX, iconY, 0.0F);
             float scale = fociScale.get(key);
-            graphics.pose().scale(scale, scale, 1.0F);
+            float iconScale = scale * radialHudScale;
+            graphics.pose().scale(iconScale, iconScale, 1.0F);
             graphics.renderItem(fociItem.get(key).copy(), -ITEM_HALF, -ITEM_HALF);
             graphics.pose().popPose();
 
-            if (!CasterKeyHandler.radialLock && CasterKeyHandler.radialActive) {
-                int mx = (int) (mouseX - cx - xx);
-                int my = (int) (mouseY - cy - yy);
+            if (selecting) {
+                int mx = mouseX - Mth.floor(iconX);
+                int my = mouseY - Mth.floor(iconY);
                 if (mx >= -HOVER_BOX && mx <= HOVER_BOX && my >= -HOVER_BOX && my <= HOVER_BOX) {
                     fociHover.put(key, true);
                     tooltipStack = fociItem.get(key);
@@ -299,6 +320,8 @@ public final class RadialFocusOverlay implements LayeredDraw.Layer {
                 } else {
                     fociHover.put(key, false);
                 }
+            } else {
+                fociHover.put(key, false);
             }
             key = foci.higherKey(key);
         }
