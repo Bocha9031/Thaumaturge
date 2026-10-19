@@ -6,6 +6,7 @@ import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.Vec3;
 
 final class FieldFrenzy {
+    private static final String SPENT_KEY = "frenzy_spent";
     private static final int LENGTH = 150;
     private static final int RING_WINDOW = 121;
     private static final int RING_INTERVAL = 10;
@@ -50,6 +52,14 @@ final class FieldFrenzy {
             spent = true;
             remaining = LENGTH;
         }
+    }
+
+    void addAdditionalSaveData(CompoundTag output) {
+        output.putBoolean(SPENT_KEY, spent);
+    }
+
+    void readAdditionalSaveData(CompoundTag input) {
+        spent = input.getBoolean(SPENT_KEY);
     }
 
     void tick(ServerLevel level) {

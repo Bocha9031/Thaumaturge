@@ -321,6 +321,7 @@ public class EntityEldritchWarden extends EntityThaumaturgeBoss implements Range
         HolderLookup.Provider registries = registryAccess();
         super.addAdditionalSaveData(output);
         output.putByte(BossTitles.SAVE_KEY, (byte) title);
+        frenzy.addAdditionalSaveData(output);
     }
 
     @Override
@@ -328,5 +329,6 @@ public class EntityEldritchWarden extends EntityThaumaturgeBoss implements Range
         HolderLookup.Provider registries = registryAccess();
         super.readAdditionalSaveData(input);
         title = TITLES.clamp((input.contains(BossTitles.SAVE_KEY) ? input.getByte(BossTitles.SAVE_KEY) : (byte) 0));
+        frenzy.readAdditionalSaveData(input);
     }
 }
