@@ -34,11 +34,11 @@ class TaintSeedInfluenceLoadedAnchorTest {
         try (MockedStatic<TaintSeedRegistry> lookup = mockStatic(TaintSeedRegistry.class)) {
             lookup.when(() -> TaintSeedRegistry.get(level)).thenReturn(registry);
 
-            assertFalse(TaintHelper.isNearTaintSeed(level, seed));
+            assertFalse(TaintHelper.isWithinSeedInfluence(level, seed));
             assertTrue(registry.all().contains(seed));
             verify(level, never()).getEntitiesOfClass(eq(AbstractTaintSeed.class), any(AABB.class));
 
-            assertFalse(TaintHelper.isNearTaintSeed(level, seed));
+            assertFalse(TaintHelper.isWithinSeedInfluence(level, seed));
             assertFalse(registry.all().contains(seed));
         }
     }

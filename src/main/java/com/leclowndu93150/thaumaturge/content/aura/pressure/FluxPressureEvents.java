@@ -39,7 +39,7 @@ public final class FluxPressureEvents {
         }
         FluxPressureState state = level.getData(TTAttachments.FLUX_PRESSURE);
         if (!event.allowedNearTaint()
-                && (TaintHelper.isNearTaintSeed(level, origin)
+                && (TaintHelper.isWithinSeedInfluence(level, origin)
                         || state.hasRainNear(origin, STACK_SUPPRESSION_RANGE_SQ))) {
             return false;
         }

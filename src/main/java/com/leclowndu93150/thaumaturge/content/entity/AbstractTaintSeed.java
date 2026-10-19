@@ -104,7 +104,7 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
             int dx = Mth.nextInt(server.getRandom(), -area * 3, area * 3);
             int dy = Mth.nextInt(server.getRandom(), -area, area);
             int dz = Mth.nextInt(server.getRandom(), -area * 3, area * 3);
-            TaintHelper.spreadFibres(server, pos.offset(dx, dy, dz), true);
+            TaintHelper.attemptFibreGrowth(server, pos.offset(dx, dy, dz), true);
         }
         applyAuraTouch(server);
     }

@@ -26,7 +26,7 @@ final class NodeBootstrap {
                 continue;
             }
             BlockState existing = level.getBlockState(target);
-            if ((existing.isAir() || existing.canBeReplaced()) && TaintHelper.isAdjacentToSolidBlock(level, target)) {
+            if ((existing.isAir() || existing.canBeReplaced()) && TaintHelper.hasSturdyNeighbour(level, target)) {
                 level.setBlock(target, BlockTaintFibre.stateForWorld(level, target), Block.UPDATE_ALL);
             }
         }

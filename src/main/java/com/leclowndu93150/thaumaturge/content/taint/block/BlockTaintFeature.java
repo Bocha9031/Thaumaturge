@@ -128,7 +128,7 @@ public final class BlockTaintFeature extends DirectionalBlock implements ITaintB
                 return;
             }
         }
-        TaintHelper.spreadFibres(level, pos, false);
+        TaintHelper.attemptFibreGrowth(level, pos, false);
         BlockState below = level.getBlockState(pos.below());
         if (below.is(TTBlocks.TAINT_LOG.get())) {
             Direction.Axis axis = below.getValue(RotatedPillarBlock.AXIS);

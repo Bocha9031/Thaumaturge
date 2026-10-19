@@ -75,7 +75,7 @@ public final class BlockTaintCrust extends AbstractTaintBlock {
         if (!TaintBiomeManager.isTainted(level, pos)) {
             return;
         }
-        TaintHelper.spreadFibres(level, pos, false);
+        TaintHelper.attemptFibreGrowth(level, pos, false);
 
         // Exposed crust occasionally uproots itself into a Swarmer.
         if (level.isEmptyBlock(pos.above())

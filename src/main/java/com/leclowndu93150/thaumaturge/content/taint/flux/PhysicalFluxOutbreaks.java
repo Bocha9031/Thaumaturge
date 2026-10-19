@@ -97,7 +97,7 @@ public final class PhysicalFluxOutbreaks {
     }
 
     private static @Nullable BlockPos findTarget(ServerLevel level, BlockPos source) {
-        if (TaintHelper.isAdjacentToSolidBlock(level, source)) {
+        if (TaintHelper.hasSturdyNeighbour(level, source)) {
             return source;
         }
         BlockPos.MutableBlockPos cursor = source.mutable();
@@ -110,7 +110,7 @@ public final class PhysicalFluxOutbreaks {
                     && floor.getFluidState().isEmpty()
                     && !floor.canBeReplaced()
                     && TaintHelper.canHostFoothold(level.getBlockState(above))
-                    && TaintHelper.isAdjacentToSolidBlock(level, above)) {
+                    && TaintHelper.hasSturdyNeighbour(level, above)) {
                 return above;
             }
         }

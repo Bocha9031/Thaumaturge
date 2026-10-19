@@ -81,7 +81,7 @@ public final class EntityTaintCrawler extends Monster {
         if (here.is(TTBlocks.TAINT_FIBRE.get())) {
             return;
         }
-        if (!TaintHelper.isAdjacentToSolidBlock(server, pos)) {
+        if (!TaintHelper.hasSturdyNeighbour(server, pos)) {
             return;
         }
         if (BlockTaintFibre.isOnlyAdjacentToTaint(server, pos)) {

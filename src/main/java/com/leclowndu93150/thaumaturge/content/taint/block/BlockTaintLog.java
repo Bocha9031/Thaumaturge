@@ -40,7 +40,7 @@ public final class BlockTaintLog extends RotatedPillarBlock implements ITaintBlo
             decay(level, pos, state);
             return;
         }
-        TaintHelper.spreadFibres(level, pos, false);
+        TaintHelper.attemptFibreGrowth(level, pos, false);
     }
 
     @Override

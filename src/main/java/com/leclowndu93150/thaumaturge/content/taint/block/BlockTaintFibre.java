@@ -238,7 +238,7 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
                 return;
             }
         }
-        TaintHelper.spreadFibres(level, pos, false);
+        TaintHelper.attemptFibreGrowth(level, pos, false);
     }
 
     @Override

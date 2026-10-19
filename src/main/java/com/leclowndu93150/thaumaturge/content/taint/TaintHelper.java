@@ -40,15 +40,15 @@ public final class TaintHelper {
         return spreadArea() * SEED_EDGE_RATIO;
     }
 
-    public static void addTaintSeed(ServerLevel level, BlockPos pos) {
+    public static void registerSeedAnchor(ServerLevel level, BlockPos pos) {
         TaintSeedRegistry.get(level).addSeed(pos);
     }
 
-    public static void removeTaintSeed(ServerLevel level, BlockPos pos) {
+    public static void unregisterSeedAnchor(ServerLevel level, BlockPos pos) {
         TaintSeedRegistry.get(level).removeSeed(pos);
     }
 
-    public static boolean isNearTaintSeed(Level level, BlockPos pos) {
+    public static boolean isWithinSeedInfluence(Level level, BlockPos pos) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return false;
         }
@@ -81,10 +81,10 @@ public final class TaintHelper {
     }
 
     public static boolean isEcologicallySustained(ServerLevel level, BlockPos pos) {
-        return TaintBiomeManager.isTainted(level, pos) || isNearTaintSeed(level, pos);
+        return TaintBiomeManager.isTainted(level, pos) || isWithinSeedInfluence(level, pos);
     }
 
-    public static boolean isAtTaintSeedEdge(Level level, BlockPos pos) {
+    public static boolean isOnSeedFringe(Level level, BlockPos pos) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return false;
         }
@@ -99,27 +99,22 @@ public final class TaintHelper {
         return false;
     }
 
-    public static boolean isOnSeedFringe(Level level, BlockPos pos) {
-        return isAtTaintSeedEdge(level, pos);
-    }
-
     public static boolean isTaintBlock(BlockState state) {
         return state.getBlock() instanceof ITaintBlock;
     }
 
-    public static boolean isAdjacentToSolidBlock(LevelReader level, BlockPos pos) {
+    public static boolean hasSturdyNeighbour(LevelReader level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
-            BlockPos neighbor = pos.relative(direction);
-            BlockState neighborState = level.getBlockState(neighbor);
-            if (neighborState.isFaceSturdy(level, neighbor, direction.getOpposite())) {
+            if (facesSturdily(level, pos, direction)) {
                 return true;
             }
         }
         return false;
     }
 
-    public static boolean hasSturdyNeighbour(LevelReader level, BlockPos pos) {
-        return isAdjacentToSolidBlock(level, pos);
+    public static boolean facesSturdily(LevelReader level, BlockPos pos, Direction direction) {
+        BlockPos neighbour = pos.relative(direction);
+        return level.getBlockState(neighbour).isFaceSturdy(level, neighbour, direction.getOpposite());
     }
 
     public static boolean isRootless(LevelReader level, BlockPos pos) {
@@ -151,10 +146,6 @@ public final class TaintHelper {
             return false;
         }
         return level.setBlock(pos, BlockTaintFibre.stateForWorld(level, pos), Block.UPDATE_ALL);
-    }
-
-    public static void spreadFibres(ServerLevel level, BlockPos pos, boolean force) {
-        attemptFibreGrowth(level, pos, force);
     }
 
     public static void attemptFibreGrowth(ServerLevel level, BlockPos origin, boolean force) {
