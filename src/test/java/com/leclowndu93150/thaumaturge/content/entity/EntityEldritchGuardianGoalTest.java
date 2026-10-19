@@ -11,8 +11,8 @@ import org.mockito.Mockito;
 class EntityEldritchGuardianGoalTest {
     @Test
     void guardianUsesWaterAvoidingIdleStroll() {
-        EntityEldritchGuardian guardian = new EntityEldritchGuardian(
-                TTEntities.ELDRITCH_GUARDIAN.get(), Mockito.mock(ServerLevel.class));
+        EntityEldritchGuardian guardian =
+                new EntityEldritchGuardian(TTEntities.ELDRITCH_GUARDIAN.get(), Mockito.mock(ServerLevel.class));
 
         long waterAvoidingGoals = guardian.goalSelector.getAvailableGoals().stream()
                 .map(wrapped -> wrapped.getGoal())

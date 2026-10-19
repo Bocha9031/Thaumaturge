@@ -152,10 +152,7 @@ public final class ResearchTableRenderer implements BlockEntityRenderer<BlockEnt
             return;
         }
         model.inkwell.render(
-                poseStack,
-                buffers.getBuffer(RenderType.entityCutout(TABLE_TEXTURE)),
-                light,
-                OverlayTexture.NO_OVERLAY);
+                poseStack, buffers.getBuffer(RenderType.entityCutout(TABLE_TEXTURE)), light, OverlayTexture.NO_OVERLAY);
     }
 
     private static void parchmentQuad(PoseStack.Pose pose, VertexConsumer buffer, int light) {

@@ -90,7 +90,8 @@ class ResearchTablePaperPortTest {
 
     @Test
     void tableModelIncludesTheProceduralInkwellPart() {
-        ResearchTableModel model = new ResearchTableModel(ResearchTableModel.createLayer().bakeRoot());
+        ResearchTableModel model =
+                new ResearchTableModel(ResearchTableModel.createLayer().bakeRoot());
 
         assertNotNull(model.inkwell);
     }

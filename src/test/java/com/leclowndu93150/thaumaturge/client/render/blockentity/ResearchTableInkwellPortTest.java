@@ -3,7 +3,6 @@ package com.leclowndu93150.thaumaturge.client.render.blockentity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -38,7 +37,8 @@ class ResearchTableInkwellPortTest {
     @Test
     void proceduralInkwellPartRendersOnlyWhenScribeToolsArePresent() {
         BlockEntityRendererProvider.Context context = mock(BlockEntityRendererProvider.Context.class);
-        ResearchTableModel model = new ResearchTableModel(ResearchTableModel.createLayer().bakeRoot());
+        ResearchTableModel model =
+                new ResearchTableModel(ResearchTableModel.createLayer().bakeRoot());
         when(context.bakeLayer(TTModelLayers.RESEARCH_TABLE)).thenReturn(model.root);
         ResearchTableRenderer renderer = new ResearchTableRenderer(context);
         MultiBufferSource buffers = mock(MultiBufferSource.class);
@@ -54,8 +54,17 @@ class ResearchTableInkwellPortTest {
         verify(buffers).getBuffer(RenderType.entityCutout(TABLE_TEXTURE));
         verify(buffer, times(24))
                 .addVertex(
-                        anyFloat(), anyFloat(), anyFloat(), anyInt(), anyFloat(), anyFloat(), anyInt(), anyInt(),
-                        anyFloat(), anyFloat(), anyFloat());
+                        anyFloat(),
+                        anyFloat(),
+                        anyFloat(),
+                        anyInt(),
+                        anyFloat(),
+                        anyFloat(),
+                        anyInt(),
+                        anyInt(),
+                        anyFloat(),
+                        anyFloat(),
+                        anyFloat());
     }
 
     @Test
@@ -76,12 +85,13 @@ class ResearchTableInkwellPortTest {
 
             PoseStack nativePose = new PoseStack();
             nativePose.mulPose(Axis.XP.rotationDegrees(180.0F));
-            float yaw = switch (facing) {
-                case NORTH -> 270.0F;
-                case SOUTH -> 90.0F;
-                case WEST -> 180.0F;
-                default -> 0.0F;
-            };
+            float yaw =
+                    switch (facing) {
+                        case NORTH -> 270.0F;
+                        case SOUTH -> 90.0F;
+                        case WEST -> 180.0F;
+                        default -> 0.0F;
+                    };
             nativePose.mulPose(Axis.YP.rotationDegrees(yaw));
 
             for (float[] point : List.of(

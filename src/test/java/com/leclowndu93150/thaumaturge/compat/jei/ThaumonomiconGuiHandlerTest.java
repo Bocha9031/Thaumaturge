@@ -15,8 +15,8 @@ import mezz.jei.api.gui.handlers.IGlobalGuiHandler;
 import mezz.jei.api.gui.handlers.IScreenHandler;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.runtime.IClickableIngredient;
-import net.minecraft.core.Holder;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +94,11 @@ class ThaumonomiconGuiHandlerTest {
             minecraft.screen = screen;
             minecraftStatic.when(Minecraft::getInstance).thenReturn(minecraft);
 
-            assertSame(ingredient, globalHandler.getClickableIngredientUnderMouse(factory, 110, 125).orElseThrow());
+            assertSame(
+                    ingredient,
+                    globalHandler
+                            .getClickableIngredientUnderMouse(factory, 110, 125)
+                            .orElseThrow());
         }
     }
 
