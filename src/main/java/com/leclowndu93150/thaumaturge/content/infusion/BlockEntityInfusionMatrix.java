@@ -204,13 +204,15 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
             return false;
         }
         InfusionJobRecipe recipe = match.recipe();
+        AspectList cost = scaledCost(env, recipe.jobEssentia(input));
         job = new InfusionCraftJob(
                 recipe.jobComponents(input),
-                scaledCost(env, recipe.jobEssentia(input)),
+                cost,
                 recipe.jobResult(input, level.getRandom(), level.registryAccess()),
                 input.catalyst().copyWithCount(1),
                 recipe.jobInstability(input),
-                Optional.of(player.getUUID()));
+                Optional.of(player.getUUID()),
+                cost);
         level.playSound(null, worldPosition, TTSounds.CRAFTSTART.get(), SoundSource.BLOCKS, 0.5F, 1.0F);
         setChanged();
         syncToClient();
@@ -393,11 +395,9 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
                 }
                 return;
             }
-            AspectList essentia = job.essentia();
-            if (!essentia.isEmpty() && level.getRandom().nextInt(1 + a) == 0) {
-                List<AspectInstance> entries = essentia.entries();
-                AspectInstance random = entries.get(level.getRandom().nextInt(entries.size()));
-                job.setEssentia(essentia.add(random.aspect(), 1));
+            RandomSource random = level.getRandom();
+            if (random.nextInt(1 + a) == 0) {
+                job.oweOneMore(random);
                 stability -= ESSENTIA_STARVE_PENALTY;
                 syncToClient();
             }
