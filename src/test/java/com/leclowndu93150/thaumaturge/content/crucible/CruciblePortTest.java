@@ -45,4 +45,12 @@ class CruciblePortTest {
         assertTrue(BlockEntityCrucible.isBoiling(151, 1));
         assertFalse(BlockEntityCrucible.isBoiling(200, 0));
     }
+
+    @Test
+    void heatSyncsOnEitherBoilingTransitionButNotWithoutWater() {
+        assertTrue(BlockEntityCrucible.boilingStateChanged(150, 151, 1));
+        assertTrue(BlockEntityCrucible.boilingStateChanged(151, 150, 1));
+        assertFalse(BlockEntityCrucible.boilingStateChanged(150, 149, 1));
+        assertFalse(BlockEntityCrucible.boilingStateChanged(151, 150, 0));
+    }
 }

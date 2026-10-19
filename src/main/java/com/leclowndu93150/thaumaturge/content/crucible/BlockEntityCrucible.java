@@ -92,20 +92,19 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
                 if (!hasHeatBelow) {
                     if (heat > 0) {
                         heat--;
-                        if (heat == 149) {
-                            setChanged();
-                            syncToClient();
-                        }
                     }
                 } else if (heat < 200) {
                     heat++;
-                    if (prevHeat < 151 && heat >= 151) {
-                        setChanged();
-                        syncToClient();
-                    }
                 }
             } else if (heat > 0) {
                 heat--;
+            }
+
+            if (boilingStateChanged(prevHeat, heat, tank.getFluidAmount())) {
+                setChanged();
+                syncToClient();
+            } else if (heat != prevHeat && (heat == 0 || heat == 200)) {
+                setChanged();
             }
 
             ServerLevel serverLevel = (ServerLevel) level;
@@ -275,6 +274,10 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
 
     static boolean isBoiling(int heat, int waterAmount) {
         return heat > BOIL_HEAT && waterAmount > 0;
+    }
+
+    static boolean boilingStateChanged(int previousHeat, int currentHeat, int waterAmount) {
+        return isBoiling(previousHeat, waterAmount) != isBoiling(currentHeat, waterAmount);
     }
 
     public void spillRemnants() {
