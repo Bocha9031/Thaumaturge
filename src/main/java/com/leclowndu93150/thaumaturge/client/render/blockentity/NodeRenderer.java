@@ -34,7 +34,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> {
-    private static final ResourceLocation NODES_TEXTURE = TTIds.rl("textures/misc/auranodes.png");
+    private static final ResourceLocation NODES_TEXTURE = TTIds.rl("textures/effect/auranodes.png");
 
     private static final RenderType NODE_ADDITIVE = TTRenderTypes.fxAdditive(NODES_TEXTURE);
     private static final RenderType NODE_ADDITIVE_NO_DEPTH = TTRenderTypes.fxAdditiveNoDepth(NODES_TEXTURE);
