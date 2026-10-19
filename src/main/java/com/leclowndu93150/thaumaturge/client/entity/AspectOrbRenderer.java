@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.entity;
 
+import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
+import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.client.effect.LateWorldRenderQueue;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
@@ -11,6 +13,8 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.world.phys.Vec3;
@@ -18,7 +22,9 @@ import org.joml.Matrix4f;
 
 public final class AspectOrbRenderer extends EntityRenderer<EntityAspectOrb> {
     private static final RenderType ORB_TYPE = TTRenderTypes.fxAlphaAdditiveBlurred(ParticleTextures.ORB_GLOW);
+    private static final RenderType ORB_TRANSLUCENT_TYPE = TTRenderTypes.fxTranslucent(ParticleTextures.ORB_GLOW);
 
+    private static final int TRANSLUCENT_ASPECT_BLEND = 771;
     private static final int FRAMES_PER_TICK = 2;
     private static final float BASE_SCALE = 0.1F;
     private static final float AGE_SCALE = 0.3F;
@@ -47,12 +53,20 @@ public final class AspectOrbRenderer extends EntityRenderer<EntityAspectOrb> {
         float u0 = StripUv.u0(frame, ParticleTextures.ORB_GLOW_FRAMES);
         float u1 = StripUv.u1(frame, ParticleTextures.ORB_GLOW_FRAMES);
         int tint = ARGB32.color((int) (ALPHA * 255.0F), entity.getAspectColor());
+        ResourceKey<IAspect> aspectKey = entity.getAspect();
+        Holder<IAspect> aspect = aspectKey == null ? null : Aspects.resolve(entity.level(), aspectKey);
+        RenderType renderType =
+                renderTypeForBlend(aspect == null ? 0 : aspect.value().blend());
         Vec3 origin = entity.getPosition(partialTicks);
         LateWorldRenderQueue.enqueue(origin, (latePose, lateBuffers) -> {
             latePose.mulPose(this.entityRenderDispatcher.cameraOrientation());
             latePose.scale(scale, scale, scale);
-            writeOrb(lateBuffers.getBuffer(ORB_TYPE), latePose.last().pose(), u0, u1, tint);
+            writeOrb(lateBuffers.getBuffer(renderType), latePose.last().pose(), u0, u1, tint);
         });
+    }
+
+    static RenderType renderTypeForBlend(int blend) {
+        return blend == TRANSLUCENT_ASPECT_BLEND ? ORB_TRANSLUCENT_TYPE : ORB_TYPE;
     }
 
     private static void writeOrb(VertexConsumer buffer, Matrix4f mat, float u0, float u1, int tint) {
