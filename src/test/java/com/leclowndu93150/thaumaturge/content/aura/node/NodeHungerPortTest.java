@@ -103,20 +103,24 @@ class NodeHungerPortTest {
     }
 
     @Test
-    void entitiesBetweenSourceMawAndNativeMawThresholdArePulledButNotDamaged() {
+    void entitiesBetweenSourceAndCurrentMawThresholdArePulledAndDamaged() {
         RandomSource random = mock(RandomSource.class);
         ServerLevel level = level(random);
+        DamageSources damageSources = mock(DamageSources.class);
+        DamageSource damageSource = mock(DamageSource.class);
+        when(level.damageSources()).thenReturn(damageSources);
+        when(damageSources.fellOutOfWorld()).thenReturn(damageSource);
         BlockEntityNode node = node();
         NodeHunger hunger = new NodeHunger(node);
         Entity entity = mock(Entity.class);
         when(entity.isAlive()).thenReturn(true);
         when(entity.level()).thenReturn(level);
-        setCenter(entity, new Vec3(2.0, 0.5, 0.5));
+        setCenter(entity, new Vec3(1.95, 0.5, 0.5));
         when(level.getEntitiesOfClass(eq(Entity.class), any(AABB.class), any())).thenReturn(List.of(entity));
 
         hunger.tick(level, BlockPos.ZERO, 10);
 
-        verify(entity, never()).hurt(any(DamageSource.class), anyFloat());
+        verify(entity).hurt(damageSource, 1.0F);
         verify(entity).push(anyDouble(), anyDouble(), anyDouble());
     }
 

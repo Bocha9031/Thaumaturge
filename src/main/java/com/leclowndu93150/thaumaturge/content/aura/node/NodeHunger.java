@@ -44,7 +44,7 @@ final class NodeHunger {
     private static final int RANGE_AVERAGE_NUMERATOR = 2;
     private static final double SIDEWAYS_DRAG = 0.15;
     private static final double UPRIGHT_DRAG = 0.25;
-    private static final double MAW_RADIUS_SQUARED = 2.0;
+    private static final double MAW_RADIUS = 1.5;
     private static final float GROWTH_CAPACITY_WEIGHT = 2.0F;
     private static final int FRAGMENTS_PER_GLIMPSE = 3;
     private static final double FRAGMENT_KICK = 0.03;
@@ -112,10 +112,14 @@ final class NodeHunger {
             if (distance > MINIMUM_PULL_DISTANCE && distance < reach) {
                 drag(entity, toCentre, distance, reach);
             }
-            if (distance * distance < MAW_RADIUS_SQUARED) {
+            if (shouldSwallow(distance)) {
                 swallow(level, entity);
             }
         }
+    }
+
+    static boolean shouldSwallow(double distance) {
+        return distance <= MAW_RADIUS;
     }
 
     private void gather(ServerLevel level, Vec3 centre, double reach) {
