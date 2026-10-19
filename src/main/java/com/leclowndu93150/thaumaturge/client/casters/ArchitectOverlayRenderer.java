@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.client.casters;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.items.AreaPreviewer;
+import com.leclowndu93150.thaumaturge.client.render.aspect.ParticleTextures;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -34,7 +35,7 @@ import org.joml.Quaternionf;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class ArchitectOverlayRenderer {
-    private static final ResourceLocation FRAME_CORNER = TTIds.rl("textures/misc/frame_corner.png");
+    private static final ResourceLocation FRAME_CORNER = ParticleTextures.FRAME_CORNER;
     private static final ResourceLocation FRAME_SIDE = TTIds.rl("textures/misc/frame_side.png");
     private static final ResourceLocation ARROWS = TTIds.rl("textures/misc/architect_arrows.png");
 
@@ -53,7 +54,7 @@ public final class ArchitectOverlayRenderer {
     private static final int HASH_TICK_STEP = 5;
     private static final float HALF = 0.5F;
     private static final float SIDE_ALPHA = 0.1F;
-    private static final float CORNER_ALPHA = 0.66F;
+    private static final float CORNER_ALPHA = 0.55F;
     private static final float AXIS_R_BASE = 0.3F;
     private static final float AXIS_G_BASE = 0.3F;
     private static final float AXIS_B_BASE = 0.8F;
