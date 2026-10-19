@@ -771,6 +771,34 @@ public final class TTModelProvider implements DataProvider {
         return dispatch;
     }
 
+    private static PropertyDispatch taintFeatureFacingDispatch() {
+        return PropertyDispatch.property(BlockStateProperties.FACING)
+                .select(Direction.UP, Variant.variant())
+                .select(
+                        Direction.DOWN,
+                        Variant.variant().with(VariantProperties.X_ROT, VariantProperties.Rotation.R180))
+                .select(
+                        Direction.NORTH,
+                        Variant.variant()
+                                .with(VariantProperties.X_ROT, VariantProperties.Rotation.R270)
+                                .with(VariantProperties.Y_ROT, VariantProperties.Rotation.R180))
+                .select(
+                        Direction.SOUTH,
+                        Variant.variant()
+                                .with(VariantProperties.X_ROT, VariantProperties.Rotation.R90)
+                                .with(VariantProperties.Y_ROT, VariantProperties.Rotation.R180))
+                .select(
+                        Direction.WEST,
+                        Variant.variant()
+                                .with(VariantProperties.X_ROT, VariantProperties.Rotation.R90)
+                                .with(VariantProperties.Y_ROT, VariantProperties.Rotation.R270))
+                .select(
+                        Direction.EAST,
+                        Variant.variant()
+                                .with(VariantProperties.X_ROT, VariantProperties.Rotation.R90)
+                                .with(VariantProperties.Y_ROT, VariantProperties.Rotation.R90));
+    }
+
     private static Variant hangingRotation(Direction direction) {
         return switch (direction) {
             case DOWN -> Variant.variant();
@@ -1746,6 +1774,9 @@ public final class TTModelProvider implements DataProvider {
                 TTBlocks.TAINT_CRUST.get(),
                 rotatedWeighted(
                         new String[] {"taint_crust_0", "taint_crust_1", "taint_crust_2"}, new int[] {8, 1, 1})));
+        blockStateOutput.accept(MultiVariantGenerator.multiVariant(
+                        TTBlocks.TAINT_FEATURE.get(), vName("taint_orb_0"), vName("taint_orb_1"), vName("taint_orb_2"))
+                .with(taintFeatureFacingDispatch()));
 
         simpleFromExisting(TTBlocks.FLUX_GOO.get(), "flux_goo");
         translucentCube(TTBlocks.FLUX_GAS.get());
