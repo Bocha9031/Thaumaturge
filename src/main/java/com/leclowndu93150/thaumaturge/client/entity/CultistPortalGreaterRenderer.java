@@ -9,8 +9,8 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
 public final class CultistPortalGreaterRenderer extends EntityRenderer<EntityCultistPortalGreater> {
-    private static final float BASE_SCALE_Y = 1.5F;
-    private static final float SCALE_FACTOR = 1.3F;
+    private static final float PORTAL_HEIGHT = 3.2F;
+    private static final float PORTAL_WIDTH = 2.6F;
     private static final float SHADOW = 0.1F;
 
     public CultistPortalGreaterRenderer(EntityRendererProvider.Context context) {
@@ -35,8 +35,10 @@ public final class CultistPortalGreaterRenderer extends EntityRenderer<EntityCul
                 entity.pulse,
                 entity.getHealth() / entity.getMaxHealth(),
                 entity.getBbHeight() / 2.0F,
-                BASE_SCALE_Y,
-                SCALE_FACTOR);
+                entity.tickCount + partialTicks,
+                partialTicks,
+                PORTAL_HEIGHT,
+                PORTAL_WIDTH);
     }
 
     @Override

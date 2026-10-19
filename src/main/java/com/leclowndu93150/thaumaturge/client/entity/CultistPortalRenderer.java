@@ -3,13 +3,13 @@ package com.leclowndu93150.thaumaturge.client.entity;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.effect.OccludingEffectRenderer;
 import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
+import com.leclowndu93150.thaumaturge.content.entity.portal.CultistPortals;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor.ARGB32;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPortalLesser> {
@@ -17,9 +17,8 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
 
     private static final int FRAMES = 32;
     private static final float FRAME_WIDTH = 1.0F / FRAMES;
-    private static final float BASE_SCALE_Y = 1.4F;
-    private static final float SCALE_FACTOR = 1.25F;
-    private static final float GROW_TICKS = 50.0F;
+    private static final float PORTAL_HEIGHT = 2.9F;
+    private static final float PORTAL_WIDTH = 2.3F;
     private static final int LIGHT = 0x00F000DC;
 
     public CultistPortalRenderer(EntityRendererProvider.Context context) {
@@ -44,8 +43,10 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
                 entity.pulse,
                 entity.getHealth() / entity.getMaxHealth(),
                 entity.getBbHeight() / 2.0F,
-                BASE_SCALE_Y,
-                SCALE_FACTOR);
+                entity.tickCount + partialTicks,
+                partialTicks,
+                PORTAL_HEIGHT,
+                PORTAL_WIDTH);
     }
 
     @Override
@@ -61,34 +62,23 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
             int pulse,
             float healthFraction,
             float halfHeight,
-            float baseScaleY,
-            float scaleFactor) {
+            float time,
+            float partialTicks,
+            float height,
+            float width) {
         if (!active) {
             return;
         }
-        float scaleY = baseScaleY;
-        float grown = Math.min(GROW_TICKS, activeCounter);
-        if (hurtTime > 0) {
-            double d = Math.sin(hurtTime * 72.0 * Math.PI / 180.0);
-            scaleY -= (float) (d / 4.0);
-            grown += (float) (6.0 * d);
-        }
-        if (pulse > 0) {
-            double d = Math.sin(pulse * 36.0 * Math.PI / 180.0);
-            scaleY += (float) (d / 4.0);
-            grown += (float) (12.0 * d);
-        }
-        float scale = grown / GROW_TICKS * scaleFactor;
-        float m = (1.0F - healthFraction) / 3.0F;
-        float bob = Mth.sin(activeCounter / (5.0F - 12.0F * m)) * m + m;
-        float bob2 = Mth.sin(activeCounter / (6.0F - 15.0F * m)) * m + m;
-        float alpha = 1.0F - bob;
-        scaleY -= bob / 4.0F;
-        scale -= bob2 / 3.0F;
-        int frame = FRAMES - 1 - (int) activeCounter % FRAMES;
+        float damage = PortalAppearance.damage(healthFraction);
+        float flinch = PortalAppearance.flinch(hurtTime, partialTicks);
+        float beat = PortalAppearance.beat(pulse, partialTicks, CultistPortals.PULSE_TICKS);
+        float scaleY = PortalAppearance.halfHeight(height, damage, time, flinch, beat);
+        float scaleX = PortalAppearance.halfWidth(width, damage, time, flinch, beat)
+                * PortalAppearance.openWidth(activeCounter);
+        int frame = Math.floorMod((int) time, FRAMES);
         float u0 = frame * FRAME_WIDTH;
         float u1 = u0 + FRAME_WIDTH;
-        int tint = ARGB32.colorFromFloat(alpha, 1.0F, 1.0F, 1.0F);
-        OccludingEffectRenderer.enqueuePortal(position.add(0.0, halfHeight, 0.0), scale, scaleY, u0, u1, tint, LIGHT);
+        int tint = ARGB32.colorFromFloat(PortalAppearance.opacity(damage, time), 1.0F, 1.0F, 1.0F);
+        OccludingEffectRenderer.enqueuePortal(position.add(0.0, halfHeight, 0.0), scaleX, scaleY, u0, u1, tint, LIGHT);
     }
 }
