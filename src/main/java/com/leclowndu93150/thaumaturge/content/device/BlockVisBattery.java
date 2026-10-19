@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 public final class BlockVisBattery extends Block {
     public static final MapCodec<BlockVisBattery> CODEC = simpleCodec(BlockVisBattery::new);
@@ -79,8 +80,9 @@ public final class BlockVisBattery extends Block {
     @Override
     protected void neighborChanged(
             BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean movedByPiston) {
-        if (level.hasNeighborSignal(pos)) {
-            level.scheduleTick(pos, this, 1);
+        if (level instanceof ServerLevel server && server.hasNeighborSignal(pos) && state.getValue(CHARGE) > 0) {
+            server.getBlockTicks().clearArea(new BoundingBox(pos));
+            server.scheduleTick(pos, this, 1);
         }
     }
 
