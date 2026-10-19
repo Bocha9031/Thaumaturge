@@ -252,6 +252,7 @@ public class EntityEldritchGolem extends EntityThaumaturgeBoss implements Ranged
                 float bearing = getYRot() * Mth.DEG_TO_RAD;
                 target.push(-Mth.sin(bearing) * HEADLESS_FLING, FLING_RISE, Mth.cos(bearing) * HEADLESS_FLING);
             }
+            target.hurtMarked = true;
         }
         return landed;
     }
