@@ -7,7 +7,6 @@ import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.util.RandomSource;
 
 public final class AirGustParticle extends TTParticle {
-    private static final int FRAME_COUNT = 5;
     private static final int BASE_LIFETIME = 20;
     private static final float START_ALPHA = 0.5F;
     private static final float FRICTION = 0.75F;
@@ -42,7 +41,7 @@ public final class AirGustParticle extends TTParticle {
         float t = progress();
         this.alpha = START_ALPHA * (1.0F - t);
         this.quadSize = Keyframes.sample(t, this.startSize, this.endSize);
-        frame((int) (t * FRAME_COUNT));
+        frameByProgress();
     }
 
     public static final class Provider implements ParticleProvider<AirGustParticleOptions> {

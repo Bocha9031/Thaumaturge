@@ -7,7 +7,6 @@ import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.util.RandomSource;
 
 public final class FlameFanParticle extends TTParticle {
-    private static final int FRAME_COUNT = 10;
     private static final int LIFETIME = 10;
     private static final float FRICTION = 0.75F;
 
@@ -32,7 +31,7 @@ public final class FlameFanParticle extends TTParticle {
 
     @Override
     protected void update() {
-        frame((int) (progress() * FRAME_COUNT));
+        frameByProgress();
     }
 
     public static final class Provider implements ParticleProvider<FlameFanParticleOptions> {

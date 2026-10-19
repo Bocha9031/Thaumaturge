@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.client.particle;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,8 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.leclowndu93150.thaumaturge.client.particle.support.BoltLineShape;
+import com.leclowndu93150.thaumaturge.content.particle.AirGustParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BoltParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.BoreSparkleParticleOptions;
+import com.leclowndu93150.thaumaturge.content.particle.FlameFanParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.InfusionCrumbsParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.StabilizerRuneParticleOptions;
 import com.leclowndu93150.thaumaturge.content.particle.VentParticleOptions;
@@ -483,6 +486,88 @@ final class ParticleBehaviorPortTest {
         assertEquals(60.0, doubleConstant(PechCurseParticle.class, "TILT_DEVIATION_DEGREES"));
     }
 
+    @Test
+    void blockMistUsesTheCurrentMainFadeAndMotionProfile() throws Exception {
+        assertEquals(50, intConstant(BlockMistParticle.class, "LIFETIME_BASE"));
+        assertEquals(25, intConstant(BlockMistParticle.class, "LIFETIME_RANGE"));
+        assertEquals(0.1F, floatConstant(BlockMistParticle.class, "GRAVITY"));
+        assertEquals(0.5F, floatConstant(BlockMistParticle.class, "PEAK_ALPHA"));
+        assertEquals(1.0F, floatConstant(BlockMistParticle.class, "SPIN_SPEED"));
+        assertEquals(1.0E-3, doubleConstant(BlockMistParticle.class, "WIND_SCALE"));
+
+        Field fadeCurve = BlockMistParticle.class.getDeclaredField("FADE_CURVE");
+        fadeCurve.setAccessible(true);
+        assertArrayEquals(
+                new float[] {0.0F, 0.5F, 0.4F, 0.3F, 0.2F, 0.1F, 0.0F}, (float[]) fadeCurve.get(null));
+    }
+
+    @Test
+    void airGustAndFlameFanAnimationsUseTheirSheetFrameCounts() throws Exception {
+        ClientLevel level = mock(ClientLevel.class);
+        RandomSource random = mock(RandomSource.class);
+        when(level.getRandom()).thenReturn(random);
+        when(random.nextInt(10)).thenReturn(0);
+        when(random.nextFloat()).thenReturn(0.0F);
+        when(random.nextGaussian()).thenReturn(0.0);
+        ParticleSheet sheet = mock(ParticleSheet.class);
+        when(sheet.frames()).thenReturn(7);
+
+        AirGustParticle airGust = construct(
+                AirGustParticle.class,
+                new Class<?>[] {
+                    ClientLevel.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    AirGustParticleOptions.class,
+                    ParticleSheet.class
+                },
+                level,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                new AirGustParticleOptions(1.0F),
+                sheet);
+        FlameFanParticle flameFan = construct(
+                FlameFanParticle.class,
+                new Class<?>[] {
+                    ClientLevel.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    double.class,
+                    FlameFanParticleOptions.class,
+                    ParticleSheet.class
+                },
+                level,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                new FlameFanParticleOptions(1.0F, 0.0F, 1.0F),
+                sheet);
+        setIntField(airGust, Particle.class, "age", 10);
+        setIntField(airGust, Particle.class, "lifetime", 20);
+        setIntField(flameFan, Particle.class, "age", 5);
+        setIntField(flameFan, Particle.class, "lifetime", 10);
+
+        invokeUpdate(airGust);
+        invokeUpdate(flameFan);
+
+        assertEquals(3, airGust.frame);
+        assertEquals(3, flameFan.frame);
+    }
+
     private static void invokeUpdate(Object particle) throws Exception {
         Method update = particle.getClass().getDeclaredMethod("update");
         update.setAccessible(true);
@@ -511,6 +596,12 @@ final class ParticleBehaviorPortTest {
         Field field = type.getDeclaredField(name);
         field.setAccessible(true);
         return field.getDouble(null);
+    }
+
+    private static void setIntField(Object target, Class<?> declaringType, String name, int value) throws Exception {
+        Field field = declaringType.getDeclaredField(name);
+        field.setAccessible(true);
+        field.setInt(target, value);
     }
 
     private static <T> T construct(Class<T> type, Class<?>[] parameterTypes, Object... arguments) throws Exception {
