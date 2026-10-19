@@ -53,6 +53,7 @@ final class InfusionStabilitySurveyPortTest {
         InfusionStabilitySurvey.Result result = InfusionStabilitySurvey.survey(level, matrix);
 
         assertEquals(-AltarStabiliser.STANDARD_PAIR_VALUE, result.stabilityReplenish(), 0.0001F);
+        assertTrue(result.problemBlocks().contains(near));
         verify(level, never()).getBlockState(mirror);
     }
 
@@ -94,6 +95,7 @@ final class InfusionStabilitySurveyPortTest {
         InfusionStabilitySurvey.Result result = InfusionStabilitySurvey.survey(level, matrix);
 
         assertEquals(-0.3F, result.stabilityReplenish(), 0.0001F);
+        assertTrue(result.problemBlocks().contains(west));
         verify(stabiliser).penalisesPairWith(level, west, east);
     }
 }

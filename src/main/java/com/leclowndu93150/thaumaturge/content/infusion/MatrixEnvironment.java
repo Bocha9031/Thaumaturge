@@ -9,7 +9,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.registries.datamaps.DataMapType;
 import org.jspecify.annotations.Nullable;
 
-public record MatrixEnvironment(List<BlockPos> pedestals, int cycleTime, float costMult, float stabilityReplenish) {
+public record MatrixEnvironment(
+        List<BlockPos> pedestals,
+        int cycleTime,
+        float costMult,
+        float stabilityReplenish,
+        List<BlockPos> problemBlocks) {
     private static final int SCAN_RADIUS = 8;
     private static final int SCAN_UP = 3;
     private static final int SCAN_DOWN = 7;
@@ -18,9 +23,18 @@ public record MatrixEnvironment(List<BlockPos> pedestals, int cycleTime, float c
     private static final int UPGRADE_DEPTH = 3;
     private static final int[][] CORNERS = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
 
+    public MatrixEnvironment {
+        pedestals = List.copyOf(pedestals);
+        problemBlocks = List.copyOf(problemBlocks);
+    }
+
+    public MatrixEnvironment(List<BlockPos> pedestals, int cycleTime, float costMult, float stabilityReplenish) {
+        this(pedestals, cycleTime, costMult, stabilityReplenish, List.of());
+    }
+
     public static MatrixEnvironment survey(Level level, BlockPos matrixPos) {
-        Totals totals =
-                new Totals(InfusionStabilitySurvey.survey(level, matrixPos).stabilityReplenish());
+        InfusionStabilitySurvey.Result stability = InfusionStabilitySurvey.survey(level, matrixPos);
+        Totals totals = new Totals(stability.stabilityReplenish());
         List<BlockPos> pedestals = new ArrayList<>();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         for (int xx = -SCAN_RADIUS; xx <= SCAN_RADIUS; xx++) {
@@ -48,7 +62,11 @@ public record MatrixEnvironment(List<BlockPos> pedestals, int cycleTime, float c
                     InfusionDataMaps.MATRIX_UPGRADE));
         }
         return new MatrixEnvironment(
-                List.copyOf(pedestals), totals.cycleTime, totals.costMult, totals.stabilityReplenish);
+                pedestals,
+                totals.cycleTime,
+                totals.costMult,
+                totals.stabilityReplenish,
+                stability.problemBlocks());
     }
 
     private static @Nullable InfusionModifier modifier(BlockState state, DataMapType<Block, InfusionModifier> map) {

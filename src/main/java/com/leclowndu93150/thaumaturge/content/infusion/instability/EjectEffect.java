@@ -2,21 +2,27 @@ package com.leclowndu93150.thaumaturge.content.infusion.instability;
 
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.content.device.BlockEntityStabilizer;
+import com.leclowndu93150.thaumaturge.content.effect.EffectDispatch;
+import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.infusion.BlockEntityPedestal;
+import com.leclowndu93150.thaumaturge.content.particle.ShieldSparkParticleOptions;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
 import com.leclowndu93150.thaumaturge.registry.TTInstabilityEffects;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.RandomSource;
 import net.minecraft.util.valueproviders.IntProvider;
 import net.minecraft.util.valueproviders.UniformInt;
-import net.minecraft.world.Containers;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -28,8 +34,20 @@ public record EjectEffect(
         IntProvider pollution,
         float explosionPower,
         Optional<Float> consumeAtOrBelow) implements InstabilityEffect {
-    private static final int PEDESTAL_TRIES = 25;
+    private static final double PEDESTAL_TOP = 1.0;
     private static final float FLUX_SOUND_VOLUME = 0.3F;
+    private static final float PUFF_RED = 0.3F;
+    private static final float PUFF_GREEN = 0.0F;
+    private static final float PUFF_BLUE = 0.35F;
+    private static final int WARD_FLASH_COUNT = 6;
+    private static final double WARD_FLASH_SPREAD = 0.35;
+    private static final double WARD_FLASH_LIFT = 0.6;
+    private static final int WARD_FLASH_COLOR = ARGB32.colorFromFloat(1.0F, 0.7F, 0.6F, 1.0F);
+    private static final float WARD_FLASH_ALPHA = 0.8F;
+    private static final float WARD_FLASH_SCALE = 0.5F;
+    private static final int WARD_FLASH_AGE = 10;
+    private static final int WARD_FLASH_DELAY = 0;
+    private static final int WARD_ARC_COLOR = 0x6A7CFF;
     public static final IntProvider DEFAULT_MITIGATION = UniformInt.of(5, 10);
     public static final IntProvider DEFAULT_POLLUTION = UniformInt.of(5, 9);
     public static final float DEFAULT_EXPLOSION_POWER = 1.0F;
@@ -77,33 +95,66 @@ public record EjectEffect(
     public void apply(InstabilityContext context) {
         ServerLevel level = context.level();
         RandomSource random = context.random();
-        for (int tries = 0; tries < PEDESTAL_TRIES && !context.pedestals().isEmpty(); tries++) {
-            BlockPos pedestalPos =
-                    context.pedestals().get(random.nextInt(context.pedestals().size()));
-            if (!(level.getBlockEntity(pedestalPos) instanceof BlockEntityPedestal pedestal)
-                    || pedestal.getItem().isEmpty()) {
-                continue;
+        List<BlockEntityPedestal> stocked = new ArrayList<>();
+        for (BlockPos pos : context.pedestals()) {
+            if (level.hasChunkAt(pos)
+                    && level.getBlockEntity(pos) instanceof BlockEntityPedestal pedestal
+                    && !pedestal.getItem().isEmpty()) {
+                stocked.add(pedestal);
             }
-            BlockPos mitigatorPos = pedestal.findInstabilityMitigator();
-            if (mitigatorPos != null
-                    && level.getBlockEntity(mitigatorPos) instanceof BlockEntityStabilizer stabilizer
-                    && stabilizer.spendForShield(mitigation.sample(random))) {
-                return;
-            }
-            if (!consumesAt(context.stability())) {
-                Containers.dropItemStack(
-                        level,
-                        pedestalPos.getX() + 0.5,
-                        pedestalPos.getY() + 1.0,
-                        pedestalPos.getZ() + 0.5,
-                        pedestal.getItem());
-            }
-            pedestal.setItem(ItemStack.EMPTY);
-            aftermath(level, pedestalPos, random);
-            context.arcTo(Vec3.atCenterOf(pedestalPos.above()));
-            context.zapSound();
+        }
+        if (stocked.isEmpty()) {
             return;
         }
+
+        BlockEntityPedestal pedestal = stocked.get(random.nextInt(stocked.size()));
+        BlockPos target = pedestal.getBlockPos();
+        BlockPos stabilizerPos = pedestal.findInstabilityMitigator();
+        if (stabilizerPos != null
+                && level.hasChunkAt(stabilizerPos)
+                && level.getBlockEntity(stabilizerPos) instanceof BlockEntityStabilizer stabilizer
+                && stabilizer.spendForShield(mitigation.sample(random))) {
+            flashWard(context, target);
+            Vec3 top = topOf(target);
+            context.arcTo(top);
+            EffectDispatch.spawnArc(level, top, Vec3.atCenterOf(stabilizerPos), WARD_ARC_COLOR, 0.0F);
+            return;
+        }
+
+        if (!consumesAt(context.stability())) {
+            level.addFreshEntity(new ItemEntity(
+                    level,
+                    target.getX() + 0.5,
+                    target.getY() + 1.0,
+                    target.getZ() + 0.5,
+                    pedestal.getItem()));
+        }
+        pedestal.setItem(ItemStack.EMPTY);
+        aftermath(level, target, random);
+        Effects.bamf(level, topOf(target)).color(PUFF_RED, PUFF_GREEN, PUFF_BLUE).send();
+        context.arcTo(topOf(target));
+    }
+
+    private static void flashWard(InstabilityContext context, BlockPos target) {
+        RandomSource random = context.random();
+        Vec3 top = topOf(target);
+        ShieldSparkParticleOptions flash = new ShieldSparkParticleOptions(
+                WARD_FLASH_COLOR,
+                WARD_FLASH_ALPHA,
+                WARD_FLASH_SCALE,
+                WARD_FLASH_AGE,
+                WARD_FLASH_DELAY,
+                true);
+        for (int i = 0; i < WARD_FLASH_COUNT; i++) {
+            double x = top.x + random.triangle(0.0, WARD_FLASH_SPREAD);
+            double y = top.y + random.nextDouble() * WARD_FLASH_LIFT;
+            double z = top.z + random.triangle(0.0, WARD_FLASH_SPREAD);
+            Effects.spawn(context.level(), flash, x, y, z);
+        }
+    }
+
+    private static Vec3 topOf(BlockPos target) {
+        return new Vec3(target.getX() + 0.5, target.getY() + PEDESTAL_TOP, target.getZ() + 0.5);
     }
 
     private void aftermath(ServerLevel level, BlockPos pedestalPos, RandomSource random) {
