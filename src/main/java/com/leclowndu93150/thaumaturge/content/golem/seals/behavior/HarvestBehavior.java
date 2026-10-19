@@ -222,8 +222,7 @@ public final class HarvestBehavior implements ISealBehavior {
         FakePlayer player = TTFakePlayer.GOLEM.at(level, golem.asEntity());
         try {
             player.setItemInHand(InteractionHand.MAIN_HAND, seed);
-            BlockHitResult hit = new BlockHitResult(
-                    Vec3.atCenterOf(ground), support.getOpposite(), ground, false);
+            BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(ground), support.getOpposite(), ground, false);
             return player.gameMode.useItemOn(player, level, seed, InteractionHand.MAIN_HAND, hit);
         } finally {
             player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);

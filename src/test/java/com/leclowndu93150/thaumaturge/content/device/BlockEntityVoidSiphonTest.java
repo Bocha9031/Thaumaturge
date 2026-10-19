@@ -23,9 +23,8 @@ class BlockEntityVoidSiphonTest {
     @Test
     void disabledSiphonProducesFromStoredProgressWithoutDrainingRifts() {
         ServerLevel level = mock(ServerLevel.class);
-        BlockState disabled = TTBlocks.VOID_SIPHON.get()
-                .defaultBlockState()
-                .setValue(BlockStateProperties.ENABLED, false);
+        BlockState disabled =
+                TTBlocks.VOID_SIPHON.get().defaultBlockState().setValue(BlockStateProperties.ENABLED, false);
         BlockEntityVoidSiphon siphon = new BlockEntityVoidSiphon(BlockPos.ZERO, disabled);
         CompoundTag saved = new CompoundTag();
         saved.putInt("progress", BlockEntityVoidSiphon.PROGRESS_REQUIRED);

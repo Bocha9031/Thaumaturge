@@ -28,10 +28,7 @@ final class ScatteredFlowersDecoratorTest {
     @Test
     void populatedColumnWinsOverCoordinateTieBreak() {
         ObjectArrayList<BlockPos> logs = new ObjectArrayList<>(new BlockPos[] {
-            new BlockPos(-8, 0, 0),
-            new BlockPos(3, 9, 0),
-            new BlockPos(3, 2, 0),
-            new BlockPos(3, 6, 0)
+            new BlockPos(-8, 0, 0), new BlockPos(3, 9, 0), new BlockPos(3, 2, 0), new BlockPos(3, 6, 0)
         });
 
         assertEquals(new BlockPos(3, 2, 0), ScatteredFlowersDecorator.findFoot(logs));

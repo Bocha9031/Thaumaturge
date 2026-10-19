@@ -168,8 +168,7 @@ class LampDeviceCutoffTest {
                     : Blocks.AIR.defaultBlockState();
         });
 
-        TTBlocks.LAMP_ARCANE.get()
-                .onRemove(state, level, BlockPos.ZERO, Blocks.AIR.defaultBlockState(), false);
+        TTBlocks.LAMP_ARCANE.get().onRemove(state, level, BlockPos.ZERO, Blocks.AIR.defaultBlockState(), false);
 
         assertTrue(visited.contains(glimmer));
         verify(level).setBlock(any(), eq(Blocks.AIR.defaultBlockState()), eq(Block.UPDATE_ALL));
