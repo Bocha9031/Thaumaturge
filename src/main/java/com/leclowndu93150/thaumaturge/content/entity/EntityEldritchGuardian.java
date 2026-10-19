@@ -112,13 +112,15 @@ public class EntityEldritchGuardian extends Monster implements RangedAttackMob {
                 && this.level().getDifficulty() != Difficulty.EASY) {
             double rangeSq = this.level().getDifficulty() == Difficulty.HARD ? FOG_RANGE_HARD_SQ : FOG_RANGE_SQ;
             for (Player player : this.level().players()) {
-                if (player.isAlive()
-                        && player instanceof ServerPlayer serverPlayer
-                        && player.distanceToSqr(this) < rangeSq) {
+                if (shouldReceiveFog(player, this, rangeSq) && player instanceof ServerPlayer serverPlayer) {
                     PacketDistributor.sendToPlayer(serverPlayer, ClientboundWarpFXPayload.mistShort());
                 }
             }
         }
+    }
+
+    static boolean shouldReceiveFog(Player player, Entity guardian, double rangeSqr) {
+        return player.isAlive() && !player.isSpectator() && player.distanceToSqr(guardian) <= rangeSqr;
     }
 
     @Override
