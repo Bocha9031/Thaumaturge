@@ -11,7 +11,8 @@ import net.minecraft.world.level.Level;
 import org.junit.jupiter.api.Test;
 
 class TurretAmmoCompatibilityTest {
-    private final EntityTurretCrossbow turret = new EntityTurretCrossbow(TTEntities.TURRET_CROSSBOW.get(), mock(Level.class));
+    private final EntityTurretCrossbow turret =
+            new EntityTurretCrossbow(TTEntities.TURRET_CROSSBOW.get(), mock(Level.class));
 
     @Test
     void acceptsAllVanillaArrowVariants() {
