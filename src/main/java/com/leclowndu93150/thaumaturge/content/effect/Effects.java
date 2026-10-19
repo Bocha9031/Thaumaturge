@@ -26,6 +26,8 @@ import com.leclowndu93150.thaumaturge.registry.TTParticles;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.Direction.AxisDirection;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,6 +47,21 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class Effects {
     static final double DEFAULT_RADIUS = 64.0;
     private static final double BORE_DIG_RADIUS = 32.0;
+    private static final double SPARKLE_SHELL_GROWTH = 0.02;
+    private static final double SPARKLE_FACE_DENSITY = 24.0;
+    private static final int SPARKLE_FACE_MINIMUM = 3;
+    private static final double SPARKLE_FACE_SPREAD = 0.45;
+    private static final int SPARKLE_DELAY_JITTER = 6;
+    private static final double SPARKLE_RISE = 0.002;
+    private static final float SPARKLE_SCALE = 0.4F;
+    private static final float SPARKLE_DECAY = 0.99F;
+    private static final int SPARKLE_BASE_AGE = 15;
+    private static final float DUST_GOLD_RED = 0.86F;
+    private static final float DUST_GOLD_GREEN = 0.58F;
+    private static final float DUST_GOLD_BLUE = 0.12F;
+    private static final float DUST_CREAM_RED = 1.0F;
+    private static final float DUST_CREAM_GREEN = 0.96F;
+    private static final float DUST_CREAM_BLUE = 0.84F;
 
     private Effects() {}
 
@@ -1710,51 +1727,68 @@ public final class Effects {
 
         public void send() {
             RandomSource rand = level.getRandom();
-            AABB bs = level.getBlockState(pos).getShape(level, pos).bounds().inflate(0.1);
-            int num = (int) (((bs.getXsize() + bs.getYsize() + bs.getZsize()) / 3.0) * 20.0);
-            if (num < 1) num = 1;
+            VoxelShape shape = level.getBlockState(pos).getShape(level, pos);
+            AABB shell = (shape.isEmpty() ? Shapes.block().bounds() : shape.bounds())
+                    .move(pos)
+                    .inflate(SPARKLE_SHELL_GROWTH);
             Vec3 start = source != null ? source : new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
             for (Direction face : Direction.values()) {
-                BlockPos neighbor = pos.relative(face);
-                var neighborState = level.getBlockState(neighbor);
-                if (neighborState.isSolidRender(level, neighbor)
-                        && neighborState.isFaceSturdy(level, neighbor, face.getOpposite())) continue;
-                boolean rx = face.getStepX() == 0;
-                boolean ry = face.getStepY() == 0;
-                boolean rz = face.getStepZ() == 0;
-                double mx = 0.5 + face.getStepX() * 0.51;
-                double my = 0.5 + face.getStepY() * 0.51;
-                double mz = 0.5 + face.getStepZ() * 0.51;
-                for (int a = 0; a < num * 2; a++) {
-                    double x = mx;
-                    double y = my;
-                    double z = mz;
-                    if (rx) x = mx + rand.nextGaussian() * 0.6;
-                    if (ry) y = my + rand.nextGaussian() * 0.6;
-                    if (rz) z = mz + rand.nextGaussian() * 0.6;
-                    x = Mth.clamp(x, bs.minX, bs.maxX);
-                    y = Mth.clamp(y, bs.minY, bs.maxY);
-                    z = Mth.clamp(z, bs.minZ, bs.maxZ);
-                    float r = 1.0F;
-                    float g = (189 + rand.nextInt(67)) / 255.0F;
-                    float b = (64 + rand.nextInt(192)) / 255.0F;
-                    double wx = pos.getX() + x;
-                    double wy = pos.getY() + y;
-                    double wz = pos.getZ() + z;
-                    double dist = start.distanceTo(new Vec3(wx, wy, wz));
-                    int delay = rand.nextInt(5) + (int) (dist * 16.0);
-                    float sparkScale = 0.4F + (float) rand.nextGaussian() * 0.1F;
-                    simpleSparkle(level, new Vec3(wx, wy, wz))
-                            .motion(0.0, 0.0025, 0.0)
-                            .scale(sparkScale)
-                            .color(r, g, b)
+                if (!isFaceVisible(level, pos, face)) {
+                    continue;
+                }
+                Axis normal = face.getAxis();
+                double area = 1.0;
+                for (Axis axis : Axis.values()) {
+                    if (axis != normal) {
+                        area *= shell.max(axis) - shell.min(axis);
+                    }
+                }
+                int count = Math.max(SPARKLE_FACE_MINIMUM, (int) Math.round(area * SPARKLE_FACE_DENSITY));
+                for (int index = 0; index < count; index++) {
+                    Vec3 point = pointOnFace(shell, face, rand);
+                    int delay = (int) (point.distanceTo(start) * 16.0) + rand.nextInt(SPARKLE_DELAY_JITTER);
+                    float blend = rand.nextFloat();
+                    float green = Mth.lerp(blend, DUST_GOLD_GREEN, DUST_CREAM_GREEN);
+                    float blue = Mth.lerp(blend, DUST_GOLD_BLUE, DUST_CREAM_BLUE);
+                    simpleSparkle(level, point)
+                            .motion(0.0, SPARKLE_RISE, 0.0)
+                            .scale(SPARKLE_SCALE)
+                            .color(Mth.lerp(blend, DUST_GOLD_RED, DUST_CREAM_RED), green, blue)
                             .delay(delay)
-                            .decay(1.0F)
-                            .gravity(0.01F)
-                            .baseAge(16)
+                            .decay(SPARKLE_DECAY)
+                            .gravity(0.0F)
+                            .baseAge(SPARKLE_BASE_AGE)
                             .send();
                 }
             }
+        }
+
+        static boolean isFaceVisible(ServerLevel level, BlockPos pos, Direction face) {
+            BlockPos neighbour = pos.relative(face);
+            if (!level.isLoaded(neighbour)) {
+                return false;
+            }
+            var state = level.getBlockState(neighbour);
+            boolean sealed = state.isSolidRender(level, neighbour)
+                    && state.isFaceSturdy(level, neighbour, face.getOpposite());
+            return !sealed;
+        }
+
+        private static Vec3 pointOnFace(AABB shell, Direction face, RandomSource random) {
+            Axis normal = face.getAxis();
+            double[] coordinates = new double[3];
+            for (Axis axis : Axis.values()) {
+                double min = shell.min(axis);
+                double max = shell.max(axis);
+                if (axis == normal) {
+                    coordinates[axis.ordinal()] = face.getAxisDirection() == AxisDirection.POSITIVE ? max : min;
+                } else {
+                    double centre = (min + max) / 2.0;
+                    double spread = (max - min) * SPARKLE_FACE_SPREAD;
+                    coordinates[axis.ordinal()] = Mth.clamp(centre + random.nextGaussian() * spread, min, max);
+                }
+            }
+            return new Vec3(coordinates[Axis.X.ordinal()], coordinates[Axis.Y.ordinal()], coordinates[Axis.Z.ordinal()]);
         }
     }
 
