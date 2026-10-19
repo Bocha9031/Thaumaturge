@@ -17,16 +17,16 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 
 public final class HoverRingLayer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
 
-    private static final float RING_Y = 0.2F;
-    private static final float RING_Z = 0.55F;
-    private static final float OUTER_SIZE = 2.5F;
-    private static final float INNER_SIZE = 1.5F;
-    private static final float INNER_Z = 0.03F;
     private static final float HALF_TURN = 180.0F;
     private static final float HALF = 0.5F;
-    private static final int OUTER_COLOR = 0xFFFFFFFF;
-    private static final int INNER_COLOR = 0xFFFF7FFF;
     private static final float FRAME_HEIGHT = 1.0F / ParticleTextures.LIGHTNING_RING_FRAMES;
+    private static final float RING_Y = 0.29F;
+    private static final float RING_Z = 0.6F;
+    private static final float OUTER_SIZE = 0.78F;
+    private static final float INNER_SIZE = 0.52F;
+    private static final float INNER_Z = 0.045F;
+    private static final int OUTER_COLOR = 0xFFFFFFFF;
+    private static final int INNER_COLOR = 0xFFE888D8;
 
     public HoverRingLayer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
         super(parent);
