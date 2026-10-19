@@ -39,6 +39,7 @@ import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.builders.CubeDeformation;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.renderer.entity.ItemEntityRenderer;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -136,7 +137,7 @@ public final class TTEntityRenderers {
         event.registerEntityRenderer(TTEntities.BOTTLE_TAINT.get(), BottleTaintRenderer::new);
         event.registerEntityRenderer(TTEntities.SPECIAL_ITEM.get(), SpecialItemRenderer::new);
         event.registerEntityRenderer(TTEntities.FOLLOWING_ITEM.get(), ItemEntityRenderer::new);
-        event.registerEntityRenderer(TTEntities.ALUMENTUM.get(), EmptyEntityRenderer::new);
+        event.registerEntityRenderer(TTEntities.ALUMENTUM.get(), ThrownItemRenderer::new);
         event.registerEntityRenderer(TTEntities.THAUMATURGE_GOLEM.get(), GolemRenderer::new);
         event.registerEntityRenderer(TTEntities.GOLEM_DART.get(), GolemDartRenderer::new);
         event.registerEntityRenderer(TTEntities.PECH.get(), PechRenderer::new);

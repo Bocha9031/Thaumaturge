@@ -8,7 +8,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.leclowndu93150.thaumaturge.content.entity.AbstractTaintacle;
+import com.leclowndu93150.thaumaturge.content.entity.EntityTaintSeed;
+import com.leclowndu93150.thaumaturge.content.entity.EntityTaintSeedPrime;
+import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
 import com.leclowndu93150.thaumaturge.content.entity.boss.EntityCultistPortalGreater;
+import com.leclowndu93150.thaumaturge.content.entity.boss.hierophant.EntityHierophantCrescent;
+import com.leclowndu93150.thaumaturge.content.entity.boss.hierophant.EntityHierophantHammer;
+import com.leclowndu93150.thaumaturge.content.entity.boss.hierophant.EntityHierophantNova;
+import com.leclowndu93150.thaumaturge.content.entity.boss.hierophant.EntityHierophantSigil;
+import com.leclowndu93150.thaumaturge.content.spell.carrier.SpellCloud;
+import com.leclowndu93150.thaumaturge.content.spell.carrier.SpellProjectile;
 import java.util.Set;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -51,6 +60,41 @@ class ShowcaseEntitiesTest {
         EntityCultistPortalGreater portal = mock(EntityCultistPortalGreater.class);
 
         assertEquals(50, ShowcaseEntities.displayTickCount(portal));
+    }
+
+    @Test
+    void frozenLesserPortalKeepsItsGrowthAnimationAtTheDisplayPose() {
+        EntityCultistPortalLesser portal = mock(EntityCultistPortalLesser.class);
+        when(portal.getTags()).thenReturn(Set.of("thaumaturge_showcase"));
+        when(portal.getCustomName()).thenReturn(null);
+        EntityTickEvent.Pre event = new EntityTickEvent.Pre(portal);
+
+        ShowcaseEntities.onTick(event);
+
+        assertEquals(50, portal.activeCounter);
+        assertEquals(50, portal.tickCount);
+        assertTrue(event.isCanceled());
+    }
+
+    @Test
+    void taintSeedsAreRaisedToTheirDisplayHeights() {
+        assertEquals(1.0, ShowcaseEntities.displayYOffset(mock(EntityTaintSeed.class)));
+        assertEquals(3.0, ShowcaseEntities.displayYOffset(mock(EntityTaintSeedPrime.class)));
+    }
+
+    @Test
+    void hierophantSpellsUseVisibleShowcaseAges() {
+        assertEquals(4, ShowcaseEntities.displayAge(mock(EntityHierophantNova.class)));
+        assertEquals(5, ShowcaseEntities.displayAge(mock(EntityHierophantHammer.class)));
+        assertEquals(34, ShowcaseEntities.displayAge(mock(EntityHierophantSigil.class)));
+        assertEquals(2, ShowcaseEntities.displayAge(mock(EntityHierophantCrescent.class)));
+    }
+
+    @Test
+    void showcaseParticleCarriersTickOnlyOnClientForTheirVisibleEffects() {
+        assertTrue(ShowcaseEntities.hasShowcaseParticleAnimation(mock(SpellProjectile.class)));
+        assertTrue(ShowcaseEntities.hasShowcaseParticleAnimation(mock(SpellCloud.class)));
+        assertFalse(ShowcaseEntities.hasShowcaseParticleAnimation(mock(Entity.class)));
     }
 
     @Test

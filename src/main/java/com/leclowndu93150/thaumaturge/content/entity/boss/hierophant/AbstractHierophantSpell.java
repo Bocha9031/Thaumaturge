@@ -74,6 +74,10 @@ public abstract class AbstractHierophantSpell extends Entity {
         return Math.max(0, level().getGameTime() - entityData.get(START) + partialTick);
     }
 
+    public final void setShowcaseAge(int age) {
+        entityData.set(START, level().getGameTime() - age);
+    }
+
     public final float casterYaw() {
         return entityData.get(CASTER_YAW);
     }
