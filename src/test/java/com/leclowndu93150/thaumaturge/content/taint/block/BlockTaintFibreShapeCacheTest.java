@@ -14,9 +14,8 @@ class BlockTaintFibreShapeCacheTest {
     @Test
     void outlineShapeIsReusedForRepeatedStateQueries() {
         BlockTaintFibre fibre = TTBlocks.TAINT_FIBRE.get();
-        BlockState state = fibre.defaultBlockState()
-                .setValue(BlockTaintFibre.NORTH, true)
-                .setValue(BlockTaintFibre.GROWTH3, true);
+        BlockState state =
+                fibre.defaultBlockState().setValue(BlockTaintFibre.NORTH, true).setValue(BlockTaintFibre.GROWTH3, true);
 
         VoxelShape first = fibre.getShape(state, null, BlockPos.ZERO, CollisionContext.empty());
         VoxelShape second = fibre.getShape(state, null, BlockPos.ZERO, CollisionContext.empty());
