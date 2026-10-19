@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 public final class CultistPortalGreaterRenderer extends EntityRenderer<EntityCultistPortalGreater> {
     private static final float PORTAL_HEIGHT = 3.2F;
     private static final float PORTAL_WIDTH = 2.6F;
-    private static final float SHADOW = 0.1F;
+    private static final float SHADOW = 0.15F;
 
     public CultistPortalGreaterRenderer(EntityRendererProvider.Context context) {
         super(context);
