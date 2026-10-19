@@ -203,13 +203,15 @@ public class EntityThaumaturgeBoss extends Monster {
         if (ShowcaseEntities.isDisplay(this)) {
             return false;
         }
-        if (source.getEntity() instanceof LivingEntity attacker) {
-            this.aggro.merge(attacker.getId(), (int) damage, Integer::sum);
-        }
+        float aggroDamage = damage;
         if (usesLegacyEnrage()) {
             damage = this.rage.absorb(source, damage);
         }
-        return super.hurt(source, damage);
+        boolean hurt = super.hurt(source, damage);
+        if (hurt && source.getEntity() instanceof LivingEntity attacker && attacker != this) {
+            this.aggro.merge(attacker.getId(), (int) aggroDamage, Integer::sum);
+        }
+        return hurt;
     }
 
     @Override
