@@ -1,125 +1,82 @@
 package com.leclowndu93150.thaumaturge.client.particle;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.particle.BreakingItemParticle;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
-import net.minecraft.client.particle.ParticleRenderType;
-import net.minecraft.client.particle.SingleQuadParticle;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.jspecify.annotations.Nullable;
+import net.minecraft.world.phys.Vec3;
 
-public final class TaintSplosionParticle extends SingleQuadParticle {
-    private static final float BOOM_MOTION_SCALE = 0.964F;
-    private static final float BOOM_LIFT = 0.1F;
-    private static final int BASE_LIFETIME = 66;
+public final class TaintSplosionParticle extends BreakingItemParticle {
+    private static final float FAINT_RED = 0.6F;
+    private static final float FAINT_GREEN = 0.0F;
+    private static final float FAINT_BLUE = 0.3F;
+    private static final float FAINT_ALPHA = 0.4F;
+    private static final float STRONG_RED = 0.3F;
+    private static final float STRONG_GREEN = 0.0F;
+    private static final float STRONG_BLUE = 0.3F;
+    private static final float STRONG_ALPHA = 0.6F;
+    private static final double SPEED_UNIT = 0.15;
+    private static final double SPEED_FACTOR = 0.964;
+    private static final double UP_KICK = 0.1;
+    private static final double MIN_DIRECTION = 1.0E-4;
+    private static final double LIFETIME_BASE = 66.0;
+    private static final double LIFETIME_MIN_FACTOR = 0.1;
+    private static final double LIFETIME_FACTOR_RANGE = 0.9;
 
-    private final TextureAtlasSprite sprite;
-    private final float uo;
-    private final float vo;
-    private final float baseAlpha;
+    private final float startAlpha;
 
-    private TaintSplosionParticle(
-            ClientLevel level,
-            double x,
-            double y,
-            double z,
-            double xd,
-            double yd,
-            double zd,
-            TextureAtlasSprite sprite) {
-        super(level, x, y, z, xd, yd, zd);
-        this.sprite = sprite;
-        this.uo = this.random.nextFloat() * 3.0F;
-        this.vo = this.random.nextFloat() * 3.0F;
-        this.gravity = 1.0F;
-        this.quadSize = (this.random.nextFloat() * 0.5F + 0.5F) * 0.5F;
+    private TaintSplosionParticle(ClientLevel level, double x, double y, double z, double dx, double dy, double dz) {
+        super(level, x, y, z, new ItemStack(Items.SLIME_BALL));
         if (this.random.nextBoolean()) {
-            this.rCol = 0.6F;
-            this.gCol = 0.0F;
-            this.bCol = 0.3F;
-            this.baseAlpha = 0.4F;
+            setColor(FAINT_RED, FAINT_GREEN, FAINT_BLUE);
+            this.startAlpha = FAINT_ALPHA;
         } else {
-            this.rCol = 0.3F;
-            this.gCol = 0.0F;
-            this.bCol = 0.3F;
-            this.baseAlpha = 0.6F;
+            setColor(STRONG_RED, STRONG_GREEN, STRONG_BLUE);
+            this.startAlpha = STRONG_ALPHA;
         }
-        this.alpha = this.baseAlpha;
-        this.xd = xd;
-        this.yd = yd;
-        this.zd = zd;
-        boom();
-        this.lifetime = (int) (BASE_LIFETIME / (this.random.nextFloat() * 0.9F + 0.1F));
+        this.alpha = this.startAlpha;
+        Vec3 launchVelocity = launchVelocity(dx, dy, dz, this.random.nextDouble(), this.random.nextDouble());
+        this.xd = launchVelocity.x;
+        this.yd = launchVelocity.y;
+        this.zd = launchVelocity.z;
+        this.lifetime = lifetime(this.random.nextDouble());
     }
 
-    private void boom() {
-        float strength = (this.random.nextFloat() + this.random.nextFloat() + 1.0F) * 0.15F;
-        float length = Mth.sqrt((float) (this.xd * this.xd + this.yd * this.yd + this.zd * this.zd));
-        if (length < 1.0E-4F) {
-            length = 1.0F;
-        }
-        this.xd = this.xd / length * strength * BOOM_MOTION_SCALE;
-        this.yd = this.yd / length * strength * BOOM_MOTION_SCALE + BOOM_LIFT;
-        this.zd = this.zd / length * strength * BOOM_MOTION_SCALE;
+    static Vec3 launchVelocity(double dx, double dy, double dz, double speedRollA, double speedRollB) {
+        double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        double ux = length < MIN_DIRECTION ? 0.0 : dx / length;
+        double uy = length < MIN_DIRECTION ? 0.0 : dy / length;
+        double uz = length < MIN_DIRECTION ? 0.0 : dz / length;
+        double speed = (speedRollA + speedRollB + 1.0) * SPEED_UNIT * SPEED_FACTOR;
+        return new Vec3(ux * speed, uy * speed + UP_KICK, uz * speed);
+    }
+
+    static int lifetime(double roll) {
+        return (int) (LIFETIME_BASE / (LIFETIME_MIN_FACTOR + roll * LIFETIME_FACTOR_RANGE));
     }
 
     @Override
     public void tick() {
         super.tick();
-        this.alpha = this.baseAlpha * (1.0F - (float) this.age / this.lifetime);
-    }
-
-    @Override
-    public ParticleRenderType getRenderType() {
-        return ParticleRenderType.TERRAIN_SHEET;
-    }
-
-    @Override
-    protected float getU0() {
-        return this.sprite.getU((this.uo + 1.0F) / 4.0F);
-    }
-
-    @Override
-    protected float getU1() {
-        return this.sprite.getU(this.uo / 4.0F);
-    }
-
-    @Override
-    protected float getV0() {
-        return this.sprite.getV(this.vo / 4.0F);
-    }
-
-    @Override
-    protected float getV1() {
-        return this.sprite.getV((this.vo + 1.0F) / 4.0F);
-    }
-
-    @Override
-    public float getQuadSize(float scaleFactor) {
-        return this.quadSize * 0.2F;
+        this.alpha = this.startAlpha * (1.0F - Mth.clamp((float) this.age / this.lifetime, 0.0F, 1.0F));
     }
 
     public static final class Provider implements ParticleProvider<SimpleParticleType> {
         @Override
-        public @Nullable Particle createParticle(
+        public Particle createParticle(
                 SimpleParticleType options,
                 ClientLevel level,
                 double x,
                 double y,
                 double z,
-                double xd,
-                double yd,
-                double zd) {
-            TextureAtlasSprite sprite = Minecraft.getInstance()
-                    .getItemRenderer()
-                    .getModel(new ItemStack(Items.SLIME_BALL), level, null, 0)
-                    .getParticleIcon();
-            return new TaintSplosionParticle(level, x, y, z, xd, yd, zd, sprite);
+                double vx,
+                double vy,
+                double vz) {
+            return new TaintSplosionParticle(level, x, y, z, vx, vy, vz);
         }
     }
 }

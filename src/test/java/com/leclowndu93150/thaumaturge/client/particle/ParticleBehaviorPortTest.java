@@ -269,6 +269,18 @@ final class ParticleBehaviorPortTest {
     }
 
     @Test
+    void taintSplosionUsesFiniteLaunchAndLifetimeAtRandomBounds() {
+        assertEquals(new Vec3(0.0, 0.1, 0.0), TaintSplosionParticle.launchVelocity(0.0, 0.0, 0.0, 0.0, 0.0));
+
+        Vec3 velocity = TaintSplosionParticle.launchVelocity(1.0, 0.0, 0.0, 0.5, 0.5);
+        assertEquals(0.2892, velocity.x, 1.0E-12);
+        assertEquals(0.1, velocity.y, 1.0E-12);
+        assertEquals(0.0, velocity.z, 1.0E-12);
+        assertEquals(660, TaintSplosionParticle.lifetime(0.0));
+        assertEquals(66, TaintSplosionParticle.lifetime(1.0));
+    }
+
+    @Test
     void boltInterpolatesWorldCoordinatesBeforeCameraOffsetAndFloatConversion() throws Exception {
         double originX = 16_777_216.0;
         double originY = 64.0;
