@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -146,34 +147,36 @@ public final class NodeGenerator {
             return false;
         }
         NodeType rolledType = requiredType == NodeType.HUNGRY ? NodeType.NORMAL : requiredType;
-        for (int attempt = 0; attempt < GUARANTEED_ROLLS; attempt++) {
-            NodeData data = rollRandomNodeData(
-                    level, pos, random, false, false, false, DEFAULT_SPECIAL_RARITY, DEFAULT_BASE_AURA, rolledType);
-            if (data == null) {
-                continue;
-            }
-            if (requiredType == NodeType.TAINTED && data.type() != NodeType.TAINTED) {
-                continue;
-            }
-            if (requiredType == NodeType.HUNGRY && data.type() != NodeType.NORMAL) {
-                continue;
-            }
-
-            AspectList aspects = data.aspects();
-            if (requiredType == NodeType.HUNGRY) {
-                HolderLookup.RegistryLookup<IAspect> aspectRegistry =
-                        level.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY);
-                aspects = addTypeFlavor(aspectRegistry, aspects, NodeType.HUNGRY, random);
-            }
-            if (!createNodeAt(level, pos, requiredType, data.modifier().orElse(null), aspects)) {
-                return false;
-            }
-            if (level.getBlockEntity(pos) instanceof BlockEntityNode node) {
-                node.markNaturalTaintBootstrap();
-            }
-            return true;
+        Optional<NodeData> selected = firstRollOfType(
+                () -> rollRandomNodeData(
+                        level, pos, random, false, false, false, DEFAULT_SPECIAL_RARITY, DEFAULT_BASE_AURA),
+                rolledType);
+        if (selected.isEmpty()) {
+            return false;
         }
-        return false;
+
+        NodeData data = selected.get();
+        AspectList aspects = data.aspects();
+        if (requiredType == NodeType.HUNGRY) {
+            aspects = addTypeFlavor(aspectRegistry(level), aspects, NodeType.HUNGRY, random);
+        }
+        if (!createNodeAt(level, pos, requiredType, data.modifier().orElse(null), aspects)) {
+            return false;
+        }
+        if (level.getBlockEntity(pos) instanceof BlockEntityNode node) {
+            node.markNaturalTaintBootstrap();
+        }
+        return true;
+    }
+
+    static Optional<NodeData> firstRollOfType(Supplier<@Nullable NodeData> roll, NodeType requiredType) {
+        for (int attempt = 0; attempt < GUARANTEED_ROLLS; attempt++) {
+            NodeData candidate = roll.get();
+            if (candidate != null && candidate.type() == requiredType) {
+                return Optional.of(candidate);
+            }
+        }
+        return Optional.empty();
     }
 
     static boolean isTaintedBiome(ServerLevelAccessor level, BlockPos pos) {
@@ -204,7 +207,7 @@ public final class NodeGenerator {
             @Nullable NodeType requiredType) {
         Holder<Biome> biome = level.getBiome(pos);
         BiomeAuraModifier auraModifier = biome.getData(TTDataMaps.BIOME_AURA_MODIFIER);
-        float biomeStrength = baseAura * (auraModifier == null ? 1.0F : auraModifier.value());
+        int biomeStrength = scaleBiomeStrength(baseAura, auraModifier == null ? 1.0F : auraModifier.value());
         HolderLookup.RegistryLookup<IAspect> aspectRegistry = aspectRegistry(level);
         Map<Boolean, List<Holder<IAspect>>> split = aspectRegistry
                 .listElements()
@@ -434,7 +437,7 @@ public final class NodeGenerator {
 
     private static void settleStrength(RollContext context, Draft draft) {
         RandomSource random = context.random();
-        int strength = Math.round(context.biomeStrength());
+        int strength = context.biomeStrength();
         if (draft.type != NodeType.PURE && context.biome().is(TTBiomeTags.IS_TAINTED)) {
             strength = boostTaintedStrength(strength);
             if (random.nextBoolean() && !ThaumaturgeCommonConfig.WUSS_MODE.get()) {
@@ -450,6 +453,10 @@ public final class NodeGenerator {
 
     static int boostTaintedStrength(int strength) {
         return Math.round(strength * TAINTED_STRENGTH_FACTOR);
+    }
+
+    static int scaleBiomeStrength(int baseAura, float modifier) {
+        return (int) (baseAura * modifier);
     }
 
     static int chooseStrengthBudget(int strength, RandomSource random) {
@@ -581,7 +588,7 @@ public final class NodeGenerator {
             BlockPos pos,
             RandomSource random,
             Holder<Biome> biome,
-            float biomeStrength,
+            int biomeStrength,
             AspectPools pools,
             boolean silverwood,
             boolean eerie,

@@ -18,6 +18,8 @@ import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -83,9 +85,33 @@ class NodeGeneratorPortTest {
     }
 
     @Test
+    void guaranteedNodeRollUsesTheFirstMatchingTypeAndStops() {
+        NodeData normal = new NodeData(NodeType.NORMAL, Optional.empty(), AspectList.EMPTY, AspectList.EMPTY);
+        NodeData tainted = new NodeData(NodeType.TAINTED, Optional.empty(), AspectList.EMPTY, AspectList.EMPTY);
+        AtomicInteger attempts = new AtomicInteger();
+
+        Optional<NodeData> selected = NodeGenerator.firstRollOfType(
+                () -> switch (attempts.getAndIncrement()) {
+                    case 0 -> null;
+                    case 1 -> normal;
+                    default -> tainted;
+                },
+                NodeType.TAINTED);
+
+        assertTrue(selected.isPresent());
+        assertEquals(NodeType.TAINTED, selected.get().type());
+        assertEquals(3, attempts.get());
+    }
+
+    @Test
     void taintedNodeStrengthRoundsBeforeApplyingTheSecondMultiplier() {
         assertEquals(152, NodeGenerator.boostTaintedStrength(101));
         assertEquals(228, NodeGenerator.boostTaintedStrength(NodeGenerator.boostTaintedStrength(101)));
+    }
+
+    @Test
+    void biomeAuraStrengthTruncatesBeforeApplyingTaintedMultipliers() {
+        assertEquals(75, NodeGenerator.scaleBiomeStrength(101, 0.75F));
     }
 
     @Test
@@ -191,7 +217,7 @@ class NodeGeneratorPortTest {
                 BlockPos.class,
                 RandomSource.class,
                 Holder.class,
-                float.class,
+                int.class,
                 poolsType,
                 boolean.class,
                 boolean.class,
@@ -203,7 +229,7 @@ class NodeGeneratorPortTest {
                 new BlockPos(15, 64, 15),
                 mock(RandomSource.class),
                 mock(Holder.class),
-                100.0F,
+                100,
                 pools,
                 false,
                 false,
