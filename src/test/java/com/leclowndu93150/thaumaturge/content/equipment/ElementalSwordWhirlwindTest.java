@@ -33,8 +33,8 @@ class ElementalSwordWhirlwindTest {
 
         TTItems.ELEMENTAL_SWORD.get().onUseTick(level, user, ItemStack.EMPTY, 71999);
 
-        verify(user).setDeltaMovement(eq(1.0), doubleThat(value -> Math.abs(value + 0.4) < 1.0E-9), eq(3.0));
-        assertEquals(10.0F, user.fallDistance, 1.0E-5F);
+        verify(user).setDeltaMovement(eq(1.0), doubleThat(value -> Math.abs(value + 0.38) < 1.0E-9), eq(3.0));
+        assertEquals(9.6F, user.fallDistance, 1.0E-5F);
     }
 
     @Test
@@ -45,7 +45,7 @@ class ElementalSwordWhirlwindTest {
 
         TTItems.ELEMENTAL_SWORD.get().onUseTick(level, user, ItemStack.EMPTY, 71999);
 
-        verify(user).setDeltaMovement(0.0, 0.2, 0.0);
+        verify(user).setDeltaMovement(0.0, 0.15, 0.0);
     }
 
     @Test
