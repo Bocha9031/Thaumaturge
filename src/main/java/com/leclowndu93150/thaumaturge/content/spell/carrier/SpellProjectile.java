@@ -15,6 +15,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,20 +34,22 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
     private static final String HOMING_KEY = "homing";
     private static final String BOUNCES_KEY = "bounces";
     private static final String PIERCE_KEY = "pierce";
-    private static final int LIFESPAN = 1200;
-    private static final double SPAWN_AHEAD = 0.6;
+    private static final int MAX_AGE = 1200;
+    private static final double LAUNCH_OFFSET = 0.6;
     private static final float NO_DIVERGENCE = 0.0F;
-    private static final int SEEK_INTERVAL = 5;
-    private static final double SEEK_RANGE = 16.0;
-    private static final double SEEK_CONE_COS = 0.5;
-    private static final double SEEK_STEER = 0.25;
+    private static final int HOMING_INTERVAL = 5;
+    private static final double HOMING_RANGE = 16.0;
+    private static final double HOMING_CONE_COS = 0.5;
+    private static final double MAX_TURN_PER_TICK = Math.toRadians(9.0);
+    private static final double QUARRY_AIM_HEIGHT = 0.75;
     private static final double PARALLEL_EPSILON = 1.0E-6;
-    private static final double BOUNCE_DAMPING = 0.8;
-    private static final double MIN_BOUNCE_SPEED = 0.15;
-    private static final float BOUNCE_VOLUME = 0.25F;
-    private static final float BOUNCE_PITCH = 1.5F;
-    private static final double TRAIL_JITTER = 0.02;
-    private static final double BOUNCE_LIFT = 0.05;
+    private static final double BOUNCE_SPEED_KEPT = 0.9;
+    private static final double BOUNCE_VERTICAL_KEPT = 0.85;
+    private static final double BOUNCE_CLEARANCE = 0.05;
+    private static final double BOUNCE_REST_SPEED = 0.05;
+    private static final float BOUNCE_VOLUME = 0.4F;
+    private static final float BOUNCE_PITCH = 1.3F;
+    private static final double TRAIL_SPREAD = 0.01;
 
     private final CarrierCharge charge = new CarrierCharge();
     private double gravity;
@@ -77,7 +80,7 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         projectile.bounces = Math.round(payload.continuation().state().get(SpellStats.BOUNCE));
         projectile.pierce = Math.round(payload.continuation().state().get(SpellStats.PIERCE));
         projectile.setOwner(owner);
-        Vec3 start = origin.position().add(origin.direction().scale(SPAWN_AHEAD));
+        Vec3 start = origin.position().add(origin.direction().scale(LAUNCH_OFFSET));
         projectile.setPos(start.x, start.y, start.z);
         projectile.shoot(origin.direction().x, origin.direction().y, origin.direction().z, speed, NO_DIVERGENCE);
         level.addFreshEntity(projectile);
@@ -131,18 +134,16 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
 
     @Override
     public void tick() {
-        if (level() instanceof ServerLevel
-                && (!(getOwner() instanceof LivingEntity) || tickCount > LIFESPAN || charge.isSpent())) {
-            discard();
-            return;
+        if (level() instanceof ServerLevel server) {
+            if (!(getOwner() instanceof LivingEntity owner) || tickCount > MAX_AGE || charge.isSpent()) {
+                discard();
+                return;
+            }
+            if (homing) {
+                steer(server, owner);
+            }
         }
         super.tick();
-        if (level() instanceof ServerLevel server
-                && homing
-                && !isRemoved()
-                && getOwner() instanceof LivingEntity owner) {
-            steer(server, owner);
-        }
         if (level().isClientSide()) {
             trail();
         }
@@ -200,11 +201,14 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         double rx = face.getAxis() == Direction.Axis.X ? -velocity.x : velocity.x;
         double ry = face.getAxis() == Direction.Axis.Y ? -velocity.y : velocity.y;
         double rz = face.getAxis() == Direction.Axis.Z ? -velocity.z : velocity.z;
-        Vec3 reflected = new Vec3(rx, ry, rz).scale(BOUNCE_DAMPING);
+        Vec3 reflected = new Vec3(rx, ry * BOUNCE_VERTICAL_KEPT, rz).scale(BOUNCE_SPEED_KEPT);
+        if (reflected.length() < BOUNCE_REST_SPEED) {
+            bounces = 0;
+            return false;
+        }
         bounces--;
         setDeltaMovement(reflected);
-        Vec3 clear = hit.getLocation()
-                .add(face.getStepX() * BOUNCE_LIFT, face.getStepY() * BOUNCE_LIFT, face.getStepZ() * BOUNCE_LIFT);
+        Vec3 clear = hit.getLocation().add(face.getStepX() * BOUNCE_CLEARANCE, face.getStepY() * BOUNCE_CLEARANCE, face.getStepZ() * BOUNCE_CLEARANCE);
         setPos(clear.x, clear.y, clear.z);
         if (!level().isClientSide()) {
             level().playSound(
@@ -212,13 +216,10 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
                             clear.x,
                             clear.y,
                             clear.z,
-                            SoundEvents.SLIME_BLOCK_HIT,
+                            SoundEvents.SLIME_JUMP_SMALL,
                             SoundSource.NEUTRAL,
                             BOUNCE_VOLUME,
                             BOUNCE_PITCH);
-        }
-        if (reflected.length() < MIN_BOUNCE_SPEED) {
-            bounces = 0;
         }
         return true;
     }
@@ -227,7 +228,7 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         if (quarry != null && !quarry.isAlive()) {
             quarry = null;
         }
-        if (tickCount % SEEK_INTERVAL == 0) {
+        if (tickCount % HOMING_INTERVAL == 0) {
             refreshQuarry(server, owner, getDeltaMovement());
         }
         if (quarry != null) {
@@ -237,16 +238,25 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
 
     private void bendToward(LivingEntity target, Vec3 velocity) {
         double speed = velocity.length();
-        Vec3 aim = target.getBoundingBox().getCenter().subtract(position());
+        Vec3 aim = new Vec3(target.getX(), target.getY() + target.getBbHeight() * QUARRY_AIM_HEIGHT, target.getZ())
+                .subtract(position());
         if (speed < PARALLEL_EPSILON || aim.lengthSqr() < PARALLEL_EPSILON) {
             return;
         }
-        Vec3 blended = velocity.scale(1.0 / speed).add(aim.normalize().scale(SEEK_STEER));
-        if (blended.lengthSqr() < PARALLEL_EPSILON) {
+        Vec3 heading = velocity.scale(1.0 / speed);
+        Vec3 wanted = aim.normalize();
+        double angle = Math.acos(Mth.clamp(heading.dot(wanted), -1.0, 1.0));
+        if (angle <= MAX_TURN_PER_TICK) {
+            setDeltaMovement(wanted.scale(speed));
             return;
         }
-        setDeltaMovement(blended.normalize().scale(speed));
-        hurtMarked = true;
+        Vec3 pivot = heading.cross(wanted);
+        if (pivot.lengthSqr() < PARALLEL_EPSILON) {
+            return;
+        }
+        Vec3 sideways = pivot.normalize().cross(heading);
+        Vec3 turned = heading.scale(Math.cos(MAX_TURN_PER_TICK)).add(sideways.scale(Math.sin(MAX_TURN_PER_TICK)));
+        setDeltaMovement(turned.normalize().scale(speed));
     }
 
     private void refreshQuarry(ServerLevel server, LivingEntity owner, Vec3 velocity) {
@@ -261,11 +271,11 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
     private Optional<LivingEntity> acquire(ServerLevel server, LivingEntity owner, Vec3 velocity) {
         Vec3 from = position();
         Vec3 axis = velocity.normalize();
-        return SpellTargeting.nearest(server, from, SEEK_RANGE, candidate -> {
+        return SpellTargeting.nearest(server, from, HOMING_RANGE, candidate -> {
             if (candidate == owner || SpellTargeting.isAlly(owner, candidate)) {
                 return false;
             }
-            return SpellTargeting.withinCone(from, axis, candidate, SEEK_RANGE, SEEK_CONE_COS)
+            return SpellTargeting.withinCone(from, axis, candidate, HOMING_RANGE, HOMING_CONE_COS)
                     && SpellTargeting.canSee(server, from, candidate, this);
         });
     }
@@ -273,9 +283,9 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
     private void trail() {
         Vec3 at = position();
         Vec3 jitter = new Vec3(
-                random.nextGaussian() * TRAIL_JITTER,
-                random.nextGaussian() * TRAIL_JITTER,
-                random.nextGaussian() * TRAIL_JITTER);
+                random.nextGaussian() * TRAIL_SPREAD,
+                random.nextGaussian() * TRAIL_SPREAD,
+                random.nextGaussian() * TRAIL_SPREAD);
         CarrierPayload.particle(level(), charge.look(), at, jitter);
     }
 }

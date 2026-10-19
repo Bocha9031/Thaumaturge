@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.spell.carrier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
@@ -39,10 +40,24 @@ class SpellProjectilePortTest {
 
         projectile.onHit(hit);
 
-        assertEquals(new Vec3(-0.8D, 1.6D, 2.4000000000000004D), projectile.getDeltaMovement());
+        assertEquals(new Vec3(-0.9D, 1.53D, 2.7D), projectile.getDeltaMovement());
         assertEquals(new Vec3(3.05D, 4.0D, 5.0D), projectile.position());
         assertEquals(1, getInt(projectile, "bounces"));
-        verify(level).playSound(null, 3.05D, 4.0D, 5.0D, SoundEvents.SLIME_BLOCK_HIT, SoundSource.NEUTRAL, 0.25F, 1.5F);
+        verify(level).playSound(null, 3.05D, 4.0D, 5.0D, SoundEvents.SLIME_JUMP_SMALL, SoundSource.NEUTRAL, 0.4F, 1.3F);
+    }
+
+    @Test
+    void tooSlowBounceIsSpentInsteadOfRepeatedForever() throws Exception {
+        ServerLevel level = mock(ServerLevel.class);
+        SpellProjectile projectile = new SpellProjectile(TTEntities.FOCUS_PROJECTILE.get(), level);
+        projectile.setDeltaMovement(new Vec3(0.01D, 0.0D, 0.0D));
+        setInt(projectile, "bounces", 2);
+        Method bounce = SpellProjectile.class.getDeclaredMethod("bounce", BlockHitResult.class);
+        bounce.setAccessible(true);
+
+        assertFalse((boolean) bounce.invoke(projectile, new BlockHitResult(Vec3.ZERO, Direction.EAST, BlockPos.ZERO, false)));
+        assertEquals(0, getInt(projectile, "bounces"));
+        assertEquals(Vec3.ZERO, projectile.position());
     }
 
     @Test
@@ -68,6 +83,8 @@ class SpellProjectilePortTest {
         when(replacement.isAlive()).thenReturn(true);
         when(blocked.getBoundingBox()).thenReturn(new AABB(0.0D, 0.0D, 0.0D, 1.0D, 1.0D, 1.0D));
         when(replacement.getBoundingBox()).thenReturn(new AABB(9.0D, 0.0D, -1.0D, 11.0D, 2.0D, 1.0D));
+        when(replacement.getX()).thenReturn(10.0D);
+        when(replacement.getBbHeight()).thenReturn(2.0F);
         projectile.setPos(0.0D, 0.0D, 0.0D);
         projectile.setDeltaMovement(new Vec3(0.0D, 0.0D, 2.0D));
         projectile.tickCount = 5;
