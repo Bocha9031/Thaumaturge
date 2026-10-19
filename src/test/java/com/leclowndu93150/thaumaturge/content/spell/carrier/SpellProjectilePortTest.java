@@ -55,7 +55,8 @@ class SpellProjectilePortTest {
         Method bounce = SpellProjectile.class.getDeclaredMethod("bounce", BlockHitResult.class);
         bounce.setAccessible(true);
 
-        assertFalse((boolean) bounce.invoke(projectile, new BlockHitResult(Vec3.ZERO, Direction.EAST, BlockPos.ZERO, false)));
+        assertFalse((boolean)
+                bounce.invoke(projectile, new BlockHitResult(Vec3.ZERO, Direction.EAST, BlockPos.ZERO, false)));
         assertEquals(0, getInt(projectile, "bounces"));
         assertEquals(Vec3.ZERO, projectile.position());
     }

@@ -208,7 +208,11 @@ public final class SpellProjectile extends ThrowableProjectile implements IEntit
         }
         bounces--;
         setDeltaMovement(reflected);
-        Vec3 clear = hit.getLocation().add(face.getStepX() * BOUNCE_CLEARANCE, face.getStepY() * BOUNCE_CLEARANCE, face.getStepZ() * BOUNCE_CLEARANCE);
+        Vec3 clear = hit.getLocation()
+                .add(
+                        face.getStepX() * BOUNCE_CLEARANCE,
+                        face.getStepY() * BOUNCE_CLEARANCE,
+                        face.getStepZ() * BOUNCE_CLEARANCE);
         setPos(clear.x, clear.y, clear.z);
         if (!level().isClientSide()) {
             level().playSound(

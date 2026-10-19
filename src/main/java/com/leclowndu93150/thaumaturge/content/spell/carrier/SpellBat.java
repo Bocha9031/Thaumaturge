@@ -14,8 +14,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.Difficulty;
 import net.minecraft.util.Mth;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AnimationState;
 import net.minecraft.world.entity.Entity;
@@ -207,14 +207,15 @@ public final class SpellBat extends Monster implements TraceableEntity, IEntityW
         Vec3 centre = getBoundingBox().getCenter();
         double spread = AURA_SPREAD + getBbWidth() * BODY_HALF;
         Vec3 at = centre.add(
-                random.nextGaussian() * spread,
-                random.nextGaussian() * spread,
-                random.nextGaussian() * spread);
+                random.nextGaussian() * spread, random.nextGaussian() * spread, random.nextGaussian() * spread);
         CarrierPayload.particle(level(), charge.look(), at, Vec3.ZERO);
     }
 
     private boolean shouldExpire() {
-        return level().getDifficulty() == Difficulty.PEACEFUL || tickCount > LIFESPAN || charge.isSpent() || getOwner() == null;
+        return level().getDifficulty() == Difficulty.PEACEFUL
+                || tickCount > LIFESPAN
+                || charge.isSpent()
+                || getOwner() == null;
     }
 
     @Override
@@ -236,7 +237,8 @@ public final class SpellBat extends Monster implements TraceableEntity, IEntityW
                             level,
                             position(),
                             TARGET_RANGE,
-                            candidate -> valid(candidate) && matchesAllyMode(allies, SpellTargeting.isAlly(master, candidate)))
+                            candidate -> valid(candidate)
+                                    && matchesAllyMode(allies, SpellTargeting.isAlly(master, candidate)))
                     .orElse(null);
         }
         if (prey == null) {
@@ -259,7 +261,8 @@ public final class SpellBat extends Monster implements TraceableEntity, IEntityW
     }
 
     private boolean overlapsHeight(LivingEntity target) {
-        return getBoundingBox().minY < target.getBoundingBox().maxY && target.getBoundingBox().minY < getBoundingBox().maxY;
+        return getBoundingBox().minY < target.getBoundingBox().maxY
+                && target.getBoundingBox().minY < getBoundingBox().maxY;
     }
 
     private boolean valid(LivingEntity candidate) {
@@ -282,7 +285,8 @@ public final class SpellBat extends Monster implements TraceableEntity, IEntityW
         Vec3 heading = aim.subtract(getBoundingBox().getCenter());
         charge.resume(level, List.of(SpellTarget.entity(target, heading)));
         float pitch = STRIKE_PITCH_BASE + random.nextFloat() * STRIKE_PITCH_RANGE;
-        level.playSound(null, getX(), getY(), getZ(), SoundEvents.BAT_AMBIENT, SoundSource.HOSTILE, STRIKE_VOLUME, pitch);
+        level.playSound(
+                null, getX(), getY(), getZ(), SoundEvents.BAT_AMBIENT, SoundSource.HOSTILE, STRIKE_VOLUME, pitch);
         float healthLeft = getHealth() - STRIKE_COST;
         if (healthLeft > 0.0F) {
             setHealth(healthLeft);
@@ -295,7 +299,9 @@ public final class SpellBat extends Monster implements TraceableEntity, IEntityW
         if (roost != null && (!level.isEmptyBlock(roost) || roost.getY() <= level.getMinBuildHeight())) {
             roost = null;
         }
-        if (roost == null || roost.closerToCenterThan(position(), ROOST_ARRIVAL) || random.nextInt(ROOST_REROLL_ODDS) == 0) {
+        if (roost == null
+                || roost.closerToCenterThan(position(), ROOST_ARRIVAL)
+                || random.nextInt(ROOST_REROLL_ODDS) == 0) {
             int dx = random.nextInt(ROOST_WIDTH) - ROOST_SPAN;
             int dy = random.nextInt(ROOST_HEIGHT) - ROOST_DEPTH_BELOW;
             int dz = random.nextInt(ROOST_WIDTH) - ROOST_SPAN;
