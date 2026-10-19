@@ -89,14 +89,7 @@ public final class FireBatAttackGoal extends Goal {
 
     private void detonate(ServerLevel world, LivingEntity target) {
         target.invulnerableTime = 0;
-        world.explode(
-                bat,
-                bat.getX(),
-                bat.getY(),
-                bat.getZ(),
-                EXPLOSION_POWER,
-                false,
-                Level.ExplosionInteraction.NONE);
+        world.explode(bat, bat.getX(), bat.getY(), bat.getZ(), EXPLOSION_POWER, false, Level.ExplosionInteraction.NONE);
         bat.discard();
     }
 }

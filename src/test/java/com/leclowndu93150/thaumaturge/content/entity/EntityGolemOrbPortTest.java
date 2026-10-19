@@ -49,16 +49,17 @@ final class EntityGolemOrbPortTest {
         assertEquals(1, orb.entityHitCallbacks);
         verify(target).hurt(eq(damageSource), eq(6.0F));
         verify(level).gameEvent(eq(GameEvent.PROJECTILE_LAND), eq(Vec3.ZERO), any(GameEvent.Context.class));
-        verify(level).sendParticles(
-                eq(new SparkParticleOptions(0xD8E4FF, 0.9F, 2.0F)),
-                eq(0.0D),
-                eq(0.0D),
-                eq(0.0D),
-                eq(8),
-                eq(0.15D),
-                eq(0.15D),
-                eq(0.15D),
-                eq(0.02D));
+        verify(level)
+                .sendParticles(
+                        eq(new SparkParticleOptions(0xD8E4FF, 0.9F, 2.0F)),
+                        eq(0.0D),
+                        eq(0.0D),
+                        eq(0.0D),
+                        eq(8),
+                        eq(0.15D),
+                        eq(0.15D),
+                        eq(0.15D),
+                        eq(0.02D));
     }
 
     @Test

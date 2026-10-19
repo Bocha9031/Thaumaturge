@@ -41,8 +41,13 @@ public final class ThaumicSlimeSpitGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        Player nearest = slime.level().getNearestPlayer(
-                slime.getX(), slime.getY(), slime.getZ(), DETECTION_RANGE, EntitySelector.NO_CREATIVE_OR_SPECTATOR);
+        Player nearest = slime.level()
+                .getNearestPlayer(
+                        slime.getX(),
+                        slime.getY(),
+                        slime.getZ(),
+                        DETECTION_RANGE,
+                        EntitySelector.NO_CREATIVE_OR_SPECTATOR);
         int now = slime.tickCount;
         if (nearest == null) {
             lastCountedTick = NOT_COUNTING;
@@ -82,15 +87,22 @@ public final class ThaumicSlimeSpitGoal extends Goal {
         double distance = Math.sqrt(slime.distanceToSqr(target));
         Vec3 targetPosition = new Vec3(target.getX(), target.getY(), target.getZ());
         Vec3 aim = aimPoint(start, targetPosition, target.getBbHeight(), distance);
-        Vec3 heading = aim.subtract(start).normalize().add(
-                random.triangle(0.0, WOBBLE),
-                random.triangle(0.0, WOBBLE),
-                random.triangle(0.0, WOBBLE));
+        Vec3 heading = aim.subtract(start)
+                .normalize()
+                .add(random.triangle(0.0, WOBBLE), random.triangle(0.0, WOBBLE), random.triangle(0.0, WOBBLE));
         child.setDeltaMovement(heading.scale(THROW_SPEED));
         child.markLaunched();
         level.addFreshEntity(child);
         float pitch = GORE_PITCH_BASE + (random.nextFloat() - random.nextFloat()) * GORE_PITCH_SPREAD;
-        level.playSound(null, slime.getX(), slime.getY(), slime.getZ(), TTSounds.GORE.get(), SoundSource.HOSTILE, GORE_VOLUME, pitch);
+        level.playSound(
+                null,
+                slime.getX(),
+                slime.getY(),
+                slime.getZ(),
+                TTSounds.GORE.get(),
+                SoundSource.HOSTILE,
+                GORE_VOLUME,
+                pitch);
         slime.setSize(slime.getSize() - 1, false);
         cooldown = COOLDOWN;
     }
@@ -102,9 +114,6 @@ public final class ThaumicSlimeSpitGoal extends Goal {
     }
 
     static Vec3 aimPoint(Vec3 start, Vec3 target, double targetHeight, double distance) {
-        return new Vec3(
-                target.x,
-                target.y + targetHeight * AIM_HEIGHT_FRACTION + distance * ARC_PER_BLOCK,
-                target.z);
+        return new Vec3(target.x, target.y + targetHeight * AIM_HEIGHT_FRACTION + distance * ARC_PER_BLOCK, target.z);
     }
 }

@@ -85,11 +85,27 @@ public final class WispZapGoal extends Goal {
 
     private void zap(ServerLevel level, LivingEntity target) {
         RandomSource random = wisp.getRandom();
-        level.playSound(null, wisp.getX(), wisp.getY(), wisp.getZ(), TTSounds.ZAP.get(), SoundSource.HOSTILE, ZAP_VOLUME, ZAP_PITCH);
-        PacketDistributor.sendToPlayersNear(level, null, wisp.getX(), wisp.getY(), wisp.getZ(), ARC_VIEW_RANGE, new ClientboundWispZapPayload(wisp.getId(), target.getId()));
+        level.playSound(
+                null,
+                wisp.getX(),
+                wisp.getY(),
+                wisp.getZ(),
+                TTSounds.ZAP.get(),
+                SoundSource.HOSTILE,
+                ZAP_VOLUME,
+                ZAP_PITCH);
+        PacketDistributor.sendToPlayersNear(
+                level,
+                null,
+                wisp.getX(),
+                wisp.getY(),
+                wisp.getZ(),
+                ARC_VIEW_RANGE,
+                new ClientboundWispZapPayload(wisp.getId(), target.getId()));
         boolean still = isStill(target.getKnownMovement());
         if (random.nextFloat() < hitChance(still)) {
-            float damage = (float) wisp.getAttributeValue(Attributes.ATTACK_DAMAGE) + (still ? STILL_DAMAGE_BONUS : 0.0F);
+            float damage =
+                    (float) wisp.getAttributeValue(Attributes.ATTACK_DAMAGE) + (still ? STILL_DAMAGE_BONUS : 0.0F);
             target.hurt(wisp.damageSources().mobAttack(wisp), damage);
         }
         charge = -1 - random.nextInt(RECHARGE_SPREAD);
