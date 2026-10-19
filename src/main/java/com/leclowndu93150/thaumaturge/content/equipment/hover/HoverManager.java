@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.equipment.hover;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.items.IHoverGear;
 import com.leclowndu93150.thaumaturge.compat.curio.ThaumaturgeCuriosCompat;
+import com.leclowndu93150.thaumaturge.mixin.server.network.ServerGamePacketListenerImplAccessor;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.server.level.ServerPlayer;
@@ -66,24 +67,27 @@ public final class HoverManager {
         if (player.isCreative() || player.isSpectator()) {
             return;
         }
-        boolean hovering = isHovering(player);
-        if (hovering && expendCharge(player, stack, gear)) {
-            keepAloft(player);
-            player.resetFallDistance();
-            if (player.tickCount % HUM_INTERVAL_TICKS == 0) {
-                play(
-                        player,
-                        TTSounds.JACOBS.get(),
-                        HUM_VOLUME,
-                        1.0F + player.getRandom().nextFloat() * HUM_PITCH_SPREAD);
-            }
+        if (!isHovering(player)) {
+            player.fallDistance *= IDLE_FALL_DAMPING;
             return;
         }
-        if (hovering) {
+
+        player.resetFallDistance();
+        ((ServerGamePacketListenerImplAccessor) player.connection).setAboveGroundTickCount(0);
+        keepAloft(player);
+        burnFuel(player, stack, gear);
+        if (gear.getHoverFuel(stack) <= 0) {
             setHovering(player, false);
             playToggleSound(player, false);
+            return;
         }
-        player.fallDistance *= IDLE_FALL_DAMPING;
+        if (player.tickCount % HUM_INTERVAL_TICKS == 0) {
+            play(
+                    player,
+                    TTSounds.JACOBS.get(),
+                    HUM_VOLUME,
+                    1.0F + player.getRandom().nextFloat() * HUM_PITCH_SPREAD);
+        }
     }
 
     public static void setHovering(ServerPlayer player, boolean hovering) {
@@ -95,20 +99,20 @@ public final class HoverManager {
         }
     }
 
-    private static boolean expendCharge(ServerPlayer player, ItemStack stack, IHoverGear gear) {
-        int fuel = gear.getHoverFuel(stack);
-        if (fuel <= 0) {
-            return false;
+    private static void burnFuel(ServerPlayer player, ItemStack stack, IHoverGear gear) {
+        ChargeTick tick = advanceCharge(player.getData(TTAttachments.HOVER_CHARGE));
+        if (tick.consumeFuel()) {
+            gear.consumeHoverFuel(stack);
         }
-        int charge = player.getData(TTAttachments.HOVER_CHARGE);
-        if (charge < FUEL_INTERVAL_TICKS) {
-            player.setData(TTAttachments.HOVER_CHARGE, charge + 1);
-            return true;
-        }
-        player.setData(TTAttachments.HOVER_CHARGE, 0);
-        gear.consumeHoverFuel(stack);
-        return fuel > 1;
+        player.setData(TTAttachments.HOVER_CHARGE, tick.elapsedTicks());
     }
+
+    static ChargeTick advanceCharge(int elapsedTicks) {
+        int nextElapsed = elapsedTicks + 1;
+        return nextElapsed >= FUEL_INTERVAL_TICKS ? new ChargeTick(0, true) : new ChargeTick(nextElapsed, false);
+    }
+
+    record ChargeTick(int elapsedTicks, boolean consumeFuel) {}
 
     private static void keepAloft(ServerPlayer player) {
         AttributeInstance flight = player.getAttribute(NeoForgeMod.CREATIVE_FLIGHT);
