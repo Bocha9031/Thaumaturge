@@ -24,7 +24,7 @@ public final class TubeModels {
     private static final ResourceLocation TUBE_BUFFER_CORE = id("block/tube_buffer_core");
     private static final ResourceLocation TUBE_SIDE = id("block/tube_side");
     private static final ResourceLocation TUBE_SIDE_RESTRICT = id("block/tube_side_restrict");
-    private static final ResourceLocation TUBE_ONEWAY_INDICATOR = id("block/tube_oneway_indicator");
+    private static final ResourceLocation TUBE_ONEWAY_MARKER = id("block/tube_oneway_marker");
 
     public static void register(Consumer<BlockStateGenerator> blockStateOutput) {
         registerTube(blockStateOutput, TTBlocks.TUBE.get(), TUBE_CORE, TUBE_SIDE);
@@ -89,7 +89,7 @@ public final class TubeModels {
     }
 
     private static Variant indicatorVariant(Direction direction) {
-        Variant variant = Variant.variant().with(VariantProperties.MODEL, TUBE_ONEWAY_INDICATOR);
+        Variant variant = Variant.variant().with(VariantProperties.MODEL, TUBE_ONEWAY_MARKER);
         return switch (direction) {
             case NORTH -> variant;
             case SOUTH -> variant.with(VariantProperties.Y_ROT, VariantProperties.Rotation.R180);
