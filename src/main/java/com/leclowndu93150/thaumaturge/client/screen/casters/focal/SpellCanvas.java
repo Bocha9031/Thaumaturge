@@ -19,11 +19,11 @@ public final class SpellCanvas {
     private static final int DEFAULT_ZOOM = 2;
     private static final int PERCENT = 100;
     private static final int HIT_RADIUS = 12;
-    private static final int LINK_OFFSET_X = 6;
-    private static final int LINK_OFFSET_Y = 22;
+    private static final int LINK_OFFSET_X = 4;
+    private static final int LINK_OFFSET_Y = 20;
     private static final int SPLIT_LEFT_OFFSET = 4;
     private static final int SPLIT_RIGHT_OFFSET = 12;
-    private static final int SPLIT_OFFSET_Y = 36;
+    private static final int SPLIT_OFFSET_Y = LINK_OFFSET_Y + FocalSprites.SPLIT_H;
     private static final int MID_OFFSET = 12;
 
     private final DraftHost host;
@@ -134,13 +134,13 @@ public final class SpellCanvas {
     }
 
     private void links(GuiGraphics graphics, SpellTreeLayout.Placed node) {
-        int x = node.column() * FocalLayout.COLUMN_PITCH;
-        int y = node.row() * FocalLayout.ROW_PITCH;
         int tint = node.ghost() ? FocalColors.GHOST_ALPHA : FocalColors.WHITE;
+        int cx = node.column() * FocalLayout.COLUMN_PITCH;
+        int cy = node.row() * FocalLayout.ROW_PITCH;
         strip(
                 graphics,
-                x - LINK_OFFSET_X,
-                y - LINK_OFFSET_Y,
+                cx - LINK_OFFSET_X,
+                cy - LINK_OFFSET_Y,
                 FocalSprites.LINK_U,
                 FocalSprites.LINK_V,
                 FocalSprites.LINK_SIZE,
@@ -149,49 +149,52 @@ public final class SpellCanvas {
         if (!node.branched() || node.column() == node.parentColumn()) {
             return;
         }
-        int splitY = y - SPLIT_OFFSET_Y;
+        int parentX = node.parentColumn() * FocalLayout.COLUMN_PITCH;
+        int splitY = cy - SPLIT_OFFSET_Y;
         if (node.column() < node.parentColumn()) {
             strip(
                     graphics,
-                    x - SPLIT_LEFT_OFFSET,
+                    cx - SPLIT_LEFT_OFFSET,
                     splitY,
                     FocalSprites.SPLIT_LEFT_U,
                     FocalSprites.SPLIT_V,
                     FocalSprites.SPLIT_END_W,
                     FocalSprites.SPLIT_H,
                     tint);
-            for (int column = node.column() + 1; column < node.parentColumn(); column++) {
+            for (int x = cx + MID_OFFSET; x < parentX; x += FocalSprites.SPLIT_MID_W) {
                 strip(
                         graphics,
-                        column * FocalLayout.COLUMN_PITCH - MID_OFFSET,
+                        x,
                         splitY,
                         FocalSprites.SPLIT_MID_U,
                         FocalSprites.SPLIT_V,
-                        FocalSprites.SPLIT_MID_W,
+                        Math.min(FocalSprites.SPLIT_MID_W, parentX - x),
                         FocalSprites.SPLIT_H,
                         tint);
             }
-        } else {
+            return;
+        }
+        strip(
+                graphics,
+                cx - SPLIT_RIGHT_OFFSET,
+                splitY,
+                FocalSprites.SPLIT_RIGHT_U,
+                FocalSprites.SPLIT_V,
+                FocalSprites.SPLIT_END_W,
+                FocalSprites.SPLIT_H,
+                tint);
+        for (int end = cx - MID_OFFSET; end > parentX; end -= FocalSprites.SPLIT_MID_W) {
+            int start = Math.max(parentX, end - FocalSprites.SPLIT_MID_W);
+            int width = end - start;
             strip(
                     graphics,
-                    x - SPLIT_RIGHT_OFFSET,
+                    start,
                     splitY,
-                    FocalSprites.SPLIT_RIGHT_U,
+                    FocalSprites.SPLIT_MID_U + FocalSprites.SPLIT_MID_W - width,
                     FocalSprites.SPLIT_V,
-                    FocalSprites.SPLIT_END_W,
+                    width,
                     FocalSprites.SPLIT_H,
                     tint);
-            for (int column = node.parentColumn() + 1; column < node.column(); column++) {
-                strip(
-                        graphics,
-                        column * FocalLayout.COLUMN_PITCH - MID_OFFSET,
-                        splitY,
-                        FocalSprites.SPLIT_MID_U,
-                        FocalSprites.SPLIT_V,
-                        FocalSprites.SPLIT_MID_W,
-                        FocalSprites.SPLIT_H,
-                        tint);
-            }
         }
     }
 

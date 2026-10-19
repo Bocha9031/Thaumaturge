@@ -29,6 +29,8 @@ public final class TTScreenTextures {
 
     public static final ResourceLocation HUD_HOVER_SPARK = gui("hud_hover_spark.png");
     public static final ResourceLocation THAUMOSTATIC_HARNESS = gui("gui_thaumostatic_harness.png");
+    public static final ResourceLocation FOCAL_STRIP = gui("gui_wandtable.png");
+    public static final ResourceLocation FOCAL_CABINET = gui("gui_wandtable3.png");
     public static final ResourceLocation HUD = gui("hud.png");
 
     private TTScreenTextures() {}

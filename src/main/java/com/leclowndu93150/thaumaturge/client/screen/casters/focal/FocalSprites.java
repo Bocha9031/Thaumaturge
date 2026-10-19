@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.client.screen.casters.focal;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.spell.part.SpellPartKind;
+import com.leclowndu93150.thaumaturge.client.screen.TTScreenTextures;
 import net.minecraft.resources.ResourceLocation;
 
 public final class FocalSprites {
@@ -30,8 +31,8 @@ public final class FocalSprites {
     public static final ResourceLocation GLYPH_MINUS = sprite("glyph_minus");
     public static final ResourceLocation GLYPH_PLUS = sprite("glyph_plus");
 
-    public static final ResourceLocation CABINET = TTIds.rl("textures/gui/gui_wandtable3.png");
-    public static final ResourceLocation STRIP = TTIds.rl("textures/gui/gui_wandtable.png");
+    public static final ResourceLocation CABINET = TTScreenTextures.FOCAL_CABINET;
+    public static final ResourceLocation STRIP = TTScreenTextures.FOCAL_STRIP;
     public static final ResourceLocation COMPLEXITY = TTIds.rl("textures/gui/complex.png");
     public static final ResourceLocation CRYSTAL = TTIds.rl("textures/item/essentia_crystal.png");
     public static final ResourceLocation XP_ORB =
@@ -52,19 +53,19 @@ public final class FocalSprites {
     public static final int GLYPH_CHECK_SIZE = 10;
     public static final int GLYPH_SIZE = 8;
 
-    public static final int CABINET_W = 70;
-    public static final int CABINET_H = 237;
-    public static final int STRIP_TEXTURE = 256;
-    public static final int LINK_U = 54;
-    public static final int LINK_V = 232;
-    public static final int LINK_SIZE = 12;
+    public static final int CABINET_W = 68;
+    public static final int CABINET_H = 238;
+    public static final int STRIP_TEXTURE = TTScreenTextures.TEX_SIZE;
+    public static final int LINK_U = 56;
+    public static final int LINK_V = 234;
+    public static final int LINK_SIZE = 8;
     public static final int SPLIT_LEFT_U = 8;
     public static final int SPLIT_RIGHT_U = 24;
     public static final int SPLIT_MID_U = 72;
-    public static final int SPLIT_V = 240;
+    public static final int SPLIT_V = 242;
     public static final int SPLIT_END_W = 16;
     public static final int SPLIT_MID_W = 24;
-    public static final int SPLIT_H = 16;
+    public static final int SPLIT_H = 14;
     public static final int COMPLEXITY_TEXTURE = 16;
     public static final int CRYSTAL_TEXTURE = 16;
     public static final int XP_ORB_TEXTURE = 16;
