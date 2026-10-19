@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 public final class BlockEntityLampFertility extends BlockEntity implements EssentiaIntakeHost {
     private static final int INTAKE_SUCTION = 128;
+    private static final int SUCTION_PER_CHARGE = 10;
     private static final int INTAKE_INTERVAL = 5;
     private static final int MAX_CHARGES = 10;
     private static final int MIN_RUNNING_CHARGES = 2;
@@ -112,6 +113,11 @@ public final class BlockEntityLampFertility extends BlockEntity implements Essen
     @Override
     public boolean wantsEssentia() {
         return charges < MAX_CHARGES;
+    }
+
+    @Override
+    public int intakeSuction(int baseSuction) {
+        return baseSuction - SUCTION_PER_CHARGE * charges;
     }
 
     @Override

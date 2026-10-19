@@ -62,12 +62,12 @@ public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, BlockEntityVoidSiphon siphon) {
         siphon.counter++;
-        if (!state.getValue(BlockStateProperties.ENABLED)
-                || siphon.counter % WORK_INTERVAL != 0
-                || siphon.progress >= PROGRESS_REQUIRED && !siphon.hasOutputRoom()) {
+        if (siphon.counter % WORK_INTERVAL != 0) {
             return;
         }
-        if (siphon.hasOutputRoom()) {
+        if (state.getValue(BlockStateProperties.ENABLED)
+                && siphon.progress < PROGRESS_REQUIRED
+                && siphon.hasOutputRoom()) {
             List<EntityFluxRift> drained = siphon.getValidRifts(level, pos);
             for (EntityFluxRift rift : drained) {
                 double d = Math.sqrt(rift.currentSize());
@@ -82,19 +82,23 @@ public final class BlockEntityVoidSiphon extends AbstractSyncedBlockEntity {
                 drained.forEach(rift -> showStreak(server, rift, top));
             }
         }
+        siphon.produce();
+    }
+
+    private void produce() {
         boolean changed = false;
-        while (siphon.progress >= PROGRESS_REQUIRED && siphon.hasOutputRoom()) {
-            siphon.progress -= PROGRESS_REQUIRED;
-            ItemStack current = siphon.output.getStackInSlot(0).copy();
+        while (progress >= PROGRESS_REQUIRED && hasOutputRoom()) {
+            progress -= PROGRESS_REQUIRED;
+            ItemStack current = output.getStackInSlot(0).copy();
             if (current.isEmpty()) {
-                siphon.output.setStackInSlot(0, new ItemStack(TTItems.VOID_SEED.get()).copyWithCount(1));
+                output.setStackInSlot(0, new ItemStack(TTItems.VOID_SEED.get()).copyWithCount(1));
             } else {
-                siphon.output.setStackInSlot(0, current.copyWithCount(current.getCount() + 1));
+                output.setStackInSlot(0, current.copyWithCount(current.getCount() + 1));
             }
             changed = true;
         }
         if (changed) {
-            siphon.setChanged();
+            setChanged();
         }
     }
 
