@@ -62,11 +62,7 @@ public record MatrixEnvironment(
                     InfusionDataMaps.MATRIX_UPGRADE));
         }
         return new MatrixEnvironment(
-                pedestals,
-                totals.cycleTime,
-                totals.costMult,
-                totals.stabilityReplenish,
-                stability.problemBlocks());
+                pedestals, totals.cycleTime, totals.costMult, totals.stabilityReplenish, stability.problemBlocks());
     }
 
     private static @Nullable InfusionModifier modifier(BlockState state, DataMapType<Block, InfusionModifier> map) {

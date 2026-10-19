@@ -105,7 +105,11 @@ final class CrucibleFx {
     }
 
     private static int randomColor(AspectList aspects, RandomSource random) {
-        return aspects.entries().get(random.nextInt(aspects.size())).aspect().value().color();
+        return aspects.entries()
+                .get(random.nextInt(aspects.size()))
+                .aspect()
+                .value()
+                .color();
     }
 
     private static float red(int color) {

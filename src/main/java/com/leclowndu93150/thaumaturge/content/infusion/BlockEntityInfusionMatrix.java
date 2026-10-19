@@ -211,7 +211,8 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
             return;
         }
         RandomSource random = level.getRandom();
-        BlockPos problem = env.problemBlocks().get(random.nextInt(env.problemBlocks().size()));
+        BlockPos problem =
+                env.problemBlocks().get(random.nextInt(env.problemBlocks().size()));
         double x = PROBLEM_SPARK_INSET + random.nextDouble() * PROBLEM_SPARK_SPAN;
         double y = PROBLEM_SPARK_INSET + random.nextDouble() * PROBLEM_SPARK_SPAN;
         double z = PROBLEM_SPARK_INSET + random.nextDouble() * PROBLEM_SPARK_SPAN;

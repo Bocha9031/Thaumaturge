@@ -8,7 +8,6 @@ import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.crucible.CrucibleEvent;
 import com.leclowndu93150.thaumaturge.content.aspect.ReadOnlyAspectContainer;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
-import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.entity.EntitySpecialItem;
 import com.leclowndu93150.thaumaturge.content.recipe.ThaumaturgeCraftingManager;
 import com.leclowndu93150.thaumaturge.content.recipe.crucible.CrucibleRecipe;
@@ -105,8 +104,7 @@ public class BlockEntityCrucible extends AbstractSyncedBlockEntity implements Re
             }
 
             ServerLevel serverLevel = (ServerLevel) level;
-            if (aspects.totalAmount() > MAX_ASPECT
-                    && serverLevel.getGameTime() % OVERFLOW_INTERVAL == 0L) {
+            if (aspects.totalAmount() > MAX_ASPECT && serverLevel.getGameTime() % OVERFLOW_INTERVAL == 0L) {
                 spillOverflow();
             }
 

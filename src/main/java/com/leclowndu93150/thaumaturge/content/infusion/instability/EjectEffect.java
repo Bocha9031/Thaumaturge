@@ -33,7 +33,8 @@ public record EjectEffect(
         IntProvider mitigation,
         IntProvider pollution,
         float explosionPower,
-        Optional<Float> consumeAtOrBelow) implements InstabilityEffect {
+        Optional<Float> consumeAtOrBelow)
+        implements InstabilityEffect {
     private static final double PEDESTAL_TOP = 1.0;
     private static final float FLUX_SOUND_VOLUME = 0.3F;
     private static final float PUFF_RED = 0.3F;
@@ -70,7 +71,11 @@ public record EjectEffect(
             .apply(instance, EjectEffect::new));
 
     public EjectEffect(
-            boolean consume, EjectAftermath aftermath, IntProvider mitigation, IntProvider pollution, float explosionPower) {
+            boolean consume,
+            EjectAftermath aftermath,
+            IntProvider mitigation,
+            IntProvider pollution,
+            float explosionPower) {
         this(consume, aftermath, mitigation, pollution, explosionPower, Optional.empty());
     }
 
@@ -123,15 +128,13 @@ public record EjectEffect(
 
         if (!consumesAt(context.stability())) {
             level.addFreshEntity(new ItemEntity(
-                    level,
-                    target.getX() + 0.5,
-                    target.getY() + 1.0,
-                    target.getZ() + 0.5,
-                    pedestal.getItem()));
+                    level, target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5, pedestal.getItem()));
         }
         pedestal.setItem(ItemStack.EMPTY);
         aftermath(level, target, random);
-        Effects.bamf(level, topOf(target)).color(PUFF_RED, PUFF_GREEN, PUFF_BLUE).send();
+        Effects.bamf(level, topOf(target))
+                .color(PUFF_RED, PUFF_GREEN, PUFF_BLUE)
+                .send();
         context.arcTo(topOf(target));
     }
 
@@ -139,12 +142,7 @@ public record EjectEffect(
         RandomSource random = context.random();
         Vec3 top = topOf(target);
         ShieldSparkParticleOptions flash = new ShieldSparkParticleOptions(
-                WARD_FLASH_COLOR,
-                WARD_FLASH_ALPHA,
-                WARD_FLASH_SCALE,
-                WARD_FLASH_AGE,
-                WARD_FLASH_DELAY,
-                true);
+                WARD_FLASH_COLOR, WARD_FLASH_ALPHA, WARD_FLASH_SCALE, WARD_FLASH_AGE, WARD_FLASH_DELAY, true);
         for (int i = 0; i < WARD_FLASH_COUNT; i++) {
             double x = top.x + random.triangle(0.0, WARD_FLASH_SPREAD);
             double y = top.y + random.nextDouble() * WARD_FLASH_LIFT;
