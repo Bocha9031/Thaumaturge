@@ -965,8 +965,8 @@ public final class TTRecipeProvider extends RecipeProvider {
                 .component(Ingredient.of(TTItemTags.NUGGETS_QUARTZ))
                 .component(Ingredient.of(TTItemTags.PLANKS_GREATWOOD))
                 .aspect(TTAspects.AER, 30)
-                .aspect(TTAspects.MOTUS, 30)
                 .aspect(TTAspects.AVERSIO, 30)
+                .aspect(TTAspects.MOTUS, 30)
                 .instability(1)
                 .gate(gate)
                 .unlockedBy("has", has(TTItems.THAUMIUM_SWORD))
@@ -995,8 +995,8 @@ public final class TTRecipeProvider extends RecipeProvider {
                 .component(crystal(TTAspects.PERDITIO))
                 .component(Ingredient.of(TTItemTags.NUGGETS_QUARTZ))
                 .component(Ingredient.of(TTItemTags.PLANKS_GREATWOOD))
-                .aspect(TTAspects.ORDO, 30)
                 .aspect(TTAspects.HERBA, 30)
+                .aspect(TTAspects.ORDO, 30)
                 .aspect(TTAspects.PERDITIO, 30)
                 .instability(1)
                 .gate(gate)
@@ -1115,39 +1115,40 @@ public final class TTRecipeProvider extends RecipeProvider {
     }
 
     private void buildInfusionEnchantmentRecipes() {
-        infusionEnchantment(InfusionEnchantment.BURROWING, Items.WOODEN_PICKAXE, Ingredient.of(Items.RABBIT_FOOT))
-                .aspect(TTAspects.SENSUS, 80)
+        infusionEnchantment(
+                        InfusionEnchantment.BURROWING, Items.STONE_AXE, Ingredient.of(Items.RABBIT_FOOT))
                 .aspect(TTAspects.TERRA, 150)
+                .aspect(TTAspects.SENSUS, 80)
                 .save(output);
-        infusionEnchantment(InfusionEnchantment.COLLECTOR, Items.STONE_AXE, Ingredient.of(Items.LEAD))
-                .aspect(TTAspects.DESIDERIUM, 80)
+        infusionEnchantment(InfusionEnchantment.COLLECTOR, Items.GOLDEN_AXE, Ingredient.of(Items.LEAD))
                 .aspect(TTAspects.AQUA, 100)
+                .aspect(TTAspects.DESIDERIUM, 80)
                 .save(output);
-        infusionEnchantment(InfusionEnchantment.DESTRUCTIVE, Items.STONE_PICKAXE, Ingredient.of(Items.TNT))
-                .aspect(TTAspects.AVERSIO, 200)
+        infusionEnchantment(InfusionEnchantment.DESTRUCTIVE, Items.IRON_SHOVEL, Ingredient.of(Items.TNT))
                 .aspect(TTAspects.PERDITIO, 250)
+                .aspect(TTAspects.AVERSIO, 200)
                 .save(output);
         infusionEnchantment(InfusionEnchantment.REFINING, Items.IRON_PICKAXE, Ingredient.of(TTItems.SALIS_MUNDUS.get()))
                 .aspect(TTAspects.ORDO, 80)
                 .aspect(TTAspects.PERMUTATIO, 60)
                 .save(output);
-        infusionEnchantment(InfusionEnchantment.SOUNDING, Items.GOLDEN_PICKAXE, Ingredient.of(Items.MAP))
-                .aspect(TTAspects.SENSUS, 40)
+        infusionEnchantment(InfusionEnchantment.SOUNDING, Items.STONE_PICKAXE, Ingredient.of(Items.MAP))
                 .aspect(TTAspects.IGNIS, 60)
+                .aspect(TTAspects.SENSUS, 40)
                 .save(output);
         infusionEnchantment(
                         InfusionEnchantment.ARCING,
-                        Items.WOODEN_SWORD,
+                        Items.IRON_SWORD,
                         Ingredient.of(Tags.Items.STORAGE_BLOCKS_REDSTONE))
-                .aspect(TTAspects.POTENTIA, 40)
                 .aspect(TTAspects.AER, 60)
+                .aspect(TTAspects.POTENTIA, 40)
                 .save(output);
         infusionEnchantment(
-                        InfusionEnchantment.ESSENCE, Items.STONE_SWORD, Ingredient.of(TTItems.ESSENTIA_CRYSTAL.get()))
-                .aspect(TTAspects.BESTIA, 40)
+                        InfusionEnchantment.ESSENCE, Items.GOLDEN_SWORD, Ingredient.of(TTItems.ESSENTIA_CRYSTAL.get()))
                 .aspect(TTAspects.VITIUM, 60)
+                .aspect(TTAspects.BESTIA, 40)
                 .save(output);
-        infusionEnchantment(InfusionEnchantment.LAMPLIGHT, Items.GOLDEN_PICKAXE, Ingredient.of(TTItemTags.NITORS))
+        infusionEnchantment(InfusionEnchantment.LAMPLIGHT, Items.WOODEN_PICKAXE, Ingredient.of(TTItemTags.NITORS))
                 .aspect(TTAspects.LUX, 80)
                 .aspect(TTAspects.AER, 20)
                 .save(output);
@@ -2300,7 +2301,7 @@ public final class TTRecipeProvider extends RecipeProvider {
                 gate("seal_collect"),
                 TTItems.SEAL_PICKUP_ADVANCED,
                 TTItems.SEAL_PICKUP,
-                builder -> builder.aspect(TTAspects.SENSUS, 10).aspect(TTAspects.COGNITIO, 10));
+                builder -> builder.aspect(TTAspects.COGNITIO, 10).aspect(TTAspects.SENSUS, 10));
         sealCrucible(
                 aspects,
                 gate("seal_store"),
@@ -2312,7 +2313,7 @@ public final class TTRecipeProvider extends RecipeProvider {
                 gate("seal_store"),
                 TTItems.SEAL_FILL_ADVANCED,
                 TTItems.SEAL_FILL,
-                builder -> builder.aspect(TTAspects.SENSUS, 10).aspect(TTAspects.COGNITIO, 10));
+                builder -> builder.aspect(TTAspects.COGNITIO, 10).aspect(TTAspects.SENSUS, 10));
         sealCrucible(
                 aspects,
                 gate("seal_empty"),
@@ -2324,13 +2325,13 @@ public final class TTRecipeProvider extends RecipeProvider {
                 gate("seal_empty"),
                 TTItems.SEAL_EMPTY_ADVANCED,
                 TTItems.SEAL_EMPTY,
-                builder -> builder.aspect(TTAspects.SENSUS, 10).aspect(TTAspects.COGNITIO, 10));
+                builder -> builder.aspect(TTAspects.COGNITIO, 10).aspect(TTAspects.SENSUS, 10));
         sealCrucible(
                 aspects,
                 gate("seal_provide"),
                 TTItems.SEAL_PROVIDER,
                 TTItems.SEAL_EMPTY_ADVANCED,
-                builder -> builder.aspect(TTAspects.PERMUTATIO, 10).aspect(TTAspects.DESIDERIUM, 10));
+                builder -> builder.aspect(TTAspects.DESIDERIUM, 10).aspect(TTAspects.PERMUTATIO, 10));
         sealCrucible(
                 aspects,
                 gate("seal_stock"),
@@ -2348,7 +2349,7 @@ public final class TTRecipeProvider extends RecipeProvider {
                 gate("seal_guard"),
                 TTItems.SEAL_GUARD_ADVANCED,
                 TTItems.SEAL_GUARD,
-                builder -> builder.aspect(TTAspects.SENSUS, 20).aspect(TTAspects.COGNITIO, 20));
+                builder -> builder.aspect(TTAspects.COGNITIO, 20).aspect(TTAspects.SENSUS, 20));
         sealCrucible(
                 aspects,
                 gate("seal_lumber"),
@@ -2360,16 +2361,16 @@ public final class TTRecipeProvider extends RecipeProvider {
                 gate("seal_use"),
                 TTItems.SEAL_USE,
                 TTItems.SEAL_BLANK,
-                builder -> builder.aspect(TTAspects.FABRICO, 20)
-                        .aspect(TTAspects.SENSUS, 10)
-                        .aspect(TTAspects.COGNITIO, 20));
+                builder -> builder.aspect(TTAspects.COGNITIO, 20)
+                        .aspect(TTAspects.FABRICO, 20)
+                        .aspect(TTAspects.SENSUS, 10));
         sealCrucible(
                 aspects,
                 gate("seal_break"),
                 TTItems.SEAL_BREAKER_ADVANCED,
                 TTItems.SEAL_BREAKER,
-                builder -> builder.aspect(TTAspects.SENSUS, 10)
-                        .aspect(TTAspects.COGNITIO, 10)
+                builder -> builder.aspect(TTAspects.COGNITIO, 10)
+                        .aspect(TTAspects.SENSUS, 10)
                         .aspect(TTAspects.INSTRUMENTUM, 20));
 
         new InfusionRecipeBuilder(
