@@ -21,10 +21,14 @@ public final class InstabilityEvents {
 
     private InstabilityEvents() {}
 
-    public static void trigger(ServerLevel level, BlockPos matrixPos, List<BlockPos> pedestals) {
+    public static void trigger(ServerLevel level, BlockPos matrixPos, List<BlockPos> pedestals, float stability) {
         grantInstabilityResearch(level, matrixPos);
         InstabilityOutcome.roll(level.registryAccess(), level.getRandom())
-                .ifPresent(outcome -> outcome.effect().apply(new InstabilityContext(level, matrixPos, pedestals)));
+                .ifPresent(outcome -> outcome.effect().apply(new InstabilityContext(level, matrixPos, pedestals, stability)));
+    }
+
+    public static void trigger(ServerLevel level, BlockPos matrixPos, List<BlockPos> pedestals) {
+        trigger(level, matrixPos, pedestals, 0.0F);
     }
 
     private static void grantInstabilityResearch(ServerLevel level, BlockPos matrixPos) {

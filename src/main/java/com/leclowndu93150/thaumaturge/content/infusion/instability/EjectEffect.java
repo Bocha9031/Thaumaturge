@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.registry.TTInstabilityEffects;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -21,8 +22,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 public record EjectEffect(
-        boolean consume, EjectAftermath aftermath, IntProvider mitigation, IntProvider pollution, float explosionPower)
-        implements InstabilityEffect {
+        boolean consume,
+        EjectAftermath aftermath,
+        IntProvider mitigation,
+        IntProvider pollution,
+        float explosionPower,
+        Optional<Float> consumeAtOrBelow) implements InstabilityEffect {
     private static final int PEDESTAL_TRIES = 25;
     private static final float FLUX_SOUND_VOLUME = 0.3F;
     public static final IntProvider DEFAULT_MITIGATION = UniformInt.of(5, 10);
@@ -42,11 +47,25 @@ public record EjectEffect(
                             .forGetter(EjectEffect::pollution),
                     Codec.FLOAT
                             .optionalFieldOf("explosion_power", DEFAULT_EXPLOSION_POWER)
-                            .forGetter(EjectEffect::explosionPower))
+                            .forGetter(EjectEffect::explosionPower),
+                    Codec.FLOAT.optionalFieldOf("consume_at_or_below").forGetter(EjectEffect::consumeAtOrBelow))
             .apply(instance, EjectEffect::new));
+
+    public EjectEffect(
+            boolean consume, EjectAftermath aftermath, IntProvider mitigation, IntProvider pollution, float explosionPower) {
+        this(consume, aftermath, mitigation, pollution, explosionPower, Optional.empty());
+    }
 
     public static EjectEffect of(boolean consume, EjectAftermath aftermath) {
         return new EjectEffect(consume, aftermath, DEFAULT_MITIGATION, DEFAULT_POLLUTION, DEFAULT_EXPLOSION_POWER);
+    }
+
+    public EjectEffect consumingAtOrBelow(float stability) {
+        return new EjectEffect(consume, aftermath, mitigation, pollution, explosionPower, Optional.of(stability));
+    }
+
+    boolean consumesAt(float stability) {
+        return consume || consumeAtOrBelow.map(limit -> stability <= limit).orElse(false);
     }
 
     @Override
@@ -71,7 +90,7 @@ public record EjectEffect(
                     && stabilizer.spendForShield(mitigation.sample(random))) {
                 return;
             }
-            if (!consume) {
+            if (!consumesAt(context.stability())) {
                 Containers.dropItemStack(
                         level,
                         pedestalPos.getX() + 0.5,

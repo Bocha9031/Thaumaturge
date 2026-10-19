@@ -275,7 +275,7 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
         stability = Mth.clamp(stability + env.stabilityReplenish(), STABILITY_FLOOR, STABILITY_CAP);
         boolean valid = catalystStillPresent(level);
         if (!valid || (stability < 0.0F && rand.nextInt(INSTABILITY_ROLL_BOUND) <= Math.abs(stability))) {
-            InstabilityEvents.trigger(level, worldPosition, env.pedestals());
+            InstabilityEvents.trigger(level, worldPosition, env.pedestals(), stability);
             stability += 5.0F + rand.nextFloat() * 5.0F;
             if (valid) {
                 syncToClient();
