@@ -3,67 +3,68 @@ package com.leclowndu93150.thaumaturge.content.recipe.dust;
 import com.leclowndu93150.thaumaturge.api.recipe.DustTrigger;
 import com.leclowndu93150.thaumaturge.api.recipe.DustTriggerPlacement;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
+import com.leclowndu93150.thaumaturge.content.particle.SparkleParticleOptions;
 import java.util.List;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.phys.Vec3;
-import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public final class DustTriggerFx {
-    public static final double SPARKLE_TICKS_PER_BLOCK = 16.0;
+    public static final double SPARKLE_TICKS_PER_BLOCK = Effects.SHELL_TICKS_PER_BLOCK;
 
-    private static final int BURST_COUNT = 50;
-    private static final float BURST_BASE_AGE = 16.0F;
+    private static final double HAND_HEIGHT = 0.25;
+    private static final double HAND_SIDE_OFFSET = 0.3;
+    private static final double HAND_LOOK_OFFSET = 0.3;
+
+    private static final int BURST_COUNT = 36;
+    private static final int BURST_FLOATY_ODDS = 3;
+    private static final double BURST_SCATTER = 0.025;
+    private static final double BURST_FLOATY_TOSS = 0.04;
+    private static final double BURST_ARC_TOSS = 0.12;
+    private static final float BURST_FLOATY_DECAY_MIN = 0.6F;
+    private static final float BURST_FLOATY_DECAY_SPAN = 0.2F;
+    private static final float BURST_ARC_DECAY = 0.88F;
+    private static final float BURST_FLOATY_GRAVITY = 0.12F;
+    private static final float BURST_ARC_GRAVITY = 0.45F;
+    private static final float BURST_SCALE = 0.5F;
+    private static final int BURST_BASE_AGE = 10;
+    private static final int BURST_DELAY_BOUND = 4;
 
     private DustTriggerFx() {}
 
     public static Vec3 posToHand(ServerPlayer player, InteractionHand hand) {
-        double px = player.getX();
-        double py = player.getBoundingBox().minY + player.getBbHeight() / 2.0F + 0.25;
-        double pz = player.getZ();
-        float m = hand == InteractionHand.MAIN_HAND ? 0.0F : 180.0F;
-        float yaw = player.getYRot();
-        px += -Mth.cos((yaw + m) / 180.0F * 3.141593F) * 0.3F;
-        pz += -Mth.sin((yaw + m) / 180.0F * 3.141593F) * 0.3F;
+        HumanoidArm arm = hand == InteractionHand.MAIN_HAND ? player.getMainArm() : player.getMainArm().getOpposite();
+        float bodyYaw = player.yBodyRot * Mth.DEG_TO_RAD;
+        double sideSign = arm == HumanoidArm.RIGHT ? 1.0 : -1.0;
+        double rightX = -Mth.cos(bodyYaw);
+        double rightZ = -Mth.sin(bodyYaw);
         Vec3 look = player.getLookAngle();
-        px += look.x * 0.3;
-        py += look.y * 0.3;
-        pz += look.z * 0.3;
-        return new Vec3(px, py, pz);
+        double x = player.getX() + rightX * HAND_SIDE_OFFSET * sideSign + look.x * HAND_LOOK_OFFSET;
+        double y = player.getY() + player.getBbHeight() / 2.0 + HAND_HEIGHT + look.y * HAND_LOOK_OFFSET;
+        double z = player.getZ() + rightZ * HAND_SIDE_OFFSET * sideSign + look.z * HAND_LOOK_OFFSET;
+        return new Vec3(x, y, z);
     }
 
     public static void emitUseBurst(ServerLevel level, ServerPlayer player, InteractionHand hand, BlockPos pos) {
         RandomSource rand = level.getRandom();
-        Vec3 v1 = posToHand(player, hand);
-        Vec3 v2 = Vec3.atCenterOf(pos).subtract(v1);
-        for (int a = 0; a < BURST_COUNT; a++) {
-            boolean floaty = a < BURST_COUNT / 3;
-            float r = 1.0F;
-            float g = (189 + rand.nextInt(67)) / 255.0F;
-            float b = (64 + rand.nextInt(192)) / 255.0F;
-            double vx = v2.x / 6.0 + rand.nextGaussian() * 0.05;
-            double vy = v2.y / 6.0 + rand.nextGaussian() * 0.05 + (floaty ? 0.05 : 0.15);
-            double vz = v2.z / 6.0 + rand.nextGaussian() * 0.05;
-            int delay = rand.nextInt(5);
-            float decay = floaty ? 0.3F + rand.nextFloat() * 0.5F : 0.85F;
-            float grav = floaty ? 0.2F : 0.5F;
-            Effects.simpleSparkle(level, v1)
-                    .motion(vx, vy, vz)
-                    .scale(0.5F)
-                    .color(r, g, b)
-                    .delay(delay)
-                    .decay(decay)
-                    .gravity(grav)
-                    .baseAge((int) BURST_BASE_AGE)
-                    .send();
+        Vec3 handPos = posToHand(player, hand);
+        Vec3 toBlock = Vec3.atCenterOf(pos).subtract(handPos);
+        for (int i = 0; i < BURST_COUNT; i++) {
+            boolean floaty = rand.nextInt(BURST_FLOATY_ODDS) == 0;
+            float decay = floaty ? BURST_FLOATY_DECAY_MIN + rand.nextFloat() * BURST_FLOATY_DECAY_SPAN : BURST_ARC_DECAY;
+            double toss = floaty ? BURST_FLOATY_TOSS : BURST_ARC_TOSS;
+            float gravity = floaty ? BURST_FLOATY_GRAVITY : BURST_ARC_GRAVITY;
+            Vec3 velocity = toBlock.scale(1.0 - decay)
+                    .add(rand.nextGaussian() * BURST_SCATTER, toss + rand.nextGaussian() * BURST_SCATTER, rand.nextGaussian() * BURST_SCATTER);
+            int delay = rand.nextInt(BURST_DELAY_BOUND);
+            SparkleParticleOptions options = new SparkleParticleOptions(Effects.dustSparkleColor(rand), BURST_SCALE, delay, decay, gravity, BURST_BASE_AGE, true);
+            Effects.spawn(level, options, handPos.x, handPos.y, handPos.z, velocity.x, velocity.y, velocity.z);
         }
     }
 
@@ -74,8 +75,11 @@ public final class DustTriggerFx {
             DustTrigger trigger,
             Vec3 hitStart,
             @Nullable DustTriggerPlacement placement) {
-        List<BlockPos> sparkles = trigger.sparkle(
-                level, player, triggerPos, placement == null ? DustTriggerPlacement.origin() : placement);
+        if (placement == null || placement.facing() == null) {
+            emitBlockSparkles(level, triggerPos, hitStart);
+            return;
+        }
+        List<BlockPos> sparkles = trigger.sparkle(level, player, triggerPos, placement);
         if (sparkles == null || sparkles.isEmpty()) {
             return;
         }
@@ -85,64 +89,6 @@ public final class DustTriggerFx {
     }
 
     public static void emitBlockSparkles(ServerLevel level, BlockPos p, Vec3 start) {
-        BlockState st = level.getBlockState(p);
-        VoxelShape shape = st.getShape(level, p);
-        AABB box;
-        if (shape.isEmpty()) {
-            box = new AABB(0.0, 0.0, 0.0, 1.0, 1.0, 1.0);
-        } else {
-            box = shape.bounds();
-        }
-        box = box.inflate(0.1);
-        double avgEdge = (box.getXsize() + box.getYsize() + box.getZsize()) / 3.0;
-        int num = (int) (avgEdge * 20.0);
-        if (num < 1) num = 1;
-        RandomSource rand = level.getRandom();
-        for (Direction face : Direction.values()) {
-            BlockPos neighbor = p.relative(face);
-            BlockState neighborState = level.getBlockState(neighbor);
-            if (neighborState.isSolidRender(level, neighbor)
-                    && neighborState.isFaceSturdy(level, neighbor, face.getOpposite())) {
-                continue;
-            }
-            boolean rx = face.getStepX() == 0;
-            boolean ry = face.getStepY() == 0;
-            boolean rz = face.getStepZ() == 0;
-            double mx = 0.5 + face.getStepX() * 0.51;
-            double my = 0.5 + face.getStepY() * 0.51;
-            double mz = 0.5 + face.getStepZ() * 0.51;
-            for (int a = 0; a < num * 2; a++) {
-                double x = mx;
-                double y = my;
-                double z = mz;
-                if (rx) x = mx + rand.nextGaussian() * 0.6;
-                if (ry) y = my + rand.nextGaussian() * 0.6;
-                if (rz) z = mz + rand.nextGaussian() * 0.6;
-                x = Mth.clamp(x, box.minX, box.maxX);
-                y = Mth.clamp(y, box.minY, box.maxY);
-                z = Mth.clamp(z, box.minZ, box.maxZ);
-                float r = 1.0F;
-                float g = (189 + rand.nextInt(67)) / 255.0F;
-                float b = (64 + rand.nextInt(192)) / 255.0F;
-                double wx = p.getX() + x;
-                double wy = p.getY() + y;
-                double wz = p.getZ() + z;
-                double dx = wx - start.x;
-                double dy = wy - start.y;
-                double dz = wz - start.z;
-                double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                int delay = rand.nextInt(5) + (int) (dist * SPARKLE_TICKS_PER_BLOCK);
-                float scale = 0.4F + (float) rand.nextGaussian() * 0.1F;
-                Effects.simpleSparkle(level, new Vec3(wx, wy, wz))
-                        .motion(0.0, 0.0025, 0.0)
-                        .scale(scale)
-                        .color(r, g, b)
-                        .delay(delay)
-                        .decay(1.0F)
-                        .gravity(0.01F)
-                        .baseAge(16)
-                        .send();
-            }
-        }
+        Effects.blockSparkles(level, p).from(start).send();
     }
 }

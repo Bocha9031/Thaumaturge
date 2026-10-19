@@ -48,6 +48,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class Effects {
     static final double DEFAULT_RADIUS = 64.0;
     private static final double BORE_DIG_RADIUS = 32.0;
+    public static final double SHELL_TICKS_PER_BLOCK = 16.0;
     private static final double SPARKLE_SHELL_GROWTH = 0.02;
     private static final double SPARKLE_FACE_DENSITY = 24.0;
     private static final int SPARKLE_FACE_MINIMUM = 3;
@@ -297,6 +298,14 @@ public final class Effects {
                 z,
                 DEFAULT_RADIUS,
                 new ClientboundSpawnParticlePayload(options, x, y, z, vx, vy, vz));
+    }
+
+    public static int dustSparkleColor(RandomSource random) {
+        float blend = random.nextFloat();
+        float red = Mth.lerp(blend, DUST_GOLD_RED, DUST_CREAM_RED);
+        float green = Mth.lerp(blend, DUST_GOLD_GREEN, DUST_CREAM_GREEN);
+        float blue = Mth.lerp(blend, DUST_GOLD_BLUE, DUST_CREAM_BLUE);
+        return ARGB32.colorFromFloat(1.0F, red, green, blue);
     }
 
     public static void scanGlyph(ServerPlayer viewer, double x, double y, double z, int color, int delay) {
@@ -1734,7 +1743,7 @@ public final class Effects {
                 int count = Math.max(SPARKLE_FACE_MINIMUM, (int) Math.round(area * SPARKLE_FACE_DENSITY));
                 for (int index = 0; index < count; index++) {
                     Vec3 point = pointOnFace(shell, face, rand);
-                    int delay = (int) (point.distanceTo(start) * 16.0) + rand.nextInt(SPARKLE_DELAY_JITTER);
+                    int delay = (int) (point.distanceTo(start) * SHELL_TICKS_PER_BLOCK) + rand.nextInt(SPARKLE_DELAY_JITTER);
                     float blend = rand.nextFloat();
                     float green = Mth.lerp(blend, DUST_GOLD_GREEN, DUST_CREAM_GREEN);
                     float blue = Mth.lerp(blend, DUST_GOLD_BLUE, DUST_CREAM_BLUE);
