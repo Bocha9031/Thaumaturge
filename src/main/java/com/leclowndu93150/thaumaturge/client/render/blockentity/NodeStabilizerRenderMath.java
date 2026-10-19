@@ -1,19 +1,19 @@
 package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
 import com.leclowndu93150.thaumaturge.content.aura.node.BlockEntityNodeStabilizer;
+import com.leclowndu93150.thaumaturge.content.aura.node.BlockEntityNodeTransducer;
 import net.minecraft.util.FastColor.ARGB32;
 
 final class NodeStabilizerRenderMath {
-    static final float ARM_SLIDE = 0.09F;
+    static final float ARM_SLIDE = 0.37F;
 
-    private static final float TRANSDUCER_CAPACITY = 100.0F;
     private static final float TRANSDUCER_GLOW_FLOOR = 0.25F;
     private static final float TRANSDUCER_GLOW_RANGE = 1.0F - TRANSDUCER_GLOW_FLOOR;
     private static final float GLOW_BASE = 0.78F;
     private static final float GLOW_AMPLITUDE = 0.22F;
     private static final float GLOW_PERIOD = 44.0F;
     private static final float GLOW_ARM_PHASE = 0.6F;
-    private static final float BUBBLE_OPACITY = 0.5F;
+    private static final float BUBBLE_OPACITY = 0.3F;
     private static final float BUBBLE_PULSE_BASE = 0.7F;
     private static final float BUBBLE_PERIOD = 90.0F;
 
@@ -24,7 +24,7 @@ final class NodeStabilizerRenderMath {
     }
 
     static float transducerExtension(float count) {
-        return Math.clamp(count / TRANSDUCER_CAPACITY, 0.0F, 1.0F);
+        return Math.clamp(count / BlockEntityNodeTransducer.CHARGE_TARGET, 0.0F, 1.0F);
     }
 
     static float transducerGlow(float extension) {

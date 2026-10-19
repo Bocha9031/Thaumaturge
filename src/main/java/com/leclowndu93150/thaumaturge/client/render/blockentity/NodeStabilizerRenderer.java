@@ -37,7 +37,7 @@ public final class NodeStabilizerRenderer implements BlockEntityRenderer<BlockEn
     private static final RenderType TRANSDUCER_OVERLAY =
             TTRenderTypes.entityAdditiveEmissive(TRANSDUCER_OVERLAY_TEXTURE);
     private static final ResourceLocation BUBBLE_TEXTURE = TTIds.rl("textures/misc/node_bubble.png");
-    private static final RenderType BUBBLE = TTRenderTypes.additiveTextured(BUBBLE_TEXTURE);
+    private static final RenderType BUBBLE = TTRenderTypes.fxTranslucent(BUBBLE_TEXTURE);
 
     private static final String PART_LOCK = "lock";
     private static final String PART_PISTON = "piston";
@@ -51,9 +51,9 @@ public final class NodeStabilizerRenderer implements BlockEntityRenderer<BlockEn
     private static final int TRANSDUCER_TINT_ENERGIZED = 0xFF2E78;
     private static final int ADVANCED_TINT = 0xFF4A3C;
     private static final int WHITE = 0xFFFFFFFF;
+    private static final int BUBBLE_LIGHT = LightTexture.FULL_BRIGHT;
     private static final float BUBBLE_HALF = 0.72F;
     private static final float BUBBLE_LIFT = 1.5F;
-    private static final float BUBBLE_OPACITY = 0.5F;
     private static final float BUBBLE_PULSE_BASE = 0.7F;
     private static final float BUBBLE_PULSE_PERIOD = 90.0F;
     private static final int BUBBLE_ADVANCED_TINT = 0xFF7A52;
@@ -107,14 +107,20 @@ public final class NodeStabilizerRenderer implements BlockEntityRenderer<BlockEn
         VertexConsumer buffer = buffers.getBuffer(BUBBLE);
         buffer.addVertex(pose, -BUBBLE_HALF, -BUBBLE_HALF, 0.0F)
                 .setUv(0.0F, 1.0F)
-                .setColor(color);
+                .setColor(color)
+                .setLight(BUBBLE_LIGHT);
         buffer.addVertex(pose, BUBBLE_HALF, -BUBBLE_HALF, 0.0F)
                 .setUv(1.0F, 1.0F)
-                .setColor(color);
-        buffer.addVertex(pose, BUBBLE_HALF, BUBBLE_HALF, 0.0F).setUv(1.0F, 0.0F).setColor(color);
+                .setColor(color)
+                .setLight(BUBBLE_LIGHT);
+        buffer.addVertex(pose, BUBBLE_HALF, BUBBLE_HALF, 0.0F)
+                .setUv(1.0F, 0.0F)
+                .setColor(color)
+                .setLight(BUBBLE_LIGHT);
         buffer.addVertex(pose, -BUBBLE_HALF, BUBBLE_HALF, 0.0F)
                 .setUv(0.0F, 0.0F)
-                .setColor(color);
+                .setColor(color)
+                .setLight(BUBBLE_LIGHT);
         poseStack.popPose();
     }
 
