@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.equipment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
@@ -23,6 +24,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.level.BlockDropsEvent;
 import org.junit.jupiter.api.Test;
@@ -123,19 +125,21 @@ class InfusionRareNuggetParityTest {
     }
 
     @Test
-    void refiningDoesNotChangeDropsWhenToolCannotHarvestBlock() {
+    void refiningChangesProducedDropsEvenWhenToolCannotHarvestBlock() {
         RandomSource random = mock(RandomSource.class);
+        when(random.nextFloat()).thenReturn(0.0F);
         ServerLevel level = level(random);
         BlockState state = mock(BlockState.class);
         Player player = mock(Player.class);
         ItemStack held = mock(ItemStack.class);
         ItemEntity drop = mock(ItemEntity.class);
+        when(held.getEnchantmentLevel(any())).thenReturn(0);
+        when(drop.getItem()).thenReturn(new ItemStack(Items.RAW_IRON));
         List<ItemEntity> drops = new ArrayList<>(List.of(drop));
         when(player.getUUID()).thenReturn(UUID.randomUUID());
         when(player.getMainHandItem()).thenReturn(held);
         when(held.isCorrectToolForDrops(state)).thenReturn(false);
         BlockDropsEvent event = event(level, state, player, drops);
-        Item cluster = mock(Item.class);
 
         try (MockedStatic<InfusionEnchantmentHelper> enchantments = mockStatic(InfusionEnchantmentHelper.class);
                 MockedStatic<RefiningResults> refiningResults = mockStatic(RefiningResults.class)) {
@@ -145,13 +149,12 @@ class InfusionRareNuggetParityTest {
             enchantments
                     .when(() -> InfusionEnchantmentHelper.level(held, InfusionEnchantment.REFINING))
                     .thenReturn(1);
-            refiningResults.when(() -> RefiningResults.clusterFor(state)).thenReturn(cluster);
+            refiningResults.when(() -> RefiningResults.clusterFor(state)).thenReturn(Items.IRON_INGOT);
 
             InfusionEnchantmentEvents.onBlockDrops(event);
         }
 
-        verify(drop, never()).setItem(any());
-        verify(random, never()).nextFloat();
+        verify(drop).setItem(argThat(stack -> stack.is(Items.IRON_INGOT)));
         assertEquals(List.of(drop), drops);
     }
 
