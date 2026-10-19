@@ -1711,8 +1711,8 @@ public final class TTModelProvider implements DataProvider {
                 modelOutput,
                 TTBlocks.LOG_GREATWOOD.get(),
                 TTBlocks.WOOD_GREATWOOD.get(),
-                TTIds.rl("block/log_greatwood_wide"),
-                TTIds.rl("block/log_greatwood_top_wide"));
+                TTIds.rl("block/log_greatwood"),
+                TTIds.rl("block/log_greatwood_top"));
         log(TTBlocks.LOG_SILVERWOOD.get(), TTBlocks.WOOD_SILVERWOOD.get());
         axisPillar(
                 TTBlocks.SILVERWOOD_NODE_LOG.get(),
