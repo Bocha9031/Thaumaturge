@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
+import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
@@ -22,10 +23,23 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Test;
 
 class NodeGeneratorPortTest {
+    @Test
+    void guaranteedTaintedNodeEligibilityUsesTheExtensibleBiomeTag() {
+        ServerLevelAccessor level = mock(ServerLevelAccessor.class);
+        Holder<Biome> biome = mock(Holder.class);
+        BlockPos pos = new BlockPos(8, 64, 8);
+        when(level.getBiome(pos)).thenReturn(biome);
+        when(biome.is(TTBiomeTags.IS_TAINTED)).thenReturn(true);
+
+        assertTrue(NodeGenerator.isTaintedBiome(level, pos));
+        verify(biome).is(TTBiomeTags.IS_TAINTED);
+    }
+
     @Test
     void weightedBudgetAllocationPreservesTheExactNodeStrength() throws Exception {
         Holder<IAspect> first = Holder.direct(mock(IAspect.class));

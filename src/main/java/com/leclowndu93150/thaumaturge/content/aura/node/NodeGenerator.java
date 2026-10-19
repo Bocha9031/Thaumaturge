@@ -9,7 +9,6 @@ import com.leclowndu93150.thaumaturge.api.aura.BiomeAuraModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
-import com.leclowndu93150.thaumaturge.data.worldgen.biome.TTBiomes;
 import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTDataMaps;
@@ -135,7 +134,7 @@ public final class NodeGenerator {
 
     private static boolean createGuaranteedNaturalNodeAt(
             ServerLevelAccessor level, BlockPos pos, RandomSource random, NodeType requiredType) {
-        if (ThaumaturgeCommonConfig.WUSS_MODE.get() || !level.getBiome(pos).is(TTBiomes.TAINTED_LANDS)) {
+        if (ThaumaturgeCommonConfig.WUSS_MODE.get() || !isTaintedBiome(level, pos)) {
             return false;
         }
         NodeType rolledType = requiredType == NodeType.HUNGRY ? NodeType.NORMAL : requiredType;
@@ -167,6 +166,10 @@ public final class NodeGenerator {
             return true;
         }
         return false;
+    }
+
+    static boolean isTaintedBiome(ServerLevelAccessor level, BlockPos pos) {
+        return level.getBiome(pos).is(TTBiomeTags.IS_TAINTED);
     }
 
     public static @Nullable NodeData rollRandomNodeData(
