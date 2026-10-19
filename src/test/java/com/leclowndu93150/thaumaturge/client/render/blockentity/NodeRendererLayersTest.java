@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mockStatic;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
+import com.leclowndu93150.thaumaturge.client.render.NodeTexture;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import java.util.ArrayList;
@@ -16,9 +17,14 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
 class NodeRendererLayersTest {
-    private static final ResourceLocation TEXTURE = TTIds.rl("textures/effect/auranodes.png");
+    private static final ResourceLocation TEXTURE = NodeTexture.TEXTURE;
 
     private record Layer(RenderType type, float scale, float alpha, int strip) {}
+
+    @Test
+    void nodeLayersUseTheAtlasProcessedForNodeRendering() {
+        assertEquals(TTIds.rl("textures/misc/auranodes.png"), TEXTURE);
+    }
 
     @Test
     void allNodeTypesKeepTheirSpritesBlendsAndRevealingDepthRules() {
@@ -74,6 +80,17 @@ class NodeRendererLayersTest {
                 assertEquals(shaders ? 0.4F : 0.0066F, layers.getFirst().alpha());
             }
         }
+    }
+
+    @Test
+    void revealedNodeWithoutAspectsStillRendersThroughBlocks() {
+        NodeRenderState state = state(NodeType.NORMAL, 0);
+        state.depthIgnore = true;
+
+        List<Layer> layers = layers(state);
+
+        assertEquals(1, layers.size());
+        assertSame(TTRenderTypes.fxAdditiveNoDepth(TEXTURE), layers.getFirst().type());
     }
 
     @Test

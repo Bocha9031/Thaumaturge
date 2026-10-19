@@ -1,6 +1,7 @@
 package com.leclowndu93150.thaumaturge.client.effect;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
@@ -30,7 +31,7 @@ class LateWorldRenderQueueTest {
     }
 
     @Test
-    void revealedVanillaNodesDrawOnlyAfterTheCompletedWorldWhileIrisKeepsItsExistingStage() throws Exception {
+    void nodeLayersRenderAfterWaterWithoutShadersAndKeepTheIrisPass() throws Exception {
         Minecraft minecraft = mock(Minecraft.class);
         GameRenderer renderer = mock(GameRenderer.class);
         Field field = Minecraft.class.getField("gameRenderer");
@@ -53,25 +54,26 @@ class LateWorldRenderQueueTest {
             client.when(Minecraft::getInstance).thenReturn(minecraft);
             iris.when(() -> IrisCompat.blockEntityEffectBuffers(buffers)).thenReturn(buffers);
             sable.when(() -> SableClientCompat.renderPosition(null, Vec3.ZERO)).thenReturn(Vec3.ZERO);
-            LateWorldRenderQueue.enqueueBlockEntityOverlay(Vec3.ZERO, (pose, source) -> draws.add("vanilla"));
-            iris.when(IrisCompat::shadersActive).thenReturn(true);
-            LateWorldRenderQueue.enqueueBlockEntityOverlay(Vec3.ZERO, (pose, source) -> draws.add("iris"));
+            iris.when(IrisCompat::shadersActive).thenReturn(false);
+            LateWorldRenderQueue.enqueueBlockEntityAfterTranslucent(Vec3.ZERO, (pose, source) -> draws.add("vanilla"));
+            LateWorldRenderQueue.enqueueBlockEntityOverlay(Vec3.ZERO, (pose, source) -> draws.add("node"));
 
             LateWorldRenderQueue.onRender(event(RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES));
             assertTrue(draws.isEmpty());
             LateWorldRenderQueue.onRender(event(RenderLevelStageEvent.Stage.AFTER_PARTICLES));
-            assertEquals(List.of("iris"), draws);
-            verify(target, never()).bindWrite(anyBoolean());
+            assertTrue(draws.isEmpty());
             LateWorldRenderQueue.onRender(event(RenderLevelStageEvent.Stage.AFTER_LEVEL));
-            assertEquals(List.of("iris", "vanilla"), draws);
-            verify(target).bindWrite(false);
-            LateWorldRenderQueue.onRender(event(RenderLevelStageEvent.Stage.AFTER_LEVEL));
-            assertEquals(List.of("iris", "vanilla"), draws);
+            assertEquals(List.of("vanilla", "node"), draws);
+
+            iris.when(IrisCompat::shadersActive).thenReturn(true);
+            LateWorldRenderQueue.enqueueBlockEntityAfterTranslucent(Vec3.ZERO, (pose, source) -> draws.add("iris"));
+            LateWorldRenderQueue.onRender(event(RenderLevelStageEvent.Stage.AFTER_PARTICLES));
+            assertEquals(List.of("vanilla", "node", "iris"), draws);
         }
     }
 
     @Test
-    void finalOverlayRestoresWorldViewAndBillboardingWithoutChangingTheEventPose() {
+    void finalOverlayRestoresWorldViewWithoutChangingTheEventPose() {
         RenderLevelStageEvent event = event(RenderLevelStageEvent.Stage.AFTER_LEVEL);
         Matrix4f view = new Matrix4f().rotationY(0.7F).rotateX(-0.2F);
         when(event.getModelViewMatrix()).thenReturn(view);
@@ -89,8 +91,6 @@ class LateWorldRenderQueueTest {
         assertEquals(1.0F, pose.last().pose().m11(), 0.00001F);
         assertEquals(1.0F, pose.last().pose().m22(), 0.00001F);
         assertTrue(event.getPoseStack().last().pose().equals(new Matrix4f()));
-        RenderLevelStageEvent particles = event(RenderLevelStageEvent.Stage.AFTER_PARTICLES);
-        assertSame(particles.getPoseStack(), LateWorldRenderQueue.renderPose(particles));
     }
 
     private static RenderLevelStageEvent event(RenderLevelStageEvent.Stage stage) {

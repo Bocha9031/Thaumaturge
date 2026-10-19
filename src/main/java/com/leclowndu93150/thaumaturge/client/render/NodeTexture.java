@@ -18,7 +18,7 @@ import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class NodeTexture {
-    private static final ResourceLocation TEXTURE = TTIds.rl("textures/misc/auranodes.png");
+    public static final ResourceLocation TEXTURE = TTIds.rl("textures/misc/auranodes.png");
     private static final int GRID = 32;
 
     private NodeTexture() {}

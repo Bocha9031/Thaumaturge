@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
-import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.items.GogglesAccess;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
@@ -8,6 +7,7 @@ import com.leclowndu93150.thaumaturge.client.casters.WandTipTracker;
 import com.leclowndu93150.thaumaturge.client.effect.FloatyLineRenderer;
 import com.leclowndu93150.thaumaturge.client.effect.LateWorldRenderQueue;
 import com.leclowndu93150.thaumaturge.client.render.NodeAnimation;
+import com.leclowndu93150.thaumaturge.client.render.NodeTexture;
 import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import com.leclowndu93150.thaumaturge.compat.sable.SableClientCompat;
@@ -34,7 +34,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
 public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> {
-    private static final ResourceLocation NODES_TEXTURE = TTIds.rl("textures/effect/auranodes.png");
+    private static final ResourceLocation NODES_TEXTURE = NodeTexture.TEXTURE;
 
     private static final RenderType NODE_ADDITIVE = TTRenderTypes.fxAdditive(NODES_TEXTURE);
     private static final RenderType NODE_ADDITIVE_NO_DEPTH = TTRenderTypes.fxAdditiveNoDepth(NODES_TEXTURE);
@@ -127,7 +127,7 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
         }
         // These layers retain depth testing, but do not write depth. Draw after water so
         // it cannot paint over a faint node that is closer to the camera.
-        LateWorldRenderQueue.enqueueBlockEntity(
+        LateWorldRenderQueue.enqueueBlockEntityAfterTranslucent(
                 origin, (latePose, lateBuffers) -> drawDeferredLayers(data, latePose, lateBuffers));
         if (data.draining) {
             LateWorldRenderQueue.enqueueBlockEntity(
@@ -241,7 +241,8 @@ public final class NodeRenderer implements BlockEntityRenderer<BlockEntityNode> 
         int frame = Math.floorMod(Mth.floor(state.ticks * FRAME_ADVANCE_PER_TICK) + state.frameSeed, GRID);
         if (!state.visible || state.layers.isEmpty()) {
             float faintAlpha = IrisCompat.shadersActive() ? IRIS_FAINT_ALPHA : FAINT_ALPHA;
-            sink.layer(0, NODE_ADDITIVE, 0.0F, FAINT_SCALE, faintAlpha, 0xFFFFFF, STRIP_NORMAL, frame);
+            RenderType faintType = state.visible && state.depthIgnore ? NODE_ADDITIVE_NO_DEPTH : NODE_ADDITIVE;
+            sink.layer(0, faintType, 0.0F, FAINT_SCALE, faintAlpha, 0xFFFFFF, STRIP_NORMAL, frame);
             return;
         }
         int count = state.layers.size();

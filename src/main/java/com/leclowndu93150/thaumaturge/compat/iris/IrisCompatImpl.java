@@ -1,6 +1,6 @@
 package com.leclowndu93150.thaumaturge.compat.iris;
 
-import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.client.render.NodeTexture;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.irisshaders.iris.layer.BlockEntityRenderStateShard;
@@ -17,7 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 /** Iris-only implementation loaded reflectively by {@link IrisCompat}. */
 public final class IrisCompatImpl {
     private static final String ALPHA_TEST_UNIFORM = "AlphaTestValue";
-    private static final ResourceLocation NODE_TEXTURE = TTIds.rl("textures/misc/auranodes.png");
+    private static final ResourceLocation NODE_TEXTURE = NodeTexture.TEXTURE;
 
     private IrisCompatImpl() {}
 
