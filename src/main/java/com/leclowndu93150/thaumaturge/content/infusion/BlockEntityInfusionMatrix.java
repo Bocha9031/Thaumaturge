@@ -510,22 +510,12 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity
     }
 
     private void tickClient() {
-        if (isCrafting()) {
-            if (clientCraftTicks == 0 && level != null) {
-                level.playLocalSound(worldPosition, TTSounds.INFUSERSTART.get(), SoundSource.BLOCKS, 0.5F, 1.0F, false);
-            }
-            clientCraftTicks++;
-        } else if (clientCraftTicks > 0) {
-            clientCraftTicks = Math.min(50, Math.max(0, clientCraftTicks - 2));
+        boolean crafting = isCrafting();
+        if (crafting && clientCraftTicks == 0 && level != null) {
+            level.playLocalSound(worldPosition, TTSounds.INFUSERSTART.get(), SoundSource.BLOCKS, 0.5F, 1.0F, false);
         }
-        if (active && clientStartUp < 1.0F) {
-            clientStartUp = Math.min(1.0F, clientStartUp + Math.max(clientStartUp / 10.0F, 0.001F));
-        } else if (!active && clientStartUp > 0.0F) {
-            clientStartUp -= clientStartUp / 10.0F;
-            if (clientStartUp < 0.001F) {
-                clientStartUp = 0.0F;
-            }
-        }
+        clientCraftTicks = InfusionClientAnimator.craftTicks(clientCraftTicks, crafting);
+        clientStartUp = InfusionClientAnimator.startUp(clientStartUp, active);
         tickClientSourceFX();
     }
 
