@@ -1,13 +1,17 @@
 package com.leclowndu93150.thaumaturge.content.golem.seals;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.gson.JsonParser;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealBehavior;
+import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealType;
+import com.leclowndu93150.thaumaturge.api.items.ItemMatch;
 import com.leclowndu93150.thaumaturge.content.golem.seals.behavior.BreakBehavior;
 import com.leclowndu93150.thaumaturge.content.golem.seals.behavior.EmptyBehavior;
 import com.leclowndu93150.thaumaturge.content.golem.seals.behavior.GuardBehavior;
@@ -43,6 +47,17 @@ class SealSettingValuesTest {
             UseBehavior.BARE_HANDED,
             UseBehavior.SNEAKING,
             UseBehavior.REQUEST_ITEMS);
+
+    @Test
+    void mapsSealMatchSettingsToTheImmutableItemMatchRules() {
+        ISealEntity seal = mock(ISealEntity.class);
+        when(seal.setting(ItemMatchSettings.MATCH_DAMAGE)).thenReturn(true);
+        when(seal.setting(ItemMatchSettings.MATCH_COMPONENTS)).thenReturn(false);
+        when(seal.setting(ItemMatchSettings.MATCH_TAGS)).thenReturn(true);
+        when(seal.setting(ItemMatchSettings.MATCH_MOD)).thenReturn(false);
+
+        assertEquals(new ItemMatch(false, true, false, true, false), ItemMatchSettings.of(seal));
+    }
 
     @Test
     void readsFormerKeyButWritesCanonicalKey() {

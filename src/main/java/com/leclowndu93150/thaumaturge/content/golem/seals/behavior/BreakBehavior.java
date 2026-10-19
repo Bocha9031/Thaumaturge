@@ -5,7 +5,7 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealFilter;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.StackFilter;
 import com.leclowndu93150.thaumaturge.content.casters.BlockBreakerEngine;
 import com.leclowndu93150.thaumaturge.server.TTFakePlayer;
 import net.minecraft.core.BlockPos;
@@ -95,7 +95,7 @@ public final class BreakBehavior extends CellWorkBehavior {
         if (form.isEmpty()) {
             return filter.isBlacklist();
         }
-        return InvHelper.matchesFilters(filter.stacks(), filter.isBlacklist(), form, ItemMatchSettings.of(seal));
+        return StackFilter.of(filter.stacks(), filter.isBlacklist(), ItemMatchSettings.of(seal)).accepts(form);
     }
 
     private static ItemStack itemForm(Level level, BlockPos pos, BlockState state) {

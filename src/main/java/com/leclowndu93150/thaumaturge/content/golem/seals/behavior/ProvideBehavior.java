@@ -10,6 +10,7 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.SealPos;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.ItemMatch;
 import com.leclowndu93150.thaumaturge.content.golem.seals.SealAccess;
 import java.util.List;
 import java.util.Optional;
@@ -50,9 +51,9 @@ public final class ProvideBehavior implements ISealBehavior {
         if (filter.isEmpty()) {
             return true;
         }
-        InvHelper.InvFilter matching = ItemMatchSettings.of(seal);
+        ItemMatch matching = ItemMatchSettings.of(seal);
         boolean listed = filter.get().stacks().stream()
-                .anyMatch(slot -> !slot.isEmpty() && InvHelper.areItemStacksEqual(slot, stack, matching));
+                .anyMatch(slot -> !slot.isEmpty() && matching.test(slot, stack));
         return filter.get().isBlacklist() != listed;
     }
 
@@ -87,7 +88,7 @@ public final class ProvideBehavior implements ISealBehavior {
 
     private static void scan(ServerLevel level, ISealEntity seal) {
         SealPos at = seal.pos();
-        IItemHandler store = InvHelper.getItemHandlerAt(level, at.pos(), at.face());
+        IItemHandler store = InvHelper.handlerAt(level, at.pos(), at.face());
         if (store == null) {
             return;
         }
@@ -102,7 +103,7 @@ public final class ProvideBehavior implements ISealBehavior {
             if (destination == null
                     || destination.distSqr(at.pos()) >= SERVICE_RANGE * SERVICE_RANGE
                     || !supplies(seal, request.wanted())
-                    || InvHelper.countTotalItemsIn(store, request.wanted(), InvHelper.InvFilter.STRICT)
+                    || InvHelper.count(store, request.wanted(), ItemMatch.EXACT)
                             < minimumStock) {
                 continue;
             }
@@ -170,14 +171,14 @@ public final class ProvideBehavior implements ISealBehavior {
 
     private static void collect(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task, SupplyOrder request) {
         SealPos at = seal.pos();
-        IItemHandler store = InvHelper.getItemHandlerAt(level, at.pos(), at.face());
+        IItemHandler store = InvHelper.handlerAt(level, at.pos(), at.face());
         if (store == null) {
             return;
         }
         ItemStack wanted = request.wanted();
         int amount = seal.setting(SINGLE_ITEM) ? 1 : wanted.getCount();
         if (seal.setting(LEAVE_ONE)) {
-            int stocked = InvHelper.countTotalItemsIn(store, wanted, InvHelper.InvFilter.STRICT);
+            int stocked = InvHelper.count(store, wanted, ItemMatch.EXACT);
             if (stocked <= amount) {
                 amount = stocked - 1;
             }
@@ -187,7 +188,7 @@ public final class ProvideBehavior implements ISealBehavior {
             return;
         }
         ItemStack taken =
-                InvHelper.removeStackFrom(store, wanted.copyWithCount(amount), InvHelper.InvFilter.STRICT, false);
+                InvHelper.extract(store, wanted.copyWithCount(amount), ItemMatch.EXACT, false);
         if (taken.isEmpty()) {
             return;
         }
@@ -247,7 +248,7 @@ public final class ProvideBehavior implements ISealBehavior {
     }
 
     private static void handOver(ServerLevel level, IGolemAPI golem, BlockPos pos, Direction side, ItemStack stack) {
-        IItemHandler inventory = InvHelper.getItemHandlerAt(level, pos, side);
+        IItemHandler inventory = InvHelper.handlerAt(level, pos, side);
         if (inventory == null) {
             dropToward(level, pos, side, stack);
             return;

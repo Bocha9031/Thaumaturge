@@ -9,6 +9,8 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.SealPos;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.ItemMatch;
+import com.leclowndu93150.thaumaturge.api.items.StackFilter;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -58,16 +60,16 @@ public final class StoreBehavior implements ISealBehavior {
 
     @Override
     public boolean completeTask(ServerLevel level, ISealEntity seal, IGolemAPI golem, Task task) {
-        InvHelper.InvFilter matching = ItemMatchSettings.of(seal);
+        ItemMatch matching = ItemMatchSettings.of(seal);
         InvHelper.FilterMatch carried = carriedMatch(seal, golem, matching);
         if (!carried.stack().isEmpty()) {
             SealPos at = seal.pos();
-            IItemHandler inventory = InvHelper.getItemHandlerAt(level, at.pos(), at.face());
+            IItemHandler inventory = InvHelper.handlerAt(level, at.pos(), at.face());
             int amount = carried.stack().getCount();
             if (limited(seal, carried)) {
                 int present = inventory == null
-                        ? InvHelper.countStackInWorld(level, at.pos(), carried.stack(), NEARBY_RANGE, matching)
-                        : InvHelper.countTotalItemsIn(inventory, carried.stack(), matching);
+                        ? InvHelper.countDropped(level, at.pos(), carried.stack(), NEARBY_RANGE, matching)
+                        : InvHelper.count(inventory, carried.stack(), matching);
                 amount = Math.max(0, carried.sizeLimit() - present);
             }
             if (amount > 0) {
@@ -115,14 +117,10 @@ public final class StoreBehavior implements ISealBehavior {
         return new Vec3(random.triangle(0.0, TOSS_SPREAD), 0.0, random.triangle(0.0, TOSS_SPREAD));
     }
 
-    private static InvHelper.FilterMatch carriedMatch(ISealEntity seal, IGolemAPI golem, InvHelper.InvFilter matching) {
+    private static InvHelper.FilterMatch carriedMatch(ISealEntity seal, IGolemAPI golem, ItemMatch matching) {
         ISealFilter filter = seal.filter().orElseThrow();
-        return InvHelper.findFirstMatchFromFilterWithSize(
-                filter.stacks(),
-                filter.limits(),
-                filter.isBlacklist(),
-                golem.hands().contents(),
-                matching);
+        return new StackFilter(filter.stacks(), filter.limits(), filter.isBlacklist(), matching)
+                .firstAcceptedWithLimit(golem.hands().contents());
     }
 
     private static boolean limited(ISealEntity seal, InvHelper.FilterMatch match) {
@@ -131,26 +129,26 @@ public final class StoreBehavior implements ISealBehavior {
 
     @Override
     public boolean canPerform(ISealEntity seal, IGolemAPI golem, Task task) {
-        InvHelper.InvFilter matching = ItemMatchSettings.of(seal);
+        ItemMatch matching = ItemMatchSettings.of(seal);
         InvHelper.FilterMatch carried = carriedMatch(seal, golem, matching);
         if (carried.stack().isEmpty()) {
             return false;
         }
         SealPos at = seal.pos();
         Level level = golem.level();
-        IItemHandler inventory = InvHelper.getItemHandlerAt(level, at.pos(), at.face());
+        IItemHandler inventory = InvHelper.handlerAt(level, at.pos(), at.face());
         if (inventory == null) {
             return !limited(seal, carried)
-                    || InvHelper.countStackInWorld(level, at.pos(), carried.stack(), NEARBY_RANGE, matching)
+                    || InvHelper.countDropped(level, at.pos(), carried.stack(), NEARBY_RANGE, matching)
                             < carried.sizeLimit();
         }
-        if (seal.setting(ONLY_EXISTING) && InvHelper.countTotalItemsIn(inventory, carried.stack(), matching) <= 0) {
+        if (seal.setting(ONLY_EXISTING) && InvHelper.count(inventory, carried.stack(), matching) <= 0) {
             return false;
         }
-        if (!InvHelper.hasRoomForSome(level, at.pos(), at.face(), carried.stack())) {
+        if (!InvHelper.acceptsAny(level, at.pos(), at.face(), carried.stack())) {
             return false;
         }
         return !limited(seal, carried)
-                || InvHelper.countTotalItemsIn(inventory, carried.stack(), matching) < carried.sizeLimit();
+                || InvHelper.count(inventory, carried.stack(), matching) < carried.sizeLimit();
     }
 }

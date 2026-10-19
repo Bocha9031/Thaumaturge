@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.ISealFilter;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealPos;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
 import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.ItemMatch;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -24,20 +25,20 @@ public final class StockBehavior implements ISealBehavior {
             return;
         }
         SealPos at = seal.pos();
-        IItemHandler shelf = InvHelper.getItemHandlerAt(level, at.pos(), at.face());
+        IItemHandler shelf = InvHelper.handlerAt(level, at.pos(), at.face());
         if (shelf == null) {
             return;
         }
         ISealFilter filter = seal.filter().orElseThrow();
-        InvHelper.InvFilter matching = ItemMatchSettings.of(seal);
+        ItemMatch matching = ItemMatchSettings.of(seal);
         for (int slot = 0; slot < filter.spec().slots(); slot++) {
             ItemStack kind = filter.stack(slot);
             if (kind.isEmpty()) {
                 continue;
             }
-            int missing = filter.limit(slot) - InvHelper.countTotalItemsIn(shelf, kind, matching);
+            int missing = filter.limit(slot) - InvHelper.count(shelf, kind, matching);
             if (missing > 0) {
-                ItemStack order = InvHelper.hasRoomFor(
+                ItemStack order = InvHelper.acceptedPortion(
                         level, at.pos(), at.face(), kind.copyWithCount(Math.min(kind.getMaxStackSize(), missing)));
                 if (!order.isEmpty()) {
                     GolemDispatch.orderSupply(level, at.pos(), at.face(), order);

@@ -7,7 +7,7 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealFilter;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealArea;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.StackFilter;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskHandoff;
 import java.util.List;
 import java.util.UUID;
@@ -53,12 +53,8 @@ public final class CollectBehavior implements ISealBehavior {
 
     private static boolean wanted(ISealEntity seal, ItemStack stack) {
         ISealFilter filter = seal.filter().orElseThrow();
-        return !InvHelper.findFirstMatchFromFilter(
-                        filter.stacks(),
-                        filter.limits(),
-                        filter.isBlacklist(),
-                        List.of(stack),
-                        ItemMatchSettings.of(seal))
+        return !new StackFilter(filter.stacks(), filter.limits(), filter.isBlacklist(), ItemMatchSettings.of(seal))
+                .firstAccepted(List.of(stack))
                 .isEmpty();
     }
 

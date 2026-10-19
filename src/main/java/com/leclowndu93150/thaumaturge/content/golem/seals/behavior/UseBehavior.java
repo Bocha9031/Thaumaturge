@@ -7,7 +7,7 @@ import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealFilter;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
 import com.leclowndu93150.thaumaturge.api.golems.tasks.Task;
-import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.StackFilter;
 import com.leclowndu93150.thaumaturge.content.golem.GolemInteractionHelper;
 import com.leclowndu93150.thaumaturge.content.golem.tasks.TaskBoard;
 import net.minecraft.server.level.ServerLevel;
@@ -83,12 +83,9 @@ public final class UseBehavior implements ISealBehavior {
 
     private static ItemStack matchCarried(ISealEntity seal, IGolemAPI golem) {
         ISealFilter filter = seal.filter().orElseThrow();
-        return InvHelper.findFirstMatchFromFilter(
-                filter.stacks(),
-                filter.limits(),
-                filter.isBlacklist(),
-                golem.hands().contents(),
-                ItemMatchSettings.of(seal));
+        return new StackFilter(filter.stacks(), filter.limits(), filter.isBlacklist(), ItemMatchSettings.of(seal))
+                .firstAcceptedWithLimit(golem.hands().contents())
+                .stack();
     }
 
     @Override

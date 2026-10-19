@@ -2,7 +2,7 @@ package com.leclowndu93150.thaumaturge.content.golem.seals.behavior;
 
 import com.leclowndu93150.thaumaturge.api.golems.seals.ISealEntity;
 import com.leclowndu93150.thaumaturge.api.golems.seals.SealSetting;
-import com.leclowndu93150.thaumaturge.api.items.InvHelper;
+import com.leclowndu93150.thaumaturge.api.items.ItemMatch;
 
 public final class ItemMatchSettings {
     public static final SealSetting MATCH_DAMAGE =
@@ -17,10 +17,11 @@ public final class ItemMatchSettings {
 
     private ItemMatchSettings() {}
 
-    public static InvHelper.InvFilter of(ISealEntity seal) {
-        return new InvHelper.InvFilter(
+    public static ItemMatch of(ISealEntity seal) {
+        return new ItemMatch(
                 !seal.setting(MATCH_DAMAGE),
                 !seal.setting(MATCH_COMPONENTS),
+                false,
                 seal.setting(MATCH_TAGS),
                 seal.setting(MATCH_MOD));
     }
