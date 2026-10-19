@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
 import static org.mockito.Mockito.mockStatic;
@@ -18,11 +20,13 @@ import com.leclowndu93150.thaumaturge.content.entity.EntityFollowingItem;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
@@ -149,6 +153,43 @@ class InfusionHarvestPerkEventTest {
             assertSame(original, drops.get(0));
             assertTrue(followers.constructed().isEmpty());
             verify(level, never()).addFreshEntity(any(Entity.class));
+        }
+    }
+
+    @Test
+    void destructiveExpansionStopsAfterTheToolBreaks() {
+        ServerLevel level = mock(ServerLevel.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        Player player = player(false);
+        ItemStack held = player.getMainHandItem();
+        AtomicBoolean broken = new AtomicBoolean();
+        when(held.isEmpty()).thenAnswer(invocation -> broken.get());
+        doAnswer(invocation -> {
+                    broken.set(true);
+                    return null;
+                })
+                .when(held)
+                .hurtAndBreak(anyInt(), eq(player), eq(EquipmentSlot.MAINHAND));
+
+        BlockState state = mock(BlockState.class);
+        BlockState neighbour = mock(BlockState.class);
+        when(level.getBlockState(any(BlockPos.class))).thenReturn(neighbour);
+        when(neighbour.getDestroySpeed(eq(level), any(BlockPos.class))).thenReturn(0.0F);
+        when(held.getDestroySpeed(neighbour)).thenReturn(2.0F);
+        when(held.isCorrectToolForDrops(state)).thenReturn(true);
+        when(player.getViewVector(1.0F)).thenReturn(new Vec3(0.0, 0.0, 1.0));
+
+        BlockDropsEvent event = event(level, state, player, new ArrayList<>());
+        try (MockedStatic<InfusionEnchantmentHelper> enchantments = mockStatic(InfusionEnchantmentHelper.class);
+                MockedStatic<EnchantMining> mining = mockStatic(EnchantMining.class)) {
+            enchantments
+                    .when(() -> InfusionEnchantmentHelper.has(held, InfusionEnchantment.DESTRUCTIVE))
+                    .thenReturn(true);
+            mining.when(() -> EnchantMining.harvestBlock(eq(level), eq(player), any(BlockPos.class), eq(false)))
+                    .thenReturn(true);
+
+            InfusionEnchantmentEvents.onBlockDrops(event);
+
+            mining.verify(() -> EnchantMining.harvestBlock(eq(level), eq(player), any(BlockPos.class), eq(false)));
         }
     }
 

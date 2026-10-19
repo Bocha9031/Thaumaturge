@@ -293,8 +293,8 @@ public final class InfusionEnchantmentEvents {
                                 player.getViewVector(1.0F).x,
                                 player.getViewVector(1.0F).y,
                                 player.getViewVector(1.0F).z);
-                for (int aa = -1; aa <= 1; aa++) {
-                    for (int bb = -1; bb <= 1; bb++) {
+                for (int aa = -1; aa <= 1 && !held.isEmpty(); aa++) {
+                    for (int bb = -1; bb <= 1 && !held.isEmpty(); bb++) {
                         if (aa == 0 && bb == 0) {
                             continue;
                         }
