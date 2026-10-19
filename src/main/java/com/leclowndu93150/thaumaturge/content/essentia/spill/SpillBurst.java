@@ -11,17 +11,17 @@ public record SpillBurst(
         boolean flame,
         float fluxPerUnit,
         SpillSound sound) {
-    private static final int PIPE_VENTS = 5;
-    private static final double PIPE_BOX_START = 0.33;
-    private static final double PIPE_BOX_WIDTH = 0.33;
-    private static final double PIPE_RISE_START = 0.1;
-    private static final double PIPE_RISE_WIDTH = 0.2;
-    private static final int PIPE_COLOR = 0x800080;
-    private static final float PIPE_SCALE = 1.0F;
+    private static final int PIPE_VENTS = 4;
+    private static final double PIPE_BOX_START = 0.3;
+    private static final double PIPE_BOX_WIDTH = 0.4;
+    private static final double PIPE_RISE_START = 0.004;
+    private static final double PIPE_RISE_WIDTH = 0.012;
+    private static final int PIPE_COLOR = 0x4E1C6E;
+    private static final float PIPE_SCALE = 1.6F;
     private static final float PIPE_FLUX_PER_UNIT = 1.0F;
-    private static final float PIPE_VOLUME = 0.1F;
-    private static final float PIPE_PITCH_BASE = 1.0F;
-    private static final float PIPE_PITCH_SPREAD = 0.1F;
+    private static final float PIPE_VOLUME = 0.25F;
+    private static final float PIPE_PITCH_BASE = 1.7F;
+    private static final float PIPE_PITCH_SPREAD = 0.6F;
 
     public static final SpillBurst PIPE_FLUX = new SpillBurst(
             PIPE_VENTS,
