@@ -34,4 +34,12 @@ class JarBrainRenderMathTest {
         assertEquals(Mth.sin(1.0F / JarBrainRenderMath.XP_PERIOD), JarBrainRenderMath.xpResponse(1.0F, 2000, 2000));
         assertEquals(Mth.sin(1.0F / JarBrainRenderMath.XP_PERIOD), JarBrainRenderMath.xpResponse(1.0F, 3000, 2000));
     }
+
+    @Test
+    void visibleExperienceFillStaysWithinTheJarCapacity() {
+        assertEquals(0, JarBrainRenderMath.visibleXp(-5, 2000));
+        assertEquals(650, JarBrainRenderMath.visibleXp(650, 2000));
+        assertEquals(2000, JarBrainRenderMath.visibleXp(2500, 2000));
+        assertEquals(0, JarBrainRenderMath.visibleXp(10, 0));
+    }
 }

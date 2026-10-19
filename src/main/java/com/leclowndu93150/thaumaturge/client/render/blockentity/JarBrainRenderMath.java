@@ -25,6 +25,10 @@ final class JarBrainRenderMath {
         return fill * Mth.sin(animationAge / XP_PERIOD);
     }
 
+    static int visibleXp(int xp, int maxXp) {
+        return Mth.clamp(xp, 0, Math.max(0, maxXp));
+    }
+
     static float interpolateYaw(float previous, float current, float partialTick) {
         float delta = current - previous;
         delta -= Mth.TWO_PI * Mth.floor((delta + Mth.PI) / Mth.TWO_PI);

@@ -8,10 +8,12 @@ import com.leclowndu93150.thaumaturge.client.render.TTRenderTypes;
 import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJarBrain;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
@@ -27,6 +29,8 @@ public final class JarBrainRenderer implements BlockEntityRenderer<BlockEntityJa
     private static final float HALF_TURN = 180.0F;
     private static final float QUARTER_TURN = 90.0F;
     private static final int OUTLINE_NONE = 0;
+    private static final int XP_GLOW_COLOR = 0xFF8CFF4A;
+    private static final RenderType XP_GLOW = RenderType.entityTranslucentEmissive(TextureAtlas.LOCATION_BLOCKS);
 
     private final BrainModel brain;
     private final JarBrineModel brine;
@@ -56,6 +60,19 @@ public final class JarBrainRenderer implements BlockEntityRenderer<BlockEntityJa
         brain.setupAnim(time, xpResponse);
         brain.root.render(poseStack, buffers.getBuffer(RenderType.entityCutout(TEX_BRAIN)), light, overlay);
         poseStack.popPose();
+
+        int visibleXp = JarBrainRenderMath.visibleXp(jar.xp(), BlockEntityJarBrain.XP_MAX);
+        if (visibleXp > 0) {
+            JarRenderer.submitFluid(
+                    visibleXp,
+                    BlockEntityJarBrain.XP_MAX,
+                    XP_GLOW_COLOR,
+                    LightTexture.FULL_BRIGHT,
+                    JarRenderer.ANIMATED_GLOW_MATERIAL.sprite(),
+                    XP_GLOW,
+                    poseStack,
+                    buffers);
+        }
 
         poseStack.pushPose();
         poseBrine(poseStack);

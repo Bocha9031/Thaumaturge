@@ -116,9 +116,29 @@ public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar> {
             TextureAtlasSprite sprite,
             PoseStack poseStack,
             MultiBufferSource buffers) {
+        submitFluid(
+                amount,
+                capacity,
+                aspectColor,
+                lightCoords,
+                sprite,
+                Sheets.translucentCullBlockSheet(),
+                poseStack,
+                buffers);
+    }
+
+    public static void submitFluid(
+            float amount,
+            int capacity,
+            int aspectColor,
+            int lightCoords,
+            TextureAtlasSprite sprite,
+            RenderType renderType,
+            PoseStack poseStack,
+            MultiBufferSource buffers) {
         float ratio = Math.min(1.0F, amount / (float) capacity);
         float height = FLUID_BASE_Y + ratio * FLUID_MAX_HEIGHT;
-        VertexConsumer wrapped = sprite.wrap(buffers.getBuffer(Sheets.translucentCullBlockSheet()));
+        VertexConsumer wrapped = sprite.wrap(buffers.getBuffer(renderType));
         PoseStack.Pose pose = poseStack.last();
         fluidQuadTop(wrapped, pose, height, aspectColor, lightCoords);
         fluidQuadBottom(wrapped, pose, aspectColor, lightCoords);
