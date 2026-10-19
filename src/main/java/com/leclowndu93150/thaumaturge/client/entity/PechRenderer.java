@@ -25,13 +25,13 @@ public final class PechRenderer extends MobRenderer<EntityPech, PechModel> {
         TTIds.rl("textures/entity/pech_stalker.png")
     };
     private static final float SHADOW = 0.5F;
-    private static final float ITEM_LIFT = -0.1F;
-    private static final float ITEM_FORWARD = 0.0625F;
-    private static final float BOW_SHIFT_X = -0.075F;
-    private static final float BOW_SHIFT_Y = -0.1F;
-    private static final float HAND_SIDE_OFFSET = 0.0625F;
-    private static final float HAND_DOWN_OFFSET = 0.125F;
-    private static final float HAND_OUT_OFFSET = -0.625F;
+    private static final float PIXEL = 1.0F / 16.0F;
+    private static final float FIST_CENTRE_X = PIXEL;
+    private static final float FIST_DROP = 5.0F * PIXEL;
+    private static final float FIST_FORWARD = PIXEL;
+    private static final float HELD_ITEM_SCALE = 0.8F;
+    private static final float BOW_SHIFT_OUT = 0.5F * PIXEL;
+    private static final float BOW_SHIFT_UP = 1.5F * PIXEL;
 
     public PechRenderer(EntityRendererProvider.Context context) {
         super(context, new PechModel(context.bakeLayer(TTModelLayers.PECH)), SHADOW);
@@ -88,14 +88,14 @@ public final class PechRenderer extends MobRenderer<EntityPech, PechModel> {
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, -1.501F, 0.0F);
         armPart.translateAndRotate(poseStack);
-        poseStack.translate(0.0F, ITEM_LIFT, ITEM_FORWARD);
+        float outward = arm == HumanoidArm.LEFT ? 1.0F : -1.0F;
+        poseStack.translate(outward * FIST_CENTRE_X, FIST_DROP, -FIST_FORWARD);
         if (bow) {
-            poseStack.translate(BOW_SHIFT_X, BOW_SHIFT_Y, 0.0F);
+            poseStack.translate(outward * BOW_SHIFT_OUT, -BOW_SHIFT_UP, 0.0F);
         }
         poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F));
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
-        poseStack.translate(
-                arm == HumanoidArm.LEFT ? -HAND_SIDE_OFFSET : HAND_SIDE_OFFSET, HAND_DOWN_OFFSET, HAND_OUT_OFFSET);
+        poseStack.scale(HELD_ITEM_SCALE, HELD_ITEM_SCALE, HELD_ITEM_SCALE);
         ItemDisplayContext context = arm == HumanoidArm.RIGHT
                 ? ItemDisplayContext.THIRD_PERSON_RIGHT_HAND
                 : ItemDisplayContext.THIRD_PERSON_LEFT_HAND;
