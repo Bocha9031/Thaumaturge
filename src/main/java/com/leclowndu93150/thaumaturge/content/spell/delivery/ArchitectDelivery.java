@@ -161,7 +161,7 @@ public record ArchitectDelivery(double range) implements SpellBehavior, AreaPrev
         return method == FULL ? volume(level, origin, side, ax, ay, az) : surface(level, origin, side, ax, az);
     }
 
-    private static List<BlockPos> volume(Level level, BlockPos origin, Direction side, int ax, int ay, int az) {
+    static List<BlockPos> volume(Level level, BlockPos origin, Direction side, int ax, int ay, int az) {
         BlockPos min = new BlockPos(
                 origin.getX() - ax - ax * side.getStepX(),
                 origin.getY() - ay - ay * side.getStepY(),
@@ -170,12 +170,13 @@ public record ArchitectDelivery(double range) implements SpellBehavior, AreaPrev
                 origin.getX() + ax - ax * side.getStepX(),
                 origin.getY() + ay - ay * side.getStepY(),
                 origin.getZ() + az - az * side.getStepZ());
-        return flood(
-                origin,
-                pos -> within(pos, min, max),
-                pos -> !level.getBlockState(pos).isAir(),
-                side,
-                false);
+        List<BlockPos> affected = new ArrayList<>();
+        for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+            if (!level.getBlockState(pos).isAir()) {
+                affected.add(pos.immutable());
+            }
+        }
+        return affected;
     }
 
     private static List<BlockPos> surface(Level level, BlockPos origin, Direction side, int ax, int az) {
@@ -222,15 +223,6 @@ public record ArchitectDelivery(double range) implements SpellBehavior, AreaPrev
             }
         }
         return out;
-    }
-
-    private static boolean within(BlockPos pos, BlockPos min, BlockPos max) {
-        return pos.getX() >= min.getX()
-                && pos.getX() <= max.getX()
-                && pos.getY() >= min.getY()
-                && pos.getY() <= max.getY()
-                && pos.getZ() >= min.getZ()
-                && pos.getZ() <= max.getZ();
     }
 
     private static boolean exposed(Level level, BlockPos pos) {
