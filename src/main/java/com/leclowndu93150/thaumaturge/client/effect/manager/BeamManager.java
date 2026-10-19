@@ -216,12 +216,16 @@ public final class BeamManager extends AbstractFXManager<IFXInstance> {
         for (int c = 0; c < n - 1; c++) {
             Vec3 v0 = arc.points.get(c);
             Vec3 v1 = arc.points.get(c + 1);
-            float u0 = c / arc.length;
-            float u1 = (c + 1) / arc.length;
+            float u0 = arcTextureU(c, arc.length);
+            float u1 = arcTextureU(c + 1, arc.length);
             emitArcQuadY(consumer, mat, v0, v1, u0, u1, color, ARC_SIZE);
             emitArcQuadXZ(consumer, mat, v0, v1, u0, u1, color, ARC_SIZE);
         }
         poseStack.popPose();
+    }
+
+    static float arcTextureU(int pointIndex, float chordLength) {
+        return chordLength > 0.0F ? pointIndex / chordLength : 0.0F;
     }
 
     private static void emitArcQuadY(
