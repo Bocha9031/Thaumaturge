@@ -1300,18 +1300,20 @@ public final class TTModelProvider implements DataProvider {
 
         ResourceLocation inlayDot = TTIds.rl("block/inlay_dot");
         ResourceLocation inlaySide = TTIds.rl("block/inlay_side");
+        // Separate perpendicular arms slightly in height so their translucent quads do not z-fight.
+        ResourceLocation inlaySideOffset = TTIds.rl("block/inlay_side_offset");
         MultiPartGenerator inlayGenerator = MultiPartGenerator.multiPart(TTBlocks.INLAY.get())
                 .with(v(inlayDot))
                 .with(Condition.condition().term(BlockInlay.NORTH, true), v(inlaySide))
                 .with(
                         Condition.condition().term(BlockInlay.EAST, true),
-                        v(inlaySide).with(VariantProperties.Y_ROT, VariantProperties.Rotation.R90))
+                        v(inlaySideOffset).with(VariantProperties.Y_ROT, VariantProperties.Rotation.R90))
                 .with(
                         Condition.condition().term(BlockInlay.SOUTH, true),
                         v(inlaySide).with(VariantProperties.Y_ROT, VariantProperties.Rotation.R180))
                 .with(
                         Condition.condition().term(BlockInlay.WEST, true),
-                        v(inlaySide).with(VariantProperties.Y_ROT, VariantProperties.Rotation.R270));
+                        v(inlaySideOffset).with(VariantProperties.Y_ROT, VariantProperties.Rotation.R270));
         blockStateOutput.accept(inlayGenerator);
         ModelTemplates.TWO_LAYERED_ITEM.create(
                 ModelLocationUtils.getModelLocation(TTItems.INLAY.get()),
