@@ -77,6 +77,22 @@ public final class AspectTagWorldRenderer {
             float alpha,
             Predicate<Holder<IAspect>> discovered,
             boolean showAmounts) {
+        renderTagCloud(poseStack, mc, x, y, z, aspects, dir, tagScale, alpha, discovered, showAmounts, 0.0F);
+    }
+
+    public static void renderTagCloud(
+            PoseStack poseStack,
+            Minecraft mc,
+            double x,
+            double y,
+            double z,
+            AspectList aspects,
+            @Nullable Direction dir,
+            float tagScale,
+            float alpha,
+            Predicate<Holder<IAspect>> discovered,
+            boolean showAmounts,
+            float iconOffsetY) {
         Camera camera = mc.gameRenderer.getMainCamera();
         Vec3 cam = camera.getPosition();
         MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
@@ -122,6 +138,7 @@ public final class AspectTagWorldRenderer {
 
             boolean known = discovered.test(entry.aspect());
             poseStack.pushPose();
+            poseStack.translate(0.0F, iconOffsetY, 0.0F);
             poseStack.scale(tagScale, tagScale, tagScale);
             renderQuad(
                     poseStack,
