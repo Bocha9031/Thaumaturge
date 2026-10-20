@@ -4,6 +4,7 @@ import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.recipe.ArcaneWorkbenchContext;
 import com.leclowndu93150.thaumaturge.api.transaction.Transaction;
 import com.leclowndu93150.thaumaturge.api.transaction.TransactionContext;
+import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -21,10 +22,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class BlockEntityArcaneWorkbench extends BlockEntity implements MenuProvider {
+public class BlockEntityArcaneWorkbench extends AbstractSyncedBlockEntity implements MenuProvider {
     private static final double AURA_PAYMENT_EPSILON = 0.0001D;
 
     public int auraVis = 0;
@@ -33,7 +33,7 @@ public class BlockEntityArcaneWorkbench extends BlockEntity implements MenuProvi
         @Override
         public void setChanged() {
             super.setChanged();
-            BlockEntityArcaneWorkbench.this.setChanged();
+            BlockEntityArcaneWorkbench.this.setChangedAndSync();
         }
     };
 

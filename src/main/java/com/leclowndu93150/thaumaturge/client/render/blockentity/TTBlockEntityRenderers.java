@@ -46,6 +46,7 @@ public final class TTBlockEntityRenderers {
         event.registerBlockEntityRenderer(TTBlockEntities.TUBE_VALVE.get(), TubeValveRenderer::new);
         event.registerBlockEntityRenderer(TTBlockEntities.ELDRITCH_OBELISK.get(), EldritchObeliskRenderer::new);
         event.registerBlockEntityRenderer(TTBlockEntities.RESEARCH_TABLE.get(), ResearchTableRenderer::new);
+        event.registerBlockEntityRenderer(TTBlockEntities.ARCANE_WORKBENCH.get(), WorkbenchWandDisplayRenderer::new);
         event.registerBlockEntityRenderer(TTBlockEntities.DECONSTRUCTION_TABLE.get(), DeconstructionTableRenderer::new);
         event.registerBlockEntityRenderer(TTBlockEntities.MANA_POD.get(), ManaPodRenderer::new);
         event.registerBlockEntityRenderer(
