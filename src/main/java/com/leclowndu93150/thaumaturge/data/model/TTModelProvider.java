@@ -2625,7 +2625,7 @@ public final class TTModelProvider implements DataProvider {
         column(TTBlocks.ELDRITCH_PEDESTAL.get(), "eldritch_pedestal_side", "eldritch_stone");
         invisibleWithMeshItem(TTBlocks.ELDRITCH_ALTAR.get(), "eldritch_altar", "eldritch_altar_item");
         invisibleWithCubeItem(TTBlocks.ELDRITCH_OBELISK.get(), "eldritch_deco");
-        invisibleWithCubeItem(TTBlocks.ELDRITCH_PILLAR.get(), "eldritch_deco");
+        cube(TTBlocks.ELDRITCH_PILLAR.get(), "eldritch_deco");
         invisibleWithCubeItem(TTBlocks.ELDRITCH_CAPSTONE.get(), "eldritch_deco");
         trap();
         invisible(TTBlocks.ELDRITCH_NOTHING.get());

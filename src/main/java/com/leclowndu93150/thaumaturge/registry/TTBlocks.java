@@ -53,7 +53,7 @@ import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchInset;
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchNothing;
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchNothingDormant;
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchObelisk;
-import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchStructure;
+import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchPillar;
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchTrap;
 import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEldritchLock;
 import com.leclowndu93150.thaumaturge.content.eldritch.portal.BlockEldritchPortal;
@@ -2010,9 +2010,9 @@ public final class TTBlocks {
                     .noOcclusion()
                     .noLootTable());
 
-    public static final DeferredBlock<BlockEldritchStructure> ELDRITCH_PILLAR = BLOCKS.registerBlock(
+    public static final DeferredBlock<BlockEldritchPillar> ELDRITCH_PILLAR = BLOCKS.registerBlock(
             "eldritch_pillar",
-            BlockEldritchStructure::new,
+            BlockEldritchPillar::new,
             BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_BLACK)
                     .strength(50.0F, 20000.0F)
