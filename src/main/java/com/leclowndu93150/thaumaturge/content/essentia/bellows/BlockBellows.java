@@ -63,7 +63,17 @@ public class BlockBellows extends BaseEntityBlock {
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState()
                 .setValue(FACING, context.getClickedFace().getOpposite())
-                .setValue(ENABLED, true);
+                .setValue(ENABLED, !context.getLevel().hasNeighborSignal(context.getClickedPos()));
+    }
+
+    @Override
+    protected void neighborChanged(
+            BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean movedByPiston) {
+        super.neighborChanged(state, level, pos, block, fromPos, movedByPiston);
+        boolean enabled = !level.hasNeighborSignal(pos);
+        if (enabled != state.getValue(ENABLED)) {
+            level.setBlock(pos, state.setValue(ENABLED, enabled), Block.UPDATE_ALL);
+        }
     }
 
     @Override
