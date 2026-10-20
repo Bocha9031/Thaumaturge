@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.essentia.tube;
 
 import com.leclowndu93150.thaumaturge.api.essentia.EssentiaAccess;
 import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaConduit;
+import com.leclowndu93150.thaumaturge.content.essentia.IBellowsPower;
 import com.leclowndu93150.thaumaturge.content.essentia.spill.EssentiaSpill;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -179,8 +180,14 @@ public abstract class BlockEssentiaTransport extends BaseEntityBlock {
     }
 
     private static boolean connects(Level level, BlockPos pos, Direction side) {
-        if (level.getBlockEntity(pos) instanceof IEssentiaConduit conduit && !conduit.connectsOn(side)) {
+        var blockEntity = level.getBlockEntity(pos);
+        if (blockEntity instanceof IEssentiaConduit conduit && !conduit.connectsOn(side)) {
             return false;
+        }
+        if (blockEntity instanceof BlockEntityTubeBuffer
+                && level.getBlockEntity(pos.relative(side)) instanceof IBellowsPower bellows
+                && side.getOpposite() == bellows.bellowsFacing()) {
+            return true;
         }
         return canConnectTo(level, pos.relative(side), side.getOpposite());
     }
