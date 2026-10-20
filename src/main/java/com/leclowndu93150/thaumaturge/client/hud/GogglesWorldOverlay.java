@@ -35,6 +35,7 @@ public final class GogglesWorldOverlay {
     private static final float TAG_SCALE_CAP = 0.5F;
     private static final double TAG_SCALE_GROW_TICKS = 10.0D;
     private static final float SPACE_ABOVE_LIFT = 0.4F;
+    private static final float JAR_READOUT_LIFT = 0.25F;
     private static final float TAG_ALPHA = 0.75F;
 
     private static @Nullable BlockPos lastTarget;
@@ -84,6 +85,9 @@ public final class GogglesWorldOverlay {
         boolean spaceAbove = mc.level.getBlockState(pos.above()).isAir();
         Direction dir = spaceAbove ? Direction.UP : mc.player.getDirection().getOpposite();
         double y = pos.getY() + (spaceAbove ? SPACE_ABOVE_LIFT : 0.0F);
+        if (be instanceof BlockEntityJar && dir == Direction.UP) {
+            y += JAR_READOUT_LIFT - scale * 2.0F;
+        }
         drawTags(
                 event.getPoseStack(),
                 mc,

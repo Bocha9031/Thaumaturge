@@ -9,6 +9,7 @@ import com.leclowndu93150.thaumaturge.compat.iris.IrisCompat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import net.minecraft.client.Camera;
@@ -35,6 +36,8 @@ public final class AspectTagWorldRenderer {
     private static final float TEXT_SCALE = 0.04F;
     private static final int TEXT_SHADOW_COLOR = 0xFF111111;
     private static final int TEXT_COLOR = 0xFFFFFFFF;
+
+    private record TagOffset(float x, float y) {}
 
     private AspectTagWorldRenderer() {}
 
@@ -110,6 +113,7 @@ public final class AspectTagWorldRenderer {
             z -= 0.5;
         }
         List<AspectInstance> entries = aspects.sortedByTag();
+        List<TagOffset> tagOffsets = new ArrayList<>(entries.size());
         float yawDeg = (float) Math.toDegrees(Math.atan2(cam.x - (x + 0.5), cam.z - (z + 0.5)));
         int current = 0;
         float rowShift = 0.0F;
@@ -126,6 +130,7 @@ public final class AspectTagWorldRenderer {
             }
             float shift = (current - div / 2.0F + 0.5F) * tagScale * 4.0F;
             shift *= tagScale;
+            tagOffsets.add(new TagOffset(shift, rowShift));
 
             poseStack.pushPose();
             poseStack.translate(
@@ -150,10 +155,26 @@ public final class AspectTagWorldRenderer {
                     LightTexture.FULL_BRIGHT);
             poseStack.popPose();
 
-            if (showAmounts) {
+            poseStack.popPose();
+            current++;
+        }
+
+        if (showAmounts) {
+            buffers.endBatch();
+            for (int i = 0; i < entries.size(); i++) {
+                AspectInstance entry = entries.get(i);
+                TagOffset offset = tagOffsets.get(i);
                 String amount = Integer.toString(entry.amount());
                 int width = font.width(amount);
                 poseStack.pushPose();
+                poseStack.translate(
+                        x + 0.5 + tagScale * 2.0F * stepX - cam.x,
+                        y + 0.5 + tagScale * 2.0F * stepY - cam.y,
+                        z + 0.5 + tagScale * 2.0F * stepZ - cam.z);
+                poseStack.mulPose(Axis.YP.rotationDegrees(yawDeg + 180.0F));
+                poseStack.scale(-1.0F, 1.0F, 1.0F);
+                poseStack.translate(offset.x(), offset.y(), 0.0F);
+                poseStack.translate(0.0F, iconOffsetY, 0.0F);
                 poseStack.scale(tagScale * TEXT_SCALE, -tagScale * TEXT_SCALE, tagScale * TEXT_SCALE);
                 poseStack.translate(0.0, 6.0, -0.1);
                 font.drawInBatch(
@@ -181,9 +202,6 @@ public final class AspectTagWorldRenderer {
                         LightTexture.FULL_BRIGHT);
                 poseStack.popPose();
             }
-
-            poseStack.popPose();
-            current++;
         }
         buffers.endBatch();
     }
