@@ -195,7 +195,7 @@ final class JadeMachineDetails {
         if (linked) {
             data.detail(
                     "jade.thaumaturge.mirror.destination",
-                    mirror.link.dimension().location(),
+                    mirror.link.dimension().location().toString(),
                     mirror.link.pos().getX(),
                     mirror.link.pos().getY(),
                     mirror.link.pos().getZ());
