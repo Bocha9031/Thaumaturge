@@ -85,7 +85,7 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
     private static final int SELECT1_CENTER_X = 21;
     private static final int SELECT2_CENTER_X = 79;
     private static final int SELECT_CENTER_Y = 147;
-    private static final float SELECT_SCALE = 1.5F;
+    private static final float SELECT_SCALE = 1.125F;
     private static final int SELECT1_HIT_X = 11;
     private static final int SELECT2_HIT_X = 71;
     private static final int SELECT_HIT_Y = 137;
@@ -119,7 +119,7 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
     private static final int INK_WARN_Y = 84;
 
     private static final int HELPER_X = 41;
-    private static final int HELPER_Y = 9;
+    private static final int HELPER_Y = 5;
     private static final int HELPER_SIZE = 16;
     private static final int HELPER_ROWS = 7;
     private static final int HELPER_ROW_START_Y = 10;
@@ -261,6 +261,10 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
             int y = topPos + PALETTE_Y + (drawn % PALETTE_ROWS) * PALETTE_CELL;
             float alpha = availableOf(aspect) > 0 ? 1.0F : 0.33F;
             int bonus = table == null ? 0 : table.bonusAspects().amountOf(aspect);
+            graphics.pose().pushPose();
+            graphics.pose().translate(x + PALETTE_CELL / 2.0F, y + PALETTE_CELL / 2.0F, 0.0F);
+            graphics.pose().scale(15.0F / PALETTE_CELL, 15.0F / PALETTE_CELL, 1.0F);
+            graphics.pose().translate(-x - PALETTE_CELL / 2.0F, -y - PALETTE_CELL / 2.0F, 0.0F);
             AspectTagRenderer.render(
                     graphics,
                     font,
@@ -273,6 +277,7 @@ public final class ResearchTableScreen extends AbstractTTContainerScreen<MenuRes
                     AspectTagRenderer.BlendMode.ALPHA,
                     alpha,
                     false);
+            graphics.pose().popPose();
             if (mouseX >= x && mouseX < x + PALETTE_CELL && mouseY >= y && mouseY < y + PALETTE_CELL) {
                 hovered = aspect;
             }
