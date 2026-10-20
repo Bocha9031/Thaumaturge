@@ -77,6 +77,7 @@ public final class BlockTubeBuffer extends BlockEssentiaTransport {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
         if (!(level.getBlockEntity(pos) instanceof BlockEntityTubeBuffer buffer)) return InteractionResult.PASS;
         int subHit = resolveSubHit(state, hit, pos);
+        subHit = buffer.resolveClickPart(subHit, hit.getDirection());
         if (buffer.handleCasterClick(subHit, player.isShiftKeyDown())) {
             player.swing(player.getUsedItemHand());
             return InteractionResult.SUCCESS;

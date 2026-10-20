@@ -127,12 +127,21 @@ public final class BlockEntityTubeBuffer extends AbstractSyncedBlockEntity
         if (level.isClientSide()) {
             return true;
         }
-        int arm = lookedAtArm(level, player, pos);
+        BlockHitResult hit = BlockEssentiaTransport.traceLook(level, player, pos);
+        if (hit == null) {
+            return false;
+        }
+        int arm = resolveClickPart(
+                BlockEssentiaTransport.resolveSubHit(level.getBlockState(pos), hit, pos), hit.getDirection());
         boolean handled = arm != NO_ARM && handleCasterClick(arm, player.isShiftKeyDown());
         if (handled) {
             player.swing(hand);
         }
         return handled;
+    }
+
+    int resolveClickPart(int part, Direction hitFace) {
+        return part == TubeGeometry.CORE_HIT && !isSideOpen(hitFace) ? hitFace.ordinal() : part;
     }
 
     public boolean handleCasterClick(int part, boolean sneaking) {
@@ -169,11 +178,6 @@ public final class BlockEntityTubeBuffer extends AbstractSyncedBlockEntity
             }
             from = candidate.side().ordinal() + 1;
         }
-    }
-
-    private static int lookedAtArm(Level level, Player player, BlockPos pos) {
-        BlockHitResult hit = BlockEssentiaTransport.traceLook(level, player, pos);
-        return hit == null ? NO_ARM : BlockEssentiaTransport.resolveSubHit(level.getBlockState(pos), hit, pos);
     }
 
     private void playClickSound(Level world, SoundEvent sound, float volume, float pitchBase, float pitchSpread) {

@@ -71,6 +71,13 @@ class TubeCompatibilityTest {
         return buffer;
     }
 
+    private BlockEntityTubeBuffer bufferAt(BlockPos pos) {
+        BlockEntityTubeBuffer buffer =
+                new BlockEntityTubeBuffer(pos, TTBlocks.TUBE_BUFFER.get().defaultBlockState());
+        buffer.setLevel(level);
+        return buffer;
+    }
+
     private BlockEntityTubeValve valve(BlockPos pos) {
         BlockEntityTubeValve valve =
                 new BlockEntityTubeValve(pos, TTBlocks.TUBE_VALVE.get().defaultBlockState());
@@ -189,6 +196,22 @@ class TubeCompatibilityTest {
         assertFalse(neighbour.isSideOpen(Direction.DOWN));
         assertTrue(buffer.handleCasterClick(Direction.UP.ordinal(), false));
         assertTrue(neighbour.isSideOpen(Direction.DOWN));
+    }
+
+    @Test
+    void bufferReconnectsClosedCoreFace() {
+        BlockEntityTubeBuffer buffer = buffer();
+        BlockEntityTubeBuffer neighbour = bufferAt(BlockPos.ZERO.east());
+        when(level.getBlockEntity(BlockPos.ZERO.east())).thenReturn(neighbour);
+        buffer.setOpenSide(Direction.EAST, false);
+        neighbour.setOpenSide(Direction.WEST, false);
+
+        int part = buffer.resolveClickPart(TubeGeometry.CORE_HIT, Direction.EAST);
+
+        assertEquals(Direction.EAST.ordinal(), part);
+        assertTrue(buffer.handleCasterClick(part, false));
+        assertTrue(buffer.isSideOpen(Direction.EAST));
+        assertTrue(neighbour.isSideOpen(Direction.WEST));
     }
 
     @Test
