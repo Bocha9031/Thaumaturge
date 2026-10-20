@@ -84,6 +84,7 @@ public final class CommandTextEn {
         add.accept("commands.thaumaturge.tools.research.granted", "Unlocked research %s");
         add.accept("commands.thaumaturge.tools.aspect.all", "Granted %s research points to all %s aspects");
         add.accept("commands.thaumaturge.tools.aspect.one", "Granted %s research points of %s");
+        add.accept("commands.thaumaturge.tools.jar.given", "Gave a jar containing %s essentia of %s");
         add.accept("commands.thaumaturge.tools.warp.info", "Warp: permanent %s, normal %s, temporary %s, counter %s");
         add.accept("commands.thaumaturge.tools.warp.unknown_type", "Unknown warp type: %s");
         add.accept("commands.thaumaturge.tools.warp.added", "Added %s %s warp");

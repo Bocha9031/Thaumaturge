@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.server.command;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.Thaumaturge;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
@@ -10,6 +11,8 @@ import com.leclowndu93150.thaumaturge.api.capability.PlayerResearchAccess;
 import com.leclowndu93150.thaumaturge.api.casters.FocusCaster;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTrait;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
+import com.leclowndu93150.thaumaturge.api.essentia.EssentiaList;
+import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaJar;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
@@ -39,6 +42,7 @@ import com.leclowndu93150.thaumaturge.content.taint.item.EssentiaCrystalFactory;
 import com.leclowndu93150.thaumaturge.content.warp.WarpEvents;
 import com.leclowndu93150.thaumaturge.data.worldgen.feature.TTConfiguredFeatures;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
+import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
@@ -303,6 +307,14 @@ public final class TTCommands {
                 .then(admin("crystal")
                         .then(Commands.argument("aspect", StringArgumentType.word())
                                 .executes(guarded("crystal", TTCommands::giveCrystal))))
+                .then(admin("jar")
+                        .then(Commands.argument("aspect", ResourceKeyArgument.key(IAspect.REGISTRY_KEY))
+                                .executes(guarded("jar", ctx -> giveJar(ctx, IEssentiaJar.DEFAULT_CAPACITY)))
+                                .then(Commands.argument(
+                                                "amount", IntegerArgumentType.integer(1, IEssentiaJar.DEFAULT_CAPACITY))
+                                        .executes(guarded(
+                                                "jar",
+                                                ctx -> giveJar(ctx, IntegerArgumentType.getInteger(ctx, "amount")))))))
                 .then(admin("node")
                         .executes(guarded("node", ctx -> spawnNode(ctx, RANDOM, NO_MODIFIER, "")))
                         .then(Commands.argument("type", StringArgumentType.word())
@@ -446,6 +458,22 @@ public final class TTCommands {
                 player.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY).getOrThrow(key);
         AspectPools.grantForCommand(player, aspect, amount);
         success(ctx.getSource(), "aspect.one", amount, key.location().toString());
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int giveJar(CommandContext<CommandSourceStack> ctx, int amount) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ResourceKey<IAspect> key = registryKey(ctx, "aspect", IAspect.REGISTRY_KEY, ERROR_INVALID_ASPECT);
+        Holder<IAspect> aspect =
+                player.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY).getOrThrow(key);
+        ItemStack jar = new ItemStack(TTItems.JAR_NORMAL.get());
+        jar.set(
+                TTDataComponents.ESSENTIA_CONTENTS.get(),
+                new EssentiaList(AspectList.of(new AspectInstance(aspect, amount))));
+        if (!player.getInventory().add(jar)) {
+            player.drop(jar, false);
+        }
+        success(ctx.getSource(), "jar.given", amount, key.location().toString());
         return Command.SINGLE_SUCCESS;
     }
 
