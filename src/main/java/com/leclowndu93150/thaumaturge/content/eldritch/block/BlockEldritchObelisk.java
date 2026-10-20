@@ -43,6 +43,7 @@ public final class BlockEldritchObelisk extends BlockEldritchStructure implement
             Block.box(4, 8, 4, 12, 12, 12),
             Block.box(6, 12, 6, 10, 16, 10));
     static final VoxelShape TOP_TIP_SHAPE = Block.box(6, 0, 6, 10, 4, 10);
+    static final VoxelShape COLLISION_SHAPE = Shapes.block();
 
     public BlockEldritchObelisk(BlockBehaviour.Properties properties) {
         super(properties);
@@ -121,6 +122,10 @@ public final class BlockEldritchObelisk extends BlockEldritchStructure implement
         };
     }
 
+    static VoxelShape collisionShape(int part) {
+        return part >= 0 && part < PART_COUNT ? COLLISION_SHAPE : Shapes.empty();
+    }
+
     public static BlockPos basePos(BlockState state, BlockPos pos) {
         return pos.below(state.getValue(PART));
     }
@@ -128,7 +133,7 @@ public final class BlockEldritchObelisk extends BlockEldritchStructure implement
     @Override
     protected VoxelShape getCollisionShape(
             BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(PART) == 0 ? Shapes.block() : Shapes.empty();
+        return collisionShape(state.getValue(PART));
     }
 
     @Override

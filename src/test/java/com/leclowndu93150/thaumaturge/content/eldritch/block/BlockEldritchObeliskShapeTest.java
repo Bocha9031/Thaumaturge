@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.Shapes;
 import org.junit.jupiter.api.Test;
 
 class BlockEldritchObeliskShapeTest {
@@ -30,5 +31,12 @@ class BlockEldritchObeliskShapeTest {
         assertEquals(0.0, tip.minY);
         assertEquals(0.25, tip.maxY);
         assertEquals(5.25, 5 + tip.maxY);
+    }
+
+    @Test
+    void everyVerticalPartHasSolidCollision() {
+        for (int part = 0; part < BlockEldritchObelisk.PART_COUNT; part++) {
+            assertEquals(Shapes.block(), BlockEldritchObelisk.collisionShape(part), "part " + part + " should block");
+        }
     }
 }
