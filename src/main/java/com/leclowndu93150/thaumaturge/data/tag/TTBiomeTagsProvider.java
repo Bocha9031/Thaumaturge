@@ -20,11 +20,12 @@ public final class TTBiomeTagsProvider extends KeyTagProvider<Biome> {
     @Override
     protected void addTags(HolderLookup.Provider lookupProvider) {
         tag(TTBiomeTags.HAS_GREATWOOD).add(Biomes.FOREST).add(Biomes.FLOWER_FOREST).add(Biomes.BIRCH_FOREST).add(Biomes.OLD_GROWTH_BIRCH_FOREST).add(Biomes.DARK_FOREST).add(TTBiomes.MAGICAL_FOREST)
-                .add(TTBiomes.TAINTED_LANDS);
+                .add(TTBiomes.TAINTED_LANDS).addOptionalTag(BiomeTags.IS_FOREST).remove(Biomes.GROVE).remove(Biomes.PALE_GARDEN);
         tag(TTBiomeTags.HAS_GREATWOOD_RARE).add(Biomes.TAIGA).add(Biomes.OLD_GROWTH_PINE_TAIGA).add(Biomes.OLD_GROWTH_SPRUCE_TAIGA).add(Biomes.SAVANNA).add(Biomes.SAVANNA_PLATEAU).add(Biomes.PLAINS)
-                .add(Biomes.SUNFLOWER_PLAINS).add(Biomes.SWAMP).add(Biomes.MANGROVE_SWAMP);
-        tag(TTBiomeTags.HAS_SILVERWOOD).add(Biomes.FOREST).add(Biomes.BIRCH_FOREST).addTag(TTBiomeTags.IS_MAGICAL).addOptionalTag(Tags.Biomes.IS_MAGICAL).remove(TTBiomes.MAGICAL_FOREST)
-                .remove(TTBiomes.TAINTED_LANDS).remove(TTBiomes.ELDRITCH);
+                .add(Biomes.SUNFLOWER_PLAINS).add(Biomes.SWAMP).add(Biomes.MANGROVE_SWAMP).addOptionalTags(BiomeTags.IS_TAIGA, BiomeTags.IS_SAVANNA, Tags.Biomes.IS_PLAINS, Tags.Biomes.IS_SWAMP);
+        tag(TTBiomeTags.HAS_SILVERWOOD).add(Biomes.FOREST).add(Biomes.BIRCH_FOREST).addTag(TTBiomeTags.IS_MAGICAL).addOptionalTag(Tags.Biomes.IS_MAGICAL).addOptionalTag(BiomeTags.IS_FOREST)
+                .remove(TTBiomes.MAGICAL_FOREST).remove(TTBiomes.TAINTED_LANDS).remove(TTBiomes.ELDRITCH).remove(Biomes.GROVE).remove(Biomes.PALE_GARDEN);
+        tag(TTBiomeTags.HAS_SILVERWOOD_ABUNDANT).addOptional(TTBiomes.BOP_MYSTIC_GROVE);
         tag(TTBiomeTags.HAS_PECH).addTag(TTBiomeTags.IS_MAGICAL).remove(TTBiomes.ELDRITCH);
         tag(TTBiomeTags.HAS_CINDERPEARL).add(Biomes.DESERT).add(Biomes.BADLANDS).add(Biomes.ERODED_BADLANDS).add(Biomes.WOODED_BADLANDS);
         tag(BiomeTags.IS_OVERWORLD).add(TTBiomes.MAGICAL_FOREST).add(TTBiomes.MAGICAL_FOREST_CAVES).add(TTBiomes.EERIE).add(TTBiomes.TAINTED_LANDS);
@@ -33,11 +34,14 @@ public final class TTBiomeTagsProvider extends KeyTagProvider<Biome> {
         tag(TTBiomeTags.IS_SPOOKY).add(Biomes.DARK_FOREST).add(TTBiomes.EERIE);
         tag(TTBiomeTags.IS_TAINTED).add(TTBiomes.TAINTED_LANDS);
         tag(TTBiomeTags.HAS_ELDRITCH_OBELISK).add(Biomes.PLAINS).add(Biomes.SUNFLOWER_PLAINS).add(Biomes.DESERT).add(Biomes.SAVANNA).add(Biomes.TAIGA).add(Biomes.SNOWY_PLAINS).add(Biomes.SNOWY_TAIGA)
-                .add(Biomes.SWAMP).add(Biomes.FOREST).add(Biomes.DARK_FOREST);
+                .add(Biomes.SWAMP).add(Biomes.FOREST).add(Biomes.DARK_FOREST)
+                .addOptionalTags(Tags.Biomes.IS_PLAINS, Tags.Biomes.IS_DESERT, BiomeTags.IS_SAVANNA, BiomeTags.IS_TAIGA, Tags.Biomes.IS_SWAMP).addOptionalTag(BiomeTags.IS_FOREST).remove(Biomes.GROVE)
+                .remove(Biomes.PALE_GARDEN);
 
         tag(TTBiomeTags.HAS_BRAINY_HUSK).add(Biomes.DESERT);
 
         tag(TTBiomeTags.HAS_MOUND).add(Biomes.PLAINS).add(Biomes.SUNFLOWER_PLAINS).add(Biomes.FOREST).add(Biomes.FLOWER_FOREST).add(Biomes.BIRCH_FOREST).add(Biomes.OLD_GROWTH_BIRCH_FOREST)
-                .add(Biomes.DARK_FOREST).add(Biomes.TAIGA).add(Biomes.SAVANNA).add(Biomes.MEADOW).add(TTBiomes.MAGICAL_FOREST).add(TTBiomes.EERIE);
+                .add(Biomes.DARK_FOREST).add(Biomes.TAIGA).add(Biomes.SAVANNA).add(Biomes.MEADOW).add(TTBiomes.MAGICAL_FOREST).add(TTBiomes.EERIE)
+                .addOptionalTags(BiomeTags.IS_FOREST, Tags.Biomes.IS_PLAINS, BiomeTags.IS_TAIGA, BiomeTags.IS_SAVANNA).remove(Biomes.GROVE).remove(Biomes.PALE_GARDEN);
     }
 }

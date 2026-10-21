@@ -55,5 +55,19 @@
         }
       }
     }
+  },
+  {
+    "select": {
+      "tag": "#thaumaturge:has_silverwood_abundant"
+    },
+    "apply": {
+      "species": {
+        "method": "SPLICE_BEFORE",
+        "random": {
+          "...": 3,
+          "thaumaturge:silverwood": 1
+        }
+      }
+    }
   }
 ]

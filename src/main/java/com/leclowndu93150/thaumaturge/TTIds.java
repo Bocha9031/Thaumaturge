@@ -18,6 +18,7 @@ public final class TTIds {
     public static final String FTB_LIBRARY = "ftblibrary";
     public static final String IRIS = "iris";
     public static final String DYNAMIC_TREES = "dynamictrees";
+    public static final String BIOMES_O_PLENTY = "biomesoplenty";
     public static final Identifier DYNAMIC_TREES_RESOURCE_PACK = rl("resourcepacks/dynamictrees");
     public static final Identifier DT_SILVERWOOD_BRANCH = rl("silverwood_branch");
     public static final Identifier DT_GREATWOOD_BRANCH = rl("greatwood_branch");

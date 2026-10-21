@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.data.worldgen.biome;
 
+import net.minecraft.resources.Identifier;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.data.worldgen.feature.TTPlacedFeatures;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
@@ -28,6 +29,7 @@ public final class TTBiomes {
     public static final ResourceKey<Biome> MAGICAL_FOREST_CAVES = key("magical_forest_caves");
     public static final ResourceKey<Biome> EERIE = key("eerie");
     public static final ResourceKey<Biome> ELDRITCH = key("eldritch");
+    public static final ResourceKey<Biome> BOP_MYSTIC_GROVE = ResourceKey.create(Registries.BIOME, Identifier.fromNamespaceAndPath(TTIds.BIOMES_O_PLENTY, "mystic_grove"));
     public static final ResourceKey<Biome> TAINTED_LANDS = key("tainted_lands");
 
     private static final float MAGICAL_FOREST_TEMPERATURE = 0.8F;
