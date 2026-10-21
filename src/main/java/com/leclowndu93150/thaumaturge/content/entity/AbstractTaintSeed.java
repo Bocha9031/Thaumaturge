@@ -7,6 +7,7 @@ import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintEcology;
 import com.leclowndu93150.thaumaturge.content.taint.spread.TaintFeeding;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
@@ -96,7 +97,7 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint implements I
         TaintEcology.touchActiveSeed(level, pos);
         TaintBiomeManager.taintColumn(level, pos);
         TaintFeeding.feed(level, pos, this, PULSE_INTERVAL / TICKS_PER_SECOND);
-        if (TaintFeeding.isDormant(this)) {
+        if (TaintFeeding.isDormant(this) || TaintBlooms.isProtected(level, pos)) {
             starve(level);
         } else {
             this.starveTicks = 0;
