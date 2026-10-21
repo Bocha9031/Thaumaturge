@@ -80,6 +80,8 @@ public final class TTItemTags {
     public static final TagKey<Item> SCRIBING_TOOLS = key("scribing_tools");
     public static final TagKey<Item> FLOATING_DROPS = key("floating_drops");
     public static final TagKey<Item> TAINT_TOOLS = key("taint_tools");
+    public static final TagKey<Item> DT_BRANCHES_THAT_BURN = dynamicTrees("branches_that_burn");
+    public static final TagKey<Item> DT_SEEDS = dynamicTrees("seeds");
 
     private TTItemTags() {}
 
@@ -89,5 +91,9 @@ public final class TTItemTags {
 
     private static TagKey<Item> common(String path) {
         return TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath("c", path));
+    }
+
+    private static TagKey<Item> dynamicTrees(String path) {
+        return TagKey.create(Registries.ITEM, Identifier.fromNamespaceAndPath(TTIds.DYNAMIC_TREES, path));
     }
 }

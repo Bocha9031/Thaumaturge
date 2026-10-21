@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.data.tag;
 
+import net.minecraft.tags.TagEntry;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.content.decor.BlockCandleHolder;
 import com.leclowndu93150.thaumaturge.data.labyrinth.LabyrinthBlocks;
@@ -26,6 +27,10 @@ public final class TTBlockTagsProvider extends BlockTagsProvider {
     @Override
     protected void addTags(HolderLookup.Provider lookupProvider) {
         tag(BlockTags.DIRT).add(TTBlocks.GRASS_AMBIENT.get());
+        tag(TTBlockTags.DT_BRANCHES_THAT_BURN).add(TagEntry.optionalElement(TTIds.DT_SILVERWOOD_BRANCH)).add(TagEntry.optionalElement(TTIds.DT_GREATWOOD_BRANCH));
+        tag(TTBlockTags.DT_STRIPPED_BRANCHES_THAT_BURN).add(TagEntry.optionalElement(TTIds.DT_STRIPPED_SILVERWOOD_BRANCH)).add(TagEntry.optionalElement(TTIds.DT_STRIPPED_GREATWOOD_BRANCH));
+        tag(TTBlockTags.DT_LEAVES).add(TagEntry.optionalElement(TTIds.DT_SILVERWOOD_LEAVES)).add(TagEntry.optionalElement(TTIds.DT_GREATWOOD_LEAVES));
+        tag(TTBlockTags.DT_SAPLINGS).add(TagEntry.optionalElement(TTIds.DT_SILVERWOOD_SAPLING)).add(TagEntry.optionalElement(TTIds.DT_GREATWOOD_SAPLING));
         tag(TTBlockTags.MAGICAL_CAVE_GROUND_REPLACEABLE).addTag(BlockTags.BASE_STONE_OVERWORLD).addTag(BlockTags.DIRT).addTag(BlockTags.LUSH_GROUND_REPLACEABLE);
         tag(BlockTags.FLOWER_POTS).add(TTBlocks.POTTED_SAPLING_GREATWOOD.get()).add(TTBlocks.POTTED_SAPLING_SILVERWOOD.get()).add(TTBlocks.POTTED_SHIMMERLEAF.get())
                 .add(TTBlocks.POTTED_CINDERPEARL.get()).add(TTBlocks.POTTED_VISHROOM.get());

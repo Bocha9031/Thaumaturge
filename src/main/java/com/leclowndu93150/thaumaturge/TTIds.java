@@ -19,6 +19,16 @@ public final class TTIds {
     public static final String IRIS = "iris";
     public static final String DYNAMIC_TREES = "dynamictrees";
     public static final Identifier DYNAMIC_TREES_RESOURCE_PACK = rl("resourcepacks/dynamictrees");
+    public static final Identifier DT_SILVERWOOD_BRANCH = rl("silverwood_branch");
+    public static final Identifier DT_GREATWOOD_BRANCH = rl("greatwood_branch");
+    public static final Identifier DT_STRIPPED_SILVERWOOD_BRANCH = rl("stripped_silverwood_branch");
+    public static final Identifier DT_STRIPPED_GREATWOOD_BRANCH = rl("stripped_greatwood_branch");
+    public static final Identifier DT_SILVERWOOD_LEAVES = rl("silverwood_leaves");
+    public static final Identifier DT_GREATWOOD_LEAVES = rl("greatwood_leaves");
+    public static final Identifier DT_SILVERWOOD_SAPLING = rl("silverwood_sapling");
+    public static final Identifier DT_GREATWOOD_SAPLING = rl("greatwood_sapling");
+    public static final Identifier DT_SILVERWOOD_SEED = rl("silverwood_seed");
+    public static final Identifier DT_GREATWOOD_SEED = rl("greatwood_seed");
 
     private TTIds() {}
 

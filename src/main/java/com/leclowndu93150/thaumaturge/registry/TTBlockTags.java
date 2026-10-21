@@ -58,6 +58,10 @@ public final class TTBlockTags {
     public static final TagKey<Block> TAINT_CONVERSION_IMMUNE = key("taint_conversion_immune");
     public static final TagKey<Block> TAINT_BLOCKS = key("taint_blocks");
     public static final TagKey<Block> ARCANE_LOCKS = key("arcane_locks");
+    public static final TagKey<Block> DT_BRANCHES_THAT_BURN = dynamicTrees("branches_that_burn");
+    public static final TagKey<Block> DT_STRIPPED_BRANCHES_THAT_BURN = dynamicTrees("stripped_branches_that_burn");
+    public static final TagKey<Block> DT_LEAVES = dynamicTrees("leaves");
+    public static final TagKey<Block> DT_SAPLINGS = dynamicTrees("saplings");
 
     private TTBlockTags() {}
 
@@ -67,5 +71,9 @@ public final class TTBlockTags {
 
     private static TagKey<Block> common(String path) {
         return TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("c", path));
+    }
+
+    private static TagKey<Block> dynamicTrees(String path) {
+        return TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(TTIds.DYNAMIC_TREES, path));
     }
 }

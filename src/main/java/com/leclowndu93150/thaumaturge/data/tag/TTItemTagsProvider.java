@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.data.tag;
 
+import net.minecraft.tags.TagEntry;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.registry.TTBlockTags;
 import com.leclowndu93150.thaumaturge.registry.TTItemTags;
@@ -88,6 +89,8 @@ public final class TTItemTagsProvider extends BlockTagCopyingItemTagProvider {
         copy(Tags.Blocks.ORES_IN_GROUND_STONE, Tags.Items.ORES_IN_GROUND_STONE);
         copy(Tags.Blocks.ORES_IN_GROUND_DEEPSLATE, Tags.Items.ORES_IN_GROUND_DEEPSLATE);
         tag(Tags.Items.ORES).addTags(TTItemTags.ORES_AMBER, TTItemTags.ORES_CINNABAR);
+        tag(TTItemTags.DT_BRANCHES_THAT_BURN).add(TagEntry.optionalElement(TTIds.DT_SILVERWOOD_BRANCH)).add(TagEntry.optionalElement(TTIds.DT_GREATWOOD_BRANCH));
+        tag(TTItemTags.DT_SEEDS).add(TagEntry.optionalElement(TTIds.DT_SILVERWOOD_SEED)).add(TagEntry.optionalElement(TTIds.DT_GREATWOOD_SEED));
         tag(TTItemTags.RAW_MATERIALS_CINNABAR).add(TTItems.RAW_CINNABAR.get());
         tag(Tags.Items.RAW_MATERIALS).addTag(TTItemTags.RAW_MATERIALS_CINNABAR);
         tag(TTItemTags.SCAN_IRON).addTags(Tags.Items.ORES_IRON, Tags.Items.INGOTS_IRON, Tags.Items.STORAGE_BLOCKS_IRON);
