@@ -6,10 +6,12 @@ import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.CardinalLighting;
 import net.minecraft.world.level.ColorResolver;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.level.lighting.LightEngine;
 import net.minecraft.world.level.material.FluidState;
 import org.jspecify.annotations.Nullable;
 
@@ -63,5 +65,15 @@ public class PreviewBlockGetter implements BlockAndTintGetter {
     @Override
     public LevelLightEngine getLightEngine() {
         return LevelLightEngine.EMPTY;
+    }
+
+    @Override
+    public int getBrightness(LightLayer layer, BlockPos pos) {
+        return LightEngine.MAX_LEVEL;
+    }
+
+    @Override
+    public int getRawBrightness(BlockPos pos, int darkening) {
+        return Math.max(0, LightEngine.MAX_LEVEL - darkening);
     }
 }
