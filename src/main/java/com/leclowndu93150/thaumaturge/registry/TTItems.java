@@ -30,7 +30,9 @@ import com.leclowndu93150.thaumaturge.content.equipment.RobeArmorItem;
 import com.leclowndu93150.thaumaturge.content.equipment.TTMaterials;
 import com.leclowndu93150.thaumaturge.content.equipment.TravellerBootsItem;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidGearItem;
+import com.leclowndu93150.thaumaturge.content.equipment.VoidAxeItem;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidHoeItem;
+import com.leclowndu93150.thaumaturge.content.equipment.VoidShovelItem;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidRobeArmorItem;
 import com.leclowndu93150.thaumaturge.content.equipment.bauble.AmuletVisItem;
 import com.leclowndu93150.thaumaturge.content.equipment.bauble.TrinketItem;
@@ -92,6 +94,7 @@ import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.food.FoodProperties;
+import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.DyeColor;
@@ -99,6 +102,7 @@ import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.item.component.Consumables;
@@ -234,8 +238,8 @@ public final class TTItems {
 
     public static final DeferredItem<Item> THAUMIUM_SWORD = ITEMS.registerItem("thaumium_sword", Item::new, props -> props.sword(TTMaterials.TOOL_THAUMIUM, 3.0F, -2.4F));
     public static final DeferredItem<Item> THAUMIUM_PICKAXE = ITEMS.registerItem("thaumium_pickaxe", Item::new, props -> props.pickaxe(TTMaterials.TOOL_THAUMIUM, 1.0F, -2.8F));
-    public static final DeferredItem<Item> THAUMIUM_AXE = ITEMS.registerItem("thaumium_axe", Item::new, props -> props.axe(TTMaterials.TOOL_THAUMIUM, 4.5F, -3.0F));
-    public static final DeferredItem<Item> THAUMIUM_SHOVEL = ITEMS.registerItem("thaumium_shovel", Item::new, props -> props.shovel(TTMaterials.TOOL_THAUMIUM, 1.5F, -3.0F));
+    public static final DeferredItem<AxeItem> THAUMIUM_AXE = ITEMS.registerItem("thaumium_axe", props -> new AxeItem(TTMaterials.TOOL_THAUMIUM, 4.5F, -3.0F, props));
+    public static final DeferredItem<ShovelItem> THAUMIUM_SHOVEL = ITEMS.registerItem("thaumium_shovel", props -> new ShovelItem(TTMaterials.TOOL_THAUMIUM, 1.5F, -3.0F, props));
     public static final DeferredItem<HoeItem> THAUMIUM_HOE = ITEMS.registerItem("thaumium_hoe", props -> new HoeItem(TTMaterials.TOOL_THAUMIUM, -3.0F, 0.0F, props));
     public static final DeferredItem<Item> THAUMIUM_SPEAR = ITEMS.registerItem("thaumium_spear", Item::new,
             props -> props.spear(TTMaterials.TOOL_THAUMIUM, 1.0F, 1.0F, 0.55F, 3.0F, 10.5F, 6.5F, 5.1F, 10.5F, 4.6F));
@@ -246,8 +250,8 @@ public final class TTItems {
 
     public static final DeferredItem<VoidGearItem> VOID_SWORD = ITEMS.registerItem("void_sword", VoidGearItem::new, props -> props.sword(TTMaterials.TOOL_VOID, 3.0F, -2.4F));
     public static final DeferredItem<VoidGearItem> VOID_PICKAXE = ITEMS.registerItem("void_pickaxe", VoidGearItem::new, props -> props.pickaxe(TTMaterials.TOOL_VOID, 1.0F, -2.8F));
-    public static final DeferredItem<VoidGearItem> VOID_AXE = ITEMS.registerItem("void_axe", VoidGearItem::new, props -> props.axe(TTMaterials.TOOL_VOID, 4.0F, -3.0F));
-    public static final DeferredItem<VoidGearItem> VOID_SHOVEL = ITEMS.registerItem("void_shovel", VoidGearItem::new, props -> props.shovel(TTMaterials.TOOL_VOID, 1.5F, -3.0F));
+    public static final DeferredItem<VoidAxeItem> VOID_AXE = ITEMS.registerItem("void_axe", props -> new VoidAxeItem(TTMaterials.TOOL_VOID, 4.0F, -3.0F, props));
+    public static final DeferredItem<VoidShovelItem> VOID_SHOVEL = ITEMS.registerItem("void_shovel", props -> new VoidShovelItem(TTMaterials.TOOL_VOID, 1.5F, -3.0F, props));
     public static final DeferredItem<VoidHoeItem> VOID_HOE = ITEMS.registerItem("void_hoe", props -> new VoidHoeItem(TTMaterials.TOOL_VOID, -3.0F, 0.0F, props));
     public static final DeferredItem<VoidGearItem> VOID_SPEAR = ITEMS.registerItem("void_spear", VoidGearItem::new,
             props -> props.spear(TTMaterials.TOOL_VOID, 1.05F, 1.075F, 0.5F, 3.0F, 10.0F, 6.5F, 5.1F, 10.0F, 4.6F));
@@ -260,8 +264,8 @@ public final class TTItems {
             props -> props.sword(TTMaterials.TOOL_ELEMENTAL, 3.0F, -2.4F).rarity(Rarity.RARE).component(DataComponents.USE_EFFECTS, ElementalSwordItem.USE_EFFECTS));
     public static final DeferredItem<ElementalPickaxeItem> ELEMENTAL_PICKAXE = ITEMS.registerItem("elemental_pickaxe", ElementalPickaxeItem::new,
             props -> props.pickaxe(TTMaterials.TOOL_ELEMENTAL, 1.0F, -2.8F).rarity(Rarity.RARE));
-    public static final DeferredItem<ElementalAxeItem> ELEMENTAL_AXE = ITEMS.registerItem("elemental_axe", ElementalAxeItem::new,
-            props -> props.axe(TTMaterials.TOOL_ELEMENTAL, 5.0F, -3.0F).rarity(Rarity.RARE));
+    public static final DeferredItem<ElementalAxeItem> ELEMENTAL_AXE = ITEMS.registerItem("elemental_axe", props -> new ElementalAxeItem(TTMaterials.TOOL_ELEMENTAL, 5.0F, -3.0F, props),
+            props -> props.rarity(Rarity.RARE));
     public static final DeferredItem<ElementalShovelItem> ELEMENTAL_SHOVEL = ITEMS.registerItem("elemental_shovel", ElementalShovelItem::new,
             props -> props.shovel(TTMaterials.TOOL_ELEMENTAL, 1.5F, -3.0F).rarity(Rarity.RARE));
     public static final DeferredItem<ElementalHoeItem> ELEMENTAL_HOE = ITEMS.registerItem("elemental_hoe", props -> new ElementalHoeItem(TTMaterials.TOOL_ELEMENTAL, -3.0F, 0.0F, props),
