@@ -1,10 +1,10 @@
 package com.leclowndu93150.thaumaturge.content.taint.flux;
 
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintEcology;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.entity.ThaumicSlime;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
-import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
@@ -48,7 +48,6 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
     private static final double CELL_CENTRE = 0.5;
     private static final int FESTER_ONE_IN = 50;
     private static final float FESTER_PRESSURE = 0.16F;
-    private static final int FESTER_SPREAD_ATTEMPTS = 6;
     private static final int DECAY_ONE_IN = 4;
     private static final float POLLUTION_AMOUNT = 1.0F;
     private static final int LAST_QUANTUM = 1;
@@ -154,21 +153,23 @@ public abstract class FluxGooFluid extends BaseFlowingFluid {
 
     private boolean tryFester(ServerLevel level, BlockPos pos, RandomSource random) {
         if (!ThaumaturgeCommonConfig.TAINT_FROM_FLUX.get() || ThaumaturgeCommonConfig.WUSS_MODE.get() || random.nextInt(FESTER_ONE_IN) != 0 || TaintBlooms.isProtected(level, pos)
-                || (!TaintBiomeManager.isTainted(level, pos) && !TaintBiomeManager.taintColumn(level, pos))) {
+                || !level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)) {
             return false;
         }
+        if (!TaintHelper.plantSeed(level, pos, 0.0F)) {
+            return false;
+        }
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         AuraHelper.polluteAura(level, pos, POLLUTION_AMOUNT, true);
-        TaintHelper.establishFoothold(level, pos, FESTER_PRESSURE, FESTER_SPREAD_ATTEMPTS);
+        TaintEcology.addPressure(level, pos, FESTER_PRESSURE);
         return true;
     }
 
     private void decayOnce(ServerLevel level, BlockPos pos, int amount, boolean airAbove, RandomSource random) {
         if (amount <= LAST_QUANTUM) {
+            level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             if (random.nextBoolean()) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
                 pollutePastTheFloor(level, pos);
-            } else if (!TaintHelper.placeFibreFromFlux(level, pos)) {
-                level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             }
             return;
         }

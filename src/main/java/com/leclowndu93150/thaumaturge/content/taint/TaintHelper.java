@@ -84,11 +84,6 @@ public final class TaintHelper {
         return count;
     }
 
-    public static boolean placeFibreFromFlux(ServerLevel level, BlockPos pos) {
-        boolean permitted = ThaumaturgeCommonConfig.TAINT_FROM_FLUX.get() && !ThaumaturgeCommonConfig.WUSS_MODE.get() && !TaintBlooms.isProtected(level, pos);
-        return permitted && level.setBlock(pos, BlockTaintFibre.stateForWorld(level, pos), Block.UPDATE_ALL);
-    }
-
     public static boolean attemptFibreGrowth(ServerLevel level, BlockPos origin, boolean force) {
         if (force) {
             return grow(level, origin, true, null);
@@ -152,14 +147,18 @@ public final class TaintHelper {
         return PhysicalFlux.isPhysicalFlux(state) || (state.canBeReplaced() && state.getFluidState().isEmpty());
     }
 
-    public static void establishFoothold(ServerLevel level, BlockPos pos, float pressure, int spreadAttempts) {
-        if (canHostFoothold(level.getBlockState(pos))) {
-            level.setBlock(pos, BlockTaintFibre.stateForWorld(level, pos), Block.UPDATE_ALL);
+    public static boolean plantSeed(ServerLevel level, BlockPos standing, float reserve) {
+        if (ThaumaturgeCommonConfig.WUSS_MODE.get() || level.getDifficulty() == Difficulty.PEACEFUL || TaintBlooms.isProtected(level, standing)) {
+            return false;
         }
-        TaintEcology.addPressure(level, pos, pressure);
-        for (int attempt = 0; attempt < spreadAttempts; attempt++) {
-            attemptFibreGrowth(level, pos, true);
+        EntityTaintSeed seed = createSeedAt(level, standing);
+        if (seed == null) {
+            return false;
         }
+        seed.setTaintReserve(reserve);
+        level.addFreshEntity(seed);
+        TaintEcology.addPressure(level, standing, SEED_PRESSURE);
+        return true;
     }
 
     public static boolean trySpawnSatelliteSeed(ServerLevel level, BlockPos origin, RandomSource random) {
@@ -270,12 +269,12 @@ public final class TaintHelper {
         return AuraHelper.getFlux(level, target) >= SEED_MIN_FLUX && (!requireEdge || TaintOrigins.isOnFringe(level, target));
     }
 
-    private static @Nullable EntityTaintSeed createSeedAbove(ServerLevel level, BlockPos target) {
+    private static @Nullable EntityTaintSeed createSeedAt(ServerLevel level, BlockPos standing) {
         EntityTaintSeed seed = TTEntities.TAINT_SEED.get().create(level, EntitySpawnReason.NATURAL);
         if (seed == null) {
             return null;
         }
-        seed.snapTo(target.getX() + 0.5, target.getY() + 1.0, target.getZ() + 0.5, level.getRandom().nextFloat() * FULL_TURN_DEGREES, 0.0F);
+        seed.snapTo(standing.getX() + 0.5, standing.getY(), standing.getZ() + 0.5, level.getRandom().nextFloat() * FULL_TURN_DEGREES, 0.0F);
         AABB box = seed.getBoundingBox();
         boolean crowded = !level.getEntitiesOfClass(AbstractTaintSeed.class, box.inflate(TaintOrigins.claimRadius() * SEED_CROWD_FRACTION)).isEmpty();
         return level.noBlockCollision(seed, box) && !crowded ? seed : null;
@@ -285,7 +284,7 @@ public final class TaintHelper {
         if (!seedSiteValid(level, target, requireEdge)) {
             return false;
         }
-        EntityTaintSeed seed = createSeedAbove(level, target);
+        EntityTaintSeed seed = createSeedAt(level, target.above());
         if (seed == null) {
             return false;
         }

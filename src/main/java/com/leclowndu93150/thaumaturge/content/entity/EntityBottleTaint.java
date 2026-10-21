@@ -1,18 +1,16 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
-import com.leclowndu93150.thaumaturge.api.taint.TaintApi;
-import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.item.ThrowProfile;
-import com.leclowndu93150.thaumaturge.content.taint.block.BlockTaintFibre;
-import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
-import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
+import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintFeeding;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import com.leclowndu93150.thaumaturge.registry.TTParticles;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -28,7 +26,6 @@ import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableIt
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
@@ -40,12 +37,8 @@ public final class EntityBottleTaint extends ThrowableItemProjectile implements 
     private static final byte SHATTER_EVENT = 3;
     private static final double EFFECT_REACH = 5.0;
     private static final int EFFECT_TICKS = 100;
-    private static final int PLANT_ATTEMPTS = 10;
-    private static final float PLANT_CHANCE = 0.5F;
-    private static final float PLANT_SPREAD = 5.0F;
     private static final int PLANT_SCAN_ABOVE = 2;
     private static final int PLANT_SCAN_BELOW = 3;
-    private static final float PLANT_PRESSURE = 0.03F;
     private static final int GOO_ATTEMPTS = 3;
     private static final int GOO_REACH = 2;
     private static final int GOO_MAX_QUANTITY = 2;
@@ -100,9 +93,7 @@ public final class EntityBottleTaint extends ThrowableItemProjectile implements 
         Vec3 impact = hit.getLocation();
         BlockPos origin = BlockPos.containing(impact);
         afflictNearby(level, impact);
-        if (!ThaumaturgeCommonConfig.WUSS_MODE.get()) {
-            plantFibres(level, origin);
-        }
+        plantSeed(level, origin);
         scatterGoo(level, origin);
         level.broadcastEntityEvent(this, SHATTER_EVENT);
         this.discard();
@@ -115,26 +106,13 @@ public final class EntityBottleTaint extends ThrowableItemProjectile implements 
         }
     }
 
-    private void plantFibres(ServerLevel level, BlockPos origin) {
-        RandomSource random = this.getRandom();
-        for (int i = 0; i < PLANT_ATTEMPTS; i++) {
-            if (random.nextFloat() >= PLANT_CHANCE) {
-                continue;
-            }
-            BlockPos column = origin.offset(plantOffset(random), 0, plantOffset(random));
-            if (level.hasChunkAt(column) && !TaintBlooms.isProtected(level, column) && (TaintBiomeManager.isTainted(level, column) || TaintBiomeManager.taintColumn(level, column))) {
-                plantInColumn(level, column);
-            }
-        }
-    }
-
-    private void plantInColumn(ServerLevel level, BlockPos column) {
-        for (int y = column.getY() + PLANT_SCAN_ABOVE; y >= column.getY() - PLANT_SCAN_BELOW; y--) {
-            BlockPos pos = new BlockPos(column.getX(), y, column.getZ());
-            BlockState state = level.getBlockState(pos);
-            if ((state.isAir() || state.canBeReplaced()) && state.getFluidState().isEmpty() && BlockTaintFibre.hasSolidAttachment(level, pos)) {
-                level.setBlock(pos, BlockTaintFibre.stateForWorld(level, pos), Block.UPDATE_ALL);
-                TaintApi.addEcologicalPressure(level, pos, PLANT_PRESSURE);
+    private void plantSeed(ServerLevel level, BlockPos origin) {
+        BlockPos.MutableBlockPos pos = origin.mutable();
+        for (int y = origin.getY() + PLANT_SCAN_ABOVE; y >= origin.getY() - PLANT_SCAN_BELOW; y--) {
+            pos.setY(y);
+            BlockPos below = pos.below();
+            if (level.getBlockState(pos).isAir() && level.getBlockState(below).isFaceSturdy(level, below, Direction.UP)) {
+                TaintHelper.plantSeed(level, pos.immutable(), TaintFeeding.reserveCap());
                 return;
             }
         }
@@ -168,10 +146,6 @@ public final class EntityBottleTaint extends ThrowableItemProjectile implements 
 
     private static boolean canAfflict(LivingEntity creature) {
         return !MobTraits.isTainted(creature) && !creature.is(EntityTypeTags.UNDEAD);
-    }
-
-    private static int plantOffset(RandomSource random) {
-        return (int) ((random.nextFloat() - random.nextFloat()) * PLANT_SPREAD);
     }
 
     private static double signed(RandomSource random) {

@@ -92,11 +92,11 @@ public final class ThaumaturgeCommonConfig {
                 "Ticks a taint seed survives with nothing to eat before it withers away. A tainted node inside an Ethereal Bloom's range is purified after the same time.");
         TAINTED_LANDS_STARTING_FLUX = decimal(spec, "taintedLandsStartingFlux", 1.0, 0.0, 10.0,
                 "Flux a freshly generated Tainted Lands chunk starts with, as a multiple of its base aura. The tainted nodes and seeds there feed on it. 0 leaves Tainted Lands dormant until flux reaches them.");
-        TAINT_FROM_FLUX = flag(spec, "taintFromFlux", true, "Whether deep, exposed Flux Goo can fester into Fibrous Taint and Tainted Lands, as in Thaumcraft 4.");
+        TAINT_FROM_FLUX = flag(spec, "taintFromFlux", true, "Whether deep, exposed Flux Goo can fester into a taint seed.");
         PHYSICAL_FLUX_AURA_FLOOR = flag(spec, "physicalFluxAuraFloor", true,
                 "Whether physical Flux Goo and Flux Gas keep a capped minimum of Aura Flux in their chunk. Turning this off leaves the goo and gas and their direct effects in place.");
         PHYSICAL_FLUX_TAINT_OUTBREAKS = flag(spec, "physicalFluxTaintOutbreaks", true,
-                "Whether a large build-up of physical Flux Goo and Flux Gas in one area can start a Tainted Lands outbreak on its own, apart from single deep goo blocks festering. Has no effect while taintFromFlux is off.");
+                "Whether a large build-up of physical Flux Goo and Flux Gas in one area can sprout a taint seed on its own, apart from single deep goo blocks festering. Has no effect while taintFromFlux is off.");
         FLUX_PRESSURE_EVENTS = flag(spec, "fluxPressureEvents", true,
                 "Whether high Aura Flux can trigger the Thaumcraft 5 style flux pressure events alongside Flux Rifts. Turning this off does not disable Flux Rifts.");
         ENERGIZED_NODE_VIS_PER_POINT = decimal(spec, "energizedNodeVisPerPoint", 6.0, 0.0, PERCENT_MAX,
