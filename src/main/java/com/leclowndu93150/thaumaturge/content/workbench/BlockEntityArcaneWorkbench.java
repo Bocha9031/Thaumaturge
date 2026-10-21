@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.workbench;
 
+import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
@@ -21,13 +22,12 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
-public class BlockEntityArcaneWorkbench extends BlockEntity implements MenuProvider {
+public class BlockEntityArcaneWorkbench extends AbstractSyncedBlockEntity implements MenuProvider {
     private static final int CHARGER_RADIUS_CHUNKS = 1;
     private static final float MIN_ANCHOR_REQUEST = 1.0F;
     private static final double DRAIN_EPSILON = 0.01;
@@ -39,7 +39,7 @@ public class BlockEntityArcaneWorkbench extends BlockEntity implements MenuProvi
 
     public BlockEntityArcaneWorkbench(BlockPos pos, BlockState state) {
         super(TTBlockEntities.ARCANE_WORKBENCH.get(), pos, state);
-        inventory.addChangedListener(this::setChanged);
+        inventory.addChangedListener(this::setChangedAndSync);
     }
 
     public void refreshAura() {
