@@ -56,6 +56,7 @@ public final class TTBlockTags {
     public static final TagKey<Block> TAINT_CONVERTIBLE_ROCK = key("taint_convertible/rock");
     public static final TagKey<Block> TAINT_CONVERTIBLE_CRUST = key("taint_convertible/crust");
     public static final TagKey<Block> TAINT_CONVERSION_IMMUNE = key("taint_conversion_immune");
+    public static final TagKey<Block> TAINT_BLOCKS = key("taint_blocks");
     public static final TagKey<Block> ARCANE_LOCKS = key("arcane_locks");
 
     private TTBlockTags() {}

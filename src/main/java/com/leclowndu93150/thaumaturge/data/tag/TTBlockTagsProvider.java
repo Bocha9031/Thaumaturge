@@ -55,6 +55,8 @@ public final class TTBlockTagsProvider extends BlockTagsProvider {
         tag(TTBlockTags.TAINT_CONVERTIBLE_CRUST).add(Blocks.RED_MUSHROOM_BLOCK).add(Blocks.BROWN_MUSHROOM_BLOCK).add(Blocks.MUSHROOM_STEM).add(Blocks.PUMPKIN).add(Blocks.CARVED_PUMPKIN)
                 .add(Blocks.JACK_O_LANTERN).add(Blocks.MELON).add(Blocks.CACTUS).add(Blocks.SPONGE).add(Blocks.WET_SPONGE).addTag(BlockTags.CORAL_BLOCKS).addTag(BlockTags.PLANKS);
         tag(TTBlockTags.TAINT_CONVERSION_IMMUNE);
+        tag(TTBlockTags.TAINT_BLOCKS).add(TTBlocks.TAINT_ROCK.get()).add(TTBlocks.TAINT_SOIL.get()).add(TTBlocks.TAINT_CRUST.get()).add(TTBlocks.TAINT_GEYSER.get()).add(TTBlocks.TAINT_LOG.get())
+                .add(TTBlocks.TAINT_FEATURE.get()).add(TTBlocks.TAINT_FIBRE.get()).add(TTBlocks.TAINT_SPORE_STALK.get());
         tag(TTBlockTags.WARDABLE_NON_SOLID).add(TTBlocks.WARDED_GLASS.get()).add(TTBlocks.ARCANE_DOOR.get()).add(TTBlocks.ARCANE_PRESSURE_PLATE.get());
         tag(TTBlockTags.ARCANE_LOCKS).add(TTBlocks.ARCANE_DOOR.get()).add(TTBlocks.ARCANE_PRESSURE_PLATE.get());
         tag(BlockTags.DOORS).add(TTBlocks.ARCANE_DOOR.get());
