@@ -96,14 +96,6 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("gui.thaumaturge.thaumonomicon.search", "Search");
         add("treePack.thaumaturge.name", "Thaumaturge");
         add("pack.thaumaturge.dynamic_trees", "Thaumaturge Dynamic Trees");
-        add("block.thaumaturge.greatwood_branch", "Greatwood Tree");
-        add("item.thaumaturge.greatwood_branch", "Greatwood Tree");
-        add("item.thaumaturge.greatwood_seed", "Greatwood Seed");
-        add("species.thaumaturge.greatwood", "Greatwood");
-        add("block.thaumaturge.silverwood_branch", "Silverwood Tree");
-        add("item.thaumaturge.silverwood_branch", "Silverwood Tree");
-        add("item.thaumaturge.silverwood_seed", "Silverwood Seed");
-        add("species.thaumaturge.silverwood", "Silverwood");
         add("gui.thaumaturge.thaumonomicon.search_more", "...too many results found. Refine your search");
         add("gui.thaumaturge.research_table.no_ink.0", "You have run out of ink!");
         add("gui.thaumaturge.research_table.no_ink.1", "Refill your scribing tools.");
@@ -398,6 +390,7 @@ public final class TTEnglishProvider extends LanguageProvider {
         langBaubles();
         langCStone();
         langDTrees();
+        langDynamicTrees();
         langEPlants();
         langMAuraHud();
         langHContainers();
@@ -555,6 +548,23 @@ public final class TTEnglishProvider extends LanguageProvider {
         add("block.thaumaturge.leaves_silverwood", "Silverwood Leaves");
         add("block.thaumaturge.plank_greatwood", "Greatwood Planks");
         add("block.thaumaturge.plank_silverwood", "Silverwood Planks");
+    }
+
+    private void langDynamicTrees() {
+        add("block.thaumaturge.greatwood_branch", "Greatwood Tree");
+        add("block.thaumaturge.silverwood_branch", "Silverwood Tree");
+        add("block.thaumaturge.stripped_greatwood_branch", "Stripped Greatwood Tree");
+        add("block.thaumaturge.stripped_silverwood_branch", "Stripped Silverwood Tree");
+        add("block.thaumaturge.greatwood_leaves", "Greatwood Leaves");
+        add("block.thaumaturge.silverwood_leaves", "Silverwood Leaves");
+        add("block.thaumaturge.greatwood_sapling", "Greatwood Sapling");
+        add("block.thaumaturge.silverwood_sapling", "Silverwood Sapling");
+        add("item.thaumaturge.greatwood_branch", "Greatwood Tree");
+        add("item.thaumaturge.silverwood_branch", "Silverwood Tree");
+        add("item.thaumaturge.greatwood_seed", "Greatwood Seed");
+        add("item.thaumaturge.silverwood_seed", "Silverwood Seed");
+        add("species.thaumaturge.greatwood", "Greatwood");
+        add("species.thaumaturge.silverwood", "Silverwood");
     }
 
     private void langEPlants() {
