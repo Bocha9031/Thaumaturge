@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 public final class EldritchLockRenderState extends BlockEntityRenderState {
     public int count;
     public float animationTime;
+    public float shift;
     public Direction facing = Direction.NORTH;
     public @Nullable ItemStackRenderState tablet;
 }

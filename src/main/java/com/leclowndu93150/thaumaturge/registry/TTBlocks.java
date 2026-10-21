@@ -65,6 +65,7 @@ import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchNothin
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchObelisk;
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchStructure;
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchTrap;
+import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEldritchDoor;
 import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEldritchLock;
 import com.leclowndu93150.thaumaturge.content.eldritch.portal.BlockEldritchPortal;
 import com.leclowndu93150.thaumaturge.content.eldritch.reliquary.BlockEldritchReliquary;
@@ -873,7 +874,7 @@ public final class TTBlocks {
 
     public static final DeferredBlock<RotatedPillarBlock> STONE_ELDRITCH_PILLAR = BLOCKS.registerBlock("stone_eldritch_pillar", RotatedPillarBlock::new, TTBlocks::eldritchStoneProps);
 
-    public static final DeferredBlock<Block> ELDRITCH_DOOR = BLOCKS.registerBlock("eldritch_door", Block::new,
+    public static final DeferredBlock<BlockEldritchDoor> ELDRITCH_DOOR = BLOCKS.registerBlock("eldritch_door", BlockEldritchDoor::new,
             props -> props.mapColor(MapColor.COLOR_BLACK).strength(-1.0F, Float.MAX_VALUE).sound(SoundType.STONE).lightLevel(state -> 12));
 
     public static final DeferredBlock<Block> ELDRITCH_PEDESTAL = BLOCKS.registerBlock("eldritch_pedestal", Block::new,

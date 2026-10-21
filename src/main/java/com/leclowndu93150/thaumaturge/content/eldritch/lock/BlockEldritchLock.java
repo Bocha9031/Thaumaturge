@@ -1,11 +1,9 @@
 package com.leclowndu93150.thaumaturge.content.eldritch.lock;
 
 import com.leclowndu93150.thaumaturge.content.eldritch.block.BlockEldritchSparkFX;
-import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -55,13 +53,7 @@ public final class BlockEldritchLock extends BaseEntityBlock {
 
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        if (!stack.is(TTItems.RUNED_TABLET.get())) {
-            return InteractionResult.PASS;
-        }
-        if (level instanceof ServerLevel serverLevel) {
-            LockActivation.use(serverLevel, pos, player, stack);
-        }
-        return InteractionResult.SUCCESS;
+        return LockActivation.insert(stack, level, pos, player);
     }
 
     @Override

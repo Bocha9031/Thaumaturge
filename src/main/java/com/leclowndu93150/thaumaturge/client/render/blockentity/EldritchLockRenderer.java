@@ -3,10 +3,12 @@ package com.leclowndu93150.thaumaturge.client.render.blockentity;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEldritchLock;
 import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEntityEldritchLock;
+import com.leclowndu93150.thaumaturge.content.eldritch.lock.LockDoorway;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -22,6 +24,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -48,17 +51,17 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
     private static final int[][] CORNERS = {{-1, -1}, {1, -1}, {1, 1}, {-1, 1}};
     private static final float[] LOCAL_UP = {0.0F, 1.0F, 0.0F};
     private static final int WHITE = 0xFFFFFFFF;
-    private static final float TABLET_REACH = 0.525F;
+    private static final float FACE_OFFSET = 0.5F;
+    private static final float TABLET_LIFT = 0.025F;
+    private static final float PORTAL_LIFT = 0.005F;
+    private static final float PORTAL_HALF_SPAN = 2.5F;
     private static final float TABLET_Y = 0.41F;
     private static final float TABLET_SCALE = 1.025641F;
     private static final float FLIP_DEGREES = 180.0F;
     private static final float NORTH_YAW = 180.0F;
     private static final float WEST_YAW = 270.0F;
     private static final float EAST_YAW = 90.0F;
-    private static final float DOOR_NEAR = -2.0F;
-    private static final float DOOR_FAR = 3.0F;
-    private static final float DOOR_PLANE = 0.5F;
-    private static final float BOUNDS_MARGIN = 2.5F;
+    private static final float BOUNDS_MARGIN = 3.0F;
     private static final int VIEW_DISTANCE = 64;
     private static final int OUTLINE_NONE = 0;
     private static final int DISPLAY_SEED = 0;
@@ -80,6 +83,12 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         BlockEntityRenderer.super.extractRenderState(lock, state, partialTicks, cameraPosition, breakProgress);
         state.count = lock.getCount();
         state.facing = lock.getBlockState().getValue(BlockEldritchLock.FACING);
+        Level level = lock.getLevel();
+        state.shift = 0.0F;
+        if (level != null) {
+            state.shift = LockDoorway.centreShift(level, lock.getBlockPos(), state.facing);
+            state.lightCoords = LevelRenderer.getLightCoords(level, lock.getBlockPos().relative(state.facing));
+        }
         state.animationTime = EldritchObeliskRenderer.animationTime(partialTicks);
         state.tablet = null;
         if (state.count >= 0) {
@@ -97,18 +106,24 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         Direction facing = state.facing;
         int count = state.count;
         float time = state.animationTime;
-        collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(CUBE_TEXTURE), (pose, buffer) -> writeArms(pose, buffer, facing, count, time, light));
+        float[] hub = hub(facing, state.shift);
+        collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(CUBE_TEXTURE), (pose, buffer) -> writeArms(pose, buffer, hub, facing, count, time, light));
         if (state.tablet != null) {
             poseStack.pushPose();
-            poseStack.translate(CENTER + TABLET_REACH * facing.getStepX(), TABLET_Y, CENTER + TABLET_REACH * facing.getStepZ());
+            poseStack.translate(hub[0] + TABLET_LIFT * facing.getStepX(), TABLET_Y + hub[1] - CENTER, hub[2] + TABLET_LIFT * facing.getStepZ());
             poseStack.mulPose(Axis.YP.rotationDegrees(tabletYaw(facing) + FLIP_DEGREES));
             poseStack.scale(TABLET_SCALE, TABLET_SCALE, TABLET_SCALE);
             state.tablet.submit(poseStack, collector, light, OverlayTexture.NO_OVERLAY, OUTLINE_NONE);
             poseStack.popPose();
         }
         BlockPos pos = state.blockPos;
-        Direction.Axis axis = facing.getAxis();
-        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writeDoor(pose, buffer, pos, axis));
+        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writePortal(pose, buffer, pos, facing, hub));
+    }
+
+    private static float[] hub(Direction facing, float shift) {
+        Direction across = LockDoorway.across(facing);
+        return new float[]{CENTER + FACE_OFFSET * facing.getStepX() + shift * across.getStepX(), CENTER + FACE_OFFSET * facing.getStepY() + shift * across.getStepY(),
+                CENTER + FACE_OFFSET * facing.getStepZ() + shift * across.getStepZ()};
     }
 
     @Override
@@ -135,15 +150,24 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         };
     }
 
-    private static void writeDoor(PoseStack.Pose pose, VertexConsumer buffer, BlockPos pos, Direction.Axis axis) {
-        switch (axis) {
-            case Z -> EldritchPortalSurface.quad(pose, buffer, pos, DOOR_NEAR, DOOR_NEAR, DOOR_PLANE, DOOR_NEAR, DOOR_FAR, DOOR_PLANE, DOOR_FAR, DOOR_FAR, DOOR_PLANE, DOOR_FAR, DOOR_NEAR, DOOR_PLANE);
-            case X -> EldritchPortalSurface.quad(pose, buffer, pos, DOOR_PLANE, DOOR_NEAR, DOOR_NEAR, DOOR_PLANE, DOOR_FAR, DOOR_NEAR, DOOR_PLANE, DOOR_FAR, DOOR_FAR, DOOR_PLANE, DOOR_NEAR, DOOR_FAR);
-            case Y -> EldritchPortalSurface.quad(pose, buffer, pos, DOOR_NEAR, DOOR_PLANE, DOOR_NEAR, DOOR_FAR, DOOR_PLANE, DOOR_NEAR, DOOR_FAR, DOOR_PLANE, DOOR_FAR, DOOR_NEAR, DOOR_PLANE, DOOR_FAR);
+    private static void writePortal(PoseStack.Pose pose, VertexConsumer buffer, BlockPos pos, Direction facing, float[] hub) {
+        float x0 = hub[0] - PORTAL_HALF_SPAN;
+        float x1 = hub[0] + PORTAL_HALF_SPAN;
+        float y0 = hub[1] - PORTAL_HALF_SPAN;
+        float y1 = hub[1] + PORTAL_HALF_SPAN;
+        float z0 = hub[2] - PORTAL_HALF_SPAN;
+        float z1 = hub[2] + PORTAL_HALF_SPAN;
+        float px = hub[0] + PORTAL_LIFT * facing.getStepX();
+        float py = hub[1] + PORTAL_LIFT * facing.getStepY();
+        float pz = hub[2] + PORTAL_LIFT * facing.getStepZ();
+        switch (facing.getAxis()) {
+            case Z -> EldritchPortalSurface.quad(pose, buffer, pos, x0, y0, pz, x0, y1, pz, x1, y1, pz, x1, y0, pz);
+            case X -> EldritchPortalSurface.quad(pose, buffer, pos, px, y0, z0, px, y1, z0, px, y1, z1, px, y0, z1);
+            case Y -> EldritchPortalSurface.quad(pose, buffer, pos, x0, py, z0, x1, py, z0, x1, py, z1, x0, py, z1);
         }
     }
 
-    private static void writeArms(PoseStack.Pose pose, VertexConsumer buffer, Direction facing, int count, float time, int light) {
+    private static void writeArms(PoseStack.Pose pose, VertexConsumer buffer, float[] hub, Direction facing, int count, float time, int light) {
         float[] axis = {facing.getStepX(), facing.getStepY(), facing.getStepZ()};
         boolean vertical = facing.getAxis() == Direction.Axis.Y;
         for (int index = 0; index < ARM_COUNT; index++) {
@@ -154,7 +178,7 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
                 if (cube == 1 || cube == LAST_CUBE) {
                     pulse = pulse / 2.0F + END_CUBE_PULSE_BASE;
                 }
-                writeCube(pose, buffer, axis, turns, cube, pulse, light);
+                writeCube(pose, buffer, hub, axis, turns, cube, pulse, light);
             }
         }
     }
@@ -173,10 +197,10 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
                 axis[0] * vector[1] - axis[1] * vector[0] + axis[2] * dot};
     }
 
-    private static void writeCube(PoseStack.Pose pose, VertexConsumer buffer, float[] axis, int turns, int cube, float pulse, int light) {
+    private static void writeCube(PoseStack.Pose pose, VertexConsumer buffer, float[] hub, float[] axis, int turns, int cube, float pulse, int light) {
         float[] direction = turn(axis, LOCAL_UP, turns);
         float distance = CUBE_OFFSET + CUBE_LENGTH * cube;
-        float[] centre = {CENTER + direction[0] * distance, CENTER + direction[1] * distance, CENTER + direction[2] * distance};
+        float[] centre = {hub[0] + direction[0] * distance, hub[1] + direction[1] * distance, hub[2] + direction[2] * distance};
         float[] half = {(CUBE_LENGTH + pulse) * HALF, CUBE_LENGTH * HALF, (CUBE_LENGTH + pulse) * HALF};
         for (int face = 0; face < FACE_DIRECTIONS.length; face++) {
             writeFace(pose, buffer, FACE_DIRECTIONS[face], FACE_RECTANGLES[face], half, centre, axis, turns, light);
