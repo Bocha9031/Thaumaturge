@@ -1,5 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.infusion;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
+import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.casters.IInteractWithCaster;
@@ -50,6 +53,7 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity i
     private static final String NUMBER_PATTERN = "#######.##";
     private static final String KEY_GAIN = "gui.thaumaturge.infusion.stability.gain_amount";
     private static final String KEY_LOSS = "gui.thaumaturge.infusion.stability.loss_range";
+    private static final String KEY_RESEARCH_LOCKED = "message.thaumaturge.infusion.research_locked";
     private static final float VERY_STABLE_THRESHOLD = STABILITY_CAP / 2.0F;
     private static final float UNSTABLE_THRESHOLD = -25.0F;
     private static final float STABILITY_FLOOR = -100.0F;
@@ -171,7 +175,11 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity i
             return false;
         }
         InfusionRecipeMatcher.Match match = InfusionRecipeMatcher.find(level, player, input);
-        if (match == null || match.locked()) {
+        if (match == null) {
+            return false;
+        }
+        if (match.locked()) {
+            match.recipe().researchGate().ifPresent(gate -> player.sendOverlayMessage(Component.translatable(KEY_RESEARCH_LOCKED, researchName(level, gate.entry()))));
             return false;
         }
         InfusionJobRecipe recipe = match.recipe();
@@ -185,6 +193,11 @@ public final class BlockEntityInfusionMatrix extends AbstractSyncedBlockEntity i
         playSound(level, TTSounds.CRAFTSTART.get(), SOUND_VOLUME, SOUND_PITCH);
         setChangedAndSync();
         return true;
+    }
+
+    private static Component researchName(ServerLevel level, Identifier entry) {
+        return level.registryAccess().lookupOrThrow(IResearchEntry.REGISTRY_KEY).get(ResourceKey.create(IResearchEntry.REGISTRY_KEY, entry))
+                .map(holder -> Component.translatable(holder.value().nameKey())).orElseGet(() -> Component.literal(entry.toString()));
     }
 
     @Override
