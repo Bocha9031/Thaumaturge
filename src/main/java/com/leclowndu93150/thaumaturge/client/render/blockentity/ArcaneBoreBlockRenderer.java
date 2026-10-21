@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 public final class ArcaneBoreBlockRenderer implements BlockEntityRenderer<BlockEntityArcaneBore, ArcaneBoreBlockRenderState> {
     private static final Identifier TEXTURE = TTIds.rl("textures/entity/arcanebore.png");
     private static final double BEAM_REACH = 6.0;
+    private static final int OUTLINE_NONE = 0;
 
     private final ArcaneBoreModel model;
 
@@ -62,7 +63,7 @@ public final class ArcaneBoreBlockRenderer implements BlockEntityRenderer<BlockE
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
         poseStack.scale(-1.0F, -1.0F, 1.0F);
         poseStack.translate(0.0F, EntityModel.MODEL_Y_OFFSET, 0.0F);
-        collector.submitModel(model, state.pose, poseStack, RenderTypes.entityTranslucent(TEXTURE), state.lightCoords, OverlayTexture.NO_OVERLAY, -1, null);
+        collector.submitModel(model, state.pose, poseStack, RenderTypes.entityTranslucent(TEXTURE), state.lightCoords, OverlayTexture.NO_OVERLAY, OUTLINE_NONE, state.breakProgress);
         poseStack.popPose();
         if (state.digging) {
             BoreDrillFx.submit(poseStack, collector, camera, state.tip, state.yaw, state.pitch, state.beamUvScroll, state.beamSpin, state.tipFrame);
