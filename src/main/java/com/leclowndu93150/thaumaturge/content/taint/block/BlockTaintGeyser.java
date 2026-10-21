@@ -1,8 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.taint.block;
 
+import net.minecraft.world.level.block.Blocks;
 import com.leclowndu93150.thaumaturge.content.entity.EntityTaintSwarm;
-import com.leclowndu93150.thaumaturge.content.taint.flux.FluxGooFluid;
-import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
@@ -35,7 +34,7 @@ public final class BlockTaintGeyser extends AbstractTaintBlock {
 
     @Override
     public void decay(Level level, BlockPos pos, BlockState state) {
-        level.setBlockAndUpdate(pos, FluxGooFluid.gooBlockState(PhysicalFlux.MAX_QUANTA));
+        level.setBlockAndUpdate(pos, Blocks.DIRT.defaultBlockState());
     }
 
     @Override

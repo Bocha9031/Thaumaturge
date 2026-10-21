@@ -2,8 +2,6 @@ package com.leclowndu93150.thaumaturge.content.taint.block;
 
 import com.leclowndu93150.thaumaturge.api.taint.ITaintBlock;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
-import com.leclowndu93150.thaumaturge.content.taint.flux.FluxGooFluid;
-import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -11,7 +9,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
@@ -48,7 +45,7 @@ public final class BlockTaintLog extends RotatedPillarBlock implements ITaintBlo
 
     @Override
     public void decay(Level level, BlockPos pos, BlockState state) {
-        level.setBlock(pos, FluxGooFluid.gooBlockState(PhysicalFlux.MAX_QUANTA), Block.UPDATE_ALL);
+        level.removeBlock(pos, false);
     }
 
     @Override

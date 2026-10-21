@@ -5,8 +5,6 @@ import com.leclowndu93150.thaumaturge.api.taint.ITaintBlock;
 import com.leclowndu93150.thaumaturge.content.device.DeviceShapes;
 import com.leclowndu93150.thaumaturge.content.entity.EntityTaintCrawler;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
-import com.leclowndu93150.thaumaturge.content.taint.flux.FluxGooFluid;
-import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.mojang.serialization.MapCodec;
@@ -110,7 +108,7 @@ public final class BlockTaintFeature extends DirectionalBlock implements ITaintB
 
     @Override
     public void decay(Level level, BlockPos pos, BlockState state) {
-        level.setBlock(pos, FluxGooFluid.gooBlockState(PhysicalFlux.MAX_QUANTA), Block.UPDATE_ALL);
+        level.removeBlock(pos, false);
     }
 
     private static List<Map<Direction, VoxelShape>> buildVariants(int[][]... variants) {

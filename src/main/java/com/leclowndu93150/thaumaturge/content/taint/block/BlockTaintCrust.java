@@ -5,8 +5,6 @@ import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 import com.leclowndu93150.thaumaturge.content.taint.entity.EntityTaintSporeSwarmer;
 import com.leclowndu93150.thaumaturge.content.taint.flux.BlockFluxGoo;
-import com.leclowndu93150.thaumaturge.content.taint.flux.FluxGooFluid;
-import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.mojang.serialization.MapCodec;
@@ -48,7 +46,7 @@ public final class BlockTaintCrust extends AbstractTaintBlock {
 
     @Override
     public void decay(Level level, BlockPos pos, BlockState state) {
-        level.setBlockAndUpdate(pos, FluxGooFluid.gooBlockState(PhysicalFlux.MAX_QUANTA));
+        level.removeBlock(pos, false);
     }
 
     @Override
