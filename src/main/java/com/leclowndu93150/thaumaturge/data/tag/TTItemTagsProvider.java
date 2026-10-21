@@ -141,7 +141,7 @@ public final class TTItemTagsProvider extends BlockTagCopyingItemTagProvider {
         tag(ItemTags.AXES).add(TTItems.THAUMIUM_AXE.get(), TTItems.VOID_AXE.get(), TTItems.ELEMENTAL_AXE.get());
         tag(ItemTags.SHOVELS).add(TTItems.THAUMIUM_SHOVEL.get(), TTItems.VOID_SHOVEL.get(), TTItems.ELEMENTAL_SHOVEL.get());
         tag(ItemTags.HOES).add(TTItems.THAUMIUM_HOE.get(), TTItems.VOID_HOE.get(), TTItems.ELEMENTAL_HOE.get());
-        tag(TTItemTags.TAINT_HOES).add(TTItems.THAUMIUM_HOE.get(), TTItems.VOID_HOE.get(), TTItems.ELEMENTAL_HOE.get());
+        tag(TTItemTags.TAINT_TOOLS).add(TTItems.THAUMIUM_HOE.get(), TTItems.VOID_HOE.get(), TTItems.ELEMENTAL_HOE.get(), TTItems.PRIMAL_CRUSHER.get());
         tag(ItemTags.SPEARS).add(TTItems.THAUMIUM_SPEAR.get(), TTItems.VOID_SPEAR.get(), TTItems.ELEMENTAL_SPEAR.get());
 
         Item[] helmets = {TTItems.THAUMIUM_HELM.get(), TTItems.VOID_HELM.get(), TTItems.VOID_ROBE_HELM.get(), TTItems.FORTRESS_HELM.get(), TTItems.CRIMSON_PLATE_HELM.get(),
