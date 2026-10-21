@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
+import com.leclowndu93150.thaumaturge.content.entity.ai.CultistSquatGoal;
 import com.leclowndu93150.thaumaturge.content.entity.ai.CultistHurtByTargetGoal;
 import com.leclowndu93150.thaumaturge.content.entity.cloak.CloakTracker;
 import com.leclowndu93150.thaumaturge.content.entity.cloak.CloakWearer;
@@ -171,6 +172,7 @@ public abstract class EntityCultist extends Monster implements CloakWearer {
         this.getNavigation().setCanOpenDoors(true);
         this.goalSelector.addGoal(DOOR_PRIORITY, new OpenDoorGoal(this, true));
         this.goalSelector.addGoal(RESTRICTION_PRIORITY, new MoveTowardsRestrictionGoal(this, WALK_SPEED));
+        this.goalSelector.addGoal(RESTRICTION_PRIORITY, new CultistSquatGoal(this));
         this.goalSelector.addGoal(STROLL_PRIORITY, new WaterAvoidingRandomStrollGoal(this, WALK_SPEED));
         this.goalSelector.addGoal(LOOK_PLAYER_PRIORITY, new LookAtPlayerGoal(this, Player.class, LOOK_DISTANCE));
         this.goalSelector.addGoal(LOOK_AROUND_PRIORITY, new RandomLookAroundGoal(this));
