@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.world.tree.silverwood;
 
+import java.util.function.Predicate;
+import java.util.function.Consumer;
 import com.leclowndu93150.thaumaturge.registry.TTTreePlacers;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
@@ -40,13 +42,15 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
         if (logs.isEmpty()) {
             return;
         }
-        BlockPos foot = findFoot(logs);
-        RandomSource random = context.random();
         BlockState flowerState = flower.defaultBlockState();
+        scatter(findFoot(logs), context.random(), context::isAir, pos -> context.checkBlock(pos.below(), ScatteredFlowersDecorator::isFlowerSoil), pos -> context.setBlock(pos, flowerState));
+    }
+
+    public static void scatter(BlockPos foot, RandomSource random, Predicate<BlockPos> isAir, Predicate<BlockPos> hasSoil, Consumer<BlockPos> place) {
         for (int attempt = 0; attempt < FLOWER_MAX_COUNT; attempt++) {
             BlockPos pos = foot.offset(spread(random, FLOWER_BOX_HALF_WIDTH), spread(random, FLOWER_BOX_HALF_HEIGHT), spread(random, FLOWER_BOX_HALF_WIDTH));
-            if (context.isAir(pos) && context.checkBlock(pos.below(), ScatteredFlowersDecorator::isFlowerSoil)) {
-                context.setBlock(pos, flowerState);
+            if (isAir.test(pos) && hasSoil.test(pos)) {
+                place.accept(pos);
             }
         }
     }
@@ -55,7 +59,7 @@ public final class ScatteredFlowersDecorator extends TreeDecorator {
         return random.nextInt(halfSize + 1) - random.nextInt(halfSize + 1);
     }
 
-    private static boolean isFlowerSoil(BlockState state) {
+    public static boolean isFlowerSoil(BlockState state) {
         return state.is(Blocks.GRASS_BLOCK) || state.is(BlockTags.SAND);
     }
 

@@ -9,6 +9,9 @@
   "preferred_climate": "temperate",
   "climate_tolerance": 0.45,
   "primitive_sapling": "thaumaturge:sapling_silverwood",
+  "features": [
+    "thaumaturge:shimmerleaf"
+  ],
   "lang_overrides": {
     "seed": "Silverwood Seed"
   }

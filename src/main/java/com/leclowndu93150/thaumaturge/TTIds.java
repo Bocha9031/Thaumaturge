@@ -29,6 +29,7 @@ public final class TTIds {
     public static final Identifier DT_GREATWOOD_SAPLING = rl("greatwood_sapling");
     public static final Identifier DT_SILVERWOOD_SEED = rl("silverwood_seed");
     public static final Identifier DT_GREATWOOD_SEED = rl("greatwood_seed");
+    public static final Identifier DT_SHIMMERLEAF_FEATURE = rl("shimmerleaf");
 
     private TTIds() {}
 
