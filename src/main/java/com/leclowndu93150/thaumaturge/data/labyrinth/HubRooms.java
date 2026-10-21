@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.data.labyrinth;
 
-import net.minecraft.world.level.block.state.properties.Half;
 import static com.leclowndu93150.thaumaturge.data.labyrinth.RoomCanvas.F;
 
 import com.leclowndu93150.thaumaturge.registry.TTLabyrinthRoomTags;
@@ -58,8 +57,7 @@ final class HubRooms {
         Junction.CROSS.carve(canvas);
         canvas.carve(RoomShape.cylinder(RoomKit.MID, RoomKit.MID, 6.0, F + 1, F + 7));
         canvas.carve(RoomShape.dome(RoomKit.MID, F + 7, RoomKit.MID, 6.0, 4.0, 6.0));
-        RoomKit.column(canvas, 7, 7, 8, 8, F + 1, F + 12);
-        RoomKit.flare(canvas, 7, 7, 8, 8, F + 1, Half.BOTTOM);
+        RoomKit.footedColumn(canvas, 7, 7, 8, 8, F + 1, F + 12);
         canvas.fill(RoomShape.annulus(RoomKit.MID, RoomKit.MID, 6.0, 5.0, F, F), LabyrinthBlocks.obsidianTile());
     }
 
