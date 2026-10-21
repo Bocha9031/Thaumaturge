@@ -117,7 +117,11 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     public void reclassify(NodeType nodeType) {
+        NodeType previous = type;
         type = nodeType;
+        if (previous != nodeType && level instanceof ServerLevel serverLevel) {
+            NodeBiomeSpread.revertPainted(serverLevel, worldPosition, previous);
+        }
         if (nodeType != NodeType.TAINTED) {
             taintReserve = 0.0F;
             taintPurifyTicks = 0;
@@ -148,6 +152,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         if (level instanceof ServerLevel serverLevel) {
             NodeLocationIndex.get(serverLevel).remove(pos);
             TaintOrigins.unregister(serverLevel, pos);
+            NodeBiomeSpread.revertPainted(serverLevel, pos, type);
         }
     }
 
