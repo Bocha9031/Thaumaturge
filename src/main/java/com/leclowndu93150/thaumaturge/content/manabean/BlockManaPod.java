@@ -76,7 +76,12 @@ public final class BlockManaPod extends BaseEntityBlock {
     }
 
     public static boolean canGrowAt(LevelReader level, BlockPos pos) {
-        return level.getBiome(pos).is(TTBiomeTags.IS_MAGICAL) && level.getBlockState(pos.above()).is(BlockTags.LOGS);
+        return level.getBiome(pos).is(TTBiomeTags.IS_MAGICAL) && isSupport(level, pos.above());
+    }
+
+    private static boolean isSupport(LevelReader level, BlockPos support) {
+        BlockState state = level.getBlockState(support);
+        return state.is(BlockTags.LOGS) && state.isFaceSturdy(level, support, Direction.DOWN);
     }
 
     @Override
@@ -86,7 +91,7 @@ public final class BlockManaPod extends BaseEntityBlock {
 
     @Override
     protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess ticks, BlockPos pos, Direction directionToNeighbour, BlockPos neighbourPos, BlockState neighbourState, RandomSource random) {
-        if (directionToNeighbour == Direction.UP && !neighbourState.is(BlockTags.LOGS)) {
+        if (directionToNeighbour == Direction.UP && !isSupport(level, neighbourPos)) {
             ticks.scheduleTick(pos, this, SUPPORT_LOSS_TICK_DELAY);
         }
         return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
