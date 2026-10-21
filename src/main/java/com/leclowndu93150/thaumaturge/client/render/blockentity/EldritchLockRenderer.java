@@ -3,7 +3,6 @@ package com.leclowndu93150.thaumaturge.client.render.blockentity;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEldritchLock;
 import com.leclowndu93150.thaumaturge.content.eldritch.lock.BlockEntityEldritchLock;
-import com.leclowndu93150.thaumaturge.content.eldritch.lock.LockDoorway;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -24,7 +23,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
@@ -55,6 +53,9 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
     private static final float TABLET_LIFT = 0.025F;
     private static final float PORTAL_LIFT = 0.005F;
     private static final float PORTAL_HALF_SPAN = 2.5F;
+    private static final float LOCK_HALF_SPAN = 0.5F;
+    private static final float[][] PORTAL_PANELS = {{-PORTAL_HALF_SPAN, -PORTAL_HALF_SPAN, PORTAL_HALF_SPAN, -LOCK_HALF_SPAN}, {-PORTAL_HALF_SPAN, LOCK_HALF_SPAN, PORTAL_HALF_SPAN, PORTAL_HALF_SPAN},
+            {-PORTAL_HALF_SPAN, -LOCK_HALF_SPAN, -LOCK_HALF_SPAN, LOCK_HALF_SPAN}, {LOCK_HALF_SPAN, -LOCK_HALF_SPAN, PORTAL_HALF_SPAN, LOCK_HALF_SPAN}};
     private static final float TABLET_Y = 0.41F;
     private static final float TABLET_SCALE = 1.025641F;
     private static final float FLIP_DEGREES = 180.0F;
@@ -83,11 +84,8 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         BlockEntityRenderer.super.extractRenderState(lock, state, partialTicks, cameraPosition, breakProgress);
         state.count = lock.getCount();
         state.facing = lock.getBlockState().getValue(BlockEldritchLock.FACING);
-        Level level = lock.getLevel();
-        state.shift = 0.0F;
-        if (level != null) {
-            state.shift = LockDoorway.centreShift(level, lock.getBlockPos(), state.facing);
-            state.lightCoords = LevelRenderer.getLightCoords(level, lock.getBlockPos().relative(state.facing));
+        if (lock.getLevel() != null) {
+            state.lightCoords = LevelRenderer.getLightCoords(lock.getLevel(), lock.getBlockPos().relative(state.facing));
         }
         state.animationTime = EldritchObeliskRenderer.animationTime(partialTicks);
         state.tablet = null;
@@ -106,7 +104,7 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         Direction facing = state.facing;
         int count = state.count;
         float time = state.animationTime;
-        float[] hub = hub(facing, state.shift);
+        float[] hub = hub(facing);
         collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(CUBE_TEXTURE), (pose, buffer) -> writeArms(pose, buffer, hub, facing, count, time, light));
         if (state.tablet != null) {
             poseStack.pushPose();
@@ -120,10 +118,8 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writePortal(pose, buffer, pos, facing, hub));
     }
 
-    private static float[] hub(Direction facing, float shift) {
-        Direction across = LockDoorway.across(facing);
-        return new float[]{CENTER + FACE_OFFSET * facing.getStepX() + shift * across.getStepX(), CENTER + FACE_OFFSET * facing.getStepY() + shift * across.getStepY(),
-                CENTER + FACE_OFFSET * facing.getStepZ() + shift * across.getStepZ()};
+    private static float[] hub(Direction facing) {
+        return new float[]{CENTER + FACE_OFFSET * facing.getStepX(), CENTER + FACE_OFFSET * facing.getStepY(), CENTER + FACE_OFFSET * facing.getStepZ()};
     }
 
     @Override
@@ -151,19 +147,18 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
     }
 
     private static void writePortal(PoseStack.Pose pose, VertexConsumer buffer, BlockPos pos, Direction facing, float[] hub) {
-        float x0 = hub[0] - PORTAL_HALF_SPAN;
-        float x1 = hub[0] + PORTAL_HALF_SPAN;
-        float y0 = hub[1] - PORTAL_HALF_SPAN;
-        float y1 = hub[1] + PORTAL_HALF_SPAN;
-        float z0 = hub[2] - PORTAL_HALF_SPAN;
-        float z1 = hub[2] + PORTAL_HALF_SPAN;
         float px = hub[0] + PORTAL_LIFT * facing.getStepX();
         float py = hub[1] + PORTAL_LIFT * facing.getStepY();
         float pz = hub[2] + PORTAL_LIFT * facing.getStepZ();
-        switch (facing.getAxis()) {
-            case Z -> EldritchPortalSurface.quad(pose, buffer, pos, x0, y0, pz, x0, y1, pz, x1, y1, pz, x1, y0, pz);
-            case X -> EldritchPortalSurface.quad(pose, buffer, pos, px, y0, z0, px, y1, z0, px, y1, z1, px, y0, z1);
-            case Y -> EldritchPortalSurface.quad(pose, buffer, pos, x0, py, z0, x1, py, z0, x1, py, z1, x0, py, z1);
+        for (float[] panel : PORTAL_PANELS) {
+            switch (facing.getAxis()) {
+                case Z -> EldritchPortalSurface.quad(pose, buffer, pos, px + panel[0], py + panel[1], pz, px + panel[0], py + panel[3], pz, px + panel[2], py + panel[3], pz, px + panel[2],
+                        py + panel[1], pz);
+                case X -> EldritchPortalSurface.quad(pose, buffer, pos, px, py + panel[1], pz + panel[0], px, py + panel[3], pz + panel[0], px, py + panel[3], pz + panel[2], px, py + panel[1],
+                        pz + panel[2]);
+                case Y -> EldritchPortalSurface.quad(pose, buffer, pos, px + panel[0], py, pz + panel[1], px + panel[2], py, pz + panel[1], px + panel[2], py, pz + panel[3], px + panel[0], py,
+                        pz + panel[3]);
+            }
         }
     }
 

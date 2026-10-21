@@ -914,8 +914,13 @@ public final class TTModelProvider extends ModelProvider {
 
     private void eldritchLock(BlockModelGenerators blockModels) {
         Block lock = TTBlocks.ELDRITCH_LOCK.get();
-        Identifier model = ModelTemplates.CUBE_ALL.create(lock, new TextureMapping().put(TextureSlot.ALL, texture("eldritch_door")), blockModels.modelOutput);
-        blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(lock, BlockModelGenerators.plainVariant(model)));
+        Identifier model = ModelTemplates.CUBE_ORIENTABLE.create(lock,
+                new TextureMapping().put(TextureSlot.FRONT, texture("eldritch_lock_face")).put(TextureSlot.SIDE, texture("eldritch_door")).put(TextureSlot.TOP, texture("eldritch_door")),
+                blockModels.modelOutput);
+        PropertyDispatch<VariantMutator> rotations = PropertyDispatch.modify(BlockStateProperties.FACING).select(Direction.DOWN, BlockModelGenerators.X_ROT_90)
+                .select(Direction.UP, BlockModelGenerators.X_ROT_270).select(Direction.NORTH, BlockModelGenerators.NOP).select(Direction.SOUTH, BlockModelGenerators.Y_ROT_180)
+                .select(Direction.WEST, BlockModelGenerators.Y_ROT_270).select(Direction.EAST, BlockModelGenerators.Y_ROT_90);
+        blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(lock, BlockModelGenerators.plainVariant(model)).with(rotations));
         Identifier item = ModelTemplates.CUBE_ORIENTABLE.createWithSuffix(lock, "_item",
                 new TextureMapping().put(TextureSlot.FRONT, texture("eldritch_lock_face")).put(TextureSlot.SIDE, texture("eldritch_lock_side")).put(TextureSlot.TOP, texture("eldritch_lock_side")),
                 blockModels.modelOutput);
