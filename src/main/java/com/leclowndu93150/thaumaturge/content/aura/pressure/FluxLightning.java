@@ -30,7 +30,7 @@ public final class FluxLightning {
     private static final int SCATTER_RANGE = 5;
     private static final double HIT_RADIUS = 3.0;
     private static final float HIT_DAMAGE = 3.0F;
-    private static final int FLUX_TAINT_TICKS = 1200;
+    private static final int FLUX_TAINT_TICKS = 200;
     private static final float GOO_PRESSURE = 0.04F;
 
     private final BlockPos strike;
@@ -65,7 +65,6 @@ public final class FluxLightning {
         level.playSound(null, strike, SoundEvents.LIGHTNING_BOLT_IMPACT, SoundSource.WEATHER, IMPACT_VOLUME, IMPACT_PITCH + random.nextFloat() * PITCH_SPREAD);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, strike.getX() + 0.5, strike.getY() + SPARK_Y_OFFSET, strike.getZ() + 0.5, SPARK_COUNT, SPARK_SPREAD_XZ, SPARK_SPREAD_Y, SPARK_SPREAD_XZ,
                 SPARK_SPEED);
-        placeGoo(level, strike);
         if (scatter) {
             for (int attempt = 0; attempt < SCATTER_ATTEMPTS; attempt++) {
                 placeGoo(level, strike.offset(random.nextInt(SCATTER_RANGE) - SCATTER_RANGE / 2, random.nextInt(SCATTER_RANGE) - SCATTER_RANGE / 2, random.nextInt(SCATTER_RANGE) - SCATTER_RANGE / 2));

@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.taint.entity;
 
+import net.minecraft.server.level.ServerLevel;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
@@ -43,10 +45,20 @@ public final class TaintedTrait implements MobTrait {
     private static final double SPEED = 1.0;
     private static final float LOOK_RANGE = 6.0F;
     private static final int TARGET_INTERVAL = 10;
+    private static final int WITHER_INTERVAL = 40;
+    private static final float WITHER_DAMAGE = 1.0F;
 
     @Override
     public boolean isTaint() {
         return true;
+    }
+
+    @Override
+    public void tick(LivingEntity mob) {
+        if (mob.tickCount % WITHER_INTERVAL != 0 || !(mob.level() instanceof ServerLevel level) || TaintOrigins.isSustained(level, mob.blockPosition().below())) {
+            return;
+        }
+        mob.hurtServer(level, level.damageSources().starve(), WITHER_DAMAGE);
     }
 
     @Override
