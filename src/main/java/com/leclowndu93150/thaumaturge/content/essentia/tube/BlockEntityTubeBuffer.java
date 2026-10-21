@@ -48,7 +48,6 @@ public final class BlockEntityTubeBuffer extends AbstractSyncedBlockEntity imple
     private static final int PULL_TICKS = 5;
     private static final int SINGLE_UNIT = 1;
     private static final int FIRST_SIDE = 0;
-    private static final int NO_ARM = -1;
     private static final int NO_SUCTION = 0;
     private static final @Nullable Holder<IAspect> NO_SUCTION_TYPE = null;
     private static final float TOOL_VOLUME = 0.5F;
@@ -124,17 +123,20 @@ public final class BlockEntityTubeBuffer extends AbstractSyncedBlockEntity imple
         if (level.isClientSide()) {
             return true;
         }
-        int arm = lookedAtArm(level, player, pos);
-        boolean handled = arm != NO_ARM && handleCasterClick(arm, player.isShiftKeyDown());
+        BlockHitResult hit = BlockEssentiaTransport.traceLook(level, player, pos);
+        if (hit == null) {
+            return false;
+        }
+        int arm = resolveClickPart(BlockEssentiaTransport.resolveSubHit(level.getBlockState(pos), hit, pos), hit.getDirection());
+        boolean handled = handleCasterClick(arm, player.isShiftKeyDown());
         if (handled) {
             player.swing(hand);
         }
         return handled;
     }
 
-    private static int lookedAtArm(Level level, Player player, BlockPos pos) {
-        BlockHitResult hit = BlockEssentiaTransport.traceLook(level, player, pos);
-        return hit == null ? NO_ARM : BlockEssentiaTransport.resolveSubHit(level.getBlockState(pos), hit, pos);
+    public int resolveClickPart(int part, Direction hitFace) {
+        return part == TubeGeometry.CORE_HIT && !isSideOpen(hitFace) ? hitFace.ordinal() : part;
     }
 
     public boolean handleCasterClick(int part, boolean sneaking) {
