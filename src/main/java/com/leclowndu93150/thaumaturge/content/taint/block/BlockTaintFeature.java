@@ -36,9 +36,7 @@ public final class BlockTaintFeature extends DirectionalBlock implements ITaintB
     public static final MapCodec<BlockTaintFeature> CODEC = simpleCodec(BlockTaintFeature::new);
 
     private static final int DECAY_ONE_IN = 10;
-    private static final int POLLUTION_ONE_IN = 200;
     private static final float POLLUTION_AMOUNT = 1.0F;
-    private static final float POLLUTION_FLUX_RATIO = 0.2F;
     private static final int GEYSER_ONE_IN = 100;
     private static final float CRAWLER_CHANCE = 0.333F;
     private static final double CELL_CENTRE = 0.5;
@@ -85,13 +83,9 @@ public final class BlockTaintFeature extends DirectionalBlock implements ITaintB
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!TaintOrigins.isSustained(level, pos)) {
-            if (random.nextInt(DECAY_ONE_IN) == 0) {
-                decay(level, pos, state);
-                TaintBiomeManager.restoreIfCleared(level, pos);
-                return;
-            }
-        } else if (random.nextInt(POLLUTION_ONE_IN) == 0 && pollutes(level, pos)) {
+        if (!TaintOrigins.isSustained(level, pos) && random.nextInt(DECAY_ONE_IN) == 0) {
+            decay(level, pos, state);
+            TaintBiomeManager.restoreIfCleared(level, pos);
             return;
         }
         TaintHelper.attemptFibreGrowth(level, pos, false);
@@ -117,15 +111,6 @@ public final class BlockTaintFeature extends DirectionalBlock implements ITaintB
     @Override
     public void decay(Level level, BlockPos pos, BlockState state) {
         level.setBlock(pos, FluxGooFluid.gooBlockState(PhysicalFlux.MAX_QUANTA), Block.UPDATE_ALL);
-    }
-
-    private static boolean pollutes(ServerLevel level, BlockPos pos) {
-        int base = AuraHelper.getAuraBase(level, pos);
-        if (base <= 0 || AuraHelper.getFlux(level, pos) > POLLUTION_FLUX_RATIO * base) {
-            return false;
-        }
-        AuraHelper.polluteAura(level, pos, POLLUTION_AMOUNT, true);
-        return true;
     }
 
     private static List<Map<Direction, VoxelShape>> buildVariants(int[][]... variants) {

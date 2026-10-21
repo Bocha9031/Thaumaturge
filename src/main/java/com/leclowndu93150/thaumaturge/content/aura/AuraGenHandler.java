@@ -2,6 +2,8 @@ package com.leclowndu93150.thaumaturge.content.aura;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aura.BiomeAuraModifier;
+import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
+import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTDataMaps;
 import java.util.Random;
 import net.minecraft.core.Holder;
@@ -53,6 +55,9 @@ public final class AuraGenHandler {
         data.setChunkPos(pos);
         if (pristine) {
             data.setVis(base);
+            if (biomeAt(level, pos.x(), pos.z()).is(TTBiomeTags.IS_TAINTED)) {
+                data.setFlux(base * ThaumaturgeCommonConfig.TAINTED_LANDS_STARTING_FLUX.get().floatValue());
+            }
         }
         chunk.markUnsaved();
     }
@@ -70,10 +75,13 @@ public final class AuraGenHandler {
     }
 
     private static float modifierAt(ServerLevel level, int chunkX, int chunkZ) {
+        BiomeAuraModifier modifier = biomeAt(level, chunkX, chunkZ).getData(TTDataMaps.BIOME_AURA_MODIFIER);
+        return modifier == null ? DEFAULT_MODIFIER : modifier.value();
+    }
+
+    private static Holder<Biome> biomeAt(ServerLevel level, int chunkX, int chunkZ) {
         int blockX = chunkX * CHUNK_WIDTH + CHUNK_CENTER_OFFSET;
         int blockZ = chunkZ * CHUNK_WIDTH + CHUNK_CENTER_OFFSET;
-        Holder<Biome> biome = level.getNoiseBiome(QuartPos.fromBlock(blockX), QuartPos.fromBlock(SAMPLE_HEIGHT), QuartPos.fromBlock(blockZ));
-        BiomeAuraModifier modifier = biome.getData(TTDataMaps.BIOME_AURA_MODIFIER);
-        return modifier == null ? DEFAULT_MODIFIER : modifier.value();
+        return level.getNoiseBiome(QuartPos.fromBlock(blockX), QuartPos.fromBlock(SAMPLE_HEIGHT), QuartPos.fromBlock(blockZ));
     }
 }

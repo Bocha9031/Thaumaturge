@@ -14,6 +14,7 @@ public final class ThaumaturgeCommonConfig {
     public static final ModConfigSpec.DoubleValue TAINT_GROWTH_COST;
     public static final ModConfigSpec.DoubleValue TAINT_CHILD_SEED_COST;
     public static final ModConfigSpec.IntValue TAINT_STARVE_TICKS;
+    public static final ModConfigSpec.DoubleValue TAINTED_LANDS_STARTING_FLUX;
     public static final ModConfigSpec.BooleanValue TAINT_FROM_FLUX;
     public static final ModConfigSpec.BooleanValue PHYSICAL_FLUX_AURA_FLOOR;
     public static final ModConfigSpec.BooleanValue PHYSICAL_FLUX_TAINT_OUTBREAKS;
@@ -89,6 +90,8 @@ public final class ThaumaturgeCommonConfig {
         TAINT_CHILD_SEED_COST = decimal(spec, "taintChildSeedCost", 25.0, 0.0, 100000.0, "Stored flux a well fed taint origin spends to sprout a new taint seed at the edge of its range.");
         TAINT_STARVE_TICKS = whole(spec, "taintStarveTicks", 12000, 20, 1000000,
                 "Ticks a taint seed survives with nothing to eat before it withers away. A tainted node inside an Ethereal Bloom's range is purified after the same time.");
+        TAINTED_LANDS_STARTING_FLUX = decimal(spec, "taintedLandsStartingFlux", 1.0, 0.0, 10.0,
+                "Flux a freshly generated Tainted Lands chunk starts with, as a multiple of its base aura. The tainted nodes and seeds there feed on it. 0 leaves Tainted Lands dormant until flux reaches them.");
         TAINT_FROM_FLUX = flag(spec, "taintFromFlux", true, "Whether deep, exposed Flux Goo can fester into Fibrous Taint and Tainted Lands, as in Thaumcraft 4.");
         PHYSICAL_FLUX_AURA_FLOOR = flag(spec, "physicalFluxAuraFloor", true,
                 "Whether physical Flux Goo and Flux Gas keep a capped minimum of Aura Flux in their chunk. Turning this off leaves the goo and gas and their direct effects in place.");

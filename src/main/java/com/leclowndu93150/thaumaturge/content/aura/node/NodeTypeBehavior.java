@@ -4,7 +4,11 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.content.entity.EntityBrainyZombie;
+import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
+import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
 import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBlooms;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintFeeding;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -19,10 +23,7 @@ import net.neoforged.neoforge.event.EventHooks;
 final class NodeTypeBehavior {
     private static final int TAINT_SPREAD_RANGE = 4;
     private static final int POLLUTE_INTERVAL = 200;
-    private static final float POLLUTE_SATURATION_FACTOR = 0.8F;
-    private static final double POLLUTE_BASE_DIVISOR = 3.0;
-    private static final float POLLUTE_STRENGTH_STEP = 0.2F;
-    private static final float POLLUTE_MINIMUM_STRENGTH = 1.0F;
+    private static final float TICKS_PER_SECOND = 20.0F;
     private static final float PURE_FLUX_TAKE = 0.25F;
     private static final float PURE_ERODE_CHANCE = 0.025F;
     private static final double GUARD_PLAYER_RANGE = 24.0;
@@ -55,19 +56,31 @@ final class NodeTypeBehavior {
     }
 
     private static void tainted(BlockEntityNode node, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (random.nextBoolean()) {
-            TaintHelper.attemptFibreGrowth(level, pos.offset(taintOffset(random), taintOffset(random), taintOffset(random)), true);
-        }
-        if (node.tickCounter % POLLUTE_INTERVAL != 0) {
+        if (TaintBlooms.isProtected(level, pos)) {
+            purifyUnderBloom(node);
             return;
         }
-        float saturation = AuraHelper.getFlux(level, pos) / Math.max(1, AuraHelper.getAuraBase(level, pos));
-        if (random.nextFloat() <= POLLUTE_SATURATION_FACTOR * saturation) {
+        if (node.taintPurifyTicks > 0) {
+            node.taintPurifyTicks = 0;
+            node.setChanged();
+        }
+        TaintFeeding.feed(level, pos, node, BlockEntityNode.TYPE_BEHAVIOR_INTERVAL / TICKS_PER_SECOND);
+        if (TaintFeeding.isDormant(node)) {
             return;
         }
-        double root = Math.sqrt(Math.max(1.0, node.aspectsBase.totalAmount() / POLLUTE_BASE_DIVISOR));
-        int steps = (int) Math.max(1.0, root);
-        AuraHelper.polluteAura(level, pos, Math.max(POLLUTE_MINIMUM_STRENGTH, POLLUTE_STRENGTH_STEP * steps), true);
+        int attempts = TaintFeeding.growthAttempts(node);
+        for (int i = 0; i < attempts; i++) {
+            TaintHelper.growFromOrigin(level, pos.offset(taintOffset(random), taintOffset(random), taintOffset(random)), node);
+        }
+    }
+
+    private static void purifyUnderBloom(BlockEntityNode node) {
+        node.taintPurifyTicks += BlockEntityNode.TYPE_BEHAVIOR_INTERVAL;
+        node.setChanged();
+        if (node.taintPurifyTicks >= ThaumaturgeCommonConfig.TAINT_STARVE_TICKS.get()) {
+            node.reclassify(NodeType.NORMAL);
+            node.invalidateRefill();
+        }
     }
 
     private static int taintOffset(RandomSource random) {

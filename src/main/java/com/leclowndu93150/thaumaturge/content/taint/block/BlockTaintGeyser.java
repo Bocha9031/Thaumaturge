@@ -1,6 +1,5 @@
 package com.leclowndu93150.thaumaturge.content.taint.block;
 
-import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.content.entity.EntityTaintSwarm;
 import com.leclowndu93150.thaumaturge.content.taint.flux.FluxGooFluid;
 import com.leclowndu93150.thaumaturge.content.taint.flux.PhysicalFlux;
@@ -24,8 +23,6 @@ public final class BlockTaintGeyser extends AbstractTaintBlock {
     private static final double SWARM_HEIGHT = 1.25;
     private static final double CELL_CENTRE = 0.5;
     private static final float FULL_TURN_DEGREES = 360.0F;
-    private static final float POLLUTION_AMOUNT = 1.0F;
-    private static final float POLLUTION_FLUX_RATIO = 0.25F;
 
     public BlockTaintGeyser(Properties properties) {
         super(properties);
@@ -43,17 +40,7 @@ public final class BlockTaintGeyser extends AbstractTaintBlock {
 
     @Override
     protected void subRandomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        if (!trySpawnSwarm(level, pos, random)) {
-            topUpFlux(level, pos);
-        }
-    }
-
-    private static void topUpFlux(ServerLevel level, BlockPos pos) {
-        int base = AuraHelper.getAuraBase(level, pos);
-        boolean belowRatio = AuraHelper.getFlux(level, pos) < POLLUTION_FLUX_RATIO * base;
-        if (base > 0 && belowRatio) {
-            AuraHelper.polluteAura(level, pos, POLLUTION_AMOUNT, true);
-        }
+        trySpawnSwarm(level, pos, random);
     }
 
     private static boolean swarmWanted(ServerLevel level, BlockPos pos, RandomSource random) {

@@ -25,7 +25,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.RandomSource;
@@ -81,11 +80,7 @@ public final class NodeGenerator {
         if (data == null) {
             return false;
         }
-        boolean placed = createNodeAt(level, pos, data.type(), data.modifier().orElse(null), data.aspects());
-        if (placed && data.type() == NodeType.TAINTED && !(level instanceof ServerLevel)) {
-            markBootstrap(level, pos);
-        }
-        return placed;
+        return createNodeAt(level, pos, data.type(), data.modifier().orElse(null), data.aspects());
     }
 
     public static boolean createGuaranteedTaintedNodeAt(ServerLevelAccessor level, BlockPos pos, RandomSource random) {
@@ -106,11 +101,7 @@ public final class NodeGenerator {
             return false;
         }
         AspectList aspects = guaranteedAspects(level, rolled.get(), wanted, random);
-        if (!createNodeAt(level, pos, wanted, rolled.get().modifier().orElse(null), aspects)) {
-            return false;
-        }
-        markBootstrap(level, pos);
-        return true;
+        return createNodeAt(level, pos, wanted, rolled.get().modifier().orElse(null), aspects);
     }
 
     private static boolean guaranteedSpawnAllowed(ServerLevelAccessor level, BlockPos pos) {
@@ -150,12 +141,6 @@ public final class NodeGenerator {
     private static void configure(BlockEntityNode node, NodeType type, @Nullable NodeModifier modifier, AspectList aspects) {
         node.applyNodeData(new NodeData(type, Optional.ofNullable(modifier), aspects, aspects));
         node.setChanged();
-    }
-
-    private static void markBootstrap(ServerLevelAccessor level, BlockPos pos) {
-        if (level.getBlockEntity(pos) instanceof BlockEntityNode node) {
-            node.markNaturalTaintBootstrap();
-        }
     }
 
     private static HolderLookup.RegistryLookup<IAspect> aspectRegistry(ServerLevelAccessor level) {

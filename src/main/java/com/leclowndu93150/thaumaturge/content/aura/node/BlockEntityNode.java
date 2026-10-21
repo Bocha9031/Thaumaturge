@@ -1,5 +1,7 @@
 package com.leclowndu93150.thaumaturge.content.aura.node;
 
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
+import com.leclowndu93150.thaumaturge.api.taint.ITaintOrigin;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.Aspects;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
@@ -8,7 +10,6 @@ import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.aura.IVisRelaySource;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeModifier;
 import com.leclowndu93150.thaumaturge.api.nodes.NodeType;
-import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.blockentity.AbstractSyncedBlockEntity;
 import com.leclowndu93150.thaumaturge.registry.TTBlockEntities;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
@@ -24,6 +25,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -32,7 +34,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 import org.jspecify.annotations.Nullable;
 
-public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspectContainer {
+public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspectContainer, ITaintOrigin {
     static final int LOCK_NONE = 0;
     static final int LOCK_BASIC = 1;
     static final int LOCK_ADVANCED = 2;
@@ -47,13 +49,14 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     private static final String KEY_DRAIN_PLAYER = "DrainPlayer";
     private static final String KEY_DRAIN_COLOR = "DrainColor";
     private static final String KEY_JARRING = "Jarring";
-    private static final String KEY_BOOTSTRAP = "NaturalTaintBootstrap";
+    private static final String KEY_TAINT_RESERVE = "TaintReserve";
+    private static final String KEY_TAINT_PURIFY = "TaintPurify";
     private static final int DEFAULT_DRAIN_COLOR = 0xFFFFFF;
     private static final int DEFAULT_CLIENT_CHANNEL = 255;
     private static final int LOCK_REFRESH_INTERVAL = 50;
     private static final int BASIC_LOCK_FEED_FACTOR = 2;
     private static final int ADVANCED_LOCK_FEED_FACTOR = 20;
-    private static final int TYPE_BEHAVIOR_INTERVAL = 50;
+    static final int TYPE_BEHAVIOR_INTERVAL = 50;
     private static final int DRAIN_LINGER_TICKS = 12;
     private static final int CONTENT_AVERAGE_DIVISOR = 2;
 
@@ -68,6 +71,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     int lock;
     int refillWait;
     int starvation;
+    int taintPurifyTicks;
     private int refillInterval = UNSET;
     private int drainLinger;
     private NodeType type = NodeType.NORMAL;
@@ -76,7 +80,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     private @Nullable UUID drainPlayer;
     private int drainColor = DEFAULT_DRAIN_COLOR;
     private int jarring;
-    private boolean naturalTaintBootstrap;
+    private float taintReserve;
     private boolean inTick;
     private boolean tickDirty;
     private final NodeCentivis centivis = new NodeCentivis(this);
@@ -114,6 +118,10 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
 
     public void reclassify(NodeType nodeType) {
         type = nodeType;
+        if (nodeType != NodeType.TAINTED) {
+            taintReserve = 0.0F;
+            taintPurifyTicks = 0;
+        }
         refreshIndex();
         changed();
     }
@@ -139,6 +147,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         super.preRemoveSideEffects(pos, state);
         if (level instanceof ServerLevel serverLevel) {
             NodeLocationIndex.get(serverLevel).remove(pos);
+            TaintOrigins.unregister(serverLevel, pos);
         }
     }
 
@@ -149,7 +158,28 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         BlockState state = getBlockState();
         if (state.is(TTBlocks.NODE.get()) || state.is(TTBlocks.SILVERWOOD_NODE_LOG.get())) {
             NodeLocationIndex.get(serverLevel).register(worldPosition, type);
+            if (type == NodeType.TAINTED) {
+                TaintOrigins.register(serverLevel, worldPosition);
+            } else {
+                TaintOrigins.unregister(serverLevel, worldPosition);
+            }
         }
+    }
+
+    @Override
+    public boolean isLiveTaintOrigin() {
+        return type == NodeType.TAINTED && allowTypeBehavior() && !isRemoved();
+    }
+
+    @Override
+    public float getTaintReserve() {
+        return taintReserve;
+    }
+
+    @Override
+    public void setTaintReserve(float reserve) {
+        taintReserve = Math.max(0.0F, reserve);
+        setChanged();
     }
 
     @Override
@@ -342,7 +372,6 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
     }
 
     private void tickServer(ServerLevel serverLevel, BlockPos pos) {
-        consumeBootstrapFlag(serverLevel, pos);
         if (energized) {
             tickEnergized(serverLevel, pos);
             tickDrainLinger();
@@ -364,18 +393,6 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         NodeUpkeep.stability(this, serverLevel, pos, random);
         if (allowTypeBehavior() && !runTypeBehavior(serverLevel, pos, random)) {
             NodeBiomeSpread.tick(serverLevel, this, pos, tickCounter);
-        }
-    }
-
-    private void consumeBootstrapFlag(ServerLevel serverLevel, BlockPos pos) {
-        if (!naturalTaintBootstrap) {
-            return;
-        }
-        naturalTaintBootstrap = false;
-        tickDirty = true;
-        boolean shouldRun = type == NodeType.TAINTED && !ThaumaturgeCommonConfig.WUSS_MODE.get();
-        if (shouldRun) {
-            NodeBootstrap.run(serverLevel, pos);
         }
     }
 
@@ -424,7 +441,7 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
             return;
         }
         BlockPos below = pos.below();
-        if (!serverLevel.hasChunkAt(below) || !NodeBootstrap.columnsGenerated(serverLevel, pos)) {
+        if (!serverLevel.hasChunkAt(below) || !columnsGenerated(serverLevel, pos)) {
             return;
         }
         int next = lockBeneath(serverLevel, below);
@@ -465,9 +482,8 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         return true;
     }
 
-    public void markNaturalTaintBootstrap() {
-        naturalTaintBootstrap = true;
-        setChanged();
+    private static boolean columnsGenerated(LevelReader reader, BlockPos pos) {
+        return reader.hasChunkAt(pos) && reader.hasChunkAt(pos.north()) && reader.hasChunkAt(pos.south()) && reader.hasChunkAt(pos.east()) && reader.hasChunkAt(pos.west());
     }
 
     private void tickEnergized(ServerLevel serverLevel, BlockPos pos) {
@@ -522,8 +538,11 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         if (jarring > 0) {
             output.putInt(KEY_JARRING, jarring);
         }
-        if (naturalTaintBootstrap) {
-            output.putBoolean(KEY_BOOTSTRAP, true);
+        if (taintReserve > 0.0F) {
+            output.putFloat(KEY_TAINT_RESERVE, taintReserve);
+        }
+        if (taintPurifyTicks > 0) {
+            output.putInt(KEY_TAINT_PURIFY, taintPurifyTicks);
         }
     }
 
@@ -539,7 +558,8 @@ public class BlockEntityNode extends AbstractSyncedBlockEntity implements IAspec
         drainPlayer = input.read(KEY_DRAIN_PLAYER, UUIDUtil.CODEC).orElse(null);
         drainColor = input.getIntOr(KEY_DRAIN_COLOR, DEFAULT_DRAIN_COLOR);
         jarring = input.getIntOr(KEY_JARRING, 0);
-        naturalTaintBootstrap = input.getBooleanOr(KEY_BOOTSTRAP, false);
+        taintReserve = Math.max(0.0F, input.getFloatOr(KEY_TAINT_RESERVE, 0.0F));
+        taintPurifyTicks = input.getIntOr(KEY_TAINT_PURIFY, 0);
         refillInterval = UNSET;
     }
 }
