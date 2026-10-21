@@ -39,9 +39,9 @@ public final class BlockPavingStone extends BaseEntityBlock {
     private static final double RUNE_CENTER = 0.5;
     private static final double RUNE_HEIGHT = 1.2;
     private static final RuneStyle POWERED_STYLE = new RuneStyle(4, 0.2F, 0.4F, 0.0F, 0.3F, 0.8F, 0.2F, 20, -0.02F);
-    private static final RuneStyle ACTIVE_STYLE = new RuneStyle(6, 0.9F, 0.1F, 0.0F, 0.3F, 0.0F, 0.3F, 24, -0.02F);
-    private static final RuneStyle WARNING_STYLE = new RuneStyle(1, 0.6F, 0.4F, 0.0F, 0.0F, 0.3F, 0.7F, 20, 0.0F);
-    private static final double WARNING_MARGIN = 1.0;
+    private static final RuneStyle ACTIVE_STYLE = new RuneStyle(6, 0.6F, 0.4F, 0.0F, 0.0F, 0.3F, 0.7F, 24, -0.02F);
+    private static final RuneStyle WARNING_STYLE = new RuneStyle(1, 0.9F, 0.1F, 0.0F, 0.3F, 0.0F, 0.3F, 20, 0.0F);
+    private static final double NEARBY_MARGIN = 1.0;
     private static final double WARNING_BASE_HEIGHT = 0.6;
     private static final double WARNING_MIN_SPREAD = 0.8;
     private static final double WARNING_EXTRA_HEIGHT = 0.5;
@@ -97,10 +97,16 @@ public final class BlockPavingStone extends BaseEntityBlock {
         }
         if (level.hasNeighborSignal(pos)) {
             spawnRunes(level, pos, random, POWERED_STYLE);
-        } else if (hasColumn(level, pos)) {
+            return;
+        }
+        List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, new AABB(pos).inflate(NEARBY_MARGIN), candidate -> !(candidate instanceof Player));
+        if (nearby.isEmpty()) {
+            return;
+        }
+        if (hasColumn(level, pos)) {
             spawnRunes(level, pos, random, ACTIVE_STYLE);
         } else {
-            spawnWarning(level, pos, random);
+            spawnWarning(level, pos, random, nearby.getFirst());
         }
     }
 
@@ -119,12 +125,8 @@ public final class BlockPavingStone extends BaseEntityBlock {
         }
     }
 
-    private static void spawnWarning(Level level, BlockPos pos, RandomSource random) {
-        List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class, new AABB(pos).inflate(WARNING_MARGIN), candidate -> !(candidate instanceof Player));
-        if (nearby.isEmpty()) {
-            return;
-        }
-        double height = pos.getY() + WARNING_BASE_HEIGHT + random.nextDouble() * Math.max(WARNING_MIN_SPREAD, nearby.getFirst().getEyeHeight()) + WARNING_EXTRA_HEIGHT;
+    private static void spawnWarning(Level level, BlockPos pos, RandomSource random, LivingEntity intruder) {
+        double height = pos.getY() + WARNING_BASE_HEIGHT + random.nextDouble() * Math.max(WARNING_MIN_SPREAD, intruder.getEyeHeight()) + WARNING_EXTRA_HEIGHT;
         level.addParticle(WARNING_STYLE.create(random), pos.getX() + RUNE_CENTER, height, pos.getZ() + RUNE_CENTER, 0.0, 0.0, 0.0);
     }
 
