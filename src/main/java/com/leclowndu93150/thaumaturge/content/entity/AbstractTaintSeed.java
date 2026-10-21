@@ -1,11 +1,14 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
-import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
+import com.leclowndu93150.thaumaturge.api.taint.ITaintOrigin;
 import com.leclowndu93150.thaumaturge.api.taint.TaintApi;
+import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
+import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintEcology;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintFeeding;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.core.BlockPos;
@@ -17,10 +20,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public abstract class AbstractTaintSeed extends AbstractRootedTaint {
+public abstract class AbstractTaintSeed extends AbstractRootedTaint implements ITaintOrigin {
     private static final double SEED_FOLLOW_RANGE = 16.0;
     private static final float STRIKE_ANIMATION_START = 0.5F;
     private static final float STRIKE_ANIMATION_DECAY = 0.75F;
@@ -30,19 +35,20 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
     private static final double FUME_RISE_BASE = 0.015;
     private static final double FUME_RISE_SPREAD = 0.015;
     private static final float FUME_SCALE = 1.5F;
-    private static final float STARVATION_DAMAGE = 0.5F;
-    private static final float STARVATION_FLUX = 0.1F;
+    private static final float TICKS_PER_SECOND = 20.0F;
     private static final int SPREAD_EXTRA_LIMIT = 3;
-    private static final float SPREAD_SATURATION_FACTOR = 2.0F;
+    private static final float SPREAD_FILL_FACTOR = 3.0F;
     private static final int SPREAD_HORIZONTAL_REACH = 3;
     private static final int AURA_REACH = 4;
     private static final int AURA_EFFECT_TICKS = 100;
-    private static final double AMBUSH_REACH_PER_ROOT_AREA = 16.0;
-    private static final double AMBUSH_MIN_REACH = 0.0;
+    private static final String RESERVE_KEY = "taint_reserve";
+    private static final String STARVE_KEY = "starve_ticks";
 
     public float attackAnim;
 
     private @Nullable BlockPos anchor;
+    private float reserve;
+    private int starveTicks;
 
     protected AbstractTaintSeed(EntityType<? extends AbstractTaintSeed> type, Level level) {
         super(type, level);
@@ -91,18 +97,58 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
         emitFumes(level);
         TaintEcology.touchActiveSeed(level, pos);
         TaintBiomeManager.taintColumn(level, pos);
-        float saturation = Math.max(0.0F, AuraHelper.getFluxSaturation(level, pos));
-        if (saturation <= 0.0F) {
-            this.hurtServer(level, level.damageSources().starve(), STARVATION_DAMAGE);
-            AuraHelper.polluteAura(level, pos, STARVATION_FLUX, false);
+        TaintFeeding.feed(level, pos, this, PULSE_INTERVAL / TICKS_PER_SECOND);
+        if (TaintFeeding.isDormant(this)) {
+            starve(level);
         } else {
-            spreadFibres(level, pos, saturation);
+            this.starveTicks = 0;
+            spreadFibres(level, pos);
         }
         if (!this.isAlive()) {
             return;
         }
         afflictNearby(level);
-        TaintacleAmbush.tryAmbush(level, this, AMBUSH_MIN_REACH, AMBUSH_REACH_PER_ROOT_AREA * Math.sqrt(this.getArea()));
+    }
+
+    private void starve(ServerLevel level) {
+        int limit = ThaumaturgeCommonConfig.TAINT_STARVE_TICKS.get();
+        this.starveTicks += PULSE_INTERVAL;
+        float damage = this.getMaxHealth() * PULSE_INTERVAL / limit;
+        this.hurtServer(level, level.damageSources().starve(), this.starveTicks >= limit ? this.getMaxHealth() : damage);
+    }
+
+    @Override
+    public boolean isLiveTaintOrigin() {
+        return this.isAlive();
+    }
+
+    @Override
+    public float getTaintReserve() {
+        return this.reserve;
+    }
+
+    @Override
+    public void setTaintReserve(float reserve) {
+        this.reserve = Math.max(0.0F, reserve);
+    }
+
+    @Override
+    public boolean removeWhenFarAway(double distanceToClosestPlayer) {
+        return false;
+    }
+
+    @Override
+    protected void addAdditionalSaveData(ValueOutput output) {
+        super.addAdditionalSaveData(output);
+        output.putFloat(RESERVE_KEY, this.reserve);
+        output.putInt(STARVE_KEY, this.starveTicks);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(ValueInput input) {
+        super.readAdditionalSaveData(input);
+        this.reserve = Math.max(0.0F, input.getFloatOr(RESERVE_KEY, 0.0F));
+        this.starveTicks = input.getIntOr(STARVE_KEY, 0);
     }
 
     @Override
@@ -123,14 +169,15 @@ public abstract class AbstractTaintSeed extends AbstractRootedTaint {
         }
     }
 
-    private void spreadFibres(ServerLevel level, BlockPos pos, float saturation) {
+    private void spreadFibres(ServerLevel level, BlockPos pos) {
         RandomSource random = this.getRandom();
         int area = this.getArea();
-        int attempts = 1 + Math.min(SPREAD_EXTRA_LIMIT, (int) Math.floor(saturation * SPREAD_SATURATION_FACTOR));
+        float fill = this.reserve / TaintFeeding.reserveCap();
+        int attempts = 1 + Math.min(SPREAD_EXTRA_LIMIT, (int) Math.floor(fill * SPREAD_FILL_FACTOR));
         int horizontal = SPREAD_HORIZONTAL_REACH * area;
         for (int i = 0; i < attempts; i++) {
             BlockPos target = pos.offset(offset(random, horizontal), offset(random, area), offset(random, horizontal));
-            TaintApi.spreadFibres(level, target, true);
+            TaintHelper.growFromOrigin(level, target, this);
         }
     }
 

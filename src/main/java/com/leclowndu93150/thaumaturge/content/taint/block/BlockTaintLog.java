@@ -14,6 +14,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 
 public final class BlockTaintLog extends RotatedPillarBlock implements ITaintBlock {
     public static final MapCodec<BlockTaintLog> CODEC = simpleCodec(BlockTaintLog::new);
@@ -36,9 +38,9 @@ public final class BlockTaintLog extends RotatedPillarBlock implements ITaintBlo
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        TaintHelper.trySpreadTaintedBiome(level, pos, random);
-        if (!TaintHelper.isEcologicallySustained(level, pos) && random.nextInt(DECAY_ONE_IN) == 0) {
+        if (!TaintOrigins.isSustained(level, pos) && random.nextInt(DECAY_ONE_IN) == 0) {
             decay(level, pos, state);
+            TaintBiomeManager.restoreIfCleared(level, pos);
             return;
         }
         TaintHelper.attemptFibreGrowth(level, pos, false);

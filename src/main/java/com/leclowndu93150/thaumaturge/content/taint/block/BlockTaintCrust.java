@@ -23,6 +23,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
 
 public final class BlockTaintCrust extends AbstractTaintBlock {
     public static final MapCodec<BlockTaintCrust> CODEC = simpleCodec(BlockTaintCrust::new);
@@ -52,13 +53,13 @@ public final class BlockTaintCrust extends AbstractTaintBlock {
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        TaintHelper.trySpreadTaintedBiome(level, pos, random);
-        if (TaintBiomeManager.isTainted(level, pos)) {
+        if (TaintOrigins.isSustained(level, pos)) {
             if (!shed(level, pos, state, random)) {
                 subRandomTick(state, level, pos, random);
             }
         } else if (random.nextInt(BIOME_DECAY_ONE_IN) == 0) {
             decay(level, pos, state);
+            TaintBiomeManager.restoreIfCleared(level, pos);
         } else {
             shed(level, pos, state, random);
         }

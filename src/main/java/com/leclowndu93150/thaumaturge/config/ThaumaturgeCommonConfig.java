@@ -8,7 +8,12 @@ public final class ThaumaturgeCommonConfig {
     public static final ModConfigSpec.BooleanValue WUSS_MODE;
     public static final ModConfigSpec.DoubleValue TAINT_SPREAD_RATE;
     public static final ModConfigSpec.IntValue TAINT_SPREAD_AREA;
-    public static final ModConfigSpec.IntValue TAINT_FRONTIER_RATE;
+    public static final ModConfigSpec.IntValue TAINT_FEED_RADIUS;
+    public static final ModConfigSpec.DoubleValue TAINT_FEED_RATE;
+    public static final ModConfigSpec.DoubleValue TAINT_RESERVE_CAP;
+    public static final ModConfigSpec.DoubleValue TAINT_GROWTH_COST;
+    public static final ModConfigSpec.DoubleValue TAINT_CHILD_SEED_COST;
+    public static final ModConfigSpec.IntValue TAINT_STARVE_TICKS;
     public static final ModConfigSpec.BooleanValue TAINT_FROM_FLUX;
     public static final ModConfigSpec.BooleanValue PHYSICAL_FLUX_AURA_FLOOR;
     public static final ModConfigSpec.BooleanValue PHYSICAL_FLUX_TAINT_OUTBREAKS;
@@ -74,9 +79,16 @@ public final class ThaumaturgeCommonConfig {
         spec.push("world");
         WUSS_MODE = flag(spec, "wussMode", false, "Setting this to true disables Warp, Taint spread and similar mechanics. You wuss.");
         TAINT_SPREAD_RATE = percent(spec, "taintSpreadRate", PERCENT_MAX, "The % chance of taint fibres spreading on a block tick. Setting this to 0 will effectively stop taint fibre spread.");
-        TAINT_SPREAD_AREA = whole(spec, "taintSpreadArea", 32, 1, 128, "The range at which taint can spread from a taint seed. This value is only a base and will be modified by flux levels.");
-        TAINT_FRONTIER_RATE = whole(spec, "taintFrontierRate", 200, 0, 100000,
-                "How quickly the Tainted Lands biome spreads outward, Thaumcraft 4 style. Fibrous taint tries to take over a neighbouring column with a chance of 1 in (taintFrontierRate * 5) per random tick, and only with at least two adjacent taint blocks. Higher is slower. 0 stops the biome from spreading while existing taint stays active.");
+        TAINT_SPREAD_AREA = whole(spec, "taintSpreadArea", 32, 1, 128,
+                "The range in blocks that a taint origin (a taint seed or a tainted node) claims. Taint outside the range of every living origin decays, except inside naturally generated Tainted Lands.");
+        TAINT_FEED_RADIUS = whole(spec, "taintFeedRadius", 2, 0, 8, "How many chunks around itself a taint origin can eat flux from.");
+        TAINT_FEED_RATE = decimal(spec, "taintFeedRate", 5.0, 0.0, 1000.0, "Flux a taint origin eats from the aura each second.");
+        TAINT_RESERVE_CAP = decimal(spec, "taintReserveCap", 100.0, 1.0, 100000.0, "Most flux a taint origin can store for growth.");
+        TAINT_GROWTH_COST = decimal(spec, "taintGrowthCost", 1.0, 0.0, 1000.0,
+                "Stored flux a taint origin spends for each block of taint it grows. A chunk polluted up to its base aura pays for roughly one chunk of taint at the default.");
+        TAINT_CHILD_SEED_COST = decimal(spec, "taintChildSeedCost", 25.0, 0.0, 100000.0, "Stored flux a well fed taint origin spends to sprout a new taint seed at the edge of its range.");
+        TAINT_STARVE_TICKS = whole(spec, "taintStarveTicks", 12000, 20, 1000000,
+                "Ticks a taint seed survives with nothing to eat before it withers away. A tainted node inside an Ethereal Bloom's range is purified after the same time.");
         TAINT_FROM_FLUX = flag(spec, "taintFromFlux", true, "Whether deep, exposed Flux Goo can fester into Fibrous Taint and Tainted Lands, as in Thaumcraft 4.");
         PHYSICAL_FLUX_AURA_FLOOR = flag(spec, "physicalFluxAuraFloor", true,
                 "Whether physical Flux Goo and Flux Gas keep a capped minimum of Aura Flux in their chunk. Turning this off leaves the goo and gas and their direct effects in place.");

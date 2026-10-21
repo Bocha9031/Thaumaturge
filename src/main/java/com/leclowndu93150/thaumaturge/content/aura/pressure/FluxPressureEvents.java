@@ -3,7 +3,6 @@ package com.leclowndu93150.thaumaturge.content.aura.pressure;
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
-import com.leclowndu93150.thaumaturge.content.taint.TaintHelper;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -13,6 +12,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
 
 @EventBusSubscriber(modid = TTIds.MODID)
 public final class FluxPressureEvents {
@@ -37,7 +37,7 @@ public final class FluxPressureEvents {
             return false;
         }
         FluxPressureState state = level.getData(TTAttachments.FLUX_PRESSURE);
-        if (!event.allowedNearTaint() && (TaintHelper.isWithinSeedInfluence(level, origin) || state.hasRainNear(origin, STACK_SUPPRESSION_RANGE_SQ))) {
+        if (!event.allowedNearTaint() && (TaintOrigins.claimingOrigin(level, origin) != null || state.hasRainNear(origin, STACK_SUPPRESSION_RANGE_SQ))) {
             return false;
         }
         if (AuraHelper.drainFlux(level, origin, event.cost(), true) + COST_EPSILON < event.cost() || !event.fire(level, origin, state)) {

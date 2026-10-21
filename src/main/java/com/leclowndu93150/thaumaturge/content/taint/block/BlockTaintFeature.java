@@ -29,6 +29,8 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 
 public final class BlockTaintFeature extends DirectionalBlock implements ITaintBlock {
     public static final MapCodec<BlockTaintFeature> CODEC = simpleCodec(BlockTaintFeature::new);
@@ -83,10 +85,10 @@ public final class BlockTaintFeature extends DirectionalBlock implements ITaintB
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        TaintHelper.trySpreadTaintedBiome(level, pos, random);
-        if (!TaintHelper.isEcologicallySustained(level, pos)) {
+        if (!TaintOrigins.isSustained(level, pos)) {
             if (random.nextInt(DECAY_ONE_IN) == 0) {
                 decay(level, pos, state);
+                TaintBiomeManager.restoreIfCleared(level, pos);
                 return;
             }
         } else if (random.nextInt(POLLUTION_ONE_IN) == 0 && pollutes(level, pos)) {

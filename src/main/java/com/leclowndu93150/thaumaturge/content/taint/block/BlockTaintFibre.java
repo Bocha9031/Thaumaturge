@@ -38,6 +38,8 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import com.leclowndu93150.thaumaturge.content.taint.spread.TaintOrigins;
+import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
 
 public final class BlockTaintFibre extends Block implements ITaintBlock {
     public static final MapCodec<BlockTaintFibre> CODEC = simpleCodec(BlockTaintFibre::new);
@@ -151,9 +153,9 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        TaintHelper.trySpreadTaintedBiome(level, pos, random);
         if (shouldWither(state, level, pos)) {
             decay(level, pos, state);
+            TaintBiomeManager.restoreIfCleared(level, pos);
             return;
         }
         boolean becameStalk = state.getValue(GROWTH3) && tryBecomeStalk(level, pos);
@@ -172,7 +174,7 @@ public final class BlockTaintFibre extends Block implements ITaintBlock {
     }
 
     private static boolean shouldWither(BlockState state, ServerLevel level, BlockPos pos) {
-        return (!hasAnyGrowth(state) && isOnlyAdjacentToTaint(level, pos)) || !TaintHelper.isEcologicallySustained(level, pos);
+        return (!hasAnyGrowth(state) && isOnlyAdjacentToTaint(level, pos)) || !TaintOrigins.isSustained(level, pos);
     }
 
     @Override
