@@ -49,6 +49,7 @@ final class LabyrinthSubcommand implements AdminSubcommand {
     private static final SimpleCommandExceptionType FAILED = new SimpleCommandExceptionType(Component.translatable("commands.thaumaturge.labyrinth.create.failed"));
     private static final DynamicCommandExceptionType UNKNOWN_PHASE = new DynamicCommandExceptionType(name -> Component.translatable("commands.thaumaturge.labyrinth.phase.unknown", name));
     private static final DynamicCommandExceptionType UNKNOWN_ENCOUNTER = new DynamicCommandExceptionType(id -> Component.translatable("commands.thaumaturge.labyrinth.encounter.unknown", id));
+    private static final SimpleCommandExceptionType REGENERATE_FAILED = new SimpleCommandExceptionType(Component.translatable("commands.thaumaturge.labyrinth.regenerate.failed"));
     private static final SimpleCommandExceptionType NOT_INSIDE = new SimpleCommandExceptionType(Component.translatable("commands.thaumaturge.labyrinth.not_inside"));
 
     @Override
@@ -61,6 +62,7 @@ final class LabyrinthSubcommand implements AdminSubcommand {
                 .then(Commands.literal("tp").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(LabyrinthSubcommand::teleport)))
                 .then(Commands.literal("retire").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(LabyrinthSubcommand::retire)))
                 .then(Commands.literal("restamp").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(LabyrinthSubcommand::restamp)))
+                .then(Commands.literal("regenerate").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(LabyrinthSubcommand::regenerate)))
                 .then(Commands.literal("portal").then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(LabyrinthSubcommand::portal)))
                 .then(Commands.literal("phase")
                         .then(Commands.argument("id", IntegerArgumentType.integer(0))
@@ -189,6 +191,14 @@ final class LabyrinthSubcommand implements AdminSubcommand {
                 .ifPresent(portal -> portal.setLink(PortalLink.intoLabyrinth(record.plan().id())));
         ctx.getSource().sendSuccess(() -> Component.translatable("commands.thaumaturge.labyrinth.portal.success", record.plan().id().value(), pos.toShortString()), true);
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static int regenerate(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        MazeRecord record = record(ctx);
+        ServerLevel outer = outer(ctx);
+        MazePlan plan = LabyrinthService.regenerate(outer, record).orElseThrow(REGENERATE_FAILED::create).plan();
+        ctx.getSource().sendSuccess(() -> Component.translatable("commands.thaumaturge.labyrinth.regenerate.success", plan.id().value(), plan.generation()), true);
+        return plan.generation();
     }
 
     private static int restamp(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

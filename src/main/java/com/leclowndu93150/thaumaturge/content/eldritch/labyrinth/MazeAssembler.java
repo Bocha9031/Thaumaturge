@@ -32,7 +32,7 @@ final class MazeAssembler {
 
     private MazeAssembler() {}
 
-    static Assembly assemble(MazeId id, GlobalPos origin, MazeGeometry geometry, long seed, ResourceKey<LabyrinthDefinition> definition, LabyrinthTuning tuning, LayoutResult layout, Function<Identifier, Optional<CompiledRoom>> rooms) {
+    static Assembly assemble(MazeId id, int generation, GlobalPos origin, MazeGeometry geometry, long seed, ResourceKey<LabyrinthDefinition> definition, LabyrinthTuning tuning, LayoutResult layout, Function<Identifier, Optional<CompiledRoom>> rooms) {
         Palette palette = new Palette();
         Harvest harvest = new Harvest();
         long[] packedRooms = layout.rooms().stream().mapToLong(placement -> {
@@ -43,7 +43,8 @@ final class MazeAssembler {
         harvest.points.putIfAbsent(LabyrinthLandmarks.ARRIVAL, geometry.cellCenter(layout.cellX(layout.portalCell()), layout.cellZ(layout.portalCell())));
         MazeLandmarks landmarks = new MazeLandmarks(Map.copyOf(harvest.points), List.copyOf(harvest.barriers), List.copyOf(harvest.glyphs), hallBounds(geometry, layout));
         Optional<ResourceKey<LabyrinthEncounter>> encounter = layout.encounter().flatMap(Holder::unwrapKey);
-        MazePlan plan = new MazePlan(id, origin, geometry, seed, definition, encounter, tuning, List.copyOf(palette.rooms), List.copyOf(palette.templates), packedRooms, packCells(layout), landmarks);
+        MazePlan plan = new MazePlan(id, generation, origin, geometry, seed, definition, encounter, tuning, List.copyOf(palette.rooms), List.copyOf(palette.templates), packedRooms, packCells(layout),
+                landmarks);
         return new Assembly(plan, List.copyOf(harvest.triggers));
     }
 

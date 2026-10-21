@@ -109,6 +109,7 @@ final class AltarRituals {
         }
         altar.setRitual(Optional.empty());
         altar.setEyes(0);
+        altar.link().ifPresent(previous -> LabyrinthService.unlink(level.getServer(), previous));
         altar.setLink(Optional.of(record.get().plan().id()));
         EldritchPlacement.place(level, pos.above(), TTBlocks.ELDRITCH_PORTAL.get().defaultBlockState(), TTBlockEntities.ELDRITCH_PORTAL.get())
                 .ifPresent(portal -> portal.setLink(PortalLink.intoLabyrinth(record.get().plan().id())));

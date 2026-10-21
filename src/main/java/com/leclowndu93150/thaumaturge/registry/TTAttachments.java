@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.content.aura.AuraData;
 import com.leclowndu93150.thaumaturge.content.aura.pressure.FluxPressureState;
 import com.leclowndu93150.thaumaturge.content.casters.BlockWorkQueues;
 import com.leclowndu93150.thaumaturge.content.eldritch.encounter.LabyrinthBinding;
+import com.leclowndu93150.thaumaturge.content.eldritch.labyrinth.world.MazeStamp;
 import com.leclowndu93150.thaumaturge.content.eldritch.portal.TransitState;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitRuntime;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitState;
@@ -54,8 +55,8 @@ public final class TTAttachments {
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<DustTriggerSwapQueue>> DUST_TRIGGER_QUEUE = register("dust_trigger_queue",
             () -> AttachmentType.builder(DustTriggerSwapQueue::new).serialize(DustTriggerSwapQueue.CODEC).build());
 
-    public static final DeferredHolder<AttachmentType<?>, AttachmentType<Integer>> LABYRINTH_STAMP = register("labyrinth_stamp",
-            () -> AttachmentType.builder(() -> -1).serialize(Codec.INT.fieldOf("maze"), value -> value >= 0).build());
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<MazeStamp>> LABYRINTH_STAMP = register("labyrinth_stamp",
+            () -> AttachmentType.builder(() -> MazeStamp.NONE).serialize(MazeStamp.CODEC, MazeStamp::present).build());
 
     public static final DeferredHolder<AttachmentType<?>, AttachmentType<BlockPos>> OBELISK_SITE_MEMBER = register("obelisk_site_member",
             () -> AttachmentType.builder(() -> BlockPos.ZERO).serialize(BlockPos.CODEC.fieldOf("altar")).build());

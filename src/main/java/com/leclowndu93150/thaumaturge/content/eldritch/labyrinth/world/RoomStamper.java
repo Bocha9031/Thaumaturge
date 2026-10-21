@@ -15,12 +15,14 @@ import com.leclowndu93150.thaumaturge.content.eldritch.labyrinth.room.CompiledRo
 import com.leclowndu93150.thaumaturge.content.eldritch.labyrinth.room.RoomTransform;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
 import java.util.Optional;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
@@ -29,6 +31,7 @@ import net.minecraft.world.level.levelgen.PositionalRandomFactory;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorList;
+import net.minecraft.world.phys.AABB;
 
 public final class RoomStamper {
     private RoomStamper() {}
@@ -40,23 +43,40 @@ public final class RoomStamper {
         if (placed.isPresent()) {
             place(level, chunkPos, plan, runtime, placed.get());
         }
-        chunk.setData(TTAttachments.LABYRINTH_STAMP, plan.id().value());
+        chunk.setData(TTAttachments.LABYRINTH_STAMP, MazeStamp.of(plan));
     }
 
     public static boolean isStamped(ChunkAccess chunk, MazePlan plan) {
-        return chunk.getData(TTAttachments.LABYRINTH_STAMP) == plan.id().value();
+        return chunk.getData(TTAttachments.LABYRINTH_STAMP).matches(plan);
     }
 
-    public static void ensureStamped(ServerLevel level, ChunkAccess chunk, MazePlan plan, LabyrinthRuntime runtime) {
-        if (!isStamped(chunk, plan)) {
-            restamp(level, chunk, plan, runtime);
+    public static boolean isStale(ChunkAccess chunk, MazePlan plan) {
+        return chunk.getData(TTAttachments.LABYRINTH_STAMP).staleFor(plan);
+    }
+
+    public static void unstamp(ChunkAccess chunk) {
+        chunk.setData(TTAttachments.LABYRINTH_STAMP, MazeStamp.NONE);
+    }
+
+    public static boolean ensureStamped(ServerLevel level, ChunkAccess chunk, MazePlan plan, LabyrinthRuntime runtime, Predicate<Entity> keep) {
+        if (isStamped(chunk, plan)) {
+            return false;
         }
+        ChunkPos pos = chunk.getPos();
+        boolean stale = isStale(chunk, plan);
+        BandFiller.fillLive(level, pos.x(), pos.z(), runtime.band());
+        if (stale) {
+            purgeEntities(level, pos, keep);
+        }
+        stamp(level, chunk, plan, runtime);
+        return true;
     }
 
-    public static void restamp(ServerLevel level, ChunkAccess chunk, MazePlan plan, LabyrinthRuntime runtime) {
-        ChunkPos pos = chunk.getPos();
-        BandFiller.fillLive(level, pos.x(), pos.z(), runtime.band());
-        stamp(level, chunk, plan, runtime);
+    private static void purgeEntities(ServerLevel level, ChunkPos pos, Predicate<Entity> keep) {
+        AABB column = new AABB(pos.getMinBlockX(), level.getMinY(), pos.getMinBlockZ(), pos.getMaxBlockX() + 1, level.getMaxY() + 1, pos.getMaxBlockZ() + 1);
+        for (Entity entity : level.getEntities((Entity) null, column, candidate -> !keep.test(candidate))) {
+            entity.discard();
+        }
     }
 
     private static void place(WorldGenLevel level, ChunkPos chunkPos, MazePlan plan, LabyrinthRuntime runtime, MazePlan.PlacedRoom room) {
@@ -74,7 +94,7 @@ public final class RoomStamper {
         BlockPos origin = RoomTransform.origin(geometry.cellMin(room.anchorX(), room.anchorZ()), room.transform(), compiled.get().size());
         BoundingBox box = new BoundingBox(chunkPos.getMinBlockX(), level.getMinY(), chunkPos.getMinBlockZ(), chunkPos.getMaxBlockX(), level.getMaxY(), chunkPos.getMaxBlockZ());
         PositionalRandomFactory randoms = level.getLevel().getChunkSource().randomState().getOrCreateRandomFactory(TTIds.LABYRINTH_STAMP_RANDOM);
-        RandomSource roomRandom = randoms.at(origin.getX(), plan.id().value(), origin.getZ());
+        RandomSource roomRandom = randoms.at(origin.getX(), plan.stampSalt(), origin.getZ());
         StructurePlaceSettings settings = new LabyrinthPlaceSettings(plan.seed(), plan.tuning()).setMirror(MazeCells.mirror(room.transform())).setRotation(MazeCells.rotation(room.transform()))
                 .setBoundingBox(box).setKnownShape(true).setIgnoreEntities(true).setRandom(roomRandom);
         settings.addProcessor(StripMarkersProcessor.INSTANCE);
@@ -95,7 +115,7 @@ public final class RoomStamper {
             if (!box.isInside(world) || plan.tuning().disables(marker.marker())) {
                 continue;
             }
-            marker.marker().stamp(new StampContext(level, box, plan.id(), room.transform(), plan.tuning(), randoms.at(world.getX(), world.getY() ^ plan.id().value(), world.getZ())), world);
+            marker.marker().stamp(new StampContext(level, box, plan.id(), room.transform(), plan.tuning(), randoms.at(world.getX(), world.getY() ^ plan.stampSalt(), world.getZ())), world);
         }
     }
 

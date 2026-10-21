@@ -16,17 +16,22 @@ import net.minecraft.core.GlobalPos;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 
-public record MazePlan(MazeId id, GlobalPos origin, MazeGeometry geometry, long seed, ResourceKey<LabyrinthDefinition> definition, Optional<ResourceKey<LabyrinthEncounter>> encounter,
+public record MazePlan(MazeId id, int generation, GlobalPos origin, MazeGeometry geometry, long seed, ResourceKey<LabyrinthDefinition> definition, Optional<ResourceKey<LabyrinthEncounter>> encounter,
         LabyrinthTuning tuning, List<ResourceKey<RoomType>> roomPalette, List<Identifier> templatePalette, long[] rooms, int[] cells, MazeLandmarks landmarks) {
     private static final Codec<long[]> LONGS = Codec.LONG_STREAM.xmap(LongStream::toArray, Arrays::stream);
     private static final Codec<int[]> INTS = Codec.INT_STREAM.xmap(IntStream::toArray, Arrays::stream);
-    public static final Codec<MazePlan> CODEC = RecordCodecBuilder.create(instance -> instance.group(MazeId.CODEC.fieldOf("id").forGetter(MazePlan::id),
-            GlobalPos.CODEC.fieldOf("origin").forGetter(MazePlan::origin), MazeGeometry.CODEC.fieldOf("geometry").forGetter(MazePlan::geometry), Codec.LONG.fieldOf("seed").forGetter(MazePlan::seed),
-            ResourceKey.codec(LabyrinthDefinition.REGISTRY_KEY).fieldOf("definition").forGetter(MazePlan::definition),
-            ResourceKey.codec(LabyrinthEncounter.REGISTRY_KEY).optionalFieldOf("encounter").forGetter(MazePlan::encounter), LabyrinthTuning.CODEC.fieldOf("tuning").forGetter(MazePlan::tuning),
-            ResourceKey.codec(RoomType.REGISTRY_KEY).listOf().fieldOf("room_palette").forGetter(MazePlan::roomPalette),
-            Identifier.CODEC.listOf().fieldOf("template_palette").forGetter(MazePlan::templatePalette), LONGS.fieldOf("rooms").forGetter(MazePlan::rooms),
-            INTS.fieldOf("cells").forGetter(MazePlan::cells), MazeLandmarks.CODEC.fieldOf("landmarks").forGetter(MazePlan::landmarks)).apply(instance, MazePlan::new));
+    public static final Codec<MazePlan> CODEC = RecordCodecBuilder
+            .create(instance -> instance.group(MazeId.CODEC.fieldOf("id").forGetter(MazePlan::id), Codec.INT.optionalFieldOf("generation", 0).forGetter(MazePlan::generation),
+                    GlobalPos.CODEC.fieldOf("origin").forGetter(MazePlan::origin), MazeGeometry.CODEC.fieldOf("geometry").forGetter(MazePlan::geometry),
+                    Codec.LONG.fieldOf("seed").forGetter(MazePlan::seed), ResourceKey.codec(LabyrinthDefinition.REGISTRY_KEY).fieldOf("definition").forGetter(MazePlan::definition),
+                    ResourceKey.codec(LabyrinthEncounter.REGISTRY_KEY).optionalFieldOf("encounter").forGetter(MazePlan::encounter), LabyrinthTuning.CODEC.fieldOf("tuning").forGetter(MazePlan::tuning),
+                    ResourceKey.codec(RoomType.REGISTRY_KEY).listOf().fieldOf("room_palette").forGetter(MazePlan::roomPalette),
+                    Identifier.CODEC.listOf().fieldOf("template_palette").forGetter(MazePlan::templatePalette), LONGS.fieldOf("rooms").forGetter(MazePlan::rooms),
+                    INTS.fieldOf("cells").forGetter(MazePlan::cells), MazeLandmarks.CODEC.fieldOf("landmarks").forGetter(MazePlan::landmarks)).apply(instance, MazePlan::new));
+
+    public int stampSalt() {
+        return id.value() ^ Integer.reverse(generation);
+    }
 
     public int cell(int cellX, int cellZ) {
         return cells[geometry.index(cellX, cellZ)];

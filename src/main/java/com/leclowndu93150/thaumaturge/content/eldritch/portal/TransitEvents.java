@@ -10,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.portal.TeleportTransition;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -29,9 +28,9 @@ public final class TransitEvents {
         Optional<MazeRecord> record = LabyrinthService.find(outer, feet);
         if (record.isEmpty() || !record.get().plan().geometry().bounds().isInside(feet)) {
             player.teleport(LabyrinthTransit.returnTransition(player, record, TeleportTransition.DO_NOTHING));
-        } else if (!SafeSpot.clear(outer, feet) || !SafeSpot.clear(outer, feet.above())) {
-            ArrivalPad.Arrival arrival = ArrivalPad.prepare(outer, record.get());
-            player.teleport(new TeleportTransition(outer, arrival.pos(), Vec3.ZERO, arrival.yaw(), 0.0F, TeleportTransition.DO_NOTHING));
+        } else {
+            LabyrinthService.refresh(outer, outer.getChunkAt(feet), record.get());
+            ArrivalPad.rescue(outer, record.get(), player);
         }
     }
 
