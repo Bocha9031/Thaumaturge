@@ -65,10 +65,8 @@ public final class ThaumometerAspectOverlay {
     }
 
     private static boolean isHoldingThaumometer(Minecraft mc, LocalPlayer player) {
-        ItemStack offHand = player.getOffhandItem();
-        boolean mainHeld = player.getMainHandItem().is(TTItems.THAUMOMETER);
-        boolean ownOverlay = mainHeld && offHand.isEmpty() && mc.options.getCameraType().isFirstPerson();
-        return (mainHeld || offHand.is(TTItems.THAUMOMETER)) && !ownOverlay;
+        boolean held = player.getMainHandItem().is(TTItems.THAUMOMETER) || player.getOffhandItem().is(TTItems.THAUMOMETER);
+        return held && !mc.options.getCameraType().isFirstPerson();
     }
 
     private static Optional<TagCloud> resolve(LocalPlayer player, Level level) {
