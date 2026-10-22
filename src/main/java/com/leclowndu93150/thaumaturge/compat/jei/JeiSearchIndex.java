@@ -49,7 +49,8 @@ public final class JeiSearchIndex {
         ITypedIngredient<V> typed = element.getTypedIngredient();
         IIngredientHelper<V> helper = ingredients.getIngredientHelper(typed.getType());
         Object uid = helper.getUid(typed.getIngredient(), UidContext.Ingredient);
-        IListElementInfo<V> info = ListElementInfo.createFromElement(element, ingredients, ((IngredientFilterAccessor) filter).thaumaturge$modIdHelper());
+        IngredientFilterAccessor filterAccess = (IngredientFilterAccessor) filter;
+        IListElementInfo<V> info = ListElementInfo.createFromElement(element, ingredients, filterAccess.thaumaturge$config(), filterAccess.thaumaturge$modIdHelper());
         if (info == null) {
             Thaumaturge.LOGGER.error("Could not refresh the JEI search entry for {}; it keeps its old search name", helper.getErrorInfo(typed.getIngredient()));
             return;
