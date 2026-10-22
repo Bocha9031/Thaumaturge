@@ -33,6 +33,8 @@ public final class LabyrinthDefinitionBootstrap {
     private static final int WEIGHT_COMMON = 4;
     private static final int WEIGHT_UNCOMMON = 3;
     private static final int WEIGHT_RARE = 2;
+    private static final int MIN_NESTS = 2;
+    private static final int MAX_NESTS = 4;
 
     private LabyrinthDefinitionBootstrap() {}
 
@@ -41,7 +43,7 @@ public final class LabyrinthDefinitionBootstrap {
         HolderGetter<StructureProcessorList> processors = context.lookup(Registries.PROCESSOR_LIST);
         RoomPools pools = new RoomPools(rooms.getOrThrow(TTLabyrinthRoomTags.PORTAL), rooms.getOrThrow(TTLabyrinthRoomTags.KEY), rooms.getOrThrow(TTLabyrinthRoomTags.PASSAGES),
                 rooms.getOrThrow(TTLabyrinthRoomTags.FALLBACK), rooms.getOrThrow(TTLabyrinthRoomTags.BOSS_HALLS),
-                List.of(new FeatureQuota(rooms.getOrThrow(TTLabyrinthRoomTags.NESTS), UniformInt.of(1, 3), FeatureQuota.Placement.DEAD_END, FEATURE_PORTAL_DISTANCE),
+                List.of(new FeatureQuota(rooms.getOrThrow(TTLabyrinthRoomTags.NESTS), UniformInt.of(MIN_NESTS, MAX_NESTS), FeatureQuota.Placement.DEAD_END, FEATURE_PORTAL_DISTANCE),
                         new FeatureQuota(rooms.getOrThrow(TTLabyrinthRoomTags.LIBRARIES), UniformInt.of(1, 2), FeatureQuota.Placement.DEAD_END, FEATURE_PORTAL_DISTANCE),
                         new FeatureQuota(rooms.getOrThrow(TTLabyrinthRoomTags.RARE), UniformInt.of(2, 5), FeatureQuota.Placement.ANY, FEATURE_PORTAL_DISTANCE)));
         GuardianTable guardians = new GuardianTable(WeightedList.of(TTEntities.ELDRITCH_GUARDIAN.get()), GuardianTable.DEFAULT_CHAMPION_CHANCE, GuardianTable.DEFAULT_PER_POST);
