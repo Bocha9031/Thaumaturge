@@ -5,9 +5,7 @@
 #moj_import <minecraft:projection.glsl>
 
 in vec3 Position;
-in vec2 UV0;
 
-out vec2 surfaceCoord;
 out vec3 viewRay;
 out float sphericalVertexDistance;
 out float cylindricalVertexDistance;
@@ -15,7 +13,6 @@ out float cylindricalVertexDistance;
 void main() {
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
 
-    surfaceCoord = UV0;
     viewRay = Position;
     sphericalVertexDistance = fog_spherical_distance(Position);
     cylindricalVertexDistance = fog_cylindrical_distance(Position);

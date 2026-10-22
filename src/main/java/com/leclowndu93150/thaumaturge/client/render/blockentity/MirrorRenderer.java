@@ -17,7 +17,6 @@ import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
@@ -91,8 +90,7 @@ public final class MirrorRenderer implements BlockEntityRenderer<BlockEntityMirr
         }
         boolean portal = state.linked && state.inRange;
         if (portal) {
-            BlockPos worldPos = state.blockPos;
-            collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> portalWindow(pose, buffer, worldPos));
+            collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> portalWindow(pose, buffer));
         }
         int light = state.lightCoords;
         collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(portal ? PANE_LINKED_TEXTURE : PANE_TEXTURE), (pose, buffer) -> pane(pose, buffer, light));
@@ -105,13 +103,13 @@ public final class MirrorRenderer implements BlockEntityRenderer<BlockEntityMirr
         }
     }
 
-    private static void portalWindow(PoseStack.Pose pose, VertexConsumer buffer, BlockPos worldPos) {
+    private static void portalWindow(PoseStack.Pose pose, VertexConsumer buffer) {
         for (int[] strip : PORTAL_STRIPS) {
             float z0 = strip[0] * PIXEL - PANE_HALF;
             float z1 = z0 + PIXEL;
             float x0 = strip[1] * PIXEL - PANE_HALF;
             float x1 = strip[2] * PIXEL - PANE_HALF;
-            EldritchPortalSurface.quad(pose, buffer, worldPos, x0, PORTAL_Y, z0, x0, PORTAL_Y, z1, x1, PORTAL_Y, z1, x1, PORTAL_Y, z0);
+            EldritchPortalSurface.quad(pose, buffer, x0, PORTAL_Y, z0, x0, PORTAL_Y, z1, x1, PORTAL_Y, z1, x1, PORTAL_Y, z0);
         }
     }
 

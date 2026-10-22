@@ -70,9 +70,8 @@ public final class EldritchObeliskRenderer implements BlockEntityRenderer<BlockE
     public void submit(EldritchObeliskRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         float bottom = BASE_HEIGHT + BOB_AMPLITUDE * Mth.sin(state.animationTime / BOB_PERIOD) + BOB_AMPLITUDE;
         float top = bottom + COLUMN_HEIGHT;
-        BlockPos pos = state.blockPos;
         int light = state.lightCoords;
-        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writeSurfacePlanes(pose, buffer, pos, bottom, top));
+        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writeSurfacePlanes(pose, buffer, bottom, top));
         collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(state.outerLands ? SIDE_TEXTURE_OUTER : SIDE_TEXTURE), (pose, buffer) -> writeSidePanels(pose, buffer, bottom, top, light));
         RenderType capType = RenderTypes.entityCutout(state.outerLands ? EldritchCapRenderer.CAP_TEXTURE_OUTER : EldritchCapRenderer.CAP_TEXTURE);
         submitEndCap(poseStack, collector, capType, light, bottom, Axis.XP);
@@ -117,12 +116,12 @@ public final class EldritchObeliskRenderer implements BlockEntityRenderer<BlockE
         return camera == null ? partialTicks : camera.tickCount + partialTicks;
     }
 
-    private static void writeSurfacePlanes(PoseStack.Pose pose, VertexConsumer buffer, BlockPos pos, float bottom, float top) {
+    private static void writeSurfacePlanes(PoseStack.Pose pose, VertexConsumer buffer, float bottom, float top) {
         for (float z : PLANE_OFFSETS) {
-            EldritchPortalSurface.quad(pose, buffer, pos, 0.0F, bottom, z, 0.0F, top, z, 1.0F, top, z, 1.0F, bottom, z);
+            EldritchPortalSurface.quad(pose, buffer, 0.0F, bottom, z, 0.0F, top, z, 1.0F, top, z, 1.0F, bottom, z);
         }
         for (float x : PLANE_OFFSETS) {
-            EldritchPortalSurface.quad(pose, buffer, pos, x, bottom, 0.0F, x, top, 0.0F, x, top, 1.0F, x, bottom, 1.0F);
+            EldritchPortalSurface.quad(pose, buffer, x, bottom, 0.0F, x, top, 0.0F, x, top, 1.0F, x, bottom, 1.0F);
         }
     }
 

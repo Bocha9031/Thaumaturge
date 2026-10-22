@@ -65,7 +65,7 @@ public final class TTRenderPipelines {
 
     public static final RenderPipeline PORTAL_SURFACE = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET).withLocation(TTIds.rl("pipeline/portal_surface"))
             .withUniform("Globals", UniformType.UNIFORM_BUFFER).withVertexShader(TTIds.rl("core/tc_portal")).withFragmentShader(TTIds.rl("core/tc_portal"))
-            .withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS).withDepthStencilState(DepthStencilState.DEFAULT).withCull(false).build();
+            .withVertexFormat(DefaultVertexFormat.POSITION, VertexFormat.Mode.QUADS).withDepthStencilState(DepthStencilState.DEFAULT).withCull(false).build();
 
     public static final RenderPipeline SPARKLE_CULLED = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET).withLocation(TTIds.rl("pipeline/sparkle_culled"))
             .withVertexShader("core/rendertype_lightning").withFragmentShader("core/rendertype_lightning").withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))

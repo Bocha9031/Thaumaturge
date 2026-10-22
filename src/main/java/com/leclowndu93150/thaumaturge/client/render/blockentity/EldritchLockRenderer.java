@@ -20,7 +20,6 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.resources.Identifier;
@@ -128,8 +127,7 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
             state.tablet.submit(poseStack, collector, light, OverlayTexture.NO_OVERLAY, OUTLINE_NONE);
             poseStack.popPose();
         }
-        BlockPos pos = state.blockPos;
-        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writePortal(pose, buffer, pos, facing, hub));
+        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writePortal(pose, buffer, facing, hub));
     }
 
     private static float[] hub(Direction facing) {
@@ -160,18 +158,18 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
         };
     }
 
-    private static void writePortal(PoseStack.Pose pose, VertexConsumer buffer, BlockPos pos, Direction facing, float[] hub) {
+    private static void writePortal(PoseStack.Pose pose, VertexConsumer buffer, Direction facing, float[] hub) {
         float px = hub[0] + PORTAL_LIFT * facing.getStepX();
         float py = hub[1] + PORTAL_LIFT * facing.getStepY();
         float pz = hub[2] + PORTAL_LIFT * facing.getStepZ();
         for (float[] panel : PORTAL_PANELS) {
             switch (facing.getAxis()) {
-                case Z -> EldritchPortalSurface.quad(pose, buffer, pos, px + panel[0], py + panel[1], pz, px + panel[0], py + panel[3], pz, px + panel[2], py + panel[3], pz, px + panel[2],
-                        py + panel[1], pz);
-                case X -> EldritchPortalSurface.quad(pose, buffer, pos, px, py + panel[1], pz + panel[0], px, py + panel[3], pz + panel[0], px, py + panel[3], pz + panel[2], px, py + panel[1],
-                        pz + panel[2]);
-                case Y -> EldritchPortalSurface.quad(pose, buffer, pos, px + panel[0], py, pz + panel[1], px + panel[2], py, pz + panel[1], px + panel[2], py, pz + panel[3], px + panel[0], py,
-                        pz + panel[3]);
+                case Z ->
+                    EldritchPortalSurface.quad(pose, buffer, px + panel[0], py + panel[1], pz, px + panel[0], py + panel[3], pz, px + panel[2], py + panel[3], pz, px + panel[2], py + panel[1], pz);
+                case X ->
+                    EldritchPortalSurface.quad(pose, buffer, px, py + panel[1], pz + panel[0], px, py + panel[3], pz + panel[0], px, py + panel[3], pz + panel[2], px, py + panel[1], pz + panel[2]);
+                case Y ->
+                    EldritchPortalSurface.quad(pose, buffer, px + panel[0], py, pz + panel[1], px + panel[2], py, pz + panel[1], px + panel[2], py, pz + panel[3], px + panel[0], py, pz + panel[3]);
             }
         }
     }
