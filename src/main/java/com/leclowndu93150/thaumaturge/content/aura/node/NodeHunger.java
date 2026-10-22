@@ -142,7 +142,7 @@ final class NodeHunger {
         DamageSource source = level.damageSources().fellOutOfWorld();
         for (int i = pulled.size() - 1; i >= 0; i--) {
             Entity entity = pulled.get(i);
-            if (!isPullable(entity)) {
+            if (!isPullable(entity) || !level.isPositionEntityTicking(entity.blockPosition())) {
                 if (entity.isRemoved()) {
                     pulled.remove(i);
                 }
