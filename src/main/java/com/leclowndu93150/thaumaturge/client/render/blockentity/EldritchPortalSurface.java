@@ -1,23 +1,17 @@
 package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
-import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.effect.pipeline.TTRenderPipelines;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
 import org.joml.Matrix4fc;
 
 public final class EldritchPortalSurface {
-    public static final Identifier TUNNEL_TEXTURE = TTIds.rl("textures/misc/tunnel.png");
-    public static final Identifier PARTICLE_FIELD_TEXTURE = TTIds.rl("textures/misc/particlefield.png");
+    private static final int UV_WRAP = 1024;
 
-    public static final RenderType SURFACE = RenderType.create("tc_eldritch_portal_surface", RenderSetup.builder(TTRenderPipelines.PORTAL_SURFACE)
-            .withTexture("Sampler0", PARTICLE_FIELD_TEXTURE, () -> RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR)).withTexture("Sampler1", TUNNEL_TEXTURE).createRenderSetup());
+    public static final RenderType SURFACE = RenderType.create("tc_eldritch_portal_surface", RenderSetup.builder(TTRenderPipelines.PORTAL_SURFACE).createRenderSetup());
 
     private EldritchPortalSurface() {}
 
@@ -40,9 +34,9 @@ public final class EldritchPortalSurface {
     }
 
     private static void addVertex(VertexConsumer buffer, Matrix4fc mat, BlockPos worldPos, int axis, float x, float y, float z) {
-        float wx = worldPos.getX() + x;
-        float wy = worldPos.getY() + y;
-        float wz = worldPos.getZ() + z;
+        float wx = Math.floorMod(worldPos.getX(), UV_WRAP) + x;
+        float wy = Math.floorMod(worldPos.getY(), UV_WRAP) + y;
+        float wz = Math.floorMod(worldPos.getZ(), UV_WRAP) + z;
         float u;
         float v;
         if (axis == 1) {

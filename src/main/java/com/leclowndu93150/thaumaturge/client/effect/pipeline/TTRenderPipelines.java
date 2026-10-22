@@ -8,6 +8,7 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.platform.DestFactor;
 import com.mojang.blaze3d.platform.SourceFactor;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -62,9 +63,9 @@ public final class TTRenderPipelines {
     public static final RenderPipeline HOLE_SURFACE = RenderPipeline.builder(RIFT_SNIPPET).withLocation(TTIds.rl("pipeline/hole_surface")).withVertexShader(TTIds.rl("core/tc_ender"))
             .withFragmentShader(TTIds.rl("core/tc_ender")).withCull(false).build();
 
-    public static final RenderPipeline PORTAL_SURFACE = RenderPipeline.builder(RenderPipelines.END_PORTAL_SNIPPET).withLocation(TTIds.rl("pipeline/portal_surface"))
-            .withVertexShader(TTIds.rl("core/tc_portal")).withFragmentShader(TTIds.rl("core/tc_portal")).withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS).withCull(false)
-            .build();
+    public static final RenderPipeline PORTAL_SURFACE = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET).withLocation(TTIds.rl("pipeline/portal_surface"))
+            .withUniform("Globals", UniformType.UNIFORM_BUFFER).withVertexShader(TTIds.rl("core/tc_portal")).withFragmentShader(TTIds.rl("core/tc_portal"))
+            .withVertexFormat(DefaultVertexFormat.POSITION_TEX, VertexFormat.Mode.QUADS).withDepthStencilState(DepthStencilState.DEFAULT).withCull(false).build();
 
     public static final RenderPipeline SPARKLE_CULLED = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_SNIPPET).withLocation(TTIds.rl("pipeline/sparkle_culled"))
             .withVertexShader("core/rendertype_lightning").withFragmentShader("core/rendertype_lightning").withColorTargetState(new ColorTargetState(BlendFunction.LIGHTNING))
