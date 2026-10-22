@@ -104,6 +104,6 @@ final class FeatureRooms {
         canvas.fill(RoomShape.annulus(RoomKit.MID, NEST_DEPTH, 5.5, 4.5, F + 1, F + 3).minus(RoomShape.box(5, F + 1, 3, 10, F + 3, 6)), LabyrinthBlocks.bookshelf());
         canvas.fill(RoomShape.cylinder(RoomKit.MID, NEST_DEPTH, 2.0, F, F), LabyrinthBlocks.obsidianTile());
         canvas.marker(7, F + 1, 10, cache());
-        canvas.fill(RoomShape.box(6, F + 6, 9, 9, F + 6, 10), LabyrinthBlocks.glowingCrust());
+        canvas.fill(RoomShape.box(6, F + 7, 9, 9, F + 7, 10), LabyrinthBlocks.glowingCrust());
     }
 }
