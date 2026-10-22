@@ -251,6 +251,7 @@ public final class TTModelProvider extends ModelProvider {
         itemModels.itemModelOutput.accept(TTItems.SPA.get(), ItemModelUtils.plainModel(spaModel));
         blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(TTBlocks.PURIFYING_FLUID.get(), new MultiVariant(WeightedList.of(new Variant(TTIds.rl("block/purifying_fluid"))))));
         itemModels.generateFlatItem(TTItems.BUCKET_LIQUID_DEATH.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.BUCKET_FLUX_GOO.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.BUCKET_PURIFYING.get(), ModelTemplates.FLAT_ITEM);
         blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(TTBlocks.LIQUID_DEATH.get(), new MultiVariant(WeightedList.of(new Variant(TTIds.rl("block/liquid_death"))))));
     }
@@ -749,6 +750,7 @@ public final class TTModelProvider extends ModelProvider {
         itemModels.generateFlatItem(TTItems.TAINTED_GOO.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.TAINT_TENDRIL.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.BOTTLE_TAINT.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.TAINTED_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.VIS_RESONATOR.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.THAUMIC_SLIME_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.TAINT_CRAWLER_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);

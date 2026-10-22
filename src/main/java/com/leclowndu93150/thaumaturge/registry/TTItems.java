@@ -64,6 +64,7 @@ import com.leclowndu93150.thaumaturge.content.manabean.ItemManaBean;
 import com.leclowndu93150.thaumaturge.content.misc.ItemCreativeFluxSponge;
 import com.leclowndu93150.thaumaturge.content.misc.ItemCurio;
 import com.leclowndu93150.thaumaturge.content.misc.alumentum.ThrownAlumentum;
+import com.leclowndu93150.thaumaturge.content.taint.entity.ability.ThrownTaintedEgg;
 import com.leclowndu93150.thaumaturge.content.pech.PechWandItem;
 import com.leclowndu93150.thaumaturge.content.research.book.CheatThaumonomiconItem;
 import com.leclowndu93150.thaumaturge.content.research.book.LinkingThaumonomiconItem;
@@ -175,6 +176,9 @@ public final class TTItems {
     public static final DeferredItem<BucketItem> BUCKET_LIQUID_DEATH = ITEMS.registerItem("liquid_death_bucket", props -> new BucketItem(TTFluids.LIQUID_DEATH_SOURCE.get(), props),
             props -> props.craftRemainder(Items.BUCKET).stacksTo(1).rarity(Rarity.RARE));
 
+    public static final DeferredItem<BucketItem> BUCKET_FLUX_GOO = ITEMS.registerItem("flux_goo_bucket", props -> new BucketItem(TTFluids.FLUX_GOO_SOURCE.get(), props),
+            props -> props.craftRemainder(Items.BUCKET).stacksTo(1));
+
     public static final DeferredItem<BucketItem> BUCKET_PURIFYING = ITEMS.registerItem("purifying_bucket", props -> new BucketItem(TTFluids.PURIFYING_SOURCE.get(), props),
             props -> props.craftRemainder(Items.BUCKET).stacksTo(1).rarity(Rarity.RARE));
 
@@ -205,6 +209,9 @@ public final class TTItems {
 
     public static final DeferredItem<ThrowableItem> BOTTLE_TAINT = ITEMS.registerItem("bottle_taint", props -> new ThrowableItem(props, EntityBottleTaint::new, EntityBottleTaint.THROW),
             props -> props.stacksTo(8).rarity(Rarity.UNCOMMON));
+
+    public static final DeferredItem<ThrowableItem> TAINTED_EGG = ITEMS.registerItem("tainted_egg", props -> new ThrowableItem(props, ThrownTaintedEgg::new, ThrownTaintedEgg.THROW),
+            props -> props.stacksTo(16));
 
     public static final DeferredItem<BlockItem> THAUMATORIUM = ITEMS.registerSimpleBlockItem(TTBlocks.THAUMATORIUM);
     public static final DeferredItem<BlockItem> BRAIN_BOX = ITEMS.registerSimpleBlockItem(TTBlocks.BRAIN_BOX);

@@ -4,7 +4,6 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.entity.trait.MobTraits;
 import com.leclowndu93150.thaumaturge.config.ThaumaturgeCommonConfig;
 import com.leclowndu93150.thaumaturge.content.entity.construct.EntityOwnedConstruct;
-import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitEngine;
 import com.leclowndu93150.thaumaturge.content.taint.effect.FluxTaintExposure;
 import com.leclowndu93150.thaumaturge.content.taint.spread.TaintSplosion;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
@@ -13,7 +12,6 @@ import java.util.Collection;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.EntityTypeTags;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.Creeper;
@@ -24,11 +22,9 @@ import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.ExplosionEvent;
 
 @EventBusSubscriber(modid = TTIds.MODID)
@@ -79,15 +75,6 @@ public final class TaintCreatureEvents {
         boolean damaging = event.getAmount() > 0.0F;
         if (damaging && event.getSource().getEntity() instanceof LivingEntity attacker && MobTraits.isTainted(attacker)) {
             FluxTaintExposure.exposeQuietly(victim);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (event.getTarget() instanceof LivingEntity living && MobTraits.has(living, MobTraits.TAINTED) && MobTraitEngine.suppressesNativeAi(living)
-                && !event.getItemStack().is(Tags.Items.TOOLS_SHEAR)) {
-            event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.PASS);
         }
     }
 

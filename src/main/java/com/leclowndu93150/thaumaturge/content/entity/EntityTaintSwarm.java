@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.content.entity;
 
 import com.leclowndu93150.thaumaturge.content.particle.TaintSwarmParticleOptions;
 import com.leclowndu93150.thaumaturge.content.taint.ecology.TaintBiomeManager;
+import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -13,6 +14,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
@@ -63,6 +65,7 @@ public final class EntityTaintSwarm extends Monster {
     private static final double WANDER_LIFT = 0.1;
     private static final double HUNT_SPEED = 1.0;
     private static final double ATTACK_RANGE_SQR = 9.0;
+    private static final float FULL_TURN_DEGREES = 360.0F;
     private static final int WEAKNESS_DURATION = 100;
     private static final int WEAKNESS_AMPLIFIER = 0;
     private static final float ATTACK_SOUND_VOLUME = 0.3F;
@@ -80,6 +83,15 @@ public final class EntityTaintSwarm extends Monster {
         this.moveControl = new SwarmMoveControl(this);
         this.xpReward = EXPERIENCE_REWARD;
         this.setNoGravity(true);
+    }
+
+    public static void release(ServerLevel level, double x, double y, double z) {
+        EntityTaintSwarm swarm = TTEntities.TAINT_SWARM.get().create(level, EntitySpawnReason.MOB_SUMMONED);
+        if (swarm == null) {
+            return;
+        }
+        swarm.snapTo(x, y, z, level.getRandom().nextFloat() * FULL_TURN_DEGREES, 0.0F);
+        level.addFreshEntity(swarm);
     }
 
     public static AttributeSupplier.Builder createAttributes() {

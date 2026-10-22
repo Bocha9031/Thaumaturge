@@ -54,6 +54,7 @@ import com.leclowndu93150.thaumaturge.content.entity.projectile.EntityGrapple;
 import com.leclowndu93150.thaumaturge.content.golem.EntityThaumaturgeGolem;
 import com.leclowndu93150.thaumaturge.content.misc.alumentum.ThrownAlumentum;
 import com.leclowndu93150.thaumaturge.content.taint.entity.EntityTaintSpore;
+import com.leclowndu93150.thaumaturge.content.taint.entity.ability.ThrownTaintedEgg;
 import com.leclowndu93150.thaumaturge.content.taint.entity.EntityTaintSporeSwarmer;
 import com.leclowndu93150.thaumaturge.content.wands.EntityAspectOrb;
 import java.util.function.Supplier;
@@ -140,6 +141,9 @@ public final class TTEntities {
 
     public static final DeferredHolder<EntityType<?>, EntityType<EntityBottleTaint>> BOTTLE_TAINT = register("bottle_taint",
             () -> EntityType.Builder.<EntityBottleTaint>of(EntityBottleTaint::new, MobCategory.MISC).sized(0.25F, 0.25F).clientTrackingRange(8).updateInterval(10));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<ThrownTaintedEgg>> TAINTED_EGG = register("tainted_egg",
+            () -> EntityType.Builder.<ThrownTaintedEgg>of(ThrownTaintedEgg::new, MobCategory.MISC).sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(10));
 
     public static final DeferredHolder<EntityType<?>, EntityType<SpellProjectile>> FOCUS_PROJECTILE = register("focus_projectile",
             () -> EntityType.Builder.<SpellProjectile>of(SpellProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).clientTrackingRange(6).updateInterval(5));

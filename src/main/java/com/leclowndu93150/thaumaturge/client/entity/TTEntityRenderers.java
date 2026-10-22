@@ -44,6 +44,7 @@ import net.minecraft.client.renderer.entity.ChickenRenderer;
 import net.minecraft.client.renderer.entity.ItemEntityRenderer;
 import net.minecraft.client.renderer.entity.PigRenderer;
 import net.minecraft.client.renderer.entity.SheepRenderer;
+import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -139,6 +140,7 @@ public final class TTEntityRenderers {
         event.registerEntityRenderer(TTEntities.SPELL_SPRITE.get(), NoModelRenderer::new);
         event.registerEntityRenderer(TTEntities.FALLING_TAINT.get(), FallingTaintRenderer::new);
         event.registerEntityRenderer(TTEntities.BOTTLE_TAINT.get(), BottleTaintRenderer::new);
+        event.registerEntityRenderer(TTEntities.TAINTED_EGG.get(), ThrownItemRenderer::new);
         event.registerEntityRenderer(TTEntities.SPECIAL_ITEM.get(), SpecialItemRenderer::new);
         event.registerEntityRenderer(TTEntities.FOLLOWING_ITEM.get(), ItemEntityRenderer::new);
         event.registerEntityRenderer(TTEntities.ALUMENTUM.get(), EmptyEntityRenderer::new);
