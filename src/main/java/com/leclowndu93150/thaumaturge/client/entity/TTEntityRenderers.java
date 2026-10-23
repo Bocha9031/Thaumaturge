@@ -151,13 +151,13 @@ public final class TTEntityRenderers {
         event.registerEntityRenderer(TTEntities.INHABITED_ZOMBIE.get(), InhabitedZombieRenderer::new);
         event.registerEntityRenderer(TTEntities.ELDRITCH_GUARDIAN.get(), EldritchGuardianRenderer::new);
         event.registerEntityRenderer(TTEntities.CULTIST_LEADER.get(), CultistLeaderRenderer::new);
-        event.registerEntityRenderer(TTEntities.CULTIST_PORTAL_GREATER.get(), CultistPortalGreaterRenderer::new);
+        event.registerEntityRenderer(TTEntities.CULTIST_PORTAL_GREATER.get(), CultistPortalRenderer::greater);
         event.registerEntityRenderer(TTEntities.ELDRITCH_GOLEM.get(), EldritchGolemRenderer::new);
         event.registerEntityRenderer(TTEntities.ELDRITCH_WARDEN.get(), EldritchWardenRenderer::new);
         event.registerEntityRenderer(TTEntities.TAINTACLE_GIANT.get(), context -> new TaintacleRenderer(context, TAINTACLE_GIANT_SHADOW));
         event.registerEntityRenderer(TTEntities.CULTIST_KNIGHT.get(), CultistRenderer::new);
         event.registerEntityRenderer(TTEntities.CULTIST_CLERIC.get(), CultistClericRenderer::new);
-        event.registerEntityRenderer(TTEntities.CULTIST_PORTAL_LESSER.get(), CultistPortalRenderer::new);
+        event.registerEntityRenderer(TTEntities.CULTIST_PORTAL_LESSER.get(), CultistPortalRenderer::lesser);
         event.registerEntityRenderer(TTEntities.ELDRITCH_ORB.get(), EldritchOrbRenderer::new);
         event.registerEntityRenderer(TTEntities.GOLEM_ORB.get(), GolemOrbRenderer::new);
         event.registerEntityRenderer(TTEntities.ASPECT_ORB.get(), AspectOrbRenderer::new);

@@ -1,5 +1,6 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
+import com.leclowndu93150.thaumaturge.content.entity.portal.CultistPortal;
 import com.leclowndu93150.thaumaturge.content.entity.portal.CultistPortals;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -22,7 +23,7 @@ import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
-public class EntityCultistPortalLesser extends Monster {
+public class EntityCultistPortalLesser extends Monster implements CultistPortal {
     private static final EntityDataAccessor<Boolean> ACTIVE = SynchedEntityData.defineId(EntityCultistPortalLesser.class, EntityDataSerializers.BOOLEAN);
     private static final String ACTIVE_KEY = "active";
     private static final double MAX_HEALTH = 100.0;
@@ -45,8 +46,8 @@ public class EntityCultistPortalLesser extends Monster {
     private static final float TOUCH_DAMAGE = 4.0F;
     private static final float DEATH_BLAST_POWER = 1.5F;
 
-    public int activeCounter;
-    public int pulse;
+    private int activeCounter;
+    private int pulse;
 
     private int spawnCountdown = FIRST_ATTEMPT_DELAY;
 
@@ -170,6 +171,21 @@ public class EntityCultistPortalLesser extends Monster {
     public boolean isActive() {
         Boolean flag = this.entityData.get(ACTIVE);
         return flag;
+    }
+
+    @Override
+    public boolean isPortalOpen() {
+        return isActive();
+    }
+
+    @Override
+    public int portalAge() {
+        return activeCounter;
+    }
+
+    @Override
+    public int pulseTicks() {
+        return pulse;
     }
 
     public void setActive(boolean awake) {

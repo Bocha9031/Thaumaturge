@@ -3,6 +3,7 @@ package com.leclowndu93150.thaumaturge.content.entity.boss;
 import com.leclowndu93150.thaumaturge.content.decor.banner.BannerStandingBlock;
 import com.leclowndu93150.thaumaturge.content.effect.Effects;
 import com.leclowndu93150.thaumaturge.content.entity.EntityCultist;
+import com.leclowndu93150.thaumaturge.content.entity.portal.CultistPortal;
 import com.leclowndu93150.thaumaturge.content.entity.portal.CultistPortals;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
@@ -31,7 +32,7 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
+public class EntityCultistPortalGreater extends EntityThaumaturgeBoss implements CultistPortal {
     private static final String STAGE_KEY = "stage";
     private static final double MAX_HEALTH = 500.0;
     private static final double ATTACK_DAMAGE = 0.0;
@@ -74,7 +75,7 @@ public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
     private static final boolean PUSHABLE = false;
     private static final Direction[] CARDINALS = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
-    public int pulse;
+    private int pulse;
     private int stage;
     private int countdown = OPENING_TICKS;
     private boolean opening = true;
@@ -289,6 +290,21 @@ public class EntityCultistPortalGreater extends EntityThaumaturgeBoss {
     @Override
     protected SoundEvent getHurtSound(DamageSource cause) {
         return TTSounds.ZAP.value();
+    }
+
+    @Override
+    public boolean isPortalOpen() {
+        return true;
+    }
+
+    @Override
+    public int portalAge() {
+        return tickCount;
+    }
+
+    @Override
+    public int pulseTicks() {
+        return pulse;
     }
 
     @Override

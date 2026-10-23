@@ -2,11 +2,10 @@ package com.leclowndu93150.thaumaturge.client.render.blockentity;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.effect.rendertype.TTFXRenderTypes;
-import com.leclowndu93150.thaumaturge.client.render.aspect.StripUv;
+import com.leclowndu93150.thaumaturge.client.render.PortalStrip;
 import com.leclowndu93150.thaumaturge.content.eldritch.OuterLands;
 import com.leclowndu93150.thaumaturge.content.eldritch.portal.BlockEntityEldritchPortal;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -26,7 +25,6 @@ public final class EldritchPortalRenderer implements BlockEntityRenderer<BlockEn
     private static final float GROW_TICKS = 30.0F;
     private static final float CENTER = 0.5F;
     private static final int WHITE = 0xFFFFFFFF;
-    private static final int PORTAL_LIGHT = 0x00F000DC;
     private static final float BOUNDS_MARGIN = 1.5F;
     private static final int VIEW_DISTANCE = 64;
 
@@ -54,13 +52,11 @@ public final class EldritchPortalRenderer implements BlockEntityRenderer<BlockEn
         float halfWidth = Math.min(WIDEN_TICKS, state.openCount) / WIDEN_TICKS;
         float halfHeight = Math.min(GROW_TICKS, state.openCount) / GROW_TICKS;
         int frame = Math.floorMod((int) state.animationTime, FRAME_COUNT);
-        float uMin = StripUv.u0(frame, FRAME_COUNT);
-        float uMax = StripUv.u1(frame, FRAME_COUNT);
         poseStack.pushPose();
         poseStack.translate(CENTER, CENTER, CENTER);
         poseStack.mulPose(camera.orientation);
         collector.submitCustomGeometry(poseStack, TTFXRenderTypes.translucent(state.towardOverworld ? TEXTURE_OVERWORLD : TEXTURE),
-                (pose, buffer) -> writeSprite(pose, buffer, halfWidth, halfHeight, uMin, uMax));
+                (pose, buffer) -> PortalStrip.write(pose, buffer, halfWidth, halfHeight, frame, FRAME_COUNT, WHITE));
         poseStack.popPose();
     }
 
@@ -79,14 +75,4 @@ public final class EldritchPortalRenderer implements BlockEntityRenderer<BlockEn
         return VIEW_DISTANCE;
     }
 
-    private static void writeSprite(PoseStack.Pose pose, VertexConsumer buffer, float halfWidth, float halfHeight, float uMin, float uMax) {
-        vertex(pose, buffer, -halfWidth, -halfHeight, uMax, StripUv.V0);
-        vertex(pose, buffer, -halfWidth, halfHeight, uMax, StripUv.V1);
-        vertex(pose, buffer, halfWidth, halfHeight, uMin, StripUv.V1);
-        vertex(pose, buffer, halfWidth, -halfHeight, uMin, StripUv.V0);
-    }
-
-    private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float u, float v) {
-        buffer.addVertex(pose, x, y, 0.0F).setUv(u, v).setColor(WHITE).setLight(PORTAL_LIGHT);
-    }
 }

@@ -2,10 +2,11 @@ package com.leclowndu93150.thaumaturge.client.entity;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.client.effect.rendertype.TTFXRenderTypes;
-import com.leclowndu93150.thaumaturge.client.render.aspect.StripUv;
+import com.leclowndu93150.thaumaturge.client.render.PortalStrip;
 import com.leclowndu93150.thaumaturge.content.entity.EntityCultistPortalLesser;
+import com.leclowndu93150.thaumaturge.content.entity.boss.EntityCultistPortalGreater;
+import com.leclowndu93150.thaumaturge.content.entity.portal.CultistPortal;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -15,13 +16,16 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
-import org.joml.Matrix4fc;
+import net.minecraft.world.entity.LivingEntity;
 
-public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPortalLesser, CultistPortalRenderer.State> {
+public final class CultistPortalRenderer<T extends LivingEntity & CultistPortal> extends EntityRenderer<T, CultistPortalRenderer.State> {
     private static final Identifier TEXTURE = TTIds.rl("textures/misc/cultist_portal.png");
-    private static final float SHADOW_RADIUS = 0.0F;
+    private static final float LESSER_SHADOW_RADIUS = 0.0F;
     private static final float LESSER_SCALE_Y = 1.4F;
     private static final float LESSER_SCALE_FACTOR = 1.25F;
+    private static final float GREATER_SHADOW_RADIUS = 0.1F;
+    private static final float GREATER_SCALE_Y = 1.5F;
+    private static final float GREATER_SCALE_FACTOR = 1.3F;
     private static final int FRAME_COUNT = 32;
     private static final float FULL_GROWTH_TICKS = 50.0F;
     private static final float HURT_DEGREES_PER_TICK = 72.0F;
@@ -38,11 +42,23 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
     private static final float SHIMMER_HEIGHT_DIVISOR = 4.0F;
     private static final float SHIMMER_WIDTH_DIVISOR = 3.0F;
     private static final float HALF_TURN_DEGREES = 180.0F;
-    private static final int LIGHT = 0x00F000DC;
 
-    public CultistPortalRenderer(EntityRendererProvider.Context context) {
+    private final float baseScaleY;
+    private final float scaleFactor;
+
+    private CultistPortalRenderer(EntityRendererProvider.Context context, float shadowRadius, float baseScaleY, float scaleFactor) {
         super(context);
-        this.shadowRadius = SHADOW_RADIUS;
+        this.shadowRadius = shadowRadius;
+        this.baseScaleY = baseScaleY;
+        this.scaleFactor = scaleFactor;
+    }
+
+    public static CultistPortalRenderer<EntityCultistPortalLesser> lesser(EntityRendererProvider.Context context) {
+        return new CultistPortalRenderer<>(context, LESSER_SHADOW_RADIUS, LESSER_SCALE_Y, LESSER_SCALE_FACTOR);
+    }
+
+    public static CultistPortalRenderer<EntityCultistPortalGreater> greater(EntityRendererProvider.Context context) {
+        return new CultistPortalRenderer<>(context, GREATER_SHADOW_RADIUS, GREATER_SCALE_Y, GREATER_SCALE_FACTOR);
     }
 
     @Override
@@ -51,12 +67,12 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
     }
 
     @Override
-    public void extractRenderState(EntityCultistPortalLesser entity, State state, float partialTicks) {
+    public void extractRenderState(T entity, State state, float partialTicks) {
         super.extractRenderState(entity, state, partialTicks);
-        state.active = entity.isActive();
-        state.activeCounter = entity.activeCounter + partialTicks;
+        state.active = entity.isPortalOpen();
+        state.activeCounter = entity.portalAge() + partialTicks;
         state.hurtTime = entity.hurtTime;
-        state.pulse = entity.pulse;
+        state.pulse = entity.pulseTicks();
         state.healthFraction = entity.getHealth() / entity.getMaxHealth();
         state.halfHeight = entity.getBbHeight() / 2.0F;
     }
@@ -64,42 +80,36 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
     @Override
     public void submit(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         super.submit(state, poseStack, collector, camera);
-        submitPortal(state, poseStack, collector, camera, LESSER_SCALE_Y, LESSER_SCALE_FACTOR);
-    }
-
-    static void submitPortal(State state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera, float baseScaleY, float scaleFactor) {
         if (!state.active) {
             return;
         }
         float baseWidth = Math.min(FULL_GROWTH_TICKS, state.activeCounter) / FULL_GROWTH_TICKS * scaleFactor;
-        PortalContribution total = hurtContribution(state, scaleFactor).plus(pulseContribution(state, scaleFactor)).plus(shimmerContribution(state));
+        PortalContribution total = hurtContribution(state).plus(pulseContribution(state)).plus(shimmerContribution(state));
         float sx = baseWidth + total.widthDelta();
         float sy = baseScaleY + total.heightDelta();
         int frame = FRAME_COUNT - 1 - Math.floorMod(Mth.floor(state.activeCounter), FRAME_COUNT);
-        float u0 = StripUv.u0(frame, FRAME_COUNT);
-        float u1 = StripUv.u1(frame, FRAME_COUNT);
         int tint = ARGB.white(total.alphaFactor());
         poseStack.pushPose();
         poseStack.translate(0.0F, state.halfHeight, 0.0F);
         poseStack.mulPose(Axis.YP.rotationDegrees(HALF_TURN_DEGREES - camera.yRot));
-        collector.submitCustomGeometry(poseStack, TTFXRenderTypes.translucent(TEXTURE), (pose, buffer) -> writeQuad(buffer, pose.pose(), sx, sy, u0, u1, tint));
+        collector.submitCustomGeometry(poseStack, TTFXRenderTypes.translucent(TEXTURE), (pose, buffer) -> PortalStrip.write(pose, buffer, sx, sy, frame, FRAME_COUNT, tint));
         poseStack.popPose();
     }
 
-    private static PortalContribution hurtContribution(State state, float scaleFactor) {
+    private PortalContribution hurtContribution(State state) {
         if (state.hurtTime <= 0) {
             return PortalContribution.NONE;
         }
         float wobble = PortalWave.sineByDegrees(state.hurtTime, HURT_DEGREES_PER_TICK);
-        return new PortalContribution(-wobble / HURT_SHRINK_DIVISOR, growthToWidth(HURT_GROWTH * wobble, scaleFactor), 1.0F);
+        return new PortalContribution(-wobble / HURT_SHRINK_DIVISOR, growthToWidth(HURT_GROWTH * wobble), 1.0F);
     }
 
-    private static PortalContribution pulseContribution(State state, float scaleFactor) {
+    private PortalContribution pulseContribution(State state) {
         if (state.pulse <= 0) {
             return PortalContribution.NONE;
         }
         float beat = PortalWave.sineByDegrees(state.pulse, PULSE_DEGREES_PER_TICK);
-        return new PortalContribution(beat / PULSE_GROW_DIVISOR, growthToWidth(PULSE_GROWTH * beat, scaleFactor), 1.0F);
+        return new PortalContribution(beat / PULSE_GROW_DIVISOR, growthToWidth(PULSE_GROWTH * beat), 1.0F);
     }
 
     private static PortalContribution shimmerContribution(State state) {
@@ -112,15 +122,8 @@ public final class CultistPortalRenderer extends EntityRenderer<EntityCultistPor
         return new PortalContribution(-heightBob / SHIMMER_HEIGHT_DIVISOR, -widthBob / SHIMMER_WIDTH_DIVISOR, alpha);
     }
 
-    private static float growthToWidth(float growthTicks, float scaleFactor) {
+    private float growthToWidth(float growthTicks) {
         return growthTicks / FULL_GROWTH_TICKS * scaleFactor;
-    }
-
-    private static void writeQuad(VertexConsumer buffer, Matrix4fc matrix, float halfWidth, float halfHeight, float u0, float u1, int tint) {
-        buffer.addVertex(matrix, -halfWidth, -halfHeight, 0.0F).setUv(u1, StripUv.V0).setColor(tint).setLight(LIGHT);
-        buffer.addVertex(matrix, halfWidth, -halfHeight, 0.0F).setUv(u0, StripUv.V0).setColor(tint).setLight(LIGHT);
-        buffer.addVertex(matrix, halfWidth, halfHeight, 0.0F).setUv(u0, StripUv.V1).setColor(tint).setLight(LIGHT);
-        buffer.addVertex(matrix, -halfWidth, halfHeight, 0.0F).setUv(u1, StripUv.V1).setColor(tint).setLight(LIGHT);
     }
 
     public static final class State extends EntityRenderState {
