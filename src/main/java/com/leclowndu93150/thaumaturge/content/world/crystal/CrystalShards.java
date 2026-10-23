@@ -1,8 +1,5 @@
 package com.leclowndu93150.thaumaturge.content.world.crystal;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
@@ -26,15 +23,21 @@ public final class CrystalShards {
         return state.getSeed(pos);
     }
 
-    public static List<Integer> order(Direction face, long seed) {
+    public static int[] order(Direction face, long seed) {
         long base = seed ^ CrystalFaceTransforms.seedOffset(face);
         long[] keys = new long[COUNT];
-        List<Integer> order = new ArrayList<>(COUNT);
+        int[] order = new int[COUNT];
         for (int shard = 0; shard < COUNT; shard++) {
-            keys[shard] = mix(base + (shard + 1) * GAMMA);
-            order.add(shard);
+            long key = mix(base + (shard + 1) * GAMMA);
+            int slot = shard;
+            while (slot > 0 && keys[slot - 1] > key) {
+                keys[slot] = keys[slot - 1];
+                order[slot] = order[slot - 1];
+                slot--;
+            }
+            keys[slot] = key;
+            order[slot] = shard;
         }
-        order.sort(Comparator.comparingLong(shard -> keys[shard]));
         return order;
     }
 

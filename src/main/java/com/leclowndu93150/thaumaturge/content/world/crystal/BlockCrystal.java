@@ -4,7 +4,6 @@ import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aura.AuraHelper;
 import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.mojang.serialization.MapCodec;
-import java.util.Arrays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
@@ -87,7 +86,7 @@ public final class BlockCrystal extends Block {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return CrystalShapes.shapeFor(state, level, pos);
+        return CrystalShapes.shapeFor(level, pos);
     }
 
     @Override
@@ -157,7 +156,12 @@ public final class BlockCrystal extends Block {
     }
 
     private static boolean hasSupport(LevelReader level, BlockPos pos) {
-        return Arrays.stream(DIRECTIONS).anyMatch(side -> CrystalShards.supports(level, pos, side));
+        for (Direction side : DIRECTIONS) {
+            if (CrystalShards.supports(level, pos, side)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void starve(BlockState state, ServerLevel level, BlockPos pos) {

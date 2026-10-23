@@ -25,43 +25,47 @@ public final class CrystalBakedModel implements DynamicBlockStateModel {
     private static final int MATERIAL_FLAGS = 0;
     private static final boolean AMBIENT_OCCLUSION = true;
 
-    private final TTMesh mesh;
+    private final BlockStateModelPart[][] shards;
     private final Material.Baked material;
 
     public CrystalBakedModel(TTMesh mesh, Material.Baked material) {
-        this.mesh = mesh;
         this.material = material;
+        this.shards = new BlockStateModelPart[FACES.length][CrystalShards.COUNT];
+        for (Direction face : FACES) {
+            for (int shard = 0; shard < CrystalShards.COUNT; shard++) {
+                shards[face.ordinal()][shard] = bakeShard(mesh.parts().get(shard), face);
+            }
+        }
     }
 
     @Override
     public void collectParts(BlockAndTintGetter level, BlockPos pos, BlockState state, RandomSource random, List<BlockStateModelPart> parts) {
         int growth = state.hasProperty(BlockCrystal.SIZE) ? state.getValue(BlockCrystal.SIZE) : 0;
         long seed = CrystalShards.seed(state, pos);
-        List<BakedQuad> quads = new ArrayList<>();
         boolean any = false;
         for (Direction face : FACES) {
             if (!CrystalShards.supports(level, pos, face)) {
                 continue;
             }
             any = true;
-            List<Integer> order = CrystalShards.order(face, seed);
+            int[] order = CrystalShards.order(face, seed);
             for (int i = 0; i <= growth; i++) {
-                bakeShard(order.get(i), face, quads);
+                parts.add(shards[face.ordinal()][order[i]]);
             }
         }
         if (!any) {
-            bakeShard(CrystalShards.unsupported(seed), Direction.DOWN, quads);
+            parts.add(shards[Direction.DOWN.ordinal()][CrystalShards.unsupported(seed)]);
         }
+    }
+
+    private BlockStateModelPart bakeShard(TTMeshPart part, Direction face) {
+        List<BakedQuad> quads = new ArrayList<>();
+        CrystalQuadBaker.bakePart(part, material, TINT_INDEX, CrystalFaceTransforms.forFace(face), quads);
         QuadCollection.Builder builder = new QuadCollection.Builder();
         for (BakedQuad quad : quads) {
             builder.addUnculledFace(quad);
         }
-        parts.add(new SimpleModelWrapper(builder.build(), AMBIENT_OCCLUSION, material));
-    }
-
-    private void bakeShard(int index, Direction face, List<BakedQuad> output) {
-        TTMeshPart part = mesh.parts().get(index);
-        CrystalQuadBaker.bakePart(part, material, TINT_INDEX, CrystalFaceTransforms.forFace(face), output);
+        return new SimpleModelWrapper(builder.build(), AMBIENT_OCCLUSION, material);
     }
 
     @Override
