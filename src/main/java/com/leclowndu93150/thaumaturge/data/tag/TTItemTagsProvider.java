@@ -97,10 +97,13 @@ public final class TTItemTagsProvider extends BlockTagCopyingItemTagProvider {
         tag(TTItemTags.SCAN_IRON).addTags(Tags.Items.ORES_IRON, Tags.Items.INGOTS_IRON, Tags.Items.STORAGE_BLOCKS_IRON);
 
         copy(TTBlockTags.STORAGE_BLOCKS_AMBER, TTItemTags.STORAGE_BLOCKS_AMBER);
+        copy(TTBlockTags.STORAGE_BLOCKS_FLESH, TTItemTags.STORAGE_BLOCKS_FLESH);
+        copy(TTBlockTags.STORAGE_BLOCKS_TALLOW, TTItemTags.STORAGE_BLOCKS_TALLOW);
         copy(TTBlockTags.STORAGE_BLOCKS_BRASS, TTItemTags.STORAGE_BLOCKS_BRASS);
         copy(TTBlockTags.STORAGE_BLOCKS_THAUMIUM, TTItemTags.STORAGE_BLOCKS_THAUMIUM);
         copy(TTBlockTags.STORAGE_BLOCKS_VOID_METAL, TTItemTags.STORAGE_BLOCKS_VOID_METAL);
-        tag(Tags.Items.STORAGE_BLOCKS).addTags(TTItemTags.STORAGE_BLOCKS_AMBER, TTItemTags.STORAGE_BLOCKS_BRASS, TTItemTags.STORAGE_BLOCKS_THAUMIUM, TTItemTags.STORAGE_BLOCKS_VOID_METAL);
+        tag(Tags.Items.STORAGE_BLOCKS).addTags(TTItemTags.STORAGE_BLOCKS_AMBER, TTItemTags.STORAGE_BLOCKS_BRASS, TTItemTags.STORAGE_BLOCKS_THAUMIUM, TTItemTags.STORAGE_BLOCKS_VOID_METAL,
+                TTItemTags.STORAGE_BLOCKS_FLESH, TTItemTags.STORAGE_BLOCKS_TALLOW);
 
         tag(TTItemTags.INGOTS_BRASS).add(TTItems.INGOT_BRASS.get());
         tag(TTItemTags.INGOTS_THAUMIUM).add(TTItems.INGOT_THAUMIUM.get());
@@ -172,6 +175,8 @@ public final class TTItemTagsProvider extends BlockTagCopyingItemTagProvider {
 
         tag(Tags.Items.MELEE_WEAPON_TOOLS).add(TTItems.THAUMIUM_SWORD.get(), TTItems.VOID_SWORD.get(), TTItems.ELEMENTAL_SWORD.get(), TTItems.CRIMSON_BLADE.get(), TTItems.THAUMIUM_AXE.get(),
                 TTItems.VOID_AXE.get(), TTItems.ELEMENTAL_AXE.get(), TTItems.THAUMIUM_SPEAR.get(), TTItems.VOID_SPEAR.get(), TTItems.ELEMENTAL_SPEAR.get());
+        tag(TTItemTags.CURIOSITIES).add(TTItems.CURIO_ARCANE.get(), TTItems.CURIO_PRESERVED.get(), TTItems.CURIO_ANCIENT.get(), TTItems.CURIO_ELDRITCH.get(), TTItems.CURIO_KNOWLEDGE.get(),
+                TTItems.CURIO_TWISTED.get(), TTItems.CURIO_RITES.get(), TTItems.PECH_WAND.get());
         tag(Tags.Items.MINING_TOOL_TOOLS).add(TTItems.THAUMIUM_PICKAXE.get(), TTItems.VOID_PICKAXE.get(), TTItems.ELEMENTAL_PICKAXE.get(), TTItems.PRIMAL_CRUSHER.get());
     }
 }
