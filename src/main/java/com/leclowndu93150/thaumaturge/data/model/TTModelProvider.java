@@ -355,6 +355,11 @@ public final class TTModelProvider extends ModelProvider {
         registerActivatorRail(blockModels);
     }
 
+    private static void registerShield(ItemModelGenerators itemModels, Item item) {
+        Identifier model = ModelLocationUtils.getModelLocation(item);
+        itemModels.itemModelOutput.accept(item, ItemModelUtils.conditional(ItemModelUtils.isUsingItem(), ItemModelUtils.plainModel(model.withSuffix("_blocking")), ItemModelUtils.plainModel(model)));
+    }
+
     private static void registerActivatorRail(BlockModelGenerators blockModels) {
         Block block = TTBlocks.ACTIVATOR_RAIL.get();
         MultiVariant flat = BlockModelGenerators.plainVariant(ModelTemplates.RAIL_FLAT.create(block, TextureMapping.rail(block), blockModels.modelOutput));
@@ -854,6 +859,9 @@ public final class TTModelProvider extends ModelProvider {
         itemModels.generateFlatItem(TTItems.THAUMIUM_HOE.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         registerSpear(itemModels, TTItems.THAUMIUM_SPEAR.get());
         itemModels.generateFlatItem(TTItems.VOID_SWORD.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
+        registerShield(itemModels, TTItems.THAUMIUM_SHIELD.get());
+        registerShield(itemModels, TTItems.MIRROR_SHIELD.get());
+        registerShield(itemModels, TTItems.VOID_SHIELD.get());
         itemModels.generateFlatItem(TTItems.VOID_PICKAXE.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         itemModels.generateFlatItem(TTItems.VOID_AXE.get(), ModelTemplates.FLAT_HANDHELD_ITEM);
         itemModels.generateFlatItem(TTItems.VOID_SHOVEL.get(), ModelTemplates.FLAT_HANDHELD_ITEM);

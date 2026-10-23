@@ -30,6 +30,8 @@ import com.leclowndu93150.thaumaturge.content.equipment.RobeArmorItem;
 import com.leclowndu93150.thaumaturge.content.equipment.TTMaterials;
 import com.leclowndu93150.thaumaturge.content.equipment.TravellerBootsItem;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidGearItem;
+import com.leclowndu93150.thaumaturge.content.equipment.VoidShieldItem;
+import com.leclowndu93150.thaumaturge.content.equipment.shield.ShieldProperties;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidAxeItem;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidHoeItem;
 import com.leclowndu93150.thaumaturge.content.equipment.VoidShovelItem;
@@ -103,6 +105,7 @@ import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.Rarity;
+import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.StandingAndWallBlockItem;
@@ -117,6 +120,7 @@ import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.common.Tags;
 
 public final class TTItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(TTIds.MODID);
@@ -254,6 +258,10 @@ public final class TTItems {
     public static final DeferredItem<Item> THAUMIUM_CHEST = ITEMS.registerItem("thaumium_chest", Item::new, props -> props.humanoidArmor(TTMaterials.ARMOR_THAUMIUM, ArmorType.CHESTPLATE));
     public static final DeferredItem<Item> THAUMIUM_LEGS = ITEMS.registerItem("thaumium_legs", Item::new, props -> props.humanoidArmor(TTMaterials.ARMOR_THAUMIUM, ArmorType.LEGGINGS));
     public static final DeferredItem<Item> THAUMIUM_BOOTS = ITEMS.registerItem("thaumium_boots", Item::new, props -> props.humanoidArmor(TTMaterials.ARMOR_THAUMIUM, ArmorType.BOOTS));
+    public static final DeferredItem<ShieldItem> THAUMIUM_SHIELD = ITEMS.registerItem("thaumium_shield", ShieldItem::new,
+            props -> ShieldProperties.shield(props, 512, TTItemTags.INGOTS_THAUMIUM).enchantable(TTMaterials.TOOL_THAUMIUM.enchantmentValue()));
+    public static final DeferredItem<ShieldItem> MIRROR_SHIELD = ITEMS.registerItem("mirror_shield", ShieldItem::new,
+            props -> ShieldProperties.shield(props, 336, Tags.Items.INGOTS_GOLD).rarity(Rarity.UNCOMMON));
 
     public static final DeferredItem<VoidGearItem> VOID_SWORD = ITEMS.registerItem("void_sword", VoidGearItem::new, props -> props.sword(TTMaterials.TOOL_VOID, 3.0F, -2.4F));
     public static final DeferredItem<VoidGearItem> VOID_PICKAXE = ITEMS.registerItem("void_pickaxe", VoidGearItem::new, props -> props.pickaxe(TTMaterials.TOOL_VOID, 1.0F, -2.8F));
@@ -266,6 +274,8 @@ public final class TTItems {
     public static final DeferredItem<VoidGearItem> VOID_CHEST = ITEMS.registerItem("void_chest", VoidGearItem::new, props -> props.humanoidArmor(TTMaterials.ARMOR_VOID, ArmorType.CHESTPLATE));
     public static final DeferredItem<VoidGearItem> VOID_LEGS = ITEMS.registerItem("void_legs", VoidGearItem::new, props -> props.humanoidArmor(TTMaterials.ARMOR_VOID, ArmorType.LEGGINGS));
     public static final DeferredItem<VoidGearItem> VOID_BOOTS = ITEMS.registerItem("void_boots", VoidGearItem::new, props -> props.humanoidArmor(TTMaterials.ARMOR_VOID, ArmorType.BOOTS));
+    public static final DeferredItem<VoidShieldItem> VOID_SHIELD = ITEMS.registerItem("void_shield", VoidShieldItem::new,
+            props -> ShieldProperties.shield(props, 512, TTItemTags.INGOTS_VOID_METAL).enchantable(TTMaterials.TOOL_VOID.enchantmentValue()));
 
     public static final DeferredItem<ElementalSwordItem> ELEMENTAL_SWORD = ITEMS.registerItem("elemental_sword", ElementalSwordItem::new,
             props -> props.sword(TTMaterials.TOOL_ELEMENTAL, 3.0F, -2.4F).rarity(Rarity.RARE).component(DataComponents.USE_EFFECTS, ElementalSwordItem.USE_EFFECTS));

@@ -1124,6 +1124,19 @@ public final class TTRecipeProvider extends RecipeProvider {
                         tagged(Tags.Items.INGOTS_IRON), tagged(Tags.Items.INGOTS_IRON), tagged(Tags.Items.ENDER_PEARLS)),
                 cost(TTAspects.MOTUS, 25), cost(TTAspects.AQUA, 25), cost(TTAspects.PERMUTATIO, 25)).instability(2).gate(gate("mirror_essentia")).unlockedBy("has", has(TTItems.MIRRORED_GLASS)));
 
+        commit(rows(priced(arcaneShaped(new ItemStackTemplate(TTItems.THAUMIUM_SHIELD), 60), cost(TTAspects.TERRA, 2), cost(TTAspects.ORDO, 1)), "GGG", "TTT", " G ")
+                .define('G', TTItemTags.PLANKS_GREATWOOD).define('T', TTItemTags.PLATES_THAUMIUM).gate(gate("thaumium_shield")).unlockedBy("has", has(TTItemTags.PLATES_THAUMIUM)));
+
+        commit(priced(parts(infusion(RecipeCategory.COMBAT, new ItemStackTemplate(TTItems.MIRROR_SHIELD), single(Items.SHIELD)), single(TTItems.MIRRORED_GLASS.get()), tagged(Tags.Items.INGOTS_GOLD),
+                tagged(Tags.Items.INGOTS_GOLD), tagged(Tags.Items.INGOTS_GOLD)), cost(TTAspects.PRAEMUNIO, 30), cost(TTAspects.PERMUTATIO, 25), cost(TTAspects.MOTUS, 25)).instability(5)
+                .gate(gate("mirror_shield")).unlockedBy("has", has(TTItems.MIRRORED_GLASS)));
+
+        commit(priced(
+                parts(infusion(RecipeCategory.COMBAT, new ItemStackTemplate(TTItems.VOID_SHIELD), single(TTItems.THAUMIUM_SHIELD.get())), tagged(TTItemTags.PLATES_VOID_METAL),
+                        tagged(TTItemTags.PLANKS_SILVERWOOD), tagged(TTItemTags.PLATES_VOID_METAL), tagged(TTItemTags.PLATES_VOID_METAL)),
+                cost(TTAspects.ALIENIS, 25), cost(TTAspects.METALLUM, 25), cost(TTAspects.PRAEMUNIO, 35), cost(TTAspects.VACUOS, 25)).instability(8).gate(gate("void_shield"))
+                .unlockedBy("has", has(TTItems.THAUMIUM_SHIELD)));
+
         commit(rows(priced(arcaneShaped(new ItemStackTemplate(TTItems.MATRIX_SPEED), 500), cost(TTAspects.AER, 1), cost(TTAspects.ORDO, 1)), "SNS", "NGN", "SNS").define('S', TTItems.STONE_ARCANE)
                 .define('N', TTItemTags.NITORS).define('G', Tags.Items.STORAGE_BLOCKS_DIAMOND).gate(gate("infusion_boost")).unlockedBy("has", has(TTItems.STONE_ARCANE)));
 
