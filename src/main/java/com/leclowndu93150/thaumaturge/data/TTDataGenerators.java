@@ -78,6 +78,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
+import com.leclowndu93150.thaumaturge.data.tag.TTStructureTagsProvider;
 
 @EventBusSubscriber(modid = TTIds.MODID)
 public final class TTDataGenerators {
@@ -121,6 +122,7 @@ public final class TTDataGenerators {
 
         event.createBlockAndItemTags(TTBlockTagsProvider::new, TTItemTagsProvider::new);
         event.createProvider(TTDamageTypeTagsProvider::new);
+        event.createProvider(TTStructureTagsProvider::new);
         event.createProvider(TTBiomeTagsProvider::new);
         event.createProvider(TTMobEffectTagsProvider::new);
         event.createProvider(TTFluidTagsProvider::new);

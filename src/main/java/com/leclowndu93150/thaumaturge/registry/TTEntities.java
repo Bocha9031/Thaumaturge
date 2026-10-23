@@ -69,6 +69,8 @@ import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import com.leclowndu93150.thaumaturge.content.entity.ranger.EntityCultistRanger;
+import com.leclowndu93150.thaumaturge.content.entity.ranger.EntityCultistRangerCaptain;
 
 public final class TTEntities {
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(Registries.ENTITY_TYPE, TTIds.MODID);
@@ -192,6 +194,12 @@ public final class TTEntities {
 
     public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistCleric>> CULTIST_CLERIC = register("cultist_cleric",
             () -> EntityType.Builder.of(EntityCultistCleric::new, MobCategory.MONSTER).sized(0.6F, 1.8F).eyeHeight(1.62F).notInPeaceful().clientTrackingRange(8).updateInterval(3));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistRanger>> CULTIST_RANGER = register("cultist_ranger",
+            () -> EntityType.Builder.of(EntityCultistRanger::new, MobCategory.MONSTER).sized(0.6F, 1.8F).eyeHeight(1.62F).notInPeaceful().clientTrackingRange(8).updateInterval(3));
+
+    public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistRangerCaptain>> CULTIST_RANGER_CAPTAIN = register("cultist_ranger_captain",
+            () -> EntityType.Builder.of(EntityCultistRangerCaptain::new, MobCategory.MONSTER).sized(0.6F, 1.8F).eyeHeight(1.62F).notInPeaceful().clientTrackingRange(8).updateInterval(3));
 
     public static final DeferredHolder<EntityType<?>, EntityType<EntityCultistLeader>> CULTIST_LEADER = register("cultist_leader",
             () -> EntityType.Builder.of(EntityCultistLeader::new, MobCategory.MONSTER).sized(0.75F, 2.25F).notInPeaceful().clientTrackingRange(10).updateInterval(3));

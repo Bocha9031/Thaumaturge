@@ -158,11 +158,12 @@ public final class TTItemTagsProvider extends BlockTagCopyingItemTagProvider {
         tag(TTItemTags.SHIELDS_SAPPING).add(TTItems.VOID_SHIELD.get());
 
         Item[] helmets = {TTItems.THAUMIUM_HELM.get(), TTItems.VOID_HELM.get(), TTItems.VOID_ROBE_HELM.get(), TTItems.FORTRESS_HELM.get(), TTItems.CRIMSON_PLATE_HELM.get(),
-                TTItems.CRIMSON_ROBE_HELM.get(), TTItems.CRIMSON_PRAETOR_HELM.get(), TTItems.GOGGLES_REVEALING.get()};
+                TTItems.CRIMSON_ROBE_HELM.get(), TTItems.CRIMSON_PRAETOR_HELM.get(), TTItems.GOGGLES_REVEALING.get(), TTItems.CRIMSON_RANGER_HELM.get(), TTItems.CRIMSON_CAPTAIN_HELM.get()};
         Item[] chestplates = {TTItems.THAUMIUM_CHEST.get(), TTItems.VOID_CHEST.get(), TTItems.VOID_ROBE_CHEST.get(), TTItems.FORTRESS_CHEST.get(), TTItems.CLOTH_CHEST.get(),
-                TTItems.CRIMSON_PLATE_CHEST.get(), TTItems.CRIMSON_ROBE_CHEST.get(), TTItems.CRIMSON_PRAETOR_CHEST.get(), TTItems.THAUMOSTATIC_HARNESS.get()};
+                TTItems.CRIMSON_PLATE_CHEST.get(), TTItems.CRIMSON_ROBE_CHEST.get(), TTItems.CRIMSON_PRAETOR_CHEST.get(), TTItems.THAUMOSTATIC_HARNESS.get(), TTItems.CRIMSON_RANGER_CHEST.get(),
+                TTItems.CRIMSON_CAPTAIN_CHEST.get()};
         Item[] leggings = {TTItems.THAUMIUM_LEGS.get(), TTItems.VOID_LEGS.get(), TTItems.VOID_ROBE_LEGS.get(), TTItems.FORTRESS_LEGS.get(), TTItems.CLOTH_LEGS.get(), TTItems.CRIMSON_PLATE_LEGS.get(),
-                TTItems.CRIMSON_ROBE_LEGS.get(), TTItems.CRIMSON_PRAETOR_LEGS.get()};
+                TTItems.CRIMSON_ROBE_LEGS.get(), TTItems.CRIMSON_PRAETOR_LEGS.get(), TTItems.CRIMSON_RANGER_LEGS.get()};
         Item[] boots = {TTItems.THAUMIUM_BOOTS.get(), TTItems.VOID_BOOTS.get(), TTItems.TRAVELLER_BOOTS.get(), TTItems.CLOTH_BOOTS.get(), TTItems.CRIMSON_BOOTS.get()};
         tag(ItemTags.HEAD_ARMOR).add(helmets);
         tag(TTItemTags.ARMORS_HELMETS).add(helmets);

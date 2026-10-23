@@ -1,10 +1,10 @@
 package com.leclowndu93150.thaumaturge.content.entity;
 
 import com.leclowndu93150.thaumaturge.content.entity.ai.AltarFocusGoal;
+import com.leclowndu93150.thaumaturge.content.entity.cult.CultSpells;
 import com.leclowndu93150.thaumaturge.content.entity.ai.LongRangeAttackGoal;
 import com.leclowndu93150.thaumaturge.registry.TTLootTables;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
-import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -12,16 +12,12 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.monster.RangedAttackMob;
-import net.minecraft.world.entity.projectile.hurtingprojectile.SmallFireball;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -47,19 +43,6 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
     private static final double ANCHOR_HEIGHT = 1.5;
     private static final float PITCH_STEP = 10.0F;
     private static final float HEAD_STEP = 40.0F;
-    private static final float ORB_CHANCE = 0.34F;
-    private static final float VOLLEY_CHANCE = 1.0F - ORB_CHANCE;
-    private static final double LEAD_TICKS = 10.0;
-    private static final float ORB_SPEED = 0.66F;
-    private static final float ORB_INACCURACY = 3.0F;
-    private static final float ORB_SOUND_VOLUME = 1.0F;
-    private static final float ORB_SOUND_PITCH_SPREAD = 0.1F;
-    private static final int VOLLEY_EVENT = 1009;
-    private static final int VOLLEY_SIZE = 3;
-    private static final float VOLLEY_SPREAD = 0.5F;
-    private static final double VOLLEY_LIFT = 0.5;
-
-    private static final List<WeightedAttack> ATTACKS = List.of(new WeightedAttack(ORB_CHANCE, new OrbAttack()), new WeightedAttack(VOLLEY_CHANCE, new VolleyAttack()));
 
     public int rage;
 
@@ -109,11 +92,7 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
 
     @Override
     public void performRangedAttack(LivingEntity target, float distanceFactor) {
-        if (!(this.level() instanceof ServerLevel level)) {
-            return;
-        }
-        this.swing(InteractionHand.MAIN_HAND);
-        selectAttack(this.getRandom()).fire(this, level, target, distanceFactor);
+        CultSpells.cast(this, target, distanceFactor);
     }
 
     @Override
@@ -160,58 +139,6 @@ public class EntityCultistCleric extends EntityCultist implements RangedAttackMo
     @Override
     public int getAmbientSoundInterval() {
         return AMBIENT_INTERVAL;
-    }
-
-    private static AttackStrategy selectAttack(RandomSource random) {
-        float roll = random.nextFloat();
-        float threshold = 0.0F;
-        for (WeightedAttack attack : ATTACKS) {
-            threshold += attack.weight();
-            if (roll < threshold) {
-                return attack.strategy();
-            }
-        }
-        return ATTACKS.get(ATTACKS.size() - 1).strategy();
-    }
-
-    private interface AttackStrategy {
-        void fire(EntityCultistCleric cleric, ServerLevel level, LivingEntity target, float distanceFactor);
-    }
-
-    private record WeightedAttack(float weight, AttackStrategy strategy) {
-    }
-
-    private static final class OrbAttack implements AttackStrategy {
-        @Override
-        public void fire(EntityCultistCleric cleric, ServerLevel level, LivingEntity target, float distanceFactor) {
-            RandomSource random = cleric.getRandom();
-            Vec3 aim = Aiming.launchVector(cleric.position(), target.position(), target.getKnownMovement(), LEAD_TICKS);
-            EntityGolemOrb orb = new EntityGolemOrb(level, cleric, target, true);
-            orb.setPos(orb.getX() + aim.x, orb.getY() + aim.y, orb.getZ() + aim.z);
-            orb.shoot(aim.x, aim.y, aim.z, ORB_SPEED, ORB_INACCURACY);
-            level.addFreshEntity(orb);
-            level.playSound(null, cleric.getX(), cleric.getY(), cleric.getZ(), TTSounds.EGATTACK.get(), SoundSource.HOSTILE, ORB_SOUND_VOLUME, 1.0F + random.nextFloat() * ORB_SOUND_PITCH_SPREAD);
-        }
-    }
-
-    private static final class VolleyAttack implements AttackStrategy {
-        @Override
-        public void fire(EntityCultistCleric cleric, ServerLevel level, LivingEntity target, float distanceFactor) {
-            RandomSource random = cleric.getRandom();
-            level.levelEvent(null, VOLLEY_EVENT, cleric.blockPosition(), 0);
-            double spread = VOLLEY_SPREAD * Math.sqrt(distanceFactor);
-            double originY = cleric.getY() + cleric.getBbHeight() / 2.0;
-            Vec3 origin = new Vec3(cleric.getX(), originY, cleric.getZ());
-            Vec3 aimPoint = new Vec3(target.getX(), target.getBoundingBox().minY + target.getBbHeight() / 2.0, target.getZ());
-            for (int i = 0; i < VOLLEY_SIZE; i++) {
-                double offsetX = random.nextGaussian() * spread;
-                double offsetZ = random.nextGaussian() * spread;
-                Vec3 direction = Aiming.launchVector(origin, aimPoint, Vec3.ZERO, 0.0, offsetX, offsetZ);
-                SmallFireball fireball = new SmallFireball(level, cleric, direction);
-                fireball.setPos(fireball.getX(), originY + VOLLEY_LIFT, fireball.getZ());
-                level.addFreshEntity(fireball);
-            }
-        }
     }
 
     private final class RitualState {

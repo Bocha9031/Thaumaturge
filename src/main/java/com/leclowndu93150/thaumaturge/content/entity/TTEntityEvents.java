@@ -25,6 +25,8 @@ import net.minecraft.world.entity.animal.pig.Pig;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
+import com.leclowndu93150.thaumaturge.content.entity.ranger.EntityCultistRanger;
+import com.leclowndu93150.thaumaturge.content.entity.ranger.EntityCultistRangerCaptain;
 
 @EventBusSubscriber(modid = TTIds.MODID)
 public final class TTEntityEvents {
@@ -95,6 +97,8 @@ public final class TTEntityEvents {
         event.put(TTEntities.ELDRITCH_GUARDIAN.get(), EntityEldritchGuardian.createAttributes().build());
         event.put(TTEntities.CULTIST_KNIGHT.get(), EntityCultistKnight.createAttributes().build());
         event.put(TTEntities.CULTIST_CLERIC.get(), EntityCultistCleric.createAttributes().build());
+        event.put(TTEntities.CULTIST_RANGER.get(), EntityCultistRanger.createAttributes().build());
+        event.put(TTEntities.CULTIST_RANGER_CAPTAIN.get(), EntityCultistRangerCaptain.createAttributes().build());
         event.put(TTEntities.CULTIST_PORTAL_LESSER.get(), EntityCultistPortalLesser.createAttributes().build());
         event.put(TTEntities.TURRET_CROSSBOW.get(), EntityTurretCrossbow.createAttributes().build());
         event.put(TTEntities.TURRET_CROSSBOW_ADVANCED.get(), EntityTurretCrossbowAdvanced.createAdvancedAttributes().build());

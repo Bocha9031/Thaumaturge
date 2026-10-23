@@ -49,6 +49,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import com.leclowndu93150.thaumaturge.client.model.gear.RangerArmorModel;
 
 @EventBusSubscriber(modid = TTIds.MODID, value = Dist.CLIENT)
 public final class TTEntityRenderers {
@@ -87,6 +88,11 @@ public final class TTEntityRenderers {
         event.registerLayerDefinition(TTModelLayers.KNIGHT_ARMOR_HEAD, KnightArmorModel::createHead);
         event.registerLayerDefinition(TTModelLayers.KNIGHT_ARMOR_CHEST, KnightArmorModel::createChest);
         event.registerLayerDefinition(TTModelLayers.KNIGHT_ARMOR_LEGS, KnightArmorModel::createLegs);
+        event.registerLayerDefinition(TTModelLayers.RANGER_ARMOR_HEAD, () -> RangerArmorModel.createHead(false));
+        event.registerLayerDefinition(TTModelLayers.RANGER_ARMOR_CHEST, () -> RangerArmorModel.createChest(false));
+        event.registerLayerDefinition(TTModelLayers.RANGER_ARMOR_LEGS, RangerArmorModel::createLegs);
+        event.registerLayerDefinition(TTModelLayers.CAPTAIN_ARMOR_HEAD, () -> RangerArmorModel.createHead(true));
+        event.registerLayerDefinition(TTModelLayers.CAPTAIN_ARMOR_CHEST, () -> RangerArmorModel.createChest(true));
         event.registerLayerDefinition(TTModelLayers.FORTRESS_ARMOR_HEAD, FortressArmorModel::createHead);
         event.registerLayerDefinition(TTModelLayers.FORTRESS_ARMOR_CHEST, FortressArmorModel::createChest);
         event.registerLayerDefinition(TTModelLayers.FORTRESS_ARMOR_LEGS, FortressArmorModel::createLegs);
@@ -157,6 +163,8 @@ public final class TTEntityRenderers {
         event.registerEntityRenderer(TTEntities.TAINTACLE_GIANT.get(), context -> new TaintacleRenderer(context, TAINTACLE_GIANT_SHADOW));
         event.registerEntityRenderer(TTEntities.CULTIST_KNIGHT.get(), CultistRenderer::new);
         event.registerEntityRenderer(TTEntities.CULTIST_CLERIC.get(), CultistClericRenderer::new);
+        event.registerEntityRenderer(TTEntities.CULTIST_RANGER.get(), CultistRenderer::new);
+        event.registerEntityRenderer(TTEntities.CULTIST_RANGER_CAPTAIN.get(), CultistRenderer::new);
         event.registerEntityRenderer(TTEntities.CULTIST_PORTAL_LESSER.get(), CultistPortalRenderer::lesser);
         event.registerEntityRenderer(TTEntities.ELDRITCH_ORB.get(), EldritchOrbRenderer::new);
         event.registerEntityRenderer(TTEntities.GOLEM_ORB.get(), GolemOrbRenderer::new);

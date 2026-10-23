@@ -16,11 +16,14 @@ public final class PortalSummons {
     private PortalSummons() {}
 
     public static boolean summon(ServerLevel level, ServerPlayer player, RandomSource random) {
-        EntityCultistPortalLesser portal = TTEntities.CULTIST_PORTAL_LESSER.get().create(level, EntitySpawnReason.EVENT);
+        return summonNear(level, player.blockPosition(), random, EntitySpawnReason.EVENT);
+    }
+
+    public static boolean summonNear(ServerLevel level, BlockPos origin, RandomSource random, EntitySpawnReason reason) {
+        EntityCultistPortalLesser portal = TTEntities.CULTIST_PORTAL_LESSER.get().create(level, reason);
         if (portal == null) {
             return false;
         }
-        BlockPos origin = player.blockPosition();
         for (int attempt = 0; attempt < SpawnSpots.PLACEMENT_ATTEMPTS; attempt++) {
             BlockPos cell = SpawnSpots.ringCell(origin, random);
             if (!SpawnSpots.standsOnSolidRender(level, cell)) {
@@ -30,7 +33,7 @@ public final class PortalSummons {
             if (!SpawnSpots.hasFreeSpace(level, portal)) {
                 continue;
             }
-            EventHooks.finalizeMobSpawn(portal, level, level.getCurrentDifficultyAt(cell.above()), EntitySpawnReason.EVENT, null);
+            EventHooks.finalizeMobSpawn(portal, level, level.getCurrentDifficultyAt(cell.above()), reason, null);
             level.addFreshEntity(portal);
             return true;
         }

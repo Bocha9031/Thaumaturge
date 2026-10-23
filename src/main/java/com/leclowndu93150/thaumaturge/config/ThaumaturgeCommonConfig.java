@@ -21,6 +21,7 @@ public final class ThaumaturgeCommonConfig {
     public static final ModConfigSpec.BooleanValue FLUX_PRESSURE_EVENTS;
     public static final ModConfigSpec.DoubleValue ENERGIZED_NODE_VIS_PER_POINT;
     public static final ModConfigSpec.IntValue CRIMSON_PORTAL_RARITY;
+    public static final ModConfigSpec.DoubleValue CRIMSON_PATROL_CHANCE;
     public static final ModConfigSpec.DoubleValue WILD_NODE_CHANCE;
     public static final ModConfigSpec.DoubleValue MAGICAL_NODE_CHANCE;
     public static final ModConfigSpec.DoubleValue EERIE_NODE_CHANCE;
@@ -101,7 +102,10 @@ public final class ThaumaturgeCommonConfig {
                 "Whether high Aura Flux can trigger the Thaumcraft 5 style flux pressure events alongside Flux Rifts. Turning this off does not disable Flux Rifts.");
         ENERGIZED_NODE_VIS_PER_POINT = decimal(spec, "energizedNodeVisPerPoint", 6.0, 0.0, PERCENT_MAX,
                 "Raw vis an energized node drains from the chunk aura to restore one aspect point. Normal nodes refine at 3.0 per point; higher values make energized nodes more wasteful. 0 makes their refill free.");
-        CRIMSON_PORTAL_RARITY = whole(spec, "crimsonPortalRarity", 500, 0, 1000000, "Average number of chunks per wild lesser crimson portal. Higher is rarer. 0 disables wild portals entirely.");
+        CRIMSON_PORTAL_RARITY = whole(spec, "crimsonPortalRarity", 0, 0, 1000000,
+                "Average number of chunks per wild lesser crimson portal placed at world generation. Higher is rarer. 0, the default, disables them; crimson ranger patrols open portals instead.");
+        CRIMSON_PATROL_CHANCE = percent(spec, "crimsonPatrolChance", 10.0,
+                "Chance from 0 to 100 that a crimson ranger patrol spawns near a random overworld player at each daytime attempt, about every 10 minutes from day 5 on. 0 disables patrols.");
         spec.push("nodes");
         WILD_NODE_CHANCE = percent(spec, "wildSpawnChance", NODE_SPAWN_DEFAULT,
                 "Chance from 0 to 100 for a wild node placement attempt in each Overworld chunk. The default is about one attempt per 36 chunks. 0 disables this source.");

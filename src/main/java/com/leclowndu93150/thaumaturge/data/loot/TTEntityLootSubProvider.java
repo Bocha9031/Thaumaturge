@@ -34,6 +34,11 @@ import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceCon
 import net.minecraft.world.level.storage.loot.predicates.LootItemRandomChanceWithEnchantedBonusCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
+import com.leclowndu93150.thaumaturge.registry.TTStructureTags;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
+import net.minecraft.world.level.storage.loot.functions.ExplorationMapFunction;
+import net.minecraft.world.level.storage.loot.functions.SetNameFunction;
 
 public final class TTEntityLootSubProvider extends EntityLootSubProvider {
     private static final double GIANT_TAINTACLE_KIN_RADIUS = 48.0;
@@ -52,6 +57,9 @@ public final class TTEntityLootSubProvider extends EntityLootSubProvider {
     private static final float CRAB_PEARL_LOOTING_BONUS = 0.25F;
     private static final float CURIO_CHANCE = 0.0125F;
     private static final float CURIO_LOOTING_BONUS = 0.01F;
+    private static final float CAPTAIN_RITES_CHANCE = 0.1F;
+    private static final byte CULT_MAP_ZOOM = 2;
+    private static final String CULT_MAP_NAME = "filled_map.thaumaturge.cult";
     private static final float PRIME_SEED_EXTRA_CRYSTAL_CHANCE = 0.5F;
 
     public TTEntityLootSubProvider(HolderLookup.Provider registries) {
@@ -75,6 +83,9 @@ public final class TTEntityLootSubProvider extends EntityLootSubProvider {
         add(TTEntities.PECH.get(), LootTable.lootTable().withPool(goldNuggetPool()).withPool(curioPool(TTItems.CURIO_KNOWLEDGE.get())));
         add(TTEntities.CULTIST_KNIGHT.get(), LootTable.lootTable().withPool(goldNuggetPool()).withPool(curioPool(TTItems.CURIO_RITES.get())));
         add(TTEntities.CULTIST_CLERIC.get(), LootTable.lootTable().withPool(goldNuggetPool()).withPool(curioPool(TTItems.CURIO_RITES.get())));
+        add(TTEntities.CULTIST_RANGER.get(), LootTable.lootTable().withPool(goldNuggetPool()).withPool(curioPool(TTItems.CURIO_RITES.get())));
+        add(TTEntities.CULTIST_RANGER_CAPTAIN.get(),
+                LootTable.lootTable().withPool(goldNuggetPool()).withPool(playerKillPool(TTItems.CURIO_RITES.get(), CAPTAIN_RITES_CHANCE, CURIO_LOOTING_BONUS)).withPool(cultMapPool()));
         add(TTEntities.ELDRITCH_CRAB.get(), LootTable.lootTable().withPool(playerKillPool(Items.ENDER_PEARL, CRAB_PEARL_CHANCE, CRAB_PEARL_LOOTING_BONUS)));
         add(TTEntities.INHABITED_ZOMBIE.get(), LootTable.lootTable());
         add(TTEntities.ELDRITCH_GUARDIAN.get(), LootTable.lootTable().withPool(playerKillPool(TTItems.ELDRITCH_EYE.get(), GUARDIAN_EYE_CHANCE, GUARDIAN_EYE_LOOTING_BONUS)));
@@ -138,6 +149,14 @@ public final class TTEntityLootSubProvider extends EntityLootSubProvider {
     private LootPool.Builder playerKillPool(ItemLike item, float chance, float lootingBonus) {
         return LootPool.lootPool().setRolls(ConstantValue.exactly(1)).add(LootItem.lootTableItem(item)).when(LootItemKilledByPlayerCondition.killedByPlayer())
                 .when(LootItemRandomChanceWithEnchantedBonusCondition.randomChanceAndLootingBoost(this.registries, chance, lootingBonus));
+    }
+
+    private LootPool.Builder cultMapPool() {
+        return LootPool.lootPool().setRolls(ConstantValue.exactly(1))
+                .add(LootItem.lootTableItem(Items.MAP)
+                        .apply(ExplorationMapFunction.makeExplorationMap().setDestination(TTStructureTags.ON_CULT_MAPS).setMapDecoration(MapDecorationTypes.RED_X).setZoom(CULT_MAP_ZOOM))
+                        .apply(SetNameFunction.setName(Component.translatable(CULT_MAP_NAME), SetNameFunction.Target.ITEM_NAME)))
+                .when(LootItemKilledByPlayerCondition.killedByPlayer());
     }
 
     private LootPool.Builder goldNuggetPool() {

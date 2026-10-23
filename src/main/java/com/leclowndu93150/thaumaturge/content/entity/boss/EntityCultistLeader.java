@@ -6,6 +6,7 @@ import com.leclowndu93150.thaumaturge.content.entity.EntityGolemOrb;
 import com.leclowndu93150.thaumaturge.content.entity.ai.CultistHurtByTargetGoal;
 import com.leclowndu93150.thaumaturge.content.entity.ai.LongRangeAttackGoal;
 import com.leclowndu93150.thaumaturge.content.entity.champion.ChampionHelper;
+import com.leclowndu93150.thaumaturge.content.entity.cult.CultRally;
 import com.leclowndu93150.thaumaturge.content.entity.cloak.CloakTracker;
 import com.leclowndu93150.thaumaturge.content.entity.cloak.CloakWearer;
 import com.leclowndu93150.thaumaturge.content.entity.trait.MobTraitNames;
@@ -17,8 +18,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -75,10 +74,6 @@ public class EntityCultistLeader extends EntityThaumaturgeBoss implements Ranged
     private static final double STROLL_SPEED = 0.8;
     private static final float LOOK_RANGE = 8.0F;
     private static final float WEAPON_ENCHANT_CHANCE = 0.5F;
-    private static final int RALLY_INTERVAL = 5;
-    private static final double RALLY_RADIUS = 8.0;
-    private static final int RALLY_TICKS = 60;
-    private static final int RALLY_AMPLIFIER = 1;
     private static final float ORB_SPEED = 0.66F;
     private static final float ORB_SPREAD = 3.0F;
     private static final double ORB_CLEARANCE = 1.0;
@@ -178,22 +173,9 @@ public class EntityCultistLeader extends EntityThaumaturgeBoss implements Ranged
     @Override
     protected void customServerAiStep(ServerLevel level) {
         super.customServerAiStep(level);
-        if (tickCount % RALLY_INTERVAL == 0) {
-            rally(level);
+        if (tickCount % CultRally.INTERVAL == 0) {
+            CultRally.rally(this, level);
         }
-    }
-
-    private void rally(ServerLevel level) {
-        List<EntityCultist> needy = level.getEntitiesOfClass(EntityCultist.class, getBoundingBox().inflate(RALLY_RADIUS), EntityCultistLeader::lacksRegeneration);
-        needy.forEach(EntityCultistLeader::grantRallyRegeneration);
-    }
-
-    private static boolean lacksRegeneration(EntityCultist cultist) {
-        return cultist.isAlive() && !cultist.hasEffect(MobEffects.REGENERATION);
-    }
-
-    private static void grantRallyRegeneration(EntityCultist cultist) {
-        cultist.addEffect(new MobEffectInstance(MobEffects.REGENERATION, RALLY_TICKS, RALLY_AMPLIFIER));
     }
 
     @Override

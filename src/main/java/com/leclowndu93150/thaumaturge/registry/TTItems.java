@@ -300,6 +300,16 @@ public final class TTItems {
             props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_PLATE, ArmorType.CHESTPLATE).rarity(Rarity.UNCOMMON));
     public static final DeferredItem<Item> CRIMSON_PLATE_LEGS = ITEMS.registerItem("crimson_plate_legs", Item::new,
             props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_PLATE, ArmorType.LEGGINGS).rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<Item> CRIMSON_RANGER_HELM = ITEMS.registerItem("crimson_ranger_helm", Item::new,
+            props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_RANGER, ArmorType.HELMET).rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<Item> CRIMSON_RANGER_CHEST = ITEMS.registerItem("crimson_ranger_chest", Item::new,
+            props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_RANGER, ArmorType.CHESTPLATE).rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<Item> CRIMSON_RANGER_LEGS = ITEMS.registerItem("crimson_ranger_legs", Item::new,
+            props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_RANGER, ArmorType.LEGGINGS).rarity(Rarity.UNCOMMON));
+    public static final DeferredItem<Item> CRIMSON_CAPTAIN_HELM = ITEMS.registerItem("crimson_captain_helm", Item::new,
+            props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_CAPTAIN, ArmorType.HELMET).rarity(Rarity.RARE));
+    public static final DeferredItem<Item> CRIMSON_CAPTAIN_CHEST = ITEMS.registerItem("crimson_captain_chest", Item::new,
+            props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_CAPTAIN, ArmorType.CHESTPLATE).rarity(Rarity.RARE));
     public static final DeferredItem<CultistRobeItem> CRIMSON_BOOTS = ITEMS.registerItem("crimson_boots", CultistRobeItem::new,
             props -> props.humanoidArmor(TTMaterials.ARMOR_CULTIST_BOOTS, ArmorType.BOOTS).rarity(Rarity.UNCOMMON));
     public static final DeferredItem<CultistRobeItem> CRIMSON_ROBE_HELM = ITEMS.registerItem("crimson_robe_helm", CultistRobeItem::new,
@@ -401,6 +411,8 @@ public final class TTItems {
     public static final DeferredItem<SpawnEggItem> ELDRITCH_GUARDIAN_SPAWN_EGG = registerSpawnEgg("eldritch_guardian_spawn_egg", TTEntities.ELDRITCH_GUARDIAN);
     public static final DeferredItem<SpawnEggItem> CULTIST_KNIGHT_SPAWN_EGG = registerSpawnEgg("cultist_knight_spawn_egg", TTEntities.CULTIST_KNIGHT);
     public static final DeferredItem<SpawnEggItem> CULTIST_CLERIC_SPAWN_EGG = registerSpawnEgg("cultist_cleric_spawn_egg", TTEntities.CULTIST_CLERIC);
+    public static final DeferredItem<SpawnEggItem> CULTIST_RANGER_SPAWN_EGG = registerSpawnEgg("cultist_ranger_spawn_egg", TTEntities.CULTIST_RANGER);
+    public static final DeferredItem<SpawnEggItem> CULTIST_RANGER_CAPTAIN_SPAWN_EGG = registerSpawnEgg("cultist_ranger_captain_spawn_egg", TTEntities.CULTIST_RANGER_CAPTAIN);
     public static final DeferredItem<SpawnEggItem> CULTIST_PORTAL_LESSER_SPAWN_EGG = registerSpawnEgg("cultist_portal_lesser_spawn_egg", TTEntities.CULTIST_PORTAL_LESSER);
 
     public static final DeferredItem<PechWandItem> PECH_WAND = ITEMS.registerItem("pech_wand", PechWandItem::new, props -> props.rarity(Rarity.RARE));

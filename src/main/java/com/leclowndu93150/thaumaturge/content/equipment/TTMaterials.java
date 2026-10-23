@@ -43,6 +43,8 @@ public final class TTMaterials {
     public static final ResourceKey<EquipmentAsset> ASSET_CULTIST_ROBE = asset("cultist_robe");
     public static final ResourceKey<EquipmentAsset> ASSET_CULTIST_BOOTS = asset("cultist_boots");
     public static final ResourceKey<EquipmentAsset> ASSET_CULTIST_LEADER = asset("cultist_leader");
+    public static final ResourceKey<EquipmentAsset> ASSET_CULTIST_RANGER = asset("cultist_ranger");
+    public static final ResourceKey<EquipmentAsset> ASSET_CULTIST_CAPTAIN = asset("cultist_captain");
     public static final ResourceKey<EquipmentAsset> ASSET_THAUMOSTATIC_HARNESS = asset("thaumostatic_harness");
 
     public static final ArmorMaterial ARMOR_THAUMIUM = armor(25, defense(2, 5, 6, 2), 25, SoundEvents.ARMOR_EQUIP_IRON, TOUGHNESS_LIGHT, TTItemTags.INGOTS_THAUMIUM, ASSET_THAUMIUM);
@@ -54,6 +56,8 @@ public final class TTMaterials {
     public static final ArmorMaterial ARMOR_CULTIST_PLATE = armor(18, defense(2, 5, 6, 2), 13, SoundEvents.ARMOR_EQUIP_IRON, TOUGHNESS_NONE, Tags.Items.INGOTS_IRON, ASSET_CULTIST_PLATE);
     public static final ArmorMaterial ARMOR_CULTIST_ROBE = armor(17, defense(2, 4, 5, 2), 13, SoundEvents.ARMOR_EQUIP_CHAIN, TOUGHNESS_NONE, ItemTags.WOOL, ASSET_CULTIST_ROBE);
     public static final ArmorMaterial ARMOR_CULTIST_BOOTS = armor(15, defense(2, 5, 6, 2), 9, SoundEvents.ARMOR_EQUIP_IRON, TOUGHNESS_NONE, Tags.Items.INGOTS_IRON, ASSET_CULTIST_BOOTS);
+    public static final ArmorMaterial ARMOR_CULTIST_RANGER = armor(18, defense(2, 5, 6, 2), 13, SoundEvents.ARMOR_EQUIP_CHAIN, TOUGHNESS_NONE, Tags.Items.INGOTS_IRON, ASSET_CULTIST_RANGER);
+    public static final ArmorMaterial ARMOR_CULTIST_CAPTAIN = armor(18, defense(2, 5, 6, 2), 13, SoundEvents.ARMOR_EQUIP_CHAIN, TOUGHNESS_NONE, Tags.Items.INGOTS_IRON, ASSET_CULTIST_CAPTAIN);
     public static final ArmorMaterial ARMOR_CULTIST_LEADER = armor(30, defense(3, 6, 7, 3), 20, SoundEvents.ARMOR_EQUIP_IRON, TOUGHNESS_LIGHT, Tags.Items.INGOTS_IRON, ASSET_CULTIST_LEADER);
     public static final ArmorMaterial ARMOR_THAUMOSTATIC_HARNESS = armor(25, defense(1, 2, 3, 1), 25, SoundEvents.ARMOR_EQUIP_LEATHER, TOUGHNESS_NONE, Tags.Items.INGOTS_GOLD,
             ASSET_THAUMOSTATIC_HARNESS);

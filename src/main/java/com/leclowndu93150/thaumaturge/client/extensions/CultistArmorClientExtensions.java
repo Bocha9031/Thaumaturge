@@ -8,6 +8,7 @@ import com.leclowndu93150.thaumaturge.client.model.gear.FortressArmorModel;
 import com.leclowndu93150.thaumaturge.client.model.gear.KnightArmorModel;
 import com.leclowndu93150.thaumaturge.client.model.gear.PraetorArmorModel;
 import com.leclowndu93150.thaumaturge.client.model.gear.RobeArmorModel;
+import com.leclowndu93150.thaumaturge.client.model.gear.RangerArmorModel;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import java.util.function.Function;
 import net.minecraft.client.Minecraft;
@@ -35,6 +36,10 @@ public final class CultistArmorClientExtensions {
     public static void onRegisterClientExtensions(RegisterClientExtensionsEvent event) {
         event.registerItem(new CustomArmorExtension(KnightArmorModel::new, TTModelLayers.KNIGHT_ARMOR_HEAD, TTModelLayers.KNIGHT_ARMOR_CHEST, TTModelLayers.KNIGHT_ARMOR_LEGS),
                 TTItems.CRIMSON_PLATE_HELM.get(), TTItems.CRIMSON_PLATE_CHEST.get(), TTItems.CRIMSON_PLATE_LEGS.get());
+        event.registerItem(new CustomArmorExtension(RangerArmorModel::new, TTModelLayers.RANGER_ARMOR_HEAD, TTModelLayers.RANGER_ARMOR_CHEST, TTModelLayers.RANGER_ARMOR_LEGS),
+                TTItems.CRIMSON_RANGER_HELM.get(), TTItems.CRIMSON_RANGER_CHEST.get(), TTItems.CRIMSON_RANGER_LEGS.get());
+        event.registerItem(new CustomArmorExtension(RangerArmorModel::new, TTModelLayers.CAPTAIN_ARMOR_HEAD, TTModelLayers.CAPTAIN_ARMOR_CHEST, TTModelLayers.RANGER_ARMOR_LEGS),
+                TTItems.CRIMSON_CAPTAIN_HELM.get(), TTItems.CRIMSON_CAPTAIN_CHEST.get());
         event.registerItem(new CustomArmorExtension(ClericArmorModel::new, TTModelLayers.CLERIC_ARMOR_HEAD, TTModelLayers.CLERIC_ARMOR_CHEST, TTModelLayers.CLERIC_ARMOR_LEGS),
                 TTItems.CRIMSON_ROBE_HELM.get(), TTItems.CRIMSON_ROBE_CHEST.get(), TTItems.CRIMSON_ROBE_LEGS.get());
         event.registerItem(new SingleLayerArmorExtension(CrimsonBootsModel::new, TTModelLayers.CRIMSON_BOOTS), TTItems.CRIMSON_BOOTS.get());

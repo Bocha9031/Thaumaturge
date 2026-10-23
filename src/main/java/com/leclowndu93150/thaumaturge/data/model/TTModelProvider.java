@@ -777,6 +777,8 @@ public final class TTModelProvider extends ModelProvider {
         itemModels.generateFlatItem(TTItems.ELDRITCH_GUARDIAN_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CULTIST_KNIGHT_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CULTIST_CLERIC_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CULTIST_RANGER_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CULTIST_RANGER_CAPTAIN_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CULTIST_PORTAL_LESSER_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CULTIST_LEADER_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CULTIST_PORTAL_GREATER_SPAWN_EGG.get(), ModelTemplates.FLAT_ITEM);
@@ -791,6 +793,11 @@ public final class TTModelProvider extends ModelProvider {
         itemModels.generateFlatItem(TTItems.CRIMSON_PLATE_HELM.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CRIMSON_PLATE_CHEST.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CRIMSON_PLATE_LEGS.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CRIMSON_RANGER_HELM.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CRIMSON_RANGER_CHEST.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CRIMSON_RANGER_LEGS.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CRIMSON_CAPTAIN_HELM.get(), ModelTemplates.FLAT_ITEM);
+        itemModels.generateFlatItem(TTItems.CRIMSON_CAPTAIN_CHEST.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CRIMSON_BOOTS.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CRIMSON_ROBE_HELM.get(), ModelTemplates.FLAT_ITEM);
         itemModels.generateFlatItem(TTItems.CRIMSON_ROBE_CHEST.get(), ModelTemplates.FLAT_ITEM);

@@ -168,7 +168,7 @@ public abstract class EntityCultist extends Monster implements CloakWearer {
         }
     }
 
-    final void addIdleGoals() {
+    protected final void addIdleGoals() {
         this.getNavigation().setCanOpenDoors(true);
         this.goalSelector.addGoal(DOOR_PRIORITY, new OpenDoorGoal(this, true));
         this.goalSelector.addGoal(RESTRICTION_PRIORITY, new MoveTowardsRestrictionGoal(this, WALK_SPEED));
@@ -178,7 +178,7 @@ public abstract class EntityCultist extends Monster implements CloakWearer {
         this.goalSelector.addGoal(LOOK_AROUND_PRIORITY, new RandomLookAroundGoal(this));
     }
 
-    final void addTargetGoals() {
+    protected final void addTargetGoals() {
         this.targetSelector.addGoal(RETALIATE_PRIORITY, new CultistHurtByTargetGoal(this));
         this.targetSelector.addGoal(PLAYER_PRIORITY, new NearestAttackableTargetGoal<>(this, Player.class, true));
         this.targetSelector.addGoal(GUARDIAN_PRIORITY, new NearestAttackableTargetGoal<>(this, EntityEldritchGuardian.class, true));

@@ -25,6 +25,8 @@ public final class TTEquipmentAssetProvider extends EquipmentAssetProvider {
         output.accept(TTMaterials.ASSET_VOID, armor("void"));
         output.accept(TTMaterials.ASSET_FORTRESS, armor("fortress"));
         output.accept(TTMaterials.ASSET_CULTIST_PLATE, armor("cultist_plate"));
+        output.accept(TTMaterials.ASSET_CULTIST_RANGER, armor("cultist_ranger"));
+        output.accept(TTMaterials.ASSET_CULTIST_CAPTAIN, humanoidOnly("cultist_captain"));
         output.accept(TTMaterials.ASSET_ZOMBIE_PLATE, armor("zombie_plate"));
         output.accept(TTMaterials.ASSET_CULTIST_ROBE, armor("cultist_robe"));
         output.accept(TTMaterials.ASSET_CULTIST_LEADER, armor("cultist_leader"));
