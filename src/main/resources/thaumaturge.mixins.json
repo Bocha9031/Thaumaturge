@@ -8,6 +8,7 @@
     "data.recipes.RecipeProviderAccessor",
     "server.network.ServerGamePacketListenerImplAccessor",
     "world.entity.ExperienceOrbAccessor",
+    "world.entity.LivingEntityInvoker",
     "world.entity.MobAccessor",
     "world.entity.ai.BrainMixin",
     "world.entity.item.ItemEntityAccessor",

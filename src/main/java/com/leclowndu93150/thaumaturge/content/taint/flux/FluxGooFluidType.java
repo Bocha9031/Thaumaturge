@@ -1,9 +1,9 @@
 package com.leclowndu93150.thaumaturge.content.taint.flux;
 
+import com.leclowndu93150.thaumaturge.content.fluid.WadingFluidType;
 import net.minecraft.world.entity.Entity;
-import net.neoforged.neoforge.fluids.FluidType;
 
-public final class FluxGooFluidType extends FluidType {
+public final class FluxGooFluidType extends WadingFluidType {
     private static final double DRAG = 0.0001D;
 
     public FluxGooFluidType(Properties properties) {
