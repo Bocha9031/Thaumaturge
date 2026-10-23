@@ -6,6 +6,7 @@ import com.leclowndu93150.thaumaturge.api.research.IResearchCategory;
 import com.leclowndu93150.thaumaturge.api.research.IResearchEntry;
 import com.leclowndu93150.thaumaturge.api.research.IResearchStage;
 import com.leclowndu93150.thaumaturge.api.research.ResearchParent;
+import com.leclowndu93150.thaumaturge.content.research.pool.AspectPools;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +32,7 @@ public final class ResearchProgression {
 
     public static void reset(ServerPlayer player) {
         KnowledgeAccess.of(player).clear();
+        AspectPools.resetForCommand(player);
         ResearchManager.applyAutoUnlock(player);
     }
 
