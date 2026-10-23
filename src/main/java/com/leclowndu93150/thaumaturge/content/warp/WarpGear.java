@@ -13,7 +13,8 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 
 public final class WarpGear {
-    private static final List<EquipmentSlot> WORN_SLOTS = List.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.BODY);
+    private static final List<EquipmentSlot> WORN_SLOTS = List.of(EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND, EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
+            EquipmentSlot.BODY);
     private static final int NO_STACK_WARP = 0;
 
     private WarpGear() {}
@@ -38,7 +39,7 @@ public final class WarpGear {
     }
 
     public static int worn(LivingEntity wearer) {
-        int warp = stackWarp(wearer.getMainHandItem(), wearer);
+        int warp = 0;
         for (EquipmentSlot slot : WORN_SLOTS) {
             warp += stackWarp(wearer.getItemBySlot(slot), wearer);
         }
