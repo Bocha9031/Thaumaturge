@@ -1,15 +1,14 @@
 {
-  "category": "thaumaturge:basics",
+  "category": "thaumaturge:infusion",
   "name": "research.thaumaturge.crystal_farmer.title",
   "parents": [
     "thaumaturge:ore",
     "thaumaturge:infusion",
     "thaumaturge:scanned/orecrystal"
   ],
-  "column": -5,
-  "row": 1,
+  "column": 1,
+  "row": -2,
   "meta": [
-    "round",
     "hidden"
   ],
   "icons": [
@@ -28,73 +27,73 @@
           "items": [
             "thaumaturge:essentia_crystal"
           ],
+          "amount": 1,
           "components": {
             "thaumaturge:crystal_aspect": {
               "aspect": "thaumaturge:aer",
               "amount": 1
             }
-          },
-          "amount": 1
+          }
         },
         {
           "items": [
             "thaumaturge:essentia_crystal"
           ],
-          "components": {
-            "thaumaturge:crystal_aspect": {
-              "aspect": "thaumaturge:terra",
-              "amount": 1
-            }
-          },
-          "amount": 1
-        },
-        {
-          "items": [
-            "thaumaturge:essentia_crystal"
-          ],
+          "amount": 1,
           "components": {
             "thaumaturge:crystal_aspect": {
               "aspect": "thaumaturge:ignis",
               "amount": 1
             }
-          },
-          "amount": 1
+          }
         },
         {
           "items": [
             "thaumaturge:essentia_crystal"
           ],
+          "amount": 1,
           "components": {
             "thaumaturge:crystal_aspect": {
               "aspect": "thaumaturge:aqua",
               "amount": 1
             }
-          },
-          "amount": 1
+          }
         },
         {
           "items": [
             "thaumaturge:essentia_crystal"
           ],
+          "amount": 1,
+          "components": {
+            "thaumaturge:crystal_aspect": {
+              "aspect": "thaumaturge:terra",
+              "amount": 1
+            }
+          }
+        },
+        {
+          "items": [
+            "thaumaturge:essentia_crystal"
+          ],
+          "amount": 1,
           "components": {
             "thaumaturge:crystal_aspect": {
               "aspect": "thaumaturge:ordo",
               "amount": 1
             }
-          },
-          "amount": 1
+          }
         },
         {
           "items": [
             "thaumaturge:essentia_crystal"
           ],
+          "amount": 1,
           "components": {
             "thaumaturge:crystal_aspect": {
               "aspect": "thaumaturge:perditio",
               "amount": 1
             }
-          },
-          "amount": 1
+          }
         }
       ],
       "required_knowledge": [
