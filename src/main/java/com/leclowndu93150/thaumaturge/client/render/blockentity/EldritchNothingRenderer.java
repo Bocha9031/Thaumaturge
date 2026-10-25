@@ -49,7 +49,7 @@ public final class EldritchNothingRenderer implements BlockEntityRenderer<BlockE
         if (!state.anyExposed) {
             return;
         }
-        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> {
+        EldritchPortalSurface.submit(poseStack, collector, (pose, buffer) -> {
             for (Direction dir : Direction.values()) {
                 if (state.exposed[dir.ordinal()]) {
                     faceQuad(pose, buffer, dir);

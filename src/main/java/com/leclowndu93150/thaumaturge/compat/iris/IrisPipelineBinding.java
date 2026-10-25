@@ -1,9 +1,11 @@
 package com.leclowndu93150.thaumaturge.compat.iris;
 
 import com.leclowndu93150.thaumaturge.TTIds;
+import com.leclowndu93150.thaumaturge.client.effect.pipeline.TTRenderPipelines;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.util.Set;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.irisshaders.iris.api.v0.IrisProgram;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -11,13 +13,14 @@ import org.jspecify.annotations.Nullable;
 
 public final class IrisPipelineBinding {
     private static final String EMISSIVE_DEFINE = "EMISSIVE";
+    private static final Set<RenderPipeline> OWN_SHADER = Set.of(TTRenderPipelines.PORTAL_SURFACE);
 
     private IrisPipelineBinding() {}
 
     public static void bindModPipelines() {
         IrisApi iris = IrisApi.getInstance();
         for (RenderPipeline pipeline : RenderPipelines.getStaticPipelines()) {
-            if (!TTIds.MODID.equals(pipeline.getLocation().getNamespace())) {
+            if (!TTIds.MODID.equals(pipeline.getLocation().getNamespace()) || OWN_SHADER.contains(pipeline)) {
                 continue;
             }
             IrisProgram program = programFor(pipeline);
@@ -29,6 +32,10 @@ public final class IrisPipelineBinding {
 
     static boolean shaderPackInUse() {
         return IrisApi.getInstance().isShaderPackInUse();
+    }
+
+    static boolean shadowPassActive() {
+        return IrisApi.getInstance().isRenderingShadowPass();
     }
 
     private static @Nullable IrisProgram programFor(RenderPipeline pipeline) {

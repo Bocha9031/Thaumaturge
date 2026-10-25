@@ -15,6 +15,10 @@ public final class IrisCompat {
         return ModList.get().isLoaded(TTIds.IRIS) && IrisPipelineBinding.shaderPackInUse();
     }
 
+    public static boolean isShadowPass() {
+        return ModList.get().isLoaded(TTIds.IRIS) && IrisPipelineBinding.shadowPassActive();
+    }
+
     public static boolean isSolidHandPass() {
         return ModList.get().isLoaded(TTIds.IRIS) && IrisHandPass.isSolidHandPass();
     }

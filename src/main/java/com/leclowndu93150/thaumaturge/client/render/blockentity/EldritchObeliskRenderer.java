@@ -71,7 +71,7 @@ public final class EldritchObeliskRenderer implements BlockEntityRenderer<BlockE
         float bottom = BASE_HEIGHT + BOB_AMPLITUDE * Mth.sin(state.animationTime / BOB_PERIOD) + BOB_AMPLITUDE;
         float top = bottom + COLUMN_HEIGHT;
         int light = state.lightCoords;
-        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writeSurfacePlanes(pose, buffer, bottom, top));
+        EldritchPortalSurface.submit(poseStack, collector, (pose, buffer) -> writeSurfacePlanes(pose, buffer, bottom, top));
         collector.submitCustomGeometry(poseStack, RenderTypes.entityCutout(state.outerLands ? SIDE_TEXTURE_OUTER : SIDE_TEXTURE), (pose, buffer) -> writeSidePanels(pose, buffer, bottom, top, light));
         RenderType capType = RenderTypes.entityCutout(state.outerLands ? EldritchCapRenderer.CAP_TEXTURE_OUTER : EldritchCapRenderer.CAP_TEXTURE);
         submitEndCap(poseStack, collector, capType, light, bottom, Axis.XP);

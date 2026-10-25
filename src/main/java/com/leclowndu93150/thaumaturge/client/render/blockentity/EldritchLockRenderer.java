@@ -127,7 +127,7 @@ public final class EldritchLockRenderer implements BlockEntityRenderer<BlockEnti
             state.tablet.submit(poseStack, collector, light, OverlayTexture.NO_OVERLAY, OUTLINE_NONE);
             poseStack.popPose();
         }
-        collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> writePortal(pose, buffer, facing, hub));
+        EldritchPortalSurface.submit(poseStack, collector, (pose, buffer) -> writePortal(pose, buffer, facing, hub));
     }
 
     private static float[] hub(Direction facing) {

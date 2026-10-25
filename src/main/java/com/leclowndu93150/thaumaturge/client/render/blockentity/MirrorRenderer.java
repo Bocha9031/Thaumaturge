@@ -90,7 +90,7 @@ public final class MirrorRenderer implements BlockEntityRenderer<BlockEntityMirr
         }
         boolean portal = state.linked && state.inRange;
         if (portal) {
-            collector.submitCustomGeometry(poseStack, EldritchPortalSurface.SURFACE, (pose, buffer) -> portalWindow(pose, buffer));
+            EldritchPortalSurface.submit(poseStack, collector, (pose, buffer) -> portalWindow(pose, buffer));
         }
         int light = state.lightCoords;
         collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(portal ? PANE_LINKED_TEXTURE : PANE_TEXTURE), (pose, buffer) -> pane(pose, buffer, light));
