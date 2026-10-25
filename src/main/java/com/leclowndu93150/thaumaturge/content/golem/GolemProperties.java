@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.Identifier;
@@ -42,6 +43,7 @@ public final class GolemProperties implements IGolemProperties {
     private static final String ADDON_KEY = "addon";
     private static final String RANK_KEY = "rank";
     private static final int MATERIAL_BASE_MULTIPLIER = 2;
+    private static final String NAME_KEY = "entity.thaumaturge.golem.material";
 
     public static final Codec<GolemProperties> CODEC = Codec
             .lazyInitialized(() -> RecordCodecBuilder.create(instance -> instance
@@ -123,6 +125,11 @@ public final class GolemProperties implements IGolemProperties {
     @Override
     public GolemMaterial material() {
         return material;
+    }
+
+    public Component name(Component fallback) {
+        Identifier id = TTGolemParts.materials().getKey(material);
+        return id == null ? fallback : Component.translatable(NAME_KEY, Component.translatable(GolemMaterial.nameKey(id)));
     }
 
     @Override

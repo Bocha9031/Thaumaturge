@@ -25,6 +25,7 @@ import java.util.function.UnaryOperator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -203,6 +204,11 @@ public class EntityThaumaturgeGolem extends EntityOwnedConstruct implements IGol
     @Override
     public GolemProperties properties() {
         return entityData.get(DATA_PROPERTIES);
+    }
+
+    @Override
+    protected Component getTypeName() {
+        return properties().name(super.getTypeName());
     }
 
     @Override

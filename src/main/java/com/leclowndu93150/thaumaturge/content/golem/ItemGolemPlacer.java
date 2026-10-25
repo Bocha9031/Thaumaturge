@@ -2,10 +2,8 @@ package com.leclowndu93150.thaumaturge.content.golem;
 
 import com.leclowndu93150.thaumaturge.api.golems.GolemTrait;
 import com.leclowndu93150.thaumaturge.api.golems.ISealDisplayer;
-import com.leclowndu93150.thaumaturge.api.golems.parts.GolemMaterial;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
-import com.leclowndu93150.thaumaturge.registry.TTGolemParts;
 import com.leclowndu93150.thaumaturge.registry.TTGolemTraits;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +38,13 @@ public final class ItemGolemPlacer extends Item implements ISealDisplayer {
 
     public ItemGolemPlacer(Item.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public Component getName(ItemStack stack) {
+        Component name = super.getName(stack);
+        GolemProperties properties = stack.get(TTDataComponents.GOLEM_PROPERTIES.get());
+        return properties == null ? name : properties.name(name);
     }
 
     @Override
@@ -93,7 +98,6 @@ public final class ItemGolemPlacer extends Item implements ISealDisplayer {
         if (properties.hasTrait(TTGolemTraits.SMART.get())) {
             lines.add(rankLine(stack, properties));
         }
-        Optional.ofNullable(TTGolemParts.materials().getKey(properties.material())).map(id -> Component.translatable(GolemMaterial.nameKey(id)).withStyle(ChatFormatting.GREEN)).ifPresent(lines::add);
         properties.traits().stream().map(TTGolemTraits.registry()::getKey).filter(Objects::nonNull).map(ItemGolemPlacer::traitLine).forEach(lines::add);
         return lines;
     }
