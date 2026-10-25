@@ -6,7 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.InsideBlockEffectApplier;
+import net.minecraft.world.entity.EntitySelector;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
@@ -50,13 +50,11 @@ public final class BlockEldritchPortal extends BaseEntityBlock implements Portal
         return Shapes.block();
     }
 
-    @Override
-    protected void entityInside(BlockState state, Level level, BlockPos pos, Entity entity, InsideBlockEffectApplier effectApplier, boolean isPrecise) {
-        if (!(level instanceof ServerLevel serverLevel) || !(entity instanceof ServerPlayer player) || player.isPassenger() || player.isVehicle()) {
-            return;
-        }
-        if (level.getBlockEntity(pos) instanceof BlockEntityEldritchPortal portal && LabyrinthTransit.touch(serverLevel, player, portal.link())) {
-            player.setAsInsidePortal(this, pos);
+    private void touchNearby(ServerLevel level, BlockPos pos, BlockEntityEldritchPortal portal) {
+        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, portal.reach(), EntitySelector.NO_SPECTATORS)) {
+            if (!player.isPassenger() && !player.isVehicle() && LabyrinthTransit.touch(level, player, portal.link())) {
+                player.setAsInsidePortal(this, pos);
+            }
         }
     }
 
@@ -82,6 +80,9 @@ public final class BlockEldritchPortal extends BaseEntityBlock implements Portal
 
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide() ? createTickerHelper(type, TTBlockEntities.ELDRITCH_PORTAL.get(), (tickLevel, pos, tickState, portal) -> portal.clientTick(tickLevel, pos)) : null;
+        if (level.isClientSide()) {
+            return createTickerHelper(type, TTBlockEntities.ELDRITCH_PORTAL.get(), (tickLevel, pos, tickState, portal) -> portal.clientTick(tickLevel, pos));
+        }
+        return createTickerHelper(type, TTBlockEntities.ELDRITCH_PORTAL.get(), (tickLevel, pos, tickState, portal) -> touchNearby((ServerLevel) tickLevel, pos, portal));
     }
 }
