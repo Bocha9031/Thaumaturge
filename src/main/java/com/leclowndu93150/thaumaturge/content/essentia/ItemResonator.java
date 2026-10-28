@@ -9,6 +9,7 @@ import com.leclowndu93150.thaumaturge.api.essentia.EssentiaAccess;
 import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaTransport;
 import com.leclowndu93150.thaumaturge.content.device.BlockEntityCondenser;
 import com.leclowndu93150.thaumaturge.content.essentia.tube.BlockEntityTubeBuffer;
+import com.leclowndu93150.thaumaturge.content.essentia.tube.TubeGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -22,6 +23,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 public final class ItemResonator extends Item {
@@ -45,10 +47,10 @@ public final class ItemResonator extends Item {
         Player player = context.getPlayer();
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
-        Direction face = context.getClickedFace();
         if (player == null) {
             return InteractionResult.FAIL;
         }
+        Direction face = clickedFace(level, pos, context);
         IEssentiaTransport transport = EssentiaAccess.transport(level, pos, face);
         if (transport == null) {
             return InteractionResult.FAIL;
@@ -63,6 +65,16 @@ public final class ItemResonator extends Item {
         level.playSound(null, pos.getX() + CENTER_OFFSET, pos.getY() + CENTER_OFFSET, pos.getZ() + CENTER_OFFSET, SoundEvents.SHIELD_BLOCK, SoundSource.BLOCKS, SOUND_VOLUME,
                 SOUND_BASE_PITCH + level.getRandom().nextFloat() * SOUND_PITCH_SPREAD);
         return InteractionResult.SUCCESS;
+    }
+
+    private static Direction clickedFace(Level level, BlockPos pos, UseOnContext context) {
+        if (level.getBlockEntity(pos) instanceof BlockEntityTubeBuffer) {
+            int part = TubeGeometry.BUFFER.subHit(context.getClickLocation().subtract(Vec3.atLowerCornerOf(pos)));
+            if (part != TubeGeometry.CORE_HIT) {
+                return Direction.from3DDataValue(part);
+            }
+        }
+        return context.getClickedFace();
     }
 
     private static void reportContents(Player player, Level level, BlockPos pos, Direction face, IEssentiaTransport transport) {
