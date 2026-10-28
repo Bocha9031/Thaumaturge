@@ -31,8 +31,8 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Quaternionf;
 import org.jspecify.annotations.Nullable;
 
 public final class BannerRenderer implements BlockEntityRenderer<BlockEntityBanner, BannerRenderState> {
@@ -50,15 +50,16 @@ public final class BannerRenderer implements BlockEntityRenderer<BlockEntityBann
     private static final float POSE_Y = 1.5F;
     private static final float WALL_OFFSET_Y = 1.0F;
     private static final float WALL_OFFSET_Z = -0.21875F;
-    private static final float EMBLEM_DROP = -0.3125F;
-    private static final float EMBLEM_Z = -0.052F;
+    private static final float EMBLEM_Z = -0.001F;
     private static final float EMBLEM_HALF_WIDTH = 0.3F;
-    private static final float EMBLEM_BOTTOM = 0.35F;
-    private static final float EMBLEM_TOP = 0.95F;
+    private static final float EMBLEM_TOP = 0.3F;
+    private static final float EMBLEM_BOTTOM = 0.9F;
     private static final float EMBLEM_ALPHA = 0.75F;
+    private static final float CLOTH_SEGMENT_HEIGHT = 0.5F;
+    private static final int EMBLEM_SEGMENTS = 2;
     private static final int OUTLINE_NONE = 0;
     private static final int UNTINTED = -1;
-    private static final int TOP_SEGMENT = 0;
+    private static final double BOUNDS_MARGIN = 0.25;
 
     private final TTBannerModel frame;
     private final TTBannerModel cloth;
@@ -66,6 +67,17 @@ public final class BannerRenderer implements BlockEntityRenderer<BlockEntityBann
     public BannerRenderer(BlockEntityRendererProvider.Context context) {
         this.frame = new TTBannerModel(context.bakeLayer(TTModelLayers.TC_BANNER), false);
         this.cloth = new TTBannerModel(context.bakeLayer(TTModelLayers.TC_BANNER), true);
+    }
+
+    @Override
+    public boolean shouldRenderOffScreen() {
+        return true;
+    }
+
+    @Override
+    public AABB getRenderBoundingBox(BlockEntityBanner banner) {
+        boolean wall = banner.getBlockState().getBlock() instanceof BannerWallBlock;
+        return new AABB(banner.getBlockPos()).expandTowards(0.0, wall ? -1.0 : 1.0, 0.0).inflate(BOUNDS_MARGIN);
     }
 
     @Override
@@ -139,19 +151,30 @@ public final class BannerRenderer implements BlockEntityRenderer<BlockEntityBann
 
     private static void submitEmblem(BannerRenderState state, PoseStack poseStack, SubmitNodeCollector collector, Identifier texture) {
         int light = state.lightCoords;
+        RenderType layer = RenderTypes.entityTranslucent(texture);
         poseStack.pushPose();
-        poseStack.translate(0.0F, EMBLEM_DROP, 0.0F);
-        poseStack.mulPose(new Quaternionf().rotationX(-TTBannerModel.clothBend(state.phase, TOP_SEGMENT)));
-        collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(texture), (pose, buffer) -> writeEmblem(pose, buffer, light));
+        poseStack.mulPose(Axis.YP.rotationDegrees(HALF_TURN));
+        for (int segment = 0; segment < EMBLEM_SEGMENTS; segment++) {
+            int part = segment;
+            poseStack.pushPose();
+            TTBannerModel.translateToCloth(poseStack, state.phase, part);
+            collector.submitCustomGeometry(poseStack, layer, (pose, buffer) -> writeEmblem(pose, buffer, part, light));
+            poseStack.popPose();
+        }
         poseStack.popPose();
     }
 
-    private static void writeEmblem(PoseStack.Pose pose, VertexConsumer buffer, int light) {
+    private static void writeEmblem(PoseStack.Pose pose, VertexConsumer buffer, int segment, int light) {
         int color = ARGB.colorFromFloat(EMBLEM_ALPHA, 1.0F, 1.0F, 1.0F);
-        emblemVertex(pose, buffer, -EMBLEM_HALF_WIDTH, EMBLEM_BOTTOM, 0.0F, 1.0F, color, light);
-        emblemVertex(pose, buffer, EMBLEM_HALF_WIDTH, EMBLEM_BOTTOM, 1.0F, 1.0F, color, light);
-        emblemVertex(pose, buffer, EMBLEM_HALF_WIDTH, EMBLEM_TOP, 1.0F, 0.0F, color, light);
-        emblemVertex(pose, buffer, -EMBLEM_HALF_WIDTH, EMBLEM_TOP, 0.0F, 0.0F, color, light);
+        float offset = segment * CLOTH_SEGMENT_HEIGHT;
+        float top = Math.max(EMBLEM_TOP, offset);
+        float bottom = Math.min(EMBLEM_BOTTOM, offset + CLOTH_SEGMENT_HEIGHT);
+        float vTop = (top - EMBLEM_TOP) / (EMBLEM_BOTTOM - EMBLEM_TOP);
+        float vBottom = (bottom - EMBLEM_TOP) / (EMBLEM_BOTTOM - EMBLEM_TOP);
+        emblemVertex(pose, buffer, -EMBLEM_HALF_WIDTH, top - offset, 0.0F, vTop, color, light);
+        emblemVertex(pose, buffer, -EMBLEM_HALF_WIDTH, bottom - offset, 0.0F, vBottom, color, light);
+        emblemVertex(pose, buffer, EMBLEM_HALF_WIDTH, bottom - offset, 1.0F, vBottom, color, light);
+        emblemVertex(pose, buffer, EMBLEM_HALF_WIDTH, top - offset, 1.0F, vTop, color, light);
     }
 
     private static void emblemVertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float u, float v, int color, int light) {

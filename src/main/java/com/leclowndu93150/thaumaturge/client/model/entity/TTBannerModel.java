@@ -1,6 +1,8 @@
 package com.leclowndu93150.thaumaturge.client.model.entity;
 
 import com.leclowndu93150.thaumaturge.client.render.blockentity.BannerRenderState;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import java.util.EnumSet;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelPart;
@@ -16,6 +18,12 @@ import net.minecraft.util.Mth;
 public final class TTBannerModel extends Model<BannerRenderState> {
     private static final int TEXTURE_WIDTH = 128;
     private static final int TEXTURE_HEIGHT = 64;
+    private static final float PIXEL = 16.0F;
+    private static final float ROOT_Y = 24.0F;
+    private static final float HEADER_Y = -29.0F;
+    private static final float CLOTH_TOP_Y = 1.0F;
+    private static final float CLOTH_TOP_Z = -0.25F;
+    private static final float CLOTH_SEGMENT_LENGTH = 8.0F;
 
     private final boolean clothOnly;
     private final ModelPart standingSupport;
@@ -42,7 +50,7 @@ public final class TTBannerModel extends Model<BannerRenderState> {
     public static LayerDefinition createLayer() {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition meshRoot = mesh.getRoot();
-        PartDefinition root = meshRoot.addOrReplaceChild("root", CubeListBuilder.create(), PartPose.offset(0.0F, 24.0F, 0.0F));
+        PartDefinition root = meshRoot.addOrReplaceChild("root", CubeListBuilder.create(), PartPose.offset(0.0F, ROOT_Y, 0.0F));
         root.addOrReplaceChild("standing_support",
                 CubeListBuilder.create().texOffs(1, 1).addBox(-1.0F, -30.0F, 2.0F, 2.0F, 29.0F, 2.0F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST)).texOffs(10, 1)
                         .addBox(-2.5F, -1.0F, 0.5F, 5.0F, 1.0F, 5.0F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.DOWN)).texOffs(31, 1)
@@ -58,14 +66,14 @@ public final class TTBannerModel extends Model<BannerRenderState> {
                         .addBox(-1.5F, -2.0F, 1.5F, 3.0F, 1.0F, 3.0F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.DOWN)).texOffs(1, 40)
                         .addBox(-1.0F, -3.5F, 2.0F, 2.0F, 1.5F, 2.0F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.DOWN)).texOffs(10, 40).addBox(-0.5F, -4.0F,
                                 2.5F, 1.0F, 0.5F, 1.0F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.DOWN)),
-                PartPose.offset(0.0F, -29.0F, 0.0F));
+                PartPose.offset(0.0F, HEADER_Y, 0.0F));
         header.addOrReplaceChild("loops",
                 CubeListBuilder.create().texOffs(15, 40).addBox(-5.0F, -1.5F, -0.5F, 1.0F, 3.0F, 3.5F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.DOWN))
                         .texOffs(25, 40).addBox(4.0F, -1.5F, -0.5F, 1.0F, 3.0F, 3.5F, EnumSet.of(Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.DOWN)),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
-        PartDefinition upper = header.addOrReplaceChild("upper", CubeListBuilder.create().texOffs(64, 1).addBox(-6.0F, 0.0F, 0.0F, 12.0F, 8.0F, 0.5F), PartPose.offset(0.0F, 1.0F, -0.25F));
-        PartDefinition middle = upper.addOrReplaceChild("middle", CubeListBuilder.create().texOffs(90, 1).addBox(-6.0F, 0.0F, 0.0F, 12.0F, 8.0F, 0.5F), PartPose.offset(0.0F, 8.0F, 0.0F));
-        PartDefinition lower = middle.addOrReplaceChild("lower", CubeListBuilder.create().texOffs(1, 33).addBox(-6.0F, 0.0F, 0.0F, 12.0F, 4.0F, 0.5F), PartPose.offset(0.0F, 8.0F, 0.0F));
+        PartDefinition upper = header.addOrReplaceChild("upper", CubeListBuilder.create().texOffs(64, 1).addBox(-6.0F, 0.0F, 0.0F, 12.0F, 8.0F, 0.5F), PartPose.offset(0.0F, CLOTH_TOP_Y, CLOTH_TOP_Z));
+        PartDefinition middle = upper.addOrReplaceChild("middle", CubeListBuilder.create().texOffs(90, 1).addBox(-6.0F, 0.0F, 0.0F, 12.0F, 8.0F, 0.5F), PartPose.offset(0.0F, CLOTH_SEGMENT_LENGTH, 0.0F));
+        PartDefinition lower = middle.addOrReplaceChild("lower", CubeListBuilder.create().texOffs(1, 33).addBox(-6.0F, 0.0F, 0.0F, 12.0F, 4.0F, 0.5F), PartPose.offset(0.0F, CLOTH_SEGMENT_LENGTH, 0.0F));
         PartDefinition tipUpper = lower.addOrReplaceChild("tip_upper", CubeListBuilder.create().texOffs(27, 33).addBox(-4.0F, 0.0F, 0.0F, 8.0F, 3.0F, 0.5F), PartPose.offset(0.0F, 4.0F, 0.0F));
         tipUpper.addOrReplaceChild("tip_lower", CubeListBuilder.create().texOffs(45, 33).addBox(-2.0F, 0.0F, 0.0F, 4.0F, 3.0F, 0.5F), PartPose.offset(0.0F, 3.0F, 0.0F));
         return LayerDefinition.create(mesh, TEXTURE_WIDTH, TEXTURE_HEIGHT);
@@ -88,5 +96,14 @@ public final class TTBannerModel extends Model<BannerRenderState> {
     public static float clothBend(float phase, int segment) {
         float amplitude = segment == 0 ? 1.15F : 0.6F;
         return -amplitude * (1.0F - Mth.sin(phase - segment * 0.65F)) * Mth.DEG_TO_RAD;
+    }
+
+    public static void translateToCloth(PoseStack poseStack, float phase, int segment) {
+        poseStack.translate(0.0F, (ROOT_Y + HEADER_Y + CLOTH_TOP_Y) / PIXEL, CLOTH_TOP_Z / PIXEL);
+        poseStack.mulPose(Axis.XP.rotation(clothBend(phase, 0)));
+        for (int i = 1; i <= segment; i++) {
+            poseStack.translate(0.0F, CLOTH_SEGMENT_LENGTH / PIXEL, 0.0F);
+            poseStack.mulPose(Axis.XP.rotation(clothBend(phase, i)));
+        }
     }
 }

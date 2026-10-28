@@ -30,6 +30,8 @@ public final class BannerStandingBlock extends AbstractBannerBlock {
     private static final double POST_MAX = 10.56;
     private static final double POST_HEIGHT = 32.0;
     private static final VoxelShape SHAPE = box(POST_MIN, 0.0, POST_MIN, POST_MAX, POST_HEIGHT, POST_MAX);
+    private static final double POLE_OFFSET = 3.0 / 16.0;
+    private static final VoxelShape[] SHAPES = poleShapes();
 
     public BannerStandingBlock(@Nullable DyeColor dye, Properties properties) {
         super(dye, properties);
@@ -58,7 +60,16 @@ public final class BannerStandingBlock extends AbstractBannerBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
+        return SHAPES[state.getValue(ROTATION)];
+    }
+
+    private static VoxelShape[] poleShapes() {
+        VoxelShape[] shapes = new VoxelShape[ROTATION_STEPS];
+        for (int rotation = 0; rotation < ROTATION_STEPS; rotation++) {
+            double angle = Math.toRadians(RotationSegment.convertToDegrees(rotation));
+            shapes[rotation] = SHAPE.move(Math.sin(angle) * POLE_OFFSET, 0.0, -Math.cos(angle) * POLE_OFFSET);
+        }
+        return shapes;
     }
 
     @Override
