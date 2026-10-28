@@ -60,7 +60,7 @@ public final class ScanEntryBootstrap {
         register(ctx, "f_dispenser", "f_dispenser", blocks(blockReg, Blocks.DISPENSER), null, null);
         register(ctx, "f_matclay", "f_matclay", blockReg.getOrThrow(TTBlockTags.SCAN_CLAY), items(itemReg, Items.CLAY_BALL), null);
         register(ctx, "f_matiron", "f_matiron", null, itemReg.getOrThrow(TTItemTags.SCAN_IRON), null);
-        register(ctx, "f_matbrass", "f_matbrass", blocks(blockReg, TTBlocks.METAL_BRASS_BLOCK.get()), items(itemReg, TTItems.INGOT_BRASS.get()), null);
+        register(ctx, "f_matbrass", "f_matbrass", blocks(blockReg, TTBlocks.METAL_BRASS_BLOCK.get()), itemReg.getOrThrow(TTItemTags.INGOTS_BRASS), null);
         register(ctx, "f_matthaumium", "f_matthaumium", blocks(blockReg, TTBlocks.METAL_THAUMIUM_BLOCK.get()), items(itemReg, TTItems.INGOT_THAUMIUM.get(), TTItems.PLATE_THAUMIUM.get()), null);
         register(ctx, "f_matvoid", "f_matvoid", blocks(blockReg, TTBlocks.METAL_VOID_BLOCK.get()), items(itemReg, TTItems.INGOT_VOID.get(), TTItems.PLATE_VOID.get()), null);
         register(ctx, "f_brain", "f_brain", null, items(itemReg, TTItems.BRAIN.get()),
