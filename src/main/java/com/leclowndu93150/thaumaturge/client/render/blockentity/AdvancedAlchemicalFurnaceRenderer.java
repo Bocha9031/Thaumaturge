@@ -53,6 +53,7 @@ public final class AdvancedAlchemicalFurnaceRenderer implements BlockEntityRende
     private static final float CENTER = 0.5F;
     private static final int WHITE = 0xFFFFFFFF;
     private static final float NORMAL_OFFSET = 0.01F;
+    private static final float UPWARD_NORMAL = 0.5F;
     private static final float SAMPLE_QUARTER_TURN = Mth.HALF_PI;
     private static final int GOO_BLOCK_LIGHT = 12;
     private static final int BACKING_BLOCK_LIGHT = 9;
@@ -205,7 +206,11 @@ public final class AdvancedAlchemicalFurnaceRenderer implements BlockEntityRende
             normal.normalize();
         }
         point.fma(NORMAL_OFFSET, normal);
-        return LevelRenderer.getLightCoords(level, BlockPos.containing(pos.getX() + point.x, pos.getY() + point.y, pos.getZ() + point.z));
+        BlockPos lightPos = BlockPos.containing(pos.getX() + point.x, pos.getY() + point.y, pos.getZ() + point.z);
+        if (normal.y > UPWARD_NORMAL && lightPos.equals(pos.above()) && level.getBlockState(lightPos).isSolidRender()) {
+            lightPos = lightPos.above();
+        }
+        return LevelRenderer.getLightCoords(level, lightPos);
     }
 
     private void submitEssentia(AdvancedAlchemicalFurnaceRenderState state, PoseStack poseStack, SubmitNodeCollector collector) {
