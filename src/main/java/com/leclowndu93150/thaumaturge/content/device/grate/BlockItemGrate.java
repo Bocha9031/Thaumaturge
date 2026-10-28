@@ -1,8 +1,8 @@
 package com.leclowndu93150.thaumaturge.content.device.grate;
 
-import com.leclowndu93150.thaumaturge.registry.TTSounds;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -30,6 +30,8 @@ public final class BlockItemGrate extends BaseEntityBlock {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
     private static final VoxelShape SHAPE = Block.box(0.0, 14.0, 0.0, 16.0, 16.0, 16.0);
+    private static final float TOGGLE_VOLUME = 1.0F;
+    private static final float TOGGLE_PITCH = 1.0F;
 
     public BlockItemGrate(Properties properties) {
         super(properties);
@@ -81,7 +83,7 @@ public final class BlockItemGrate extends BaseEntityBlock {
         level.setBlock(pos, newState, UPDATE_CLIENTS);
         level.invalidateCapabilities(pos);
         if (changed) {
-            level.playSound(null, pos, TTSounds.CREAK.get(), SoundSource.BLOCKS, 0.5F, newState.getValue(OPEN) ? 1.0F : 0.9F);
+            level.playSound(null, pos, newState.getValue(OPEN) ? SoundEvents.IRON_TRAPDOOR_OPEN : SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, TOGGLE_VOLUME, TOGGLE_PITCH);
         }
         if (newState.getValue(OPEN) && level.getBlockEntity(pos) instanceof BlockEntityItemGrate grate) {
             grate.eject();
