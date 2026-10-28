@@ -623,6 +623,7 @@ public final class TTModelProvider extends ModelProvider {
         registerInvisibleBlock(blockModels, TTBlocks.NODE.get());
         registerJar(blockModels, itemModels, TTBlocks.JAR_NORMAL.get(), "jar_normal");
         registerJar(blockModels, itemModels, TTBlocks.JAR_VOID.get(), "jar_void");
+        registerJar(blockModels, itemModels, TTBlocks.JAR_CREATIVE.get(), "jar_normal");
         registerJarBrain(blockModels, itemModels);
         registerAuraDevices(blockModels, itemModels);
         registerNoiseDevices(blockModels, itemModels);

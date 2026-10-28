@@ -5,7 +5,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
 import com.leclowndu93150.thaumaturge.api.items.IHoverGear;
 import com.leclowndu93150.thaumaturge.api.items.IVisDiscountGear;
-import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJar;
+import com.leclowndu93150.thaumaturge.content.essentia.jar.AbstractBlockEntityJar;
 import com.leclowndu93150.thaumaturge.content.essentia.item.ComponentEssentia;
 import com.leclowndu93150.thaumaturge.content.essentia.jar.JarItem;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
@@ -98,7 +98,7 @@ public final class ThaumostaticHarnessItem extends Item implements IHoverGear, I
 
     @Override
     public int getMaxHoverFuel(ItemStack stack) {
-        return BlockEntityJar.CAPACITY;
+        return AbstractBlockEntityJar.CAPACITY;
     }
 
     @Override

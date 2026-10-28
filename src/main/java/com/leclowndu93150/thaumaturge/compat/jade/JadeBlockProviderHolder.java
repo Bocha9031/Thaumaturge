@@ -10,7 +10,7 @@ import com.leclowndu93150.thaumaturge.content.device.fluxscrubber.BlockEntityFlu
 import com.leclowndu93150.thaumaturge.content.essentia.BlockEntityCentrifuge;
 import com.leclowndu93150.thaumaturge.content.essentia.advancedfurnace.BlockEntityAdvancedAlchemicalFurnace;
 import com.leclowndu93150.thaumaturge.content.essentia.crystalizer.BlockEntityEssentiaCrystalizer;
-import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJar;
+import com.leclowndu93150.thaumaturge.content.essentia.jar.AbstractBlockEntityJar;
 import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJarBrain;
 import com.leclowndu93150.thaumaturge.content.essentia.reservoir.BlockEntityEssentiaReservoir;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntityAlembic;
@@ -36,7 +36,7 @@ import org.jspecify.annotations.Nullable;
 import snownee.jade.api.BlockAccessor;
 
 final class JadeBlockProviderHolder {
-    static final List<JadeBlockHandler<?>> HANDLERS = List.of(new JadeBlockHandler<>(BlockEntityJar.class, JadeConfig.JARS, JadeEssentiaDetails::jar),
+    static final List<JadeBlockHandler<?>> HANDLERS = List.of(new JadeBlockHandler<>(AbstractBlockEntityJar.class, JadeConfig.JARS, JadeEssentiaDetails::jar),
             new JadeBlockHandler<>(BlockEntityTubeBuffer.class, JadeConfig.BUFFERS, JadeEssentiaDetails::buffer),
             new JadeBlockHandler<>(BlockEntityTubeValve.class, JadeConfig.VALVES, JadeEssentiaDetails::valve),
             new JadeBlockHandler<>(BlockEntityTubeFilter.class, JadeConfig.FILTER_TUBES, JadeEssentiaDetails::filterTube),

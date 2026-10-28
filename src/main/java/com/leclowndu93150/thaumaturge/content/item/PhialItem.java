@@ -6,7 +6,7 @@ import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaTransport;
 import com.leclowndu93150.thaumaturge.content.essentia.item.ComponentEssentia;
-import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJar;
+import com.leclowndu93150.thaumaturge.content.essentia.jar.AbstractBlockEntityJar;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockEntityAlembic;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTSounds;
@@ -64,7 +64,7 @@ public final class PhialItem extends Item {
         if (player == null || !(level.getBlockEntity(pos) instanceof IEssentiaTransport container)) {
             return InteractionResult.PASS;
         }
-        boolean jar = container instanceof BlockEntityJar;
+        boolean jar = container instanceof AbstractBlockEntityJar;
         if (!jar && !(container instanceof BlockEntityAlembic)) {
             return InteractionResult.PASS;
         }
@@ -117,7 +117,7 @@ public final class PhialItem extends Item {
         }
 
         InteractionResult store(IEssentiaTransport container, AspectInstance contents) {
-            if (container.getEssentiaAmount(CONTAINER_FACE) + contents.amount() > BlockEntityJar.CAPACITY) {
+            if (container.spaceFor(contents.aspect(), CONTAINER_FACE) < contents.amount()) {
                 return InteractionResult.PASS;
             }
             return run(new Transfer(container, contents.aspect(), contents.amount(), Flow.DEPOSIT));

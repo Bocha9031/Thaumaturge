@@ -5,7 +5,7 @@ import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.content.essentia.EssentiaTransportHelper;
 import com.leclowndu93150.thaumaturge.content.essentia.flow.EssentiaFlowHandler;
-import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockEntityJar;
+import com.leclowndu93150.thaumaturge.content.essentia.jar.AbstractBlockEntityJar;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
@@ -31,7 +31,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
-public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar, JarRenderState> {
+public final class JarRenderer implements BlockEntityRenderer<AbstractBlockEntityJar, JarRenderState> {
     public static final Identifier ANIMATED_GLOW_LOCATION = TTIds.rl("block/animatedglow");
     public static final SpriteId ANIMATED_GLOW_SPRITE = new SpriteId(TextureAtlas.LOCATION_BLOCKS, ANIMATED_GLOW_LOCATION);
     public static final float FLUID_MIN = 0.25F;
@@ -107,7 +107,7 @@ public final class JarRenderer implements BlockEntityRenderer<BlockEntityJar, Ja
     }
 
     @Override
-    public void extractRenderState(BlockEntityJar jar, JarRenderState state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress) {
+    public void extractRenderState(AbstractBlockEntityJar jar, JarRenderState state, float partialTicks, Vec3 cameraPosition, ModelFeatureRenderer.@Nullable CrumblingOverlay breakProgress) {
         BlockEntityRenderer.super.extractRenderState(jar, state, partialTicks, cameraPosition, breakProgress);
         Level level = jar.getLevel();
         Holder<IAspect> held = resolve(level, jar.aspectKey());

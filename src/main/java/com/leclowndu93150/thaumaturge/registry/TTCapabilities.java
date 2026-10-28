@@ -8,11 +8,13 @@ import com.leclowndu93150.thaumaturge.api.essentia.IEssentiaJar;
 import com.leclowndu93150.thaumaturge.content.essentia.advancedfurnace.AdvancedAlchemicalFurnaceStructure;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockSmelter;
 import com.leclowndu93150.thaumaturge.content.essentia.item.ComponentEssentia;
+import com.leclowndu93150.thaumaturge.content.essentia.jar.AbstractBlockEntityJar;
 import com.leclowndu93150.thaumaturge.content.essentia.storage.SingleAspectItemStorage;
 import com.leclowndu93150.thaumaturge.content.item.PhialItem;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -85,12 +87,13 @@ public final class TTCapabilities {
         event.registerBlockEntity(EssentiaCapabilities.TRANSPORT, TTBlockEntities.TUBE_ONEWAY.get(), (be, side) -> be);
         event.registerBlockEntity(EssentiaCapabilities.TRANSPORT, TTBlockEntities.TUBE_BUFFER.get(), (be, side) -> be);
         event.registerBlockEntity(EssentiaCapabilities.ASPECT_QUERY, TTBlockEntities.TUBE_FILTER.get(), (be, side) -> be);
-        event.registerBlockEntity(EssentiaCapabilities.TRANSPORT, TTBlockEntities.JAR.get(), (be, side) -> side == null || be.isConnectable(side) ? be : null);
-        event.registerBlockEntity(EssentiaCapabilities.TRANSPORT, TTBlockEntities.JAR_VOID.get(), (be, side) -> side == null || be.isConnectable(side) ? be : null);
-        event.registerBlockEntity(AspectCapabilities.CONTAINER, TTBlockEntities.JAR.get(), (be, side) -> be);
-        event.registerBlockEntity(EssentiaCapabilities.STORAGE, TTBlockEntities.JAR.get(), (be, side) -> side != null && be.isConnectable(side) ? be.storage(side) : null);
-        event.registerBlockEntity(EssentiaCapabilities.STORAGE, TTBlockEntities.JAR_VOID.get(), (be, side) -> side != null && be.isConnectable(side) ? be.storage(side) : null);
-        event.registerBlockEntity(AspectCapabilities.CONTAINER, TTBlockEntities.JAR_VOID.get(), (be, side) -> be);
+        TTBlockEntities.essentiaJars().forEach(type -> jarCapabilities(event, type));
+    }
+
+    private static <J extends AbstractBlockEntityJar> void jarCapabilities(RegisterCapabilitiesEvent event, BlockEntityType<J> type) {
+        event.registerBlockEntity(EssentiaCapabilities.TRANSPORT, type, (be, side) -> side == null || be.isConnectable(side) ? be : null);
+        event.registerBlockEntity(EssentiaCapabilities.STORAGE, type, (be, side) -> side != null && be.isConnectable(side) ? be.storage(side) : null);
+        event.registerBlockEntity(AspectCapabilities.CONTAINER, type, (be, side) -> be);
     }
 
     private static void essentiaItems(RegisterCapabilitiesEvent event) {

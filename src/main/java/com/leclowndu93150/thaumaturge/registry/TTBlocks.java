@@ -77,6 +77,7 @@ import com.leclowndu93150.thaumaturge.content.essentia.bellows.BlockBellows;
 import com.leclowndu93150.thaumaturge.content.essentia.crystalizer.BlockEssentiaCrystalizer;
 import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockJar;
 import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockJarBrain;
+import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockJarCreative;
 import com.leclowndu93150.thaumaturge.content.essentia.jar.BlockJarVoid;
 import com.leclowndu93150.thaumaturge.content.essentia.reservoir.BlockEssentiaReservoir;
 import com.leclowndu93150.thaumaturge.content.essentia.smeltery.BlockAlembic;
@@ -238,6 +239,9 @@ public final class TTBlocks {
             props -> props.mapColor(MapColor.NONE).strength(0.3F).sound(TTSoundTypes.JAR.get()).noOcclusion());
 
     public static final DeferredBlock<BlockJarVoid> JAR_VOID = BLOCKS.registerBlock("jar_void", BlockJarVoid::new,
+            props -> props.mapColor(MapColor.NONE).strength(0.3F).sound(TTSoundTypes.JAR.get()).noOcclusion());
+
+    public static final DeferredBlock<BlockJarCreative> JAR_CREATIVE = BLOCKS.registerBlock("jar_creative", BlockJarCreative::new,
             props -> props.mapColor(MapColor.NONE).strength(0.3F).sound(TTSoundTypes.JAR.get()).noOcclusion());
 
     public static final DeferredBlock<BlockTube> TUBE = BLOCKS.registerBlock("tube", BlockTube::new, TTBlocks::tubeProps);

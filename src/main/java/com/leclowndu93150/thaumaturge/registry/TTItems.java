@@ -156,6 +156,9 @@ public final class TTItems {
 
     public static final DeferredItem<BlockItem> JAR_VOID = registerSimpleBlockItem(TTBlocks.JAR_VOID, JarItem::new);
 
+    public static final DeferredItem<BlockItem> JAR_CREATIVE = ITEMS.registerItem("jar_creative", props -> new JarItem(TTBlocks.JAR_CREATIVE.get(), props),
+            props -> props.useBlockDescriptionPrefix().component(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true));
+
     public static final DeferredItem<BlockItem> TUBE = ITEMS.registerSimpleBlockItem(TTBlocks.TUBE);
 
     public static final DeferredItem<BlockItem> TUBE_VALVE = ITEMS.registerSimpleBlockItem(TTBlocks.TUBE_VALVE);
