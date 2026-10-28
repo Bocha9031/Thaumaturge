@@ -2,6 +2,7 @@ package com.leclowndu93150.thaumaturge.server.command;
 
 import com.leclowndu93150.thaumaturge.TTIds;
 import com.leclowndu93150.thaumaturge.Thaumaturge;
+import com.leclowndu93150.thaumaturge.api.aspect.AspectInstance;
 import com.leclowndu93150.thaumaturge.api.aspect.AspectList;
 import com.leclowndu93150.thaumaturge.api.aspect.IAspect;
 import com.leclowndu93150.thaumaturge.api.aspect.TTAspects;
@@ -29,6 +30,7 @@ import com.leclowndu93150.thaumaturge.content.effect.StreamPathfinder;
 import com.leclowndu93150.thaumaturge.content.entity.EntityFluxRift;
 import com.leclowndu93150.thaumaturge.content.entity.ThaumicSlime;
 import com.leclowndu93150.thaumaturge.content.entity.champion.ChampionHelper;
+import com.leclowndu93150.thaumaturge.content.essentia.reservoir.BlockEntityEssentiaReservoir;
 import com.leclowndu93150.thaumaturge.content.research.PlayerKnowledge;
 import com.leclowndu93150.thaumaturge.content.research.ResearchGrants;
 import com.leclowndu93150.thaumaturge.content.research.ResearchManager;
@@ -41,6 +43,7 @@ import com.leclowndu93150.thaumaturge.content.taint.item.EssentiaCrystalFactory;
 import com.leclowndu93150.thaumaturge.content.warp.roll.WarpCheck;
 import com.leclowndu93150.thaumaturge.data.worldgen.feature.TTConfiguredFeatures;
 import com.leclowndu93150.thaumaturge.registry.TTAttachments;
+import com.leclowndu93150.thaumaturge.registry.TTBlocks;
 import com.leclowndu93150.thaumaturge.registry.TTEntities;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.leclowndu93150.thaumaturge.registry.TTMobEffects;
@@ -72,8 +75,10 @@ import net.minecraft.commands.arguments.ResourceKeyArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.commands.synchronization.SuggestionProviders;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -91,7 +96,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.TypedEntityData;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -102,6 +110,8 @@ import org.jspecify.annotations.Nullable;
 @EventBusSubscriber(modid = TTIds.MODID)
 public final class TTCommands {
     private static final String KEY = "commands.thaumaturge.tools.";
+    private static final String NODE_COMMAND = "node";
+    private static final String RESERVOIR_COMMAND = "reservoir";
     private static final int DEFAULT_RIFT_SIZE = 20;
     private static final int COMMAND_MAX_RIFT_SIZE = 500;
     private static final double RIFT_SPAWN_DISTANCE = 6.0;
@@ -239,6 +249,8 @@ public final class TTCommands {
                         .then(Commands.argument("size", IntegerArgumentType.integer(1, COMMAND_MAX_RIFT_SIZE))
                                 .executes(guarded("rift", ctx -> spawnRift(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "size"))))))
                 .then(admin("crystal").then(Commands.argument("aspect", StringArgumentType.word()).executes(guarded("crystal", TTCommands::giveCrystal))))
+                .then(admin("reservoir").executes(bySource("reservoir", source -> failure(source, "reservoir.usage")))
+                        .then(Commands.argument("aspects", StringArgumentType.greedyString()).executes(guarded("reservoir", TTCommands::giveReservoir))))
                 .then(admin("node").executes(guarded("node", ctx -> spawnNode(ctx, RANDOM, NO_MODIFIER, "")))
                         .then(Commands.argument("type", StringArgumentType.word()).suggests(NODE_TYPES)
                                 .executes(guarded("node", ctx -> spawnNode(ctx, StringArgumentType.getString(ctx, "type"), NO_MODIFIER, "")))
@@ -676,7 +688,7 @@ public final class TTCommands {
         }
         NodeModifier modifier = Arrays.stream(NodeModifier.values()).filter(candidate -> candidate.getSerializedName().equals(modifierName)).findFirst().orElse(null);
         HolderLookup.RegistryLookup<IAspect> aspects = level.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY);
-        AspectList list = aspectSpec.isBlank() ? defaultNodeAspects(aspects) : parseNodeAspects(ctx.getSource(), aspects, aspectSpec);
+        AspectList list = aspectSpec.isBlank() ? defaultNodeAspects(aspects) : parseAspectPairs(ctx.getSource(), aspects, aspectSpec, NODE_COMMAND, Integer.MAX_VALUE);
         if (list == null) {
             return 0;
         }
@@ -694,10 +706,30 @@ public final class TTCommands {
                 .add(aspects.getOrThrow(TTAspects.ORDO), DEFAULT_NODE_MINOR_PRIMAL).add(aspects.getOrThrow(TTAspects.PERDITIO), DEFAULT_NODE_MINOR_PRIMAL);
     }
 
-    private static @Nullable AspectList parseNodeAspects(CommandSourceStack source, HolderLookup.RegistryLookup<IAspect> aspects, String spec) {
+    private static int giveReservoir(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        HolderLookup.RegistryLookup<IAspect> aspects = player.registryAccess().lookupOrThrow(IAspect.REGISTRY_KEY);
+        AspectList contents = parseAspectPairs(ctx.getSource(), aspects, StringArgumentType.getString(ctx, "aspects"), RESERVOIR_COMMAND, BlockEntityEssentiaReservoir.CAPACITY);
+        if (contents == null) {
+            return 0;
+        }
+        BlockState state = TTBlocks.ESSENTIA_RESERVOIR.get().defaultBlockState();
+        BlockEntityEssentiaReservoir reservoir = new BlockEntityEssentiaReservoir(BlockPos.ZERO, state);
+        Direction outlet = state.getValue(BlockStateProperties.FACING);
+        for (AspectInstance entry : contents.entries()) {
+            reservoir.addEssentia(entry.aspect(), entry.amount(), outlet);
+        }
+        ItemStack stack = new ItemStack(TTBlocks.ESSENTIA_RESERVOIR.get());
+        stack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(reservoir.getType(), reservoir.saveCustomOnly(player.registryAccess())));
+        give(ctx.getSource(), stack);
+        success(ctx.getSource(), "reservoir.given", contents.totalAmount(), contents.size());
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static @Nullable AspectList parseAspectPairs(CommandSourceStack source, HolderLookup.RegistryLookup<IAspect> aspects, String spec, String command, int maximumTotal) {
         String[] tokens = spec.trim().split("\\s+");
-        if (tokens.length % 2 != 0) {
-            failure(source, "node.pairs");
+        if (tokens.length == 0 || tokens[0].isEmpty() || tokens.length % 2 != 0) {
+            failure(source, command + ".pairs");
             return null;
         }
         AspectList list = AspectList.EMPTY;
@@ -712,11 +744,15 @@ public final class TTCommands {
             try {
                 amount = Integer.parseInt(tokens[i + 1]);
             } catch (NumberFormatException e) {
-                failure(source, "node.bad_amount", tokens[i + 1]);
+                failure(source, command + ".bad_amount", tokens[i + 1]);
                 return null;
             }
             if (amount < 1) {
-                failure(source, "node.bad_amount", tokens[i + 1]);
+                failure(source, command + ".bad_amount", tokens[i + 1]);
+                return null;
+            }
+            if (amount > maximumTotal - list.totalAmount()) {
+                failure(source, command + ".capacity", maximumTotal);
                 return null;
             }
             list = list.add(holder, amount);
