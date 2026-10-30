@@ -6,7 +6,6 @@ import com.leclowndu93150.thaumaturge.registry.TTBiomeTags;
 import com.leclowndu93150.thaumaturge.registry.TTDataComponents;
 import com.leclowndu93150.thaumaturge.registry.TTItems;
 import com.mojang.serialization.MapCodec;
-import java.util.Arrays;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
@@ -27,6 +26,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jspecify.annotations.Nullable;
 
@@ -36,23 +36,15 @@ public final class BlockManaPod extends BaseEntityBlock {
     private static final int SUPPORT_LOSS_TICK_DELAY = 1;
     private static final int GROWTH_CHANCE_BOUND = 30;
     private static final int BREAK_SPEED_BASE = BlockEntityManaPod.MAX_AGE + 1;
-    private static final double SHAPE_MIN_XZ = 4.0;
-    private static final double SHAPE_MAX_XZ = 12.0;
-    private static final double SHAPE_MAX_Y = 16.0;
-    private static final double[] SHAPE_MIN_Y = {12.0, 10.0, 8.0, 6.0, 5.0, 4.0, 3.0, 2.0};
-    private static final VoxelShape[] SHAPES = buildShapes();
+    private static final VoxelShape SMALL_CROSS = Shapes.or(box(5, 10, 7.5, 11, 16, 8.5), box(7.5, 10, 5, 8.5, 16, 11));
+    private static final VoxelShape MATURE_CROSS = Shapes.or(box(0, 10, 7.5, 16, 16, 8.5), box(7.5, 10, 0, 8.5, 16, 16));
+    private static final VoxelShape MATURE_POD = Shapes.or(Shapes.or(MATURE_CROSS, box(4, 3.2, 4, 12, 11.2, 12)), Shapes.or(box(5, 2.2, 5, 11, 4.2, 11), box(5, 10.2, 5, 11, 12.2, 11)));
+    private static final VoxelShape[] SHAPES = {Shapes.or(SMALL_CROSS, box(7, 12, 7, 9, 14, 9)), Shapes.or(SMALL_CROSS, box(6, 6, 6, 10, 10, 10)), MATURE_POD, MATURE_POD, MATURE_POD, MATURE_POD,
+            MATURE_POD, MATURE_POD};
 
     public BlockManaPod(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any().setValue(AGE, 0));
-    }
-
-    private static VoxelShape[] buildShapes() {
-        return Arrays.stream(SHAPE_MIN_Y).mapToObj(BlockManaPod::columnFrom).toArray(VoxelShape[]::new);
-    }
-
-    private static VoxelShape columnFrom(double minY) {
-        return Block.box(SHAPE_MIN_XZ, minY, SHAPE_MIN_XZ, SHAPE_MAX_XZ, SHAPE_MAX_Y, SHAPE_MAX_XZ);
     }
 
     @Override
