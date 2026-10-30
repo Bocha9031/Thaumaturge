@@ -17,6 +17,7 @@ public final class DynamicTreesCompat {
     public static void onGenFeatureRegistry(RegistryEvent<GenFeature> event) {
         if (event.isEntryOfType(GenFeature.class)) {
             event.getRegistry().register(new ShimmerleafGenFeature(TTIds.DT_SHIMMERLEAF_FEATURE));
+            event.getRegistry().register(new TreeFootprintGenFeature(TTIds.DT_TREE_FOOTPRINT_FEATURE));
         }
     }
 }
