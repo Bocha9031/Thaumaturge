@@ -36,11 +36,14 @@ public final class BlockManaPod extends BaseEntityBlock {
     private static final int SUPPORT_LOSS_TICK_DELAY = 1;
     private static final int GROWTH_CHANCE_BOUND = 30;
     private static final int BREAK_SPEED_BASE = BlockEntityManaPod.MAX_AGE + 1;
-    private static final VoxelShape SMALL_CROSS = Shapes.or(box(5, 10, 7.5, 11, 16, 8.5), box(7.5, 10, 5, 8.5, 16, 11));
-    private static final VoxelShape MATURE_CROSS = Shapes.or(box(0, 10, 7.5, 16, 16, 8.5), box(7.5, 10, 0, 8.5, 16, 16));
-    private static final VoxelShape MATURE_POD = Shapes.or(Shapes.or(MATURE_CROSS, box(4, 3.2, 4, 12, 11.2, 12)), Shapes.or(box(5, 2.2, 5, 11, 4.2, 11), box(5, 10.2, 5, 11, 12.2, 11)));
-    private static final VoxelShape[] SHAPES = {Shapes.or(SMALL_CROSS, box(7, 12, 7, 9, 14, 9)), Shapes.or(SMALL_CROSS, box(6, 6, 6, 10, 10, 10)), MATURE_POD, MATURE_POD, MATURE_POD, MATURE_POD,
-            MATURE_POD, MATURE_POD};
+    private static final VoxelShape SMALL_STEM = Shapes.or(box(5, 10, 7.5, 11, 16, 8.5), box(7.5, 10, 5, 8.5, 16, 11));
+    private static final VoxelShape MATURE_STEM = Shapes.or(box(0, 10, 7.5, 16, 16, 8.5), box(7.5, 10, 0, 8.5, 16, 16));
+    private static final VoxelShape SEED = box(7, 12, 7, 9, 14, 9);
+    private static final VoxelShape BUD = box(6, 6, 6, 10, 10, 10);
+    private static final VoxelShape POD = Shapes.or(box(4, 3.2, 4, 12, 11.2, 12), box(5, 2.2, 5, 11, 4.2, 11), box(5, 10.2, 5, 11, 12.2, 11));
+    private static final VoxelShape[] BODIES = {SEED, BUD, POD, POD, POD, POD, POD, POD};
+    private static final VoxelShape MATURE = Shapes.or(MATURE_STEM, POD);
+    private static final VoxelShape[] SHAPES = {Shapes.or(SMALL_STEM, SEED), Shapes.or(SMALL_STEM, BUD), MATURE, MATURE, MATURE, MATURE, MATURE, MATURE};
 
     public BlockManaPod(Properties properties) {
         super(properties);
@@ -60,6 +63,11 @@ public final class BlockManaPod extends BaseEntityBlock {
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPES[state.getValue(AGE)];
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return BODIES[state.getValue(AGE)];
     }
 
     @Override
