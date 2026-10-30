@@ -1587,15 +1587,23 @@ public final class TTModelProvider extends ModelProvider {
     private void registerManaPod(BlockModelGenerators blockModels, ItemModelGenerators itemModels) {
         Block pod = TTBlocks.MANA_POD.get();
         Identifier baseModel = ModelLocationUtils.getModelLocation(pod);
-        MultiVariant[] stages = new MultiVariant[3];
-        for (int stage = 0; stage < stages.length; stage++) {
-            Identifier model = baseModel.withSuffix("_stage" + stage);
+        Identifier[][] models = new Identifier[3][BlockManaPod.DYNAMIC_TREE_LIFT_PIXELS.size()];
+        for (int stage = 0; stage < models.length; stage++) {
             int modelStage = stage;
-            blockModels.modelOutput.accept(model, manaPodModel(modelStage));
-            stages[stage] = new MultiVariant(WeightedList.of(new Variant(model)));
+            for (int lift = 0; lift < BlockManaPod.DYNAMIC_TREE_LIFT_PIXELS.size(); lift++) {
+                int pixels = BlockManaPod.DYNAMIC_TREE_LIFT_PIXELS.get(lift);
+                String suffix = "_stage" + stage + (lift == 0 ? "" : "_dynamic_tree_" + pixels);
+                models[stage][lift] = baseModel.withSuffix(suffix);
+                blockModels.modelOutput.accept(models[stage][lift], manaPodModel(modelStage, pixels));
+            }
         }
-        PropertyDispatch<MultiVariant> ages = PropertyDispatch.initial(BlockManaPod.AGE).select(0, stages[0]).select(1, stages[1]).select(2, stages[2]).select(3, stages[2]).select(4, stages[2])
-                .select(5, stages[2]).select(6, stages[2]).select(7, stages[2]);
+        PropertyDispatch.C2<MultiVariant, Integer, Integer> ages = PropertyDispatch.initial(BlockManaPod.AGE, BlockManaPod.DYNAMIC_TREE_LIFT);
+        for (int age = 0; age <= 7; age++) {
+            int stage = Math.min(age, 2);
+            for (int lift = 0; lift < BlockManaPod.DYNAMIC_TREE_LIFT_PIXELS.size(); lift++) {
+                ages.select(age, lift, new MultiVariant(WeightedList.of(new Variant(models[stage][lift]))));
+            }
+        }
         blockModels.blockStateOutput.accept(MultiVariantGenerator.dispatch(pod).with(ages));
 
         Identifier beanModel = ModelLocationUtils.getModelLocation(TTItems.MANA_BEAN.get());
@@ -1603,7 +1611,7 @@ public final class TTModelProvider extends ModelProvider {
         itemModels.itemModelOutput.accept(TTItems.MANA_BEAN.get(), ItemModelUtils.tintedModel(beanModel, new CrystalAspectTint(0xFFFFFF)));
     }
 
-    private static ModelInstance manaPodModel(int stage) {
+    private static ModelInstance manaPodModel(int stage, int stemLift) {
         return () -> {
             JsonObject root = new JsonObject();
             root.addProperty("parent", BLOCK_PARENT.toString());
@@ -1616,20 +1624,21 @@ public final class TTModelProvider extends ModelProvider {
 
             JsonArray elements = new JsonArray();
             if (stage < 2) {
-                elements.add(manaPodPlane(5, 10, 8, 11, 16, 8, "north", "south", 16, 16, 23, 23, stage == 0 ? 16 : 24, 16, stage == 0 ? 23 : 32, 23));
-                elements.add(manaPodPlane(8, 10, 5, 8, 16, 11, "west", "east", stage == 0 ? 16 : 24, 16, stage == 0 ? 23 : 31, 23, stage == 0 ? 16 : 24, 16, stage == 0 ? 23 : 32, 23));
+                elements.add(manaPodPlane(5, 10 + stemLift, 8, 11, 16 + stemLift, 8, "north", "south", 16, 16, 23, 23, stage == 0 ? 16 : 24, 16, stage == 0 ? 23 : 32, 23));
+                elements.add(manaPodPlane(8, 10 + stemLift, 5, 8, 16 + stemLift, 11, "west", "east", stage == 0 ? 16 : 24, 16, stage == 0 ? 23 : 31, 23, stage == 0 ? 16 : 24, 16, stage == 0 ? 23 : 32,
+                        23));
             } else {
-                elements.add(manaPodPlane(0, 10, 8, 16, 16, 8, "north", "south", 0, 16, 16, 24, 0, 16, 16, 24));
-                elements.add(manaPodPlane(8, 10, 0, 8, 16, 16, "west", "east", 0, 16, 16, 24, 0, 16, 16, 24));
+                elements.add(manaPodPlane(0, 10 + stemLift, 8, 16, 16 + stemLift, 8, "north", "south", 0, 16, 16, 24, 0, 16, 16, 24));
+                elements.add(manaPodPlane(8, 10 + stemLift, 0, 8, 16 + stemLift, 16, "west", "east", 0, 16, 16, 24, 0, 16, 16, 24));
             }
             if (stage == 0) {
-                elements.add(manaPodBox(7, 12, 7, 9, 14, 9, 8, 4, 12, 8, 8, 0, 12, 4));
+                elements.add(manaPodBox(7, 12 + stemLift, 7, 9, 14 + stemLift, 9, 8, 4, 12, 8, 8, 0, 12, 4));
             } else if (stage == 1) {
-                elements.add(manaPodBox(6, 6, 6, 10, 10, 10, 8, 4, 12, 8, 8, 0, 12, 4));
+                elements.add(manaPodBox(6, 6 + stemLift, 6, 10, 10 + stemLift, 10, 8, 4, 12, 8, 8, 0, 12, 4));
             } else {
-                elements.add(manaPodBox(4, 3.2F, 4, 12, 11.2F, 12, 0, 8, 8, 16, 0, 0, 8, 8));
-                elements.add(manaPodBox(5, 2.2F, 5, 11, 4.2F, 11, 0, 14, 8, 16, 1, 1, 7, 7));
-                elements.add(manaPodBox(5, 10.2F, 5, 11, 12.2F, 11, 0, 8, 8, 10, 1, 1, 7, 7));
+                elements.add(manaPodBox(4, 3.2F + stemLift, 4, 12, 11.2F + stemLift, 12, 0, 8, 8, 16, 0, 0, 8, 8));
+                elements.add(manaPodBox(5, 2.2F + stemLift, 5, 11, 4.2F + stemLift, 11, 0, 14, 8, 16, 1, 1, 7, 7));
+                elements.add(manaPodBox(5, 10.2F + stemLift, 5, 11, 12.2F + stemLift, 11, 0, 8, 8, 10, 1, 1, 7, 7));
             }
             root.add("elements", elements);
             return root;
